@@ -2,9 +2,17 @@ import { Package, PackagePlus, PackageMinus, ClipboardCheck, AlertTriangle, Tren
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useProducts } from "@/hooks/useProducts";
+import { formatNumber, getStockStatus } from "@/lib/formatters";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { data: products, isLoading } = useProducts();
+
+  const totalItems = products?.length ?? 0;
+  const totalStok = products?.reduce((sum, p) => sum + (p.stock?.jumlah ?? 0), 0) ?? 0;
+  const warning = products?.filter((p) => getStockStatus(p.stock?.jumlah ?? 0) === "warning").length ?? 0;
+  const kritis = products?.filter((p) => getStockStatus(p.stock?.jumlah ?? 0) === "kritis").length ?? 0;
 
   const quickActions = [
     { icon: PackagePlus, label: "Barang Masuk", path: "/masuk", color: "text-success" },
@@ -15,13 +23,11 @@ const Dashboard = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <p className="text-muted-foreground text-sm">Ringkasan stok RRCollections</p>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-5">
@@ -30,7 +36,7 @@ const Dashboard = () => {
                 <Package className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">--</p>
+                <p className="text-2xl font-bold">{isLoading ? "..." : formatNumber(totalItems)}</p>
                 <p className="text-xs text-muted-foreground">Total Item</p>
               </div>
             </div>
@@ -43,7 +49,7 @@ const Dashboard = () => {
                 <TrendingUp className="h-5 w-5 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-bold">--</p>
+                <p className="text-2xl font-bold">{isLoading ? "..." : formatNumber(totalStok)}</p>
                 <p className="text-xs text-muted-foreground">Total Stok</p>
               </div>
             </div>
@@ -56,7 +62,7 @@ const Dashboard = () => {
                 <AlertTriangle className="h-5 w-5 text-warning" />
               </div>
               <div>
-                <p className="text-2xl font-bold">--</p>
+                <p className="text-2xl font-bold">{isLoading ? "..." : warning}</p>
                 <p className="text-xs text-muted-foreground">Stok Warning</p>
               </div>
             </div>
@@ -69,7 +75,7 @@ const Dashboard = () => {
                 <AlertTriangle className="h-5 w-5 text-destructive" />
               </div>
               <div>
-                <p className="text-2xl font-bold">--</p>
+                <p className="text-2xl font-bold">{isLoading ? "..." : kritis}</p>
                 <p className="text-xs text-muted-foreground">Stok Kritis</p>
               </div>
             </div>
@@ -77,7 +83,6 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Quick Actions */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Aksi Cepat</CardTitle>
@@ -95,18 +100,6 @@ const Dashboard = () => {
                 <span className="text-sm">{action.label}</span>
               </Button>
             ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Placeholder for charts */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Penjualan Harian</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 flex items-center justify-center text-muted-foreground">
-            Grafik penjualan akan ditampilkan setelah ada data
           </div>
         </CardContent>
       </Card>
