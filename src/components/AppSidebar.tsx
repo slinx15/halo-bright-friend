@@ -10,6 +10,7 @@ import {
   LogOut,
   User,
 } from "lucide-react";
+import logo from "@/assets/logo.jpg";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -31,7 +32,7 @@ const AppSidebar = () => {
     <aside className="hidden md:flex flex-col w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border min-h-screen">
       {/* Brand */}
       <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border">
-        <Package className="h-8 w-8 text-sidebar-primary" />
+        <img src={logo} alt="RRCollections" className="h-10 w-10 rounded-lg object-contain" />
         <div>
           <h1 className="font-bold text-lg text-sidebar-primary-foreground">RRCollections</h1>
           <p className="text-xs text-sidebar-foreground/60">Manajemen Stok</p>
