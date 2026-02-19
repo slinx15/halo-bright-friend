@@ -7,6 +7,7 @@ import {
   Package,
   ClipboardCheck,
   BarChart3,
+  Settings,
   LogOut,
   User,
 } from "lucide-react";
@@ -21,6 +22,7 @@ const navItems = [
   { icon: Package, label: "Stok", path: "/stok" },
   { icon: ClipboardCheck, label: "Opname", path: "/opname" },
   { icon: BarChart3, label: "Analisa", path: "/analisa" },
+  { icon: Settings, label: "Produk", path: "/produk" },
 ];
 
 const AppSidebar = () => {
