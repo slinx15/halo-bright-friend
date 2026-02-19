@@ -7,7 +7,11 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import AppLayout from "@/components/AppLayout";
 import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
-import Placeholder from "@/pages/Placeholder";
+import BarangMasuk from "@/pages/BarangMasuk";
+import BarangKeluar from "@/pages/BarangKeluar";
+import Stok from "@/pages/Stok";
+import Opname from "@/pages/Opname";
+import Analisa from "@/pages/Analisa";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,11 +46,11 @@ const App = () => (
               }
             >
               <Route path="/" element={<Dashboard />} />
-              <Route path="/masuk" element={<Placeholder />} />
-              <Route path="/keluar" element={<Placeholder />} />
-              <Route path="/stok" element={<Placeholder />} />
-              <Route path="/opname" element={<Placeholder />} />
-              <Route path="/analisa" element={<Placeholder />} />
+              <Route path="/masuk" element={<BarangMasuk />} />
+              <Route path="/keluar" element={<BarangKeluar />} />
+              <Route path="/stok" element={<Stok />} />
+              <Route path="/opname" element={<Opname />} />
+              <Route path="/analisa" element={<Analisa />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
