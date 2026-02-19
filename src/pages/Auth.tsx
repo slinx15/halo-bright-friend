@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
+import logo from "@/assets/logo.jpg";
 import { useToast } from "@/hooks/use-toast";
 
 const Auth = () => {
@@ -57,10 +58,8 @@ const Auth = () => {
       <div className="w-full max-w-md space-y-6">
         {/* Logo / Brand */}
         <div className="flex flex-col items-center gap-2">
-          <div className="flex items-center gap-3 text-primary">
-            <Package className="h-10 w-10" />
-            <h1 className="text-3xl font-extrabold tracking-tight">RRCollections</h1>
-          </div>
+          <img src={logo} alt="RRCollections" className="h-20 w-20 rounded-xl object-contain" />
+          <h1 className="text-2xl font-extrabold tracking-tight text-primary">RRCollections</h1>
           <p className="text-muted-foreground text-sm">Manajemen Stok Produk Tekstil</p>
         </div>
 
