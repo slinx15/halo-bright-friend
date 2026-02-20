@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { ClipboardCheck, Send } from "lucide-react";
 import { formatDate, formatNumber } from "@/lib/formatters";
+import { OcrUpload } from "@/components/OcrUpload";
 
 const Opname = () => {
   const { user } = useAuth();
@@ -92,7 +93,22 @@ const Opname = () => {
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="text-lg">Input Opname</CardTitle></CardHeader>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Input Opname</CardTitle>
+            <OcrUpload
+              mode="opname"
+              onResult={(ocrItems) => {
+                if (ocrItems.length > 0) {
+                  const first = ocrItems[0];
+                  setKode((first.kode || "").toUpperCase());
+                  setStokFisik(first.stok_fisik || 0);
+                  if (first.catatan) setCatatan(first.catatan);
+                }
+              }}
+            />
+          </div>
+        </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>

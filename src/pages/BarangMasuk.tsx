@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { PackagePlus, Plus, Trash2, Send } from "lucide-react";
 import { formatDate, formatNumber, TUMPUKAN_OPTIONS } from "@/lib/formatters";
+import { OcrUpload } from "@/components/OcrUpload";
 
 interface LineItem {
   kode: string;
@@ -118,7 +119,26 @@ const BarangMasuk = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Input Barang Masuk</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Input Barang Masuk</CardTitle>
+            <OcrUpload
+              mode="masuk"
+              onResult={(ocrItems) => {
+                const newItems: LineItem[] = ocrItems.map((o: any) => {
+                  const found = products?.find((p) => p.kode.toUpperCase() === (o.kode || "").toUpperCase());
+                  return {
+                    kode: (o.kode || "").toUpperCase(),
+                    qty: o.qty || 1,
+                    tumpukan: "",
+                    productName: found?.nama || o.nama,
+                    productId: found?.id,
+                  };
+                });
+                setItems(newItems.length > 0 ? newItems : [{ kode: "", qty: 1, tumpukan: "" }]);
+                if (ocrItems[0]?.catatan) setCatatan(ocrItems[0].catatan);
+              }}
+            />
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {items.map((item, i) => (
