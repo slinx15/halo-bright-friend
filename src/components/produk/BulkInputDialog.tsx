@@ -107,48 +107,71 @@ export function BulkInputDialog() {
       let totalInserted = 0;
       let errors: string[] = [];
 
+      const withTimeout = <T,>(fn: () => PromiseLike<T>, ms: number): Promise<T> =>
+        Promise.race([
+          Promise.resolve(fn()),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Timeout")), ms)),
+        ]);
+
       for (let ci = 0; ci < chunks.length; ci++) {
         const chunk = chunks[ci];
         const baseProgress = 5 + Math.round((ci / chunks.length) * 90);
         setProgress(baseProgress);
         setProgressLabel(`Chunk ${ci + 1}/${chunks.length} — ${totalInserted}/${dedupedRows.length} produk...`);
 
-        const productPayloads = chunk.map(row => ({
-          kode: row.kode.toUpperCase(),
-          nama: row.kode.toUpperCase(),
-          kategori: row.kategori || null,
-        }));
+        try {
+          const productPayloads = chunk.map(row => ({
+            kode: row.kode.toUpperCase(),
+            nama: row.kode.toUpperCase(),
+            kategori: row.kategori || null,
+          }));
 
-        const { data: insertedProducts, error: prodError } = await supabase
-          .from("products")
-          .insert(productPayloads)
-          .select();
+          console.log(`[BulkImport] Inserting chunk ${ci + 1} with ${chunk.length} products`);
+          const { data: insertedProducts, error: prodError } = await withTimeout(
+            async () => supabase.from("products").insert(productPayloads).select(),
+            15000
+          );
 
-        if (prodError) {
-          errors.push(`Chunk ${ci + 1}: ${prodError.message}`);
-          continue;
-        }
-        if (!insertedProducts || insertedProducts.length === 0) continue;
+          if (prodError) {
+            console.error(`[BulkImport] Chunk ${ci + 1} error:`, prodError.message);
+            errors.push(`Chunk ${ci + 1}: ${prodError.message}`);
+            continue;
+          }
+          if (!insertedProducts || insertedProducts.length === 0) {
+            console.warn(`[BulkImport] Chunk ${ci + 1} returned 0 products`);
+            continue;
+          }
 
-        totalInserted += insertedProducts.length;
+          console.log(`[BulkImport] Chunk ${ci + 1} inserted ${insertedProducts.length} products`);
+          totalInserted += insertedProducts.length;
 
-        // Insert prices
-        const pricePayloads = insertedProducts.map((p, i) => ({
-          product_id: p.id,
-          harga_modal: parseInt(chunk[i].modal) || 0,
-          harga_normal: parseInt(chunk[i].normal) || 0,
-          harga_grosir: parseInt(chunk[i].grosir) || 0,
-        }));
-        const { error: priceError } = await supabase.from("prices").insert(pricePayloads);
-        if (priceError) errors.push(`Harga chunk ${ci + 1}: ${priceError.message}`);
+          // Insert prices
+          const pricePayloads = insertedProducts.map((p, i) => ({
+            product_id: p.id,
+            harga_modal: parseInt(chunk[i].modal) || 0,
+            harga_normal: parseInt(chunk[i].normal) || 0,
+            harga_grosir: parseInt(chunk[i].grosir) || 0,
+          }));
+          const { error: priceError } = await withTimeout(
+            async () => supabase.from("prices").insert(pricePayloads),
+            15000
+          );
+          if (priceError) errors.push(`Harga chunk ${ci + 1}: ${priceError.message}`);
 
-        // Insert stock
-        const stockPayloads = insertedProducts
-          .map((p, i) => ({ product_id: p.id, jumlah: parseInt(chunk[i].stok) || 0 }))
-          .filter(s => s.jumlah > 0);
-        if (stockPayloads.length > 0) {
-          const { error: stockError } = await supabase.from("stock").insert(stockPayloads);
-          if (stockError) errors.push(`Stok chunk ${ci + 1}: ${stockError.message}`);
+          // Insert stock
+          const stockPayloads = insertedProducts
+            .map((p, i) => ({ product_id: p.id, jumlah: parseInt(chunk[i].stok) || 0 }))
+            .filter(s => s.jumlah > 0);
+          if (stockPayloads.length > 0) {
+            const { error: stockError } = await withTimeout(
+              async () => supabase.from("stock").insert(stockPayloads),
+              15000
+            );
+            if (stockError) errors.push(`Stok chunk ${ci + 1}: ${stockError.message}`);
+          }
+        } catch (chunkErr: any) {
+          console.error(`[BulkImport] Chunk ${ci + 1} exception:`, chunkErr.message);
+          errors.push(`Chunk ${ci + 1}: ${chunkErr.message}`);
         }
       }
 
