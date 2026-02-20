@@ -97,47 +97,52 @@ export function BulkInputDialog() {
 
       let totalInserted = 0;
       let errors: string[] = [];
+      const BATCH = 50;
       const total = dedupedRows.length;
+      const chunks: BulkRow[][] = [];
+      for (let i = 0; i < total; i += BATCH) chunks.push(dedupedRows.slice(i, i + BATCH));
 
-      // Insert one-by-one to avoid timeout issues
-      for (let i = 0; i < total; i++) {
-        const row = dedupedRows[i];
-        const pct = 5 + Math.round(((i + 1) / total) * 90);
+      for (let ci = 0; ci < chunks.length; ci++) {
+        const chunk = chunks[ci];
+        const pct = 5 + Math.round(((ci + 1) / chunks.length) * 90);
         setProgress(pct);
-        setProgressLabel(`${i + 1}/${total} — ${row.kode.toUpperCase()}`);
+        setProgressLabel(`Batch ${ci + 1}/${chunks.length} (${chunk.length} produk)`);
 
         try {
-          // Insert product
-          const { data: prod, error: prodError } = await supabase
+          // Batch insert products
+          const { data: prods, error: prodError } = await supabase
             .from("products")
-            .insert({ kode: row.kode.toUpperCase(), nama: row.kode.toUpperCase(), kategori: row.kategori || null })
-            .select()
-            .single();
+            .insert(chunk.map(r => ({ kode: r.kode.toUpperCase(), nama: r.kode.toUpperCase(), kategori: r.kategori || null })))
+            .select();
 
-          if (prodError) {
-            console.error(`[BulkImport] ${row.kode}: ${prodError.message}`);
-            errors.push(`${row.kode}: ${prodError.message}`);
+          if (prodError || !prods) {
+            console.error(`[BulkImport] Batch ${ci + 1}: ${prodError?.message}`);
+            errors.push(`Batch ${ci + 1}: ${prodError?.message}`);
             continue;
           }
 
-          totalInserted++;
+          totalInserted += prods.length;
 
-          // Insert price
-          await supabase.from("prices").insert({
-            product_id: prod.id,
-            harga_modal: parseInt(row.modal) || 0,
-            harga_normal: parseInt(row.normal) || 0,
-            harga_grosir: parseInt(row.grosir) || 0,
-          });
+          // Batch insert prices
+          await supabase.from("prices").insert(
+            prods.map((p, i) => ({
+              product_id: p.id,
+              harga_modal: parseInt(chunk[i].modal) || 0,
+              harga_normal: parseInt(chunk[i].normal) || 0,
+              harga_grosir: parseInt(chunk[i].grosir) || 0,
+            }))
+          );
 
-          // Insert stock if > 0
-          const stok = parseInt(row.stok) || 0;
-          if (stok > 0) {
-            await supabase.from("stock").insert({ product_id: prod.id, jumlah: stok });
+          // Batch insert stock (only rows with stok > 0)
+          const stockRows = prods
+            .map((p, i) => ({ product_id: p.id, jumlah: parseInt(chunk[i].stok) || 0 }))
+            .filter(s => s.jumlah > 0);
+          if (stockRows.length > 0) {
+            await supabase.from("stock").insert(stockRows);
           }
         } catch (err: any) {
-          console.error(`[BulkImport] ${row.kode} exception:`, err.message);
-          errors.push(`${row.kode}: ${err.message}`);
+          console.error(`[BulkImport] Batch ${ci + 1} exception:`, err.message);
+          errors.push(`Batch ${ci + 1}: ${err.message}`);
         }
       }
 
