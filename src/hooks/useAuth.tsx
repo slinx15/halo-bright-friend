@@ -52,11 +52,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .then(({ data }) => {
             setRole(data?.role ?? null);
             setLoading(false);
-          });
+          }, () => setLoading(false));
       } else {
         setLoading(false);
       }
-    });
+    }, () => setLoading(false));
 
     return () => subscription.unsubscribe();
   }, []);
