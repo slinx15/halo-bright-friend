@@ -74,11 +74,33 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
     setLoading(true);
     try {
       const base64 = await fileToBase64(file);
-      const { data, error } = await supabase.functions.invoke("ocr-nota", {
-        body: { image_base64: base64, mode },
-      });
+      console.log("OCR: sending image, base64 length:", base64.length);
 
-      if (error) throw error;
+      // Use fetch with timeout instead of supabase.functions.invoke
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ocr-nota`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ image_base64: base64, mode }),
+          signal: controller.signal,
+        }
+      );
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+
       if (data?.error) {
         toast({ title: "Error OCR", description: data.error, variant: "destructive" });
         return;
@@ -95,7 +117,11 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
       setShowConfirm(true);
     } catch (err: any) {
       console.error("OCR error:", err);
-      toast({ title: "Error", description: err.message || "Gagal memproses foto", variant: "destructive" });
+      if (err.name === "AbortError") {
+        toast({ title: "Timeout", description: "Proses terlalu lama. Coba foto yang lebih jelas/kecil.", variant: "destructive" });
+      } else {
+        toast({ title: "Error", description: err.message || "Gagal memproses foto", variant: "destructive" });
+      }
     } finally {
       setLoading(false);
     }
