@@ -70,7 +70,7 @@ export function BulkInputDialog() {
 
   const validRows = rows.filter(r => r.kode.trim());
 
-  const CHUNK_SIZE = 20;
+  const CHUNK_SIZE = 5;
 
   const handleSubmit = async () => {
     if (validRows.length === 0) {
@@ -107,11 +107,7 @@ export function BulkInputDialog() {
       let totalInserted = 0;
       let errors: string[] = [];
 
-      const withTimeout = <T,>(fn: () => PromiseLike<T>, ms: number): Promise<T> =>
-        Promise.race([
-          Promise.resolve(fn()),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Timeout")), ms)),
-        ]);
+      // No artificial timeout - let Supabase handle its own timeouts
 
       for (let ci = 0; ci < chunks.length; ci++) {
         const chunk = chunks[ci];
@@ -127,10 +123,8 @@ export function BulkInputDialog() {
           }));
 
           console.log(`[BulkImport] Inserting chunk ${ci + 1} with ${chunk.length} products`);
-          const { data: insertedProducts, error: prodError } = await withTimeout(
-            async () => supabase.from("products").insert(productPayloads).select(),
-            30000
-          );
+          const { data: insertedProducts, error: prodError } = await supabase
+            .from("products").insert(productPayloads).select();
 
           if (prodError) {
             console.error(`[BulkImport] Chunk ${ci + 1} error:`, prodError.message);
@@ -152,10 +146,8 @@ export function BulkInputDialog() {
             harga_normal: parseInt(chunk[i].normal) || 0,
             harga_grosir: parseInt(chunk[i].grosir) || 0,
           }));
-          const { error: priceError } = await withTimeout(
-            async () => supabase.from("prices").insert(pricePayloads),
-            30000
-          );
+          const { error: priceError } = await supabase
+            .from("prices").insert(pricePayloads);
           if (priceError) errors.push(`Harga chunk ${ci + 1}: ${priceError.message}`);
 
           // Insert stock
@@ -163,10 +155,8 @@ export function BulkInputDialog() {
             .map((p, i) => ({ product_id: p.id, jumlah: parseInt(chunk[i].stok) || 0 }))
             .filter(s => s.jumlah > 0);
           if (stockPayloads.length > 0) {
-            const { error: stockError } = await withTimeout(
-              async () => supabase.from("stock").insert(stockPayloads),
-              30000
-            );
+            const { error: stockError } = await supabase
+              .from("stock").insert(stockPayloads);
             if (stockError) errors.push(`Stok chunk ${ci + 1}: ${stockError.message}`);
           }
         } catch (chunkErr: any) {
