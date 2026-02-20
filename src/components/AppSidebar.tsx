@@ -80,7 +80,7 @@ const AppSidebar = () => {
           variant="ghost"
           size="sm"
           className="w-full justify-start text-sidebar-foreground/60 hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
-          onClick={signOut}
+          onClick={async () => { await signOut(); window.location.href = "/auth"; }}
         >
           <LogOut className="h-4 w-4 mr-2" />
           Keluar
