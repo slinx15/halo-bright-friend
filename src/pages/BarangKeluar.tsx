@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { PackageMinus, Send } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { PackageMinus, Send, Upload, ClipboardPaste } from "lucide-react";
 import { formatDate, formatNumber, formatRupiah } from "@/lib/formatters";
 
 const BarangKeluar = () => {
@@ -26,6 +27,10 @@ const BarangKeluar = () => {
   const [catatan, setCatatan] = useState("");
   const [toko, setToko] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const [bulkParsed, setBulkParsed] = useState<any[]>([]);
+  const [bulkImporting, setBulkImporting] = useState(false);
+  const [showBulk, setShowBulk] = useState(false);
 
   const matched = products?.find((p) => p.kode.toUpperCase() === kode.toUpperCase());
   const hargaSatuan = matched?.prices
