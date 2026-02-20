@@ -1,0 +1,1 @@
+ALTER TABLE public.stock_out ADD COLUMN toko text DEFAULT '';

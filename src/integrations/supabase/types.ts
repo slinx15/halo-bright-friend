@@ -227,6 +227,7 @@ export type Database = {
           product_id: string
           qty_kirim: number
           qty_pesan: number
+          toko: string | null
           total_harga: number
           user_id: string
         }
@@ -239,6 +240,7 @@ export type Database = {
           product_id: string
           qty_kirim?: number
           qty_pesan?: number
+          toko?: string | null
           total_harga?: number
           user_id: string
         }
@@ -251,6 +253,7 @@ export type Database = {
           product_id?: string
           qty_kirim?: number
           qty_pesan?: number
+          toko?: string | null
           total_harga?: number
           user_id?: string
         }
