@@ -18,46 +18,26 @@ serve(async (req) => {
     const { image_base64, mode } = await req.json();
     if (!image_base64) throw new Error("image_base64 is required");
 
-    // Mode: "masuk" | "keluar" | "opname"
     const prompts: Record<string, string> = {
-      masuk: `Kamu adalah OCR untuk nota pembelian barang kain/tekstil.
-Dari foto nota ini, ekstrak setiap item pembelian. Untuk setiap item, dapatkan:
-- kode: kode produk (biasanya huruf-angka seperti KTN-001, SFN-002, dll)
-- nama: nama produk jika terlihat
-- qty: jumlah yang dibeli
-- harga_modal: harga per satuan (harga beli/modal)
-- catatan: info tambahan jika ada
+      masuk: `Baca foto formulir order/nota pembelian kain/tekstil.
+Format tabel biasanya: NO | KETERANGAN (kode) | ISI | BAL | JUMLAH.
+Ekstrak HANYA baris yang ada isinya (JUMLAH > 0 atau ada kode di KETERANGAN).
+Untuk setiap item: kode = KETERANGAN, qty = JUMLAH.
+Kembalikan HANYA JSON array tanpa markdown. Contoh:
+[{"kode":"R533","qty":25},{"kode":"BLK","qty":100}]
+Jika tidak bisa membaca, kembalikan [].`,
 
-Kembalikan HANYA JSON array, tanpa markdown, tanpa penjelasan. Contoh:
-[{"kode":"KTN-001","nama":"Katun Jepang","qty":50,"harga_modal":18000,"catatan":""}]
+      keluar: `Baca foto nota penjualan kain/tekstil.
+Ekstrak setiap item: kode, qty_pesan, qty_kirim, harga_type ("normal"/"grosir"), toko.
+Kembalikan HANYA JSON array tanpa markdown. Contoh:
+[{"kode":"R533","qty_pesan":10,"qty_kirim":10,"harga_type":"normal","toko":"Toko ABC"}]
+Jika tidak bisa membaca, kembalikan [].`,
 
-Jika tidak bisa membaca, kembalikan array kosong [].`,
-
-      keluar: `Kamu adalah OCR untuk nota penjualan barang kain/tekstil.
-Dari foto nota ini, ekstrak setiap item penjualan. Untuk setiap item, dapatkan:
-- kode: kode produk
-- nama: nama produk jika terlihat
-- qty_pesan: jumlah yang dipesan
-- qty_kirim: jumlah yang dikirim (sama dengan qty_pesan jika tidak ada info)
-- harga_type: "normal" atau "grosir"
-- toko: nama toko/pelanggan jika terlihat di nota
-
-Kembalikan HANYA JSON array, tanpa markdown, tanpa penjelasan. Contoh:
-[{"kode":"KTN-001","nama":"Katun Jepang","qty_pesan":10,"qty_kirim":10,"harga_type":"normal","toko":"Toko ABC"}]
-
-Jika tidak bisa membaca, kembalikan array kosong [].`,
-
-      opname: `Kamu adalah OCR untuk data stok opname barang kain/tekstil.
-Dari foto ini, ekstrak setiap item stok fisik. Untuk setiap item, dapatkan:
-- kode: kode produk
-- nama: nama produk jika terlihat
-- stok_fisik: jumlah stok fisik yang terlihat/tercatat
-- catatan: info tambahan jika ada
-
-Kembalikan HANYA JSON array, tanpa markdown, tanpa penjelasan. Contoh:
-[{"kode":"KTN-001","nama":"Katun Jepang","stok_fisik":45,"catatan":""}]
-
-Jika tidak bisa membaca, kembalikan array kosong [].`,
+      opname: `Baca foto data stok opname kain/tekstil.
+Ekstrak setiap item: kode, stok_fisik.
+Kembalikan HANYA JSON array tanpa markdown. Contoh:
+[{"kode":"R533","stok_fisik":45}]
+Jika tidak bisa membaca, kembalikan [].`,
     };
 
     const systemPrompt = prompts[mode] || prompts.masuk;
@@ -71,13 +51,13 @@ Jika tidak bisa membaca, kembalikan array kosong [].`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "google/gemini-2.5-flash-lite",
           messages: [
             { role: "system", content: systemPrompt },
             {
               role: "user",
               content: [
-                { type: "text", text: "Baca nota/foto ini dan ekstrak datanya." },
+                { type: "text", text: "Baca nota ini." },
                 {
                   type: "image_url",
                   image_url: { url: `data:image/jpeg;base64,${image_base64}` },
@@ -115,10 +95,8 @@ Jika tidak bisa membaca, kembalikan array kosong [].`,
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "[]";
 
-    // Try to parse JSON from the response
     let items = [];
     try {
-      // Remove markdown code blocks if present
       const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       items = JSON.parse(cleaned);
     } catch {
