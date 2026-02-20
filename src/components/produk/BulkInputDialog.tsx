@@ -70,8 +70,6 @@ export function BulkInputDialog() {
 
   const validRows = rows.filter(r => r.kode.trim());
 
-  const CHUNK_SIZE = 5;
-
   const handleSubmit = async () => {
     if (validRows.length === 0) {
       toast({ title: "Error", description: "Minimal isi Kode", variant: "destructive" });
@@ -83,7 +81,7 @@ export function BulkInputDialog() {
 
     try {
       console.log("[BulkImport] Starting import with", validRows.length, "valid rows");
-      // 1. Deduplicate internal codes only (no DB check - let DB handle conflicts)
+      // 1. Deduplicate internal codes
       const seen = new Set<string>();
       const dedupedRows: BulkRow[] = [];
       for (const row of validRows) {
@@ -96,72 +94,50 @@ export function BulkInputDialog() {
 
       console.log("[BulkImport] Deduped to", dedupedRows.length, "rows");
       setProgress(5);
-      setProgressLabel(`Mengimport ${dedupedRows.length} produk...`);
-
-      // 2. Process in chunks
-      const chunks: BulkRow[][] = [];
-      for (let i = 0; i < dedupedRows.length; i += CHUNK_SIZE) {
-        chunks.push(dedupedRows.slice(i, i + CHUNK_SIZE));
-      }
 
       let totalInserted = 0;
       let errors: string[] = [];
+      const total = dedupedRows.length;
 
-      // No artificial timeout - let Supabase handle its own timeouts
-
-      for (let ci = 0; ci < chunks.length; ci++) {
-        const chunk = chunks[ci];
-        const baseProgress = 5 + Math.round((ci / chunks.length) * 90);
-        setProgress(baseProgress);
-        setProgressLabel(`Chunk ${ci + 1}/${chunks.length} — ${totalInserted}/${dedupedRows.length} produk...`);
+      // Insert one-by-one to avoid timeout issues
+      for (let i = 0; i < total; i++) {
+        const row = dedupedRows[i];
+        const pct = 5 + Math.round(((i + 1) / total) * 90);
+        setProgress(pct);
+        setProgressLabel(`${i + 1}/${total} — ${row.kode.toUpperCase()}`);
 
         try {
-          const productPayloads = chunk.map(row => ({
-            kode: row.kode.toUpperCase(),
-            nama: row.kode.toUpperCase(),
-            kategori: row.kategori || null,
-          }));
-
-          console.log(`[BulkImport] Inserting chunk ${ci + 1} with ${chunk.length} products`);
-          const { data: insertedProducts, error: prodError } = await supabase
-            .from("products").insert(productPayloads).select();
+          // Insert product
+          const { data: prod, error: prodError } = await supabase
+            .from("products")
+            .insert({ kode: row.kode.toUpperCase(), nama: row.kode.toUpperCase(), kategori: row.kategori || null })
+            .select()
+            .single();
 
           if (prodError) {
-            console.error(`[BulkImport] Chunk ${ci + 1} error:`, prodError.message);
-            errors.push(`Chunk ${ci + 1}: ${prodError.message}`);
-            continue;
-          }
-          if (!insertedProducts || insertedProducts.length === 0) {
-            console.warn(`[BulkImport] Chunk ${ci + 1} returned 0 products`);
+            console.error(`[BulkImport] ${row.kode}: ${prodError.message}`);
+            errors.push(`${row.kode}: ${prodError.message}`);
             continue;
           }
 
-          console.log(`[BulkImport] Chunk ${ci + 1} inserted ${insertedProducts.length} products`);
-          totalInserted += insertedProducts.length;
+          totalInserted++;
 
-          // Insert prices
-          const pricePayloads = insertedProducts.map((p, i) => ({
-            product_id: p.id,
-            harga_modal: parseInt(chunk[i].modal) || 0,
-            harga_normal: parseInt(chunk[i].normal) || 0,
-            harga_grosir: parseInt(chunk[i].grosir) || 0,
-          }));
-          const { error: priceError } = await supabase
-            .from("prices").insert(pricePayloads);
-          if (priceError) errors.push(`Harga chunk ${ci + 1}: ${priceError.message}`);
+          // Insert price
+          await supabase.from("prices").insert({
+            product_id: prod.id,
+            harga_modal: parseInt(row.modal) || 0,
+            harga_normal: parseInt(row.normal) || 0,
+            harga_grosir: parseInt(row.grosir) || 0,
+          });
 
-          // Insert stock
-          const stockPayloads = insertedProducts
-            .map((p, i) => ({ product_id: p.id, jumlah: parseInt(chunk[i].stok) || 0 }))
-            .filter(s => s.jumlah > 0);
-          if (stockPayloads.length > 0) {
-            const { error: stockError } = await supabase
-              .from("stock").insert(stockPayloads);
-            if (stockError) errors.push(`Stok chunk ${ci + 1}: ${stockError.message}`);
+          // Insert stock if > 0
+          const stok = parseInt(row.stok) || 0;
+          if (stok > 0) {
+            await supabase.from("stock").insert({ product_id: prod.id, jumlah: stok });
           }
-        } catch (chunkErr: any) {
-          console.error(`[BulkImport] Chunk ${ci + 1} exception:`, chunkErr.message);
-          errors.push(`Chunk ${ci + 1}: ${chunkErr.message}`);
+        } catch (err: any) {
+          console.error(`[BulkImport] ${row.kode} exception:`, err.message);
+          errors.push(`${row.kode}: ${err.message}`);
         }
       }
 
@@ -169,8 +145,8 @@ export function BulkInputDialog() {
       setProgressLabel("Selesai!");
 
       if (errors.length > 0) {
-        console.error("[BulkImport] All errors:", errors);
-        toast({ title: "Sebagian Gagal", description: `${totalInserted} berhasil, ${errors.length} error: ${errors.join("; ")}`, variant: "destructive" });
+        console.error("[BulkImport] Errors:", errors);
+        toast({ title: "Sebagian Gagal", description: `${totalInserted} berhasil, ${errors.length} gagal`, variant: "destructive" });
       } else {
         toast({ title: "Import Selesai", description: `${totalInserted} produk berhasil diimport` });
       }
