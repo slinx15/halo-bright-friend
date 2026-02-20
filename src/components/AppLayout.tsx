@@ -12,11 +12,15 @@ const AppLayout = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    supabase.auth.signOut().finally(() => {
+    supabase.auth.signOut({ scope: 'global' }).then(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.href = "/auth";
+    }).catch(() => {
+      localStorage.clear();
+      sessionStorage.clear();
       window.location.href = "/auth";
     });
-    // Force redirect after 1s even if signOut hangs
-    setTimeout(() => { window.location.href = "/auth"; }, 1000);
   };
 
   return (
