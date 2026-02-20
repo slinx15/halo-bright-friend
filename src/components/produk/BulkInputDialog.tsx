@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { TableProperties, Plus, Trash2 } from "lucide-react";
+import { TableProperties, Plus, Trash2, Loader2 } from "lucide-react";
 
 interface BulkRow {
   kode: string;
@@ -25,6 +26,8 @@ export function BulkInputDialog() {
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<BulkRow[]>([emptyRow(), emptyRow(), emptyRow(), emptyRow(), emptyRow()]);
   const [submitting, setSubmitting] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState("");
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -73,9 +76,13 @@ export function BulkInputDialog() {
       return;
     }
     setSubmitting(true);
+    setProgress(0);
+    setProgressLabel("Menyiapkan data produk...");
 
     try {
-      // Batch insert all products at once
+      setProgress(10);
+      setProgressLabel(`Mengimport ${validRows.length} produk...`);
+
       const productPayloads = validRows.map(row => ({
         kode: row.kode.toUpperCase(),
         nama: row.kode.toUpperCase(),
@@ -90,7 +97,9 @@ export function BulkInputDialog() {
       if (prodError) throw prodError;
       if (!insertedProducts) throw new Error("No products returned");
 
-      // Batch insert prices
+      setProgress(50);
+      setProgressLabel("Menyimpan harga...");
+
       const pricePayloads = insertedProducts.map((p, i) => ({
         product_id: p.id,
         harga_modal: parseInt(validRows[i].modal) || 0,
@@ -101,7 +110,9 @@ export function BulkInputDialog() {
       const { error: priceError } = await supabase.from("prices").insert(pricePayloads);
       if (priceError) console.error("Price insert error:", priceError);
 
-      // Batch insert stock (only rows with stok > 0)
+      setProgress(80);
+      setProgressLabel("Menyimpan stok...");
+
       const stockPayloads = insertedProducts
         .map((p, i) => ({ product_id: p.id, jumlah: parseInt(validRows[i].stok) || 0 }))
         .filter(s => s.jumlah > 0);
@@ -111,6 +122,9 @@ export function BulkInputDialog() {
         if (stockError) console.error("Stock insert error:", stockError);
       }
 
+      setProgress(100);
+      setProgressLabel("Selesai!");
+
       toast({ title: "Import Selesai", description: `${insertedProducts.length} produk berhasil diimport` });
       setRows([emptyRow(), emptyRow(), emptyRow(), emptyRow(), emptyRow()]);
       setOpen(false);
@@ -119,6 +133,8 @@ export function BulkInputDialog() {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
     setSubmitting(false);
+    setProgress(0);
+    setProgressLabel("");
   };
 
   return (
@@ -175,17 +191,29 @@ export function BulkInputDialog() {
             </TableBody>
           </Table>
         </div>
+        {submitting && (
+          <div className="space-y-1.5 pt-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground flex items-center gap-2">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                {progressLabel}
+              </span>
+              <span className="font-medium">{progress}%</span>
+            </div>
+            <Progress value={progress} className="h-2" />
+          </div>
+        )}
         <div className="flex items-center justify-between pt-2">
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => addRows(5)}>
+            <Button variant="outline" size="sm" onClick={() => addRows(5)} disabled={submitting}>
               <Plus className="h-3 w-3 mr-1" /> 5 Baris
             </Button>
-            <Button variant="outline" size="sm" onClick={() => addRows(10)}>
+            <Button variant="outline" size="sm" onClick={() => addRows(10)} disabled={submitting}>
               <Plus className="h-3 w-3 mr-1" /> 10 Baris
             </Button>
           </div>
           <Button onClick={handleSubmit} disabled={submitting || validRows.length === 0}>
-            {submitting ? "Mengimport..." : `Import ${validRows.length} Produk`}
+            {submitting ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Mengimport...</> : `Import ${validRows.length} Produk`}
           </Button>
         </div>
       </DialogContent>
