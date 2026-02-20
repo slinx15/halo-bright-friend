@@ -27,9 +27,9 @@ const MobileNav = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    supabase.auth.signOut({ scope: 'global' }).finally(() => {
-      localStorage.clear();
-      sessionStorage.clear();
+    const keysToRemove = Object.keys(localStorage).filter(k => k.startsWith('sb-'));
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    supabase.auth.signOut({ scope: 'local' }).finally(() => {
       window.location.href = "/auth";
     });
   };
