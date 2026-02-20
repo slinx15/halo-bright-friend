@@ -22,13 +22,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchRole = useCallback(async (userId: string) => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", userId)
         .maybeSingle();
+      console.log("[fetchRole]", { userId, data, error });
+      if (error) {
+        console.error("[fetchRole] error:", error.message);
+        return null;
+      }
       return data?.role ?? null;
-    } catch {
+    } catch (e) {
+      console.error("[fetchRole] catch:", e);
       return null;
     }
   }, []);
