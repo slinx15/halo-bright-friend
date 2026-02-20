@@ -82,6 +82,7 @@ export function BulkInputDialog() {
     setProgressLabel("Memulai import...");
 
     try {
+      console.log("[BulkImport] Starting import with", validRows.length, "valid rows");
       // 1. Deduplicate internal codes only (no DB check - let DB handle conflicts)
       const seen = new Set<string>();
       const dedupedRows: BulkRow[] = [];
@@ -93,6 +94,7 @@ export function BulkInputDialog() {
         }
       }
 
+      console.log("[BulkImport] Deduped to", dedupedRows.length, "rows");
       setProgress(5);
       setProgressLabel(`Mengimport ${dedupedRows.length} produk...`);
 
