@@ -11,12 +11,8 @@ const AppLayout = () => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    try {
-      await signOut();
-      navigate("/auth");
-    } catch {
-      window.location.href = "/auth";
-    }
+    await signOut();
+    window.location.href = "/auth";
   };
 
   return (

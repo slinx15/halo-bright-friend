@@ -29,7 +29,7 @@ const MobileNav = () => {
 
   const handleLogout = async () => {
     await signOut();
-    navigate("/auth");
+    window.location.href = "/auth";
   };
 
   return (
