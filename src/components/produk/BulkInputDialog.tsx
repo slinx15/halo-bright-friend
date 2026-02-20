@@ -70,6 +70,8 @@ export function BulkInputDialog() {
 
   const validRows = rows.filter(r => r.kode.trim());
 
+  const CHUNK_SIZE = 50;
+
   const handleSubmit = async () => {
     if (validRows.length === 0) {
       toast({ title: "Error", description: "Minimal isi Kode", variant: "destructive" });
@@ -77,55 +79,110 @@ export function BulkInputDialog() {
     }
     setSubmitting(true);
     setProgress(0);
-    setProgressLabel("Menyiapkan data produk...");
+    setProgressLabel("Memeriksa duplikat...");
 
     try {
-      setProgress(10);
-      setProgressLabel(`Mengimport ${validRows.length} produk...`);
+      // 1. Check internal duplicates
+      const codes = validRows.map(r => r.kode.toUpperCase());
+      const seen = new Set<string>();
+      const internalDups: string[] = [];
+      for (const c of codes) {
+        if (seen.has(c)) internalDups.push(c);
+        seen.add(c);
+      }
+      if (internalDups.length > 0) {
+        toast({ title: "Kode Duplikat", description: `Kode duplikat dalam data: ${[...new Set(internalDups)].slice(0, 5).join(", ")}`, variant: "destructive" });
+        setSubmitting(false);
+        return;
+      }
 
-      const productPayloads = validRows.map(row => ({
-        kode: row.kode.toUpperCase(),
-        nama: row.kode.toUpperCase(),
-        kategori: row.kategori || null,
-      }));
-
-      const { data: insertedProducts, error: prodError } = await supabase
+      // 2. Check existing codes in DB
+      const uniqueCodes = [...seen];
+      const { data: existing } = await supabase
         .from("products")
-        .insert(productPayloads)
-        .select();
+        .select("kode")
+        .in("kode", uniqueCodes);
 
-      if (prodError) throw prodError;
-      if (!insertedProducts) throw new Error("No products returned");
+      const existingSet = new Set((existing || []).map(e => e.kode));
+      const newRows = validRows.filter(r => !existingSet.has(r.kode.toUpperCase()));
 
-      setProgress(50);
-      setProgressLabel("Menyimpan harga...");
+      if (existingSet.size > 0) {
+        const skipped = [...existingSet].slice(0, 5).join(", ");
+        toast({ title: "Info", description: `${existingSet.size} kode sudah ada (${skipped}${existingSet.size > 5 ? "..." : ""}), dilewati.` });
+      }
 
-      const pricePayloads = insertedProducts.map((p, i) => ({
-        product_id: p.id,
-        harga_modal: parseInt(validRows[i].modal) || 0,
-        harga_normal: parseInt(validRows[i].normal) || 0,
-        harga_grosir: parseInt(validRows[i].grosir) || 0,
-      }));
+      if (newRows.length === 0) {
+        toast({ title: "Tidak ada data baru", description: "Semua kode sudah ada di database.", variant: "destructive" });
+        setSubmitting(false);
+        return;
+      }
 
-      const { error: priceError } = await supabase.from("prices").insert(pricePayloads);
-      if (priceError) console.error("Price insert error:", priceError);
+      setProgress(5);
+      setProgressLabel(`Mengimport ${newRows.length} produk...`);
 
-      setProgress(80);
-      setProgressLabel("Menyimpan stok...");
+      // 3. Process in chunks
+      const chunks: BulkRow[][] = [];
+      for (let i = 0; i < newRows.length; i += CHUNK_SIZE) {
+        chunks.push(newRows.slice(i, i + CHUNK_SIZE));
+      }
 
-      const stockPayloads = insertedProducts
-        .map((p, i) => ({ product_id: p.id, jumlah: parseInt(validRows[i].stok) || 0 }))
-        .filter(s => s.jumlah > 0);
+      let totalInserted = 0;
+      let errors: string[] = [];
 
-      if (stockPayloads.length > 0) {
-        const { error: stockError } = await supabase.from("stock").insert(stockPayloads);
-        if (stockError) console.error("Stock insert error:", stockError);
+      for (let ci = 0; ci < chunks.length; ci++) {
+        const chunk = chunks[ci];
+        const baseProgress = 5 + Math.round((ci / chunks.length) * 90);
+        setProgress(baseProgress);
+        setProgressLabel(`Chunk ${ci + 1}/${chunks.length} — ${totalInserted}/${newRows.length} produk...`);
+
+        const productPayloads = chunk.map(row => ({
+          kode: row.kode.toUpperCase(),
+          nama: row.kode.toUpperCase(),
+          kategori: row.kategori || null,
+        }));
+
+        const { data: insertedProducts, error: prodError } = await supabase
+          .from("products")
+          .insert(productPayloads)
+          .select();
+
+        if (prodError) {
+          errors.push(`Chunk ${ci + 1}: ${prodError.message}`);
+          continue;
+        }
+        if (!insertedProducts || insertedProducts.length === 0) continue;
+
+        totalInserted += insertedProducts.length;
+
+        // Insert prices
+        const pricePayloads = insertedProducts.map((p, i) => ({
+          product_id: p.id,
+          harga_modal: parseInt(chunk[i].modal) || 0,
+          harga_normal: parseInt(chunk[i].normal) || 0,
+          harga_grosir: parseInt(chunk[i].grosir) || 0,
+        }));
+        const { error: priceError } = await supabase.from("prices").insert(pricePayloads);
+        if (priceError) errors.push(`Harga chunk ${ci + 1}: ${priceError.message}`);
+
+        // Insert stock
+        const stockPayloads = insertedProducts
+          .map((p, i) => ({ product_id: p.id, jumlah: parseInt(chunk[i].stok) || 0 }))
+          .filter(s => s.jumlah > 0);
+        if (stockPayloads.length > 0) {
+          const { error: stockError } = await supabase.from("stock").insert(stockPayloads);
+          if (stockError) errors.push(`Stok chunk ${ci + 1}: ${stockError.message}`);
+        }
       }
 
       setProgress(100);
       setProgressLabel("Selesai!");
 
-      toast({ title: "Import Selesai", description: `${insertedProducts.length} produk berhasil diimport` });
+      if (errors.length > 0) {
+        toast({ title: "Sebagian Gagal", description: `${totalInserted} berhasil, ${errors.length} error: ${errors[0]}`, variant: "destructive" });
+      } else {
+        toast({ title: "Import Selesai", description: `${totalInserted} produk berhasil diimport` });
+      }
+
       setRows([emptyRow(), emptyRow(), emptyRow(), emptyRow(), emptyRow()]);
       setOpen(false);
       queryClient.invalidateQueries({ queryKey: ["products"] });
