@@ -96,14 +96,22 @@ export function BulkInputDialog() {
         return;
       }
 
-      // 2. Check existing codes in DB
+      // 2. Check existing codes in DB (chunk to avoid URL length limits)
       const uniqueCodes = [...seen];
-      const { data: existing } = await supabase
-        .from("products")
-        .select("kode")
-        .in("kode", uniqueCodes);
-
-      const existingSet = new Set((existing || []).map(e => e.kode));
+      const existingSet = new Set<string>();
+      for (let i = 0; i < uniqueCodes.length; i += CHUNK_SIZE) {
+        const batch = uniqueCodes.slice(i, i + CHUNK_SIZE);
+        const { data: existing, error: checkErr } = await supabase
+          .from("products")
+          .select("kode")
+          .in("kode", batch);
+        if (checkErr) {
+          console.error("Duplicate check error:", checkErr);
+          // Skip dup check on error, proceed with insert
+          break;
+        }
+        (existing || []).forEach(e => existingSet.add(e.kode));
+      }
       const newRows = validRows.filter(r => !existingSet.has(r.kode.toUpperCase()));
 
       if (existingSet.size > 0) {
