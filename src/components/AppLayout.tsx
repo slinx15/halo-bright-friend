@@ -12,13 +12,10 @@ const AppLayout = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    supabase.auth.signOut({ scope: 'global' }).then(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-      window.location.href = "/auth";
-    }).catch(() => {
-      localStorage.clear();
-      sessionStorage.clear();
+    // Remove only supabase auth tokens
+    const keysToRemove = Object.keys(localStorage).filter(k => k.startsWith('sb-'));
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    supabase.auth.signOut({ scope: 'local' }).finally(() => {
       window.location.href = "/auth";
     });
   };
