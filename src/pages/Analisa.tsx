@@ -16,6 +16,7 @@ import { KapanHabis } from "@/components/analisa/KapanHabis";
 import { PalingLaris } from "@/components/analisa/PalingLaris";
 import { NaikTurun } from "@/components/analisa/NaikTurun";
 import { PalingUntung } from "@/components/analisa/PalingUntung";
+import { Pelanggan } from "@/components/analisa/Pelanggan";
 import { StokSedikit } from "@/components/analisa/StokSedikit";
 import { RingkasanStok } from "@/components/analisa/RingkasanStok";
 import { AlertTriangle, TrendingDown } from "lucide-react";
@@ -30,6 +31,7 @@ const VIEW_OPTIONS = [
   { value: "trend", label: "📈 Naik/Turun" },
   { value: "untung", label: "💵 Paling Untung" },
   { value: "stoksedikit", label: "📉 Stok Sedikit" },
+  { value: "pelanggan", label: "👥 Pelanggan" },
   { value: "deadstock", label: "💀 Tidak Laku" },
   { value: "ringkasan", label: "📊 Ringkasan" },
 ];
@@ -120,6 +122,7 @@ const Analisa = () => {
       {view === "trend" && <NaikTurun stockOutData={stockOutData} productIdMap={productIdMap} />}
       {view === "untung" && <PalingUntung products={products} stockOutData={stockOutData} />}
       {view === "stoksedikit" && <StokSedikit analysis={analysis} />}
+      {view === "pelanggan" && <Pelanggan stockOutData={stockOutData} products={products} />}
 
       {view === "deadstock" && (
         <Card>

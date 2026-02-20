@@ -24,6 +24,7 @@ const BarangKeluar = () => {
   const [qtyKirim, setQtyKirim] = useState(0);
   const [hargaType, setHargaType] = useState("normal");
   const [catatan, setCatatan] = useState("");
+  const [toko, setToko] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const matched = products?.find((p) => p.kode.toUpperCase() === kode.toUpperCase());
@@ -69,6 +70,7 @@ const BarangKeluar = () => {
         harga_satuan: hargaSatuan,
         total_harga: totalHarga,
         catatan: catatan || null,
+        toko: toko.trim() || "",
         user_id: user!.id,
       });
       // Update stock
@@ -82,6 +84,7 @@ const BarangKeluar = () => {
       setQtyPesan(0);
       setQtyKirim(0);
       setCatatan("");
+      setToko("");
       queryClient.invalidateQueries({ queryKey: ["stock_out_history"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch (err: any) {
@@ -149,9 +152,15 @@ const BarangKeluar = () => {
             </div>
           )}
 
-          <div>
-            <Label>Catatan (opsional)</Label>
-            <Textarea value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder="Catatan..." rows={2} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Nama Toko / Pelanggan (opsional)</Label>
+              <Input value={toko} onChange={(e) => setToko(e.target.value)} placeholder="Nama toko..." />
+            </div>
+            <div>
+              <Label>Catatan (opsional)</Label>
+              <Textarea value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder="Catatan..." rows={2} />
+            </div>
           </div>
           <Button onClick={handleSubmit} disabled={submitting || !matched} className="w-full">
             <Send className="h-4 w-4 mr-2" /> {submitting ? "Menyimpan..." : "Simpan Barang Keluar"}
@@ -169,6 +178,7 @@ const BarangKeluar = () => {
                   <TableHead>Waktu</TableHead>
                   <TableHead>Kode</TableHead>
                   <TableHead>Nama</TableHead>
+                  <TableHead>Toko</TableHead>
                   <TableHead className="text-right">Pesan</TableHead>
                   <TableHead className="text-right">Kirim</TableHead>
                   <TableHead>Harga</TableHead>
@@ -181,6 +191,7 @@ const BarangKeluar = () => {
                     <TableCell className="text-xs">{formatDate(h.created_at)}</TableCell>
                     <TableCell className="font-mono text-sm">{h.products?.kode}</TableCell>
                     <TableCell className="text-sm">{h.products?.nama}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{h.toko || "-"}</TableCell>
                     <TableCell className="text-right">{formatNumber(h.qty_pesan)}</TableCell>
                     <TableCell className="text-right font-semibold">{formatNumber(h.qty_kirim)}</TableCell>
                     <TableCell className="capitalize text-xs">{h.harga_type}</TableCell>
@@ -189,8 +200,8 @@ const BarangKeluar = () => {
                 ))}
                 {(!history || history.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                      Belum ada riwayat barang keluar
+                     <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                       Belum ada riwayat barang keluar
                     </TableCell>
                   </TableRow>
                 )}

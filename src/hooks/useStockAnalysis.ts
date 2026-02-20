@@ -31,7 +31,7 @@ export function useStockAnalysis(recentDays = 7, olderDays = 14) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stock_out")
-        .select("product_id, qty_kirim, created_at")
+        .select("product_id, qty_kirim, created_at, toko, total_harga, harga_satuan")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
