@@ -70,7 +70,7 @@ export function BulkInputDialog() {
 
   const validRows = rows.filter(r => r.kode.trim());
 
-  const CHUNK_SIZE = 50;
+  const CHUNK_SIZE = 20;
 
   const handleSubmit = async () => {
     if (validRows.length === 0) {
@@ -129,7 +129,7 @@ export function BulkInputDialog() {
           console.log(`[BulkImport] Inserting chunk ${ci + 1} with ${chunk.length} products`);
           const { data: insertedProducts, error: prodError } = await withTimeout(
             async () => supabase.from("products").insert(productPayloads).select(),
-            15000
+            30000
           );
 
           if (prodError) {
@@ -154,7 +154,7 @@ export function BulkInputDialog() {
           }));
           const { error: priceError } = await withTimeout(
             async () => supabase.from("prices").insert(pricePayloads),
-            15000
+            30000
           );
           if (priceError) errors.push(`Harga chunk ${ci + 1}: ${priceError.message}`);
 
@@ -165,7 +165,7 @@ export function BulkInputDialog() {
           if (stockPayloads.length > 0) {
             const { error: stockError } = await withTimeout(
               async () => supabase.from("stock").insert(stockPayloads),
-              15000
+              30000
             );
             if (stockError) errors.push(`Stok chunk ${ci + 1}: ${stockError.message}`);
           }
@@ -179,7 +179,8 @@ export function BulkInputDialog() {
       setProgressLabel("Selesai!");
 
       if (errors.length > 0) {
-        toast({ title: "Sebagian Gagal", description: `${totalInserted} berhasil, ${errors.length} error: ${errors[0]}`, variant: "destructive" });
+        console.error("[BulkImport] All errors:", errors);
+        toast({ title: "Sebagian Gagal", description: `${totalInserted} berhasil, ${errors.length} error: ${errors.join("; ")}`, variant: "destructive" });
       } else {
         toast({ title: "Import Selesai", description: `${totalInserted} produk berhasil diimport` });
       }
