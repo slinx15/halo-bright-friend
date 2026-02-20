@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { PackageMinus, Send, Upload, ClipboardPaste } from "lucide-react";
 import { formatDate, formatNumber, formatRupiah } from "@/lib/formatters";
+import { OcrUpload } from "@/components/OcrUpload";
 
 const BarangKeluar = () => {
   const { user } = useAuth();
@@ -109,7 +110,24 @@ const BarangKeluar = () => {
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="text-lg">Input Barang Keluar</CardTitle></CardHeader>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Input Barang Keluar</CardTitle>
+            <OcrUpload
+              mode="keluar"
+              onResult={(ocrItems) => {
+                if (ocrItems.length > 0) {
+                  const first = ocrItems[0];
+                  setKode((first.kode || "").toUpperCase());
+                  setQtyPesan(first.qty_pesan || 0);
+                  setQtyKirim(first.qty_kirim || 0);
+                  if (first.harga_type) setHargaType(first.harga_type);
+                  if (first.toko) setToko(first.toko);
+                }
+              }}
+            />
+          </div>
+        </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

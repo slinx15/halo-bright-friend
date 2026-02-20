@@ -1,1 +1,4 @@
 project_id = "bewacnnfyhiiwxhhbeem"
+
+[functions.ocr-nota]
+verify_jwt = false
