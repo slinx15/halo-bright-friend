@@ -21,7 +21,15 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  if (loading) {
+  // Check if user just logged out
+  const justLoggedOut = sessionStorage.getItem('logging_out') === 'true';
+
+  // Clear the flag after checking
+  if (justLoggedOut) {
+    sessionStorage.removeItem('logging_out');
+  }
+
+  if (loading && !justLoggedOut) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
@@ -29,7 +37,7 @@ const Auth = () => {
     );
   }
 
-  if (user) return <Navigate to="/" replace />;
+  if (user && !justLoggedOut) return <Navigate to="/" replace />;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

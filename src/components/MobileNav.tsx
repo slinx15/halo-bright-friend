@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { doLogout } from "./AppLayout";
 import {
   LayoutDashboard,
   PackagePlus,
@@ -26,14 +26,6 @@ const MobileNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    const keysToRemove = Object.keys(localStorage).filter(k => k.startsWith('sb-'));
-    keysToRemove.forEach(k => localStorage.removeItem(k));
-    supabase.auth.signOut({ scope: 'local' }).finally(() => {
-      window.location.href = "/auth";
-    });
-  };
-
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border">
       <div className="flex justify-around py-2">
@@ -54,7 +46,7 @@ const MobileNav = () => {
           );
         })}
         <button
-          onClick={handleLogout}
+          onClick={doLogout}
           className="flex flex-col items-center gap-0.5 px-1 py-1 text-[10px] font-medium text-destructive transition-colors"
         >
           <LogOut className="h-4 w-4" />
