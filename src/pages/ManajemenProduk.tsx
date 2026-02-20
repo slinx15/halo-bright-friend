@@ -8,12 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Plus, ClipboardPaste, Pencil, Trash2, Search } from "lucide-react";
+import { Settings, Plus, Pencil, Trash2, Search } from "lucide-react";
 import { formatRupiah, formatNumber } from "@/lib/formatters";
+import { BulkInputDialog } from "@/components/produk/BulkInputDialog";
 
 const ManajemenProduk = () => {
   const { role } = useAuth();
@@ -22,7 +21,7 @@ const ManajemenProduk = () => {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
-  const [showBulk, setShowBulk] = useState(false);
+  
   const [editId, setEditId] = useState<string | null>(null);
 
   // Single product form
@@ -35,8 +34,7 @@ const ManajemenProduk = () => {
   const [stokAwal, setStokAwal] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
-  // Bulk paste
-  const [bulkText, setBulkText] = useState("");
+
 
   const filtered = products?.filter(
     (p) =>
@@ -106,51 +104,7 @@ const ManajemenProduk = () => {
     }
   };
 
-  // Bulk paste: format per baris: KODE | NAMA | KATEGORI | MODAL | NORMAL | GROSIR | STOK
-  const handleBulkPaste = async () => {
-    const lines = bulkText.trim().split("\n").filter((l) => l.trim());
-    if (lines.length === 0) {
-      toast({ title: "Error", description: "Tidak ada data", variant: "destructive" });
-      return;
-    }
-    setSubmitting(true);
-    let success = 0;
-    let errors = 0;
-    for (const line of lines) {
-      const parts = line.split(/[|\t]/).map((s) => s.trim());
-      if (parts.length < 2) { errors++; continue; }
-      const [code, name, cat, modal, normal, grosir, stok] = parts;
-      try {
-        const { data: newP, error } = await supabase.from("products").insert({
-          kode: code.toUpperCase(),
-          nama: name,
-          kategori: cat || null,
-        }).select().single();
-        if (error) throw error;
-        await supabase.from("prices").insert({
-          product_id: newP.id,
-          harga_modal: parseInt(modal) || 0,
-          harga_normal: parseInt(normal) || 0,
-          harga_grosir: parseInt(grosir) || 0,
-        });
-        const stokVal = parseInt(stok) || 0;
-        if (stokVal > 0) {
-          await supabase.from("stock").insert({ product_id: newP.id, jumlah: stokVal });
-        }
-        success++;
-      } catch {
-        errors++;
-      }
-    }
-    toast({
-      title: "Bulk Import Selesai",
-      description: `${success} berhasil, ${errors} gagal`,
-    });
-    setBulkText("");
-    setShowBulk(false);
-    queryClient.invalidateQueries({ queryKey: ["products"] });
-    setSubmitting(false);
-  };
+
 
   const isAdmin = role === "admin";
 
@@ -166,33 +120,7 @@ const ManajemenProduk = () => {
         </div>
         {isAdmin && (
           <div className="flex gap-2">
-            <Dialog open={showBulk} onOpenChange={setShowBulk}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <ClipboardPaste className="h-4 w-4 mr-1" /> Bulk Paste
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-lg">
-                <DialogHeader><DialogTitle>Bulk Paste Produk</DialogTitle></DialogHeader>
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Paste data per baris, pisahkan dengan <code>|</code> atau <code>Tab</code>:
-                  </p>
-                  <p className="text-xs font-mono bg-muted p-2 rounded">
-                    KODE | NAMA | KATEGORI | MODAL | NORMAL | GROSIR | STOK
-                  </p>
-                  <Textarea
-                    rows={10}
-                    placeholder={"KTN-003 | Katun Toyobo | Katun | 18000 | 30000 | 27000 | 50\nSFN-003 | Sifon Armani | Sifon | 20000 | 35000 | 32000 | 30"}
-                    value={bulkText}
-                    onChange={(e) => setBulkText(e.target.value)}
-                  />
-                  <Button onClick={handleBulkPaste} disabled={submitting} className="w-full">
-                    {submitting ? "Mengimport..." : `Import ${bulkText.trim().split("\n").filter(l => l.trim()).length} Baris`}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <BulkInputDialog />
             <Dialog open={showAdd} onOpenChange={(v) => { setShowAdd(v); if (!v) resetForm(); }}>
               <DialogTrigger asChild>
                 <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Tambah</Button>
