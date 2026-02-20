@@ -79,59 +79,27 @@ export function BulkInputDialog() {
     }
     setSubmitting(true);
     setProgress(0);
-    setProgressLabel("Memeriksa duplikat...");
+    setProgressLabel("Memulai import...");
 
     try {
-      // 1. Check internal duplicates
-      const codes = validRows.map(r => r.kode.toUpperCase());
+      // 1. Deduplicate internal codes only (no DB check - let DB handle conflicts)
       const seen = new Set<string>();
-      const internalDups: string[] = [];
-      for (const c of codes) {
-        if (seen.has(c)) internalDups.push(c);
-        seen.add(c);
-      }
-      if (internalDups.length > 0) {
-        toast({ title: "Kode Duplikat", description: `Kode duplikat dalam data: ${[...new Set(internalDups)].slice(0, 5).join(", ")}`, variant: "destructive" });
-        setSubmitting(false);
-        return;
-      }
-
-      // 2. Check existing codes in DB (chunk to avoid URL length limits)
-      const uniqueCodes = [...seen];
-      const existingSet = new Set<string>();
-      for (let i = 0; i < uniqueCodes.length; i += CHUNK_SIZE) {
-        const batch = uniqueCodes.slice(i, i + CHUNK_SIZE);
-        const { data: existing, error: checkErr } = await supabase
-          .from("products")
-          .select("kode")
-          .in("kode", batch);
-        if (checkErr) {
-          console.error("Duplicate check error:", checkErr);
-          // Skip dup check on error, proceed with insert
-          break;
+      const dedupedRows: BulkRow[] = [];
+      for (const row of validRows) {
+        const code = row.kode.toUpperCase();
+        if (!seen.has(code)) {
+          seen.add(code);
+          dedupedRows.push(row);
         }
-        (existing || []).forEach(e => existingSet.add(e.kode));
-      }
-      const newRows = validRows.filter(r => !existingSet.has(r.kode.toUpperCase()));
-
-      if (existingSet.size > 0) {
-        const skipped = [...existingSet].slice(0, 5).join(", ");
-        toast({ title: "Info", description: `${existingSet.size} kode sudah ada (${skipped}${existingSet.size > 5 ? "..." : ""}), dilewati.` });
-      }
-
-      if (newRows.length === 0) {
-        toast({ title: "Tidak ada data baru", description: "Semua kode sudah ada di database.", variant: "destructive" });
-        setSubmitting(false);
-        return;
       }
 
       setProgress(5);
-      setProgressLabel(`Mengimport ${newRows.length} produk...`);
+      setProgressLabel(`Mengimport ${dedupedRows.length} produk...`);
 
-      // 3. Process in chunks
+      // 2. Process in chunks
       const chunks: BulkRow[][] = [];
-      for (let i = 0; i < newRows.length; i += CHUNK_SIZE) {
-        chunks.push(newRows.slice(i, i + CHUNK_SIZE));
+      for (let i = 0; i < dedupedRows.length; i += CHUNK_SIZE) {
+        chunks.push(dedupedRows.slice(i, i + CHUNK_SIZE));
       }
 
       let totalInserted = 0;
@@ -141,7 +109,7 @@ export function BulkInputDialog() {
         const chunk = chunks[ci];
         const baseProgress = 5 + Math.round((ci / chunks.length) * 90);
         setProgress(baseProgress);
-        setProgressLabel(`Chunk ${ci + 1}/${chunks.length} — ${totalInserted}/${newRows.length} produk...`);
+        setProgressLabel(`Chunk ${ci + 1}/${chunks.length} — ${totalInserted}/${dedupedRows.length} produk...`);
 
         const productPayloads = chunk.map(row => ({
           kode: row.kode.toUpperCase(),
