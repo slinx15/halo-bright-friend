@@ -10,7 +10,6 @@ import { TableProperties, Plus, Trash2 } from "lucide-react";
 
 interface BulkRow {
   kode: string;
-  nama: string;
   kategori: string;
   modal: string;
   normal: string;
@@ -19,7 +18,7 @@ interface BulkRow {
 }
 
 const emptyRow = (): BulkRow => ({
-  kode: "", nama: "", kategori: "", modal: "", normal: "", grosir: "", stok: "",
+  kode: "", kategori: "", modal: "", normal: "", grosir: "", stok: "",
 });
 
 export function BulkInputDialog() {
@@ -46,7 +45,7 @@ export function BulkInputDialog() {
     if (!text.includes("\t") && !text.includes("\n")) return; // normal paste
     e.preventDefault();
 
-    const fields: (keyof BulkRow)[] = ["kode", "nama", "kategori", "modal", "normal", "grosir", "stok"];
+    const fields: (keyof BulkRow)[] = ["kode", "kategori", "modal", "normal", "grosir", "stok"];
     const lines = text.trim().split("\n");
     
     setRows(prev => {
@@ -66,11 +65,11 @@ export function BulkInputDialog() {
     });
   };
 
-  const validRows = rows.filter(r => r.kode.trim() && r.nama.trim());
+  const validRows = rows.filter(r => r.kode.trim());
 
   const handleSubmit = async () => {
     if (validRows.length === 0) {
-      toast({ title: "Error", description: "Minimal isi Kode dan Nama", variant: "destructive" });
+      toast({ title: "Error", description: "Minimal isi Kode", variant: "destructive" });
       return;
     }
     setSubmitting(true);
@@ -80,7 +79,7 @@ export function BulkInputDialog() {
       try {
         const { data: newP, error } = await supabase.from("products").insert({
           kode: row.kode.toUpperCase(),
-          nama: row.nama,
+          nama: row.kode.toUpperCase(),
           kategori: row.kategori || null,
         }).select().single();
         if (error) throw error;
@@ -127,7 +126,6 @@ export function BulkInputDialog() {
               <TableRow className="bg-muted/50">
                 <TableHead className="w-8 text-center">#</TableHead>
                 <TableHead className="min-w-[100px]">Kode *</TableHead>
-                <TableHead className="min-w-[160px]">Nama *</TableHead>
                 <TableHead className="min-w-[100px]">Kategori</TableHead>
                 <TableHead className="min-w-[100px] text-right">Modal</TableHead>
                 <TableHead className="min-w-[100px] text-right">Normal</TableHead>
@@ -140,14 +138,14 @@ export function BulkInputDialog() {
               {rows.map((row, i) => (
                 <TableRow key={i}>
                   <TableCell className="text-center text-xs text-muted-foreground p-1">{i + 1}</TableCell>
-                  {(["kode", "nama", "kategori", "modal", "normal", "grosir", "stok"] as (keyof BulkRow)[]).map((field, fi) => (
+                  {(["kode", "kategori", "modal", "normal", "grosir", "stok"] as (keyof BulkRow)[]).map((field, fi) => (
                     <TableCell key={field} className="p-1">
                       <Input
                         className="h-8 text-sm border-transparent hover:border-input focus:border-input bg-transparent"
                         value={row[field]}
                         onChange={e => updateRow(i, field, field === "kode" ? e.target.value.toUpperCase() : e.target.value)}
                         onPaste={e => handlePaste(e, i, fi)}
-                        placeholder={field === "kode" ? "KTN-001" : field === "nama" ? "Katun Jepang" : ""}
+                        placeholder={field === "kode" ? "KTN-001" : ""}
                         type={["modal", "normal", "grosir", "stok"].includes(field) ? "number" : "text"}
                       />
                     </TableCell>

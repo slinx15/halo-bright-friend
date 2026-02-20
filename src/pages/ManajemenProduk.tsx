@@ -26,7 +26,7 @@ const ManajemenProduk = () => {
 
   // Single product form
   const [kode, setKode] = useState("");
-  const [nama, setNama] = useState("");
+  
   const [kategori, setKategori] = useState("");
   const [hargaModal, setHargaModal] = useState(0);
   const [hargaNormal, setHargaNormal] = useState(0);
@@ -39,30 +39,30 @@ const ManajemenProduk = () => {
   const filtered = products?.filter(
     (p) =>
       p.kode.toLowerCase().includes(search.toLowerCase()) ||
-      p.nama.toLowerCase().includes(search.toLowerCase())
+      (p.kategori || "").toLowerCase().includes(search.toLowerCase())
   );
 
   const resetForm = () => {
-    setKode(""); setNama(""); setKategori("");
+    setKode(""); setKategori("");
     setHargaModal(0); setHargaNormal(0); setHargaGrosir(0); setStokAwal(0);
     setEditId(null);
   };
 
   const handleSave = async () => {
-    if (!kode.trim() || !nama.trim()) {
-      toast({ title: "Error", description: "Kode dan Nama wajib diisi", variant: "destructive" });
+    if (!kode.trim()) {
+      toast({ title: "Error", description: "Kode wajib diisi", variant: "destructive" });
       return;
     }
     setSubmitting(true);
     try {
       if (editId) {
         // Update product
-        await supabase.from("products").update({ kode: kode.toUpperCase(), nama, kategori: kategori || null }).eq("id", editId);
+        await supabase.from("products").update({ kode: kode.toUpperCase(), nama: kode.toUpperCase(), kategori: kategori || null }).eq("id", editId);
         await supabase.from("prices").update({ harga_modal: hargaModal, harga_normal: hargaNormal, harga_grosir: hargaGrosir }).eq("product_id", editId);
         toast({ title: "Berhasil", description: `${kode} diperbarui` });
       } else {
         // Insert new
-        const { data: newProduct, error } = await supabase.from("products").insert({ kode: kode.toUpperCase(), nama, kategori: kategori || null }).select().single();
+        const { data: newProduct, error } = await supabase.from("products").insert({ kode: kode.toUpperCase(), nama: kode.toUpperCase(), kategori: kategori || null }).select().single();
         if (error) throw error;
         await supabase.from("prices").insert({ product_id: newProduct.id, harga_modal: hargaModal, harga_normal: hargaNormal, harga_grosir: hargaGrosir });
         if (stokAwal > 0) {
@@ -82,7 +82,6 @@ const ManajemenProduk = () => {
   const handleEdit = (p: any) => {
     setEditId(p.id);
     setKode(p.kode);
-    setNama(p.nama);
     setKategori(p.kategori || "");
     setHargaModal(p.prices?.harga_modal ?? 0);
     setHargaNormal(p.prices?.harga_normal ?? 0);
@@ -132,7 +131,7 @@ const ManajemenProduk = () => {
                     <div><Label>Kode</Label><Input value={kode} onChange={(e) => setKode(e.target.value.toUpperCase())} placeholder="KTN-001" /></div>
                     <div><Label>Kategori</Label><Input value={kategori} onChange={(e) => setKategori(e.target.value)} placeholder="Katun" /></div>
                   </div>
-                  <div><Label>Nama Produk</Label><Input value={nama} onChange={(e) => setNama(e.target.value)} placeholder="Katun Jepang Premium" /></div>
+                  
                   <div className="grid grid-cols-3 gap-3">
                     <div><Label>Harga Modal</Label><Input type="number" value={hargaModal} onChange={(e) => setHargaModal(parseInt(e.target.value) || 0)} /></div>
                     <div><Label>Harga Normal</Label><Input type="number" value={hargaNormal} onChange={(e) => setHargaNormal(parseInt(e.target.value) || 0)} /></div>
@@ -157,7 +156,7 @@ const ManajemenProduk = () => {
             <CardTitle className="text-lg">Daftar Produk ({filtered?.length ?? 0})</CardTitle>
             <div className="relative w-full md:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input className="pl-9" placeholder="Cari kode / nama..." value={search} onChange={(e) => setSearch(e.target.value)} />
+              <Input className="pl-9" placeholder="Cari kode / kategori..." value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
           </div>
         </CardHeader>
@@ -166,8 +165,7 @@ const ManajemenProduk = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Kode</TableHead>
-                  <TableHead>Nama</TableHead>
+                   <TableHead>Kode</TableHead>
                   <TableHead>Kategori</TableHead>
                   <TableHead className="text-right">Stok</TableHead>
                   <TableHead className="text-right">Modal</TableHead>
@@ -177,29 +175,28 @@ const ManajemenProduk = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? (
-                  <TableRow><TableCell colSpan={8} className="text-center py-8">Memuat...</TableCell></TableRow>
-                ) : filtered?.map((p) => (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-mono font-semibold">{p.kode}</TableCell>
-                    <TableCell>{p.nama}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{p.kategori || "-"}</TableCell>
-                    <TableCell className="text-right font-bold">{formatNumber(p.stock?.jumlah ?? 0)}</TableCell>
-                    <TableCell className="text-right text-sm">{p.prices ? formatRupiah(p.prices.harga_modal) : "-"}</TableCell>
-                    <TableCell className="text-right text-sm">{p.prices ? formatRupiah(p.prices.harga_normal) : "-"}</TableCell>
-                    <TableCell className="text-right text-sm">{p.prices ? formatRupiah(p.prices.harga_grosir) : "-"}</TableCell>
-                    {isAdmin && (
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => handleEdit(p)}><Pencil className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id, p.kode)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                        </div>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-                {filtered?.length === 0 && (
-                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Tidak ada produk</TableCell></TableRow>
+                 {isLoading ? (
+                   <TableRow><TableCell colSpan={7} className="text-center py-8">Memuat...</TableCell></TableRow>
+                 ) : filtered?.map((p) => (
+                   <TableRow key={p.id}>
+                     <TableCell className="font-mono font-semibold">{p.kode}</TableCell>
+                     <TableCell className="text-sm text-muted-foreground">{p.kategori || "-"}</TableCell>
+                     <TableCell className="text-right font-bold">{formatNumber(p.stock?.jumlah ?? 0)}</TableCell>
+                     <TableCell className="text-right text-sm">{p.prices ? formatRupiah(p.prices.harga_modal) : "-"}</TableCell>
+                     <TableCell className="text-right text-sm">{p.prices ? formatRupiah(p.prices.harga_normal) : "-"}</TableCell>
+                     <TableCell className="text-right text-sm">{p.prices ? formatRupiah(p.prices.harga_grosir) : "-"}</TableCell>
+                     {isAdmin && (
+                       <TableCell className="text-right">
+                         <div className="flex justify-end gap-1">
+                           <Button variant="ghost" size="icon" onClick={() => handleEdit(p)}><Pencil className="h-4 w-4" /></Button>
+                           <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id, p.kode)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                         </div>
+                       </TableCell>
+                     )}
+                   </TableRow>
+                 ))}
+                 {filtered?.length === 0 && (
+                   <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Tidak ada produk</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
