@@ -105,7 +105,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
-        const MAX = 1200; // max dimension
+        const MAX = 800; // max dimension for faster upload
         let w = img.width, h = img.height;
         if (w > MAX || h > MAX) {
           const scale = MAX / Math.max(w, h);
