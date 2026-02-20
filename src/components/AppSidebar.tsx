@@ -81,7 +81,7 @@ const AppSidebar = () => {
           variant="ghost"
           size="sm"
           className="w-full justify-start text-sidebar-foreground/60 hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
-          onClick={() => { supabase.auth.signOut().finally(() => { window.location.href = "/auth"; }); setTimeout(() => { window.location.href = "/auth"; }, 1000); }}
+          onClick={() => { supabase.auth.signOut({ scope: 'global' }).finally(() => { localStorage.clear(); sessionStorage.clear(); window.location.href = "/auth"; }); }}
         >
           <LogOut className="h-4 w-4 mr-2" />
           Keluar

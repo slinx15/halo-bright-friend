@@ -27,10 +27,11 @@ const MobileNav = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    supabase.auth.signOut().finally(() => {
+    supabase.auth.signOut({ scope: 'global' }).finally(() => {
+      localStorage.clear();
+      sessionStorage.clear();
       window.location.href = "/auth";
     });
-    setTimeout(() => { window.location.href = "/auth"; }, 1000);
   };
 
   return (
