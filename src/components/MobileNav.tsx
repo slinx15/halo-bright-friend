@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard,
   PackagePlus,
@@ -25,11 +25,12 @@ const navItems = [
 const MobileNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
 
-  const handleLogout = async () => {
-    await signOut();
-    window.location.href = "/auth";
+  const handleLogout = () => {
+    supabase.auth.signOut().finally(() => {
+      window.location.href = "/auth";
+    });
+    setTimeout(() => { window.location.href = "/auth"; }, 1000);
   };
 
   return (

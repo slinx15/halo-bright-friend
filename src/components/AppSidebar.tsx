@@ -12,6 +12,7 @@ import {
   User,
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -80,7 +81,7 @@ const AppSidebar = () => {
           variant="ghost"
           size="sm"
           className="w-full justify-start text-sidebar-foreground/60 hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
-          onClick={async () => { await signOut(); window.location.href = "/auth"; }}
+          onClick={() => { supabase.auth.signOut().finally(() => { window.location.href = "/auth"; }); setTimeout(() => { window.location.href = "/auth"; }, 1000); }}
         >
           <LogOut className="h-4 w-4 mr-2" />
           Keluar

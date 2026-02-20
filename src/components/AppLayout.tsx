@@ -1,5 +1,6 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "./AppSidebar";
 import MobileNav from "./MobileNav";
 import { LogOut } from "lucide-react";
@@ -10,9 +11,12 @@ const AppLayout = () => {
   const { user, role, signOut } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    await signOut();
-    window.location.href = "/auth";
+  const handleLogout = () => {
+    supabase.auth.signOut().finally(() => {
+      window.location.href = "/auth";
+    });
+    // Force redirect after 1s even if signOut hangs
+    setTimeout(() => { window.location.href = "/auth"; }, 1000);
   };
 
   return (
