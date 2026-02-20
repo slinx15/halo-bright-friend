@@ -73,36 +73,51 @@ export function BulkInputDialog() {
       return;
     }
     setSubmitting(true);
-    let success = 0, errors = 0;
 
-    for (const row of validRows) {
-      try {
-        const { data: newP, error } = await supabase.from("products").insert({
-          kode: row.kode.toUpperCase(),
-          nama: row.kode.toUpperCase(),
-          kategori: row.kategori || null,
-        }).select().single();
-        if (error) throw error;
-        await supabase.from("prices").insert({
-          product_id: newP.id,
-          harga_modal: parseInt(row.modal) || 0,
-          harga_normal: parseInt(row.normal) || 0,
-          harga_grosir: parseInt(row.grosir) || 0,
-        });
-        const stokVal = parseInt(row.stok) || 0;
-        if (stokVal > 0) {
-          await supabase.from("stock").insert({ product_id: newP.id, jumlah: stokVal });
-        }
-        success++;
-      } catch {
-        errors++;
+    try {
+      // Batch insert all products at once
+      const productPayloads = validRows.map(row => ({
+        kode: row.kode.toUpperCase(),
+        nama: row.kode.toUpperCase(),
+        kategori: row.kategori || null,
+      }));
+
+      const { data: insertedProducts, error: prodError } = await supabase
+        .from("products")
+        .insert(productPayloads)
+        .select();
+
+      if (prodError) throw prodError;
+      if (!insertedProducts) throw new Error("No products returned");
+
+      // Batch insert prices
+      const pricePayloads = insertedProducts.map((p, i) => ({
+        product_id: p.id,
+        harga_modal: parseInt(validRows[i].modal) || 0,
+        harga_normal: parseInt(validRows[i].normal) || 0,
+        harga_grosir: parseInt(validRows[i].grosir) || 0,
+      }));
+
+      const { error: priceError } = await supabase.from("prices").insert(pricePayloads);
+      if (priceError) console.error("Price insert error:", priceError);
+
+      // Batch insert stock (only rows with stok > 0)
+      const stockPayloads = insertedProducts
+        .map((p, i) => ({ product_id: p.id, jumlah: parseInt(validRows[i].stok) || 0 }))
+        .filter(s => s.jumlah > 0);
+
+      if (stockPayloads.length > 0) {
+        const { error: stockError } = await supabase.from("stock").insert(stockPayloads);
+        if (stockError) console.error("Stock insert error:", stockError);
       }
-    }
 
-    toast({ title: "Import Selesai", description: `${success} berhasil, ${errors} gagal` });
-    setRows([emptyRow(), emptyRow(), emptyRow(), emptyRow(), emptyRow()]);
-    setOpen(false);
-    queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast({ title: "Import Selesai", description: `${insertedProducts.length} produk berhasil diimport` });
+      setRows([emptyRow(), emptyRow(), emptyRow(), emptyRow(), emptyRow()]);
+      setOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
     setSubmitting(false);
   };
 
