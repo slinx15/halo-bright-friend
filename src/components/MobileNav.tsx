@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { icon: LayoutDashboard, label: "Home", path: "/" },
   { icon: PackagePlus, label: "Masuk", path: "/masuk" },
-  { icon: PackageMinus, label: "Keluar", path: "/keluar" },
+  { icon: PackageMinus, label: "Jual", path: "/keluar" },
   { icon: Package, label: "Stok", path: "/stok" },
   { icon: ClipboardCheck, label: "Opname", path: "/opname" },
   { icon: BarChart3, label: "Analisa", path: "/analisa" },
@@ -26,6 +26,11 @@ const MobileNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
+  };
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border">
@@ -47,11 +52,11 @@ const MobileNav = () => {
           );
         })}
         <button
-          onClick={signOut}
+          onClick={handleLogout}
           className="flex flex-col items-center gap-0.5 px-1 py-1 text-[10px] font-medium text-destructive transition-colors"
         >
           <LogOut className="h-4 w-4" />
-          Keluar
+          Logout
         </button>
       </div>
     </nav>
