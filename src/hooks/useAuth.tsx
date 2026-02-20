@@ -21,8 +21,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
+    let mounted = true;
+
+    // Safety timeout — if nothing resolves within 5s, stop loading
+    const timeout = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 5000);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        if (!mounted) return;
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -32,15 +40,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .select("role")
             .eq("user_id", session.user.id)
             .maybeSingle();
-          setRole(data?.role ?? null);
+          if (mounted) setRole(data?.role ?? null);
         } else {
           setRole(null);
         }
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -50,15 +59,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .eq("user_id", session.user.id)
           .maybeSingle()
           .then(({ data }) => {
-            setRole(data?.role ?? null);
-            setLoading(false);
-          }, () => setLoading(false));
+            if (mounted) {
+              setRole(data?.role ?? null);
+              setLoading(false);
+            }
+          }, () => { if (mounted) setLoading(false); });
       } else {
         setLoading(false);
       }
-    }, () => setLoading(false));
+    }, () => { if (mounted) setLoading(false); });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
