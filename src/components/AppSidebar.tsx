@@ -1,5 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation, useNavigate } from "react-router-dom";
+import { doLogout } from "./AppLayout";
 import {
   LayoutDashboard,
   PackagePlus,
@@ -81,7 +82,7 @@ const AppSidebar = () => {
           variant="ghost"
           size="sm"
           className="w-full justify-start text-sidebar-foreground/60 hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
-          onClick={() => { Object.keys(localStorage).filter(k => k.startsWith('sb-')).forEach(k => localStorage.removeItem(k)); supabase.auth.signOut({ scope: 'local' }).finally(() => { window.location.href = "/auth"; }); }}
+          onClick={doLogout}
         >
           <LogOut className="h-4 w-4 mr-2" />
           Keluar
