@@ -97,7 +97,7 @@ export function BulkInputDialog() {
 
       let totalInserted = 0;
       let errors: string[] = [];
-      const BATCH = 50;
+      const BATCH = 200;
       const total = dedupedRows.length;
       const chunks: BulkRow[][] = [];
       for (let i = 0; i < total; i += BATCH) chunks.push(dedupedRows.slice(i, i + BATCH));
