@@ -77,7 +77,7 @@ export function BulkInputDialog() {
     }
     setSubmitting(true);
     setProgress(10);
-    setProgressLabel("Mengirim data ke server...");
+    setProgressLabel("Menyiapkan data...");
 
     try {
       const payload = validRows.map(r => ({
@@ -89,14 +89,72 @@ export function BulkInputDialog() {
         stok: parseInt(r.stok) || 0,
       }));
 
+      console.log("[BulkImport] Payload ready:", payload.length, "rows");
+
+      // Get auth token directly from localStorage to bypass SDK lock
+      setProgress(15);
+      setProgressLabel("Mengambil token auth...");
+      
+      const storageKey = Object.keys(localStorage).find(k => k.includes("auth-token"));
+      const sessionStr = storageKey ? localStorage.getItem(storageKey) : null;
+      let accessToken = "";
+      
+      if (sessionStr) {
+        try {
+          const parsed = JSON.parse(sessionStr);
+          accessToken = parsed.access_token || parsed?.currentSession?.access_token || "";
+        } catch {
+          // fallback: try getting from supabase directly
+        }
+      }
+
+      // Fallback: try supabase.auth.getSession() with a timeout
+      if (!accessToken) {
+        console.log("[BulkImport] Trying getSession fallback...");
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Auth timeout")), 5000)
+        );
+        try {
+          const { data: sessionData } = await Promise.race([sessionPromise, timeoutPromise]) as any;
+          accessToken = sessionData?.session?.access_token || "";
+        } catch (e) {
+          console.warn("[BulkImport] getSession timed out, using stored token");
+        }
+      }
+
+      if (!accessToken) {
+        throw new Error("Tidak bisa mendapatkan token auth. Coba logout dan login ulang.");
+      }
+
+      console.log("[BulkImport] Token obtained, sending to edge function...");
       setProgress(20);
       setProgressLabel(`Mengimport ${payload.length} produk...`);
 
-      const { data, error } = await supabase.functions.invoke("bulk-import", {
-        body: { rows: payload },
+      // Use raw fetch instead of supabase.functions.invoke to bypass SDK lock
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/bulk-import`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
+          "apikey": supabaseKey,
+        },
+        body: JSON.stringify({ rows: payload }),
       });
 
-      if (error) throw error;
+      console.log("[BulkImport] Response status:", response.status);
+
+      if (!response.ok) {
+        const errBody = await response.text();
+        console.error("[BulkImport] Error response:", errBody);
+        throw new Error(`Server error ${response.status}: ${errBody}`);
+      }
+
+      const data = await response.json();
+      console.log("[BulkImport] Result:", data);
 
       setProgress(100);
       setProgressLabel("Selesai!");
