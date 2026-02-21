@@ -49,6 +49,35 @@ export type Database = {
           },
         ]
       }
+      product_aliases: {
+        Row: {
+          alias: string
+          created_at: string
+          id: string
+          product_id: string
+        }
+        Insert: {
+          alias: string
+          created_at?: string
+          id?: string
+          product_id: string
+        }
+        Update: {
+          alias?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_aliases_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           created_at: string

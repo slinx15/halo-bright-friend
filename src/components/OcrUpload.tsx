@@ -5,6 +5,7 @@ import { Camera, Loader2, Check, X, AlertTriangle, Pencil, Trash2, Plus } from "
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/useProducts";
+import { useProductAliases } from "@/hooks/useProductAliases";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -41,14 +42,41 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { data: products } = useProducts();
+  const { data: aliases } = useProductAliases();
+
+  // Find product by kode with fallback chain: exact → strip leading zeros → alias
+  const findProduct = (rawKode: string) => {
+    const kode = String(rawKode).toUpperCase().trim();
+    // 1. Exact match
+    let found = products?.find((p) => p.kode.toUpperCase() === kode);
+    if (found) return found;
+    // 2. Strip leading zeros
+    const stripped = kode.replace(/^0+/, "");
+    if (stripped && stripped !== kode) {
+      found = products?.find((p) => p.kode.toUpperCase() === stripped);
+      if (found) return found;
+    }
+    // 3. Also try adding leading zeros to master code
+    found = products?.find((p) => p.kode.toUpperCase().replace(/^0+/, "") === stripped);
+    if (found) return found;
+    // 4. Alias table lookup
+    if (aliases) {
+      const aliasEntry = aliases.find((a) => a.alias.toUpperCase() === kode);
+      if (aliasEntry) {
+        found = products?.find((p) => p.id === aliasEntry.product_id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
 
   const validateItems = (items: any[]): OcrItem[] => {
     return items.map((item) => {
       const kode = String(item.kode || "").toUpperCase().trim();
-      const found = products?.find((p) => p.kode.toUpperCase() === kode);
+      const found = findProduct(kode);
       return {
         ...item,
-        kode,
+        kode: found ? found.kode : kode, // Use master kode if found
         isValid: !!found,
         productId: found?.id,
         productName: found?.nama,
@@ -88,7 +116,11 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ image_base64: base64, mode }),
+          body: JSON.stringify({
+            image_base64: base64,
+            mode,
+            master_codes: products?.map((p) => p.kode) || [],
+          }),
           signal: controller.signal,
         }
       );
@@ -177,8 +209,8 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
       // Re-validate kode if changed
       if (field === "kode") {
         const kode = String(value).toUpperCase().trim();
-        const found = products?.find((p) => p.kode.toUpperCase() === kode);
-        updated[idx].kode = kode;
+        const found = findProduct(kode);
+        updated[idx].kode = found ? found.kode : kode;
         updated[idx].isValid = !!found;
         updated[idx].productId = found?.id;
         updated[idx].productName = found?.nama;
