@@ -18,8 +18,10 @@ import {
 
 const PERIOD_OPTIONS = [
   { value: 7, label: "7 Hari" },
-  { value: 14, label: "14 Hari" },
   { value: 30, label: "30 Hari" },
+  { value: 90, label: "3 Bulan" },
+  { value: 365, label: "1 Tahun" },
+  { value: 9999, label: "Semua" },
 ];
 
 const Analisa = () => {
