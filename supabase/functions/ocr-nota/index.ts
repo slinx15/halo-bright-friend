@@ -15,26 +15,31 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { image_base64, mode } = await req.json();
+    const { image_base64, mode, master_codes } = await req.json();
     if (!image_base64) throw new Error("image_base64 is required");
+
+    // Build master codes hint for AI
+    const codesHint = master_codes && master_codes.length > 0
+      ? `\nDaftar kode produk yang ada di master: ${master_codes.join(", ")}.\nCocokkan kode di nota ke kode master terdekat. Misalnya jika nota tulis "HITAM" atau "BLCK" tapi master punya "BLK", gunakan "BLK". Jika nota tulis "0533" tapi master punya "533", gunakan "533". Abaikan leading zero. Selalu gunakan kode dari daftar master jika cocok.`
+      : "";
 
     const prompts: Record<string, string> = {
       masuk: `Baca foto formulir order/nota pembelian kain/tekstil.
 Format tabel biasanya: NO | KETERANGAN (kode) | ISI | BAL | JUMLAH.
 Ekstrak HANYA baris yang ada isinya (JUMLAH > 0 atau ada kode di KETERANGAN).
-Untuk setiap item: kode = KETERANGAN, qty = JUMLAH.
+Untuk setiap item: kode = KETERANGAN, qty = JUMLAH.${codesHint}
 Kembalikan HANYA JSON array tanpa markdown. Contoh:
 [{"kode":"R533","qty":25},{"kode":"BLK","qty":100}]
 Jika tidak bisa membaca, kembalikan [].`,
 
       keluar: `Baca foto nota penjualan kain/tekstil.
-Ekstrak setiap item: kode, qty_pesan, qty_kirim, harga_type ("normal"/"grosir"), toko.
+Ekstrak setiap item: kode, qty_pesan, qty_kirim, harga_type ("normal"/"grosir"), toko.${codesHint}
 Kembalikan HANYA JSON array tanpa markdown. Contoh:
 [{"kode":"R533","qty_pesan":10,"qty_kirim":10,"harga_type":"normal","toko":"Toko ABC"}]
 Jika tidak bisa membaca, kembalikan [].`,
 
       opname: `Baca foto data stok opname kain/tekstil.
-Ekstrak setiap item: kode, stok_fisik.
+Ekstrak setiap item: kode, stok_fisik.${codesHint}
 Kembalikan HANYA JSON array tanpa markdown. Contoh:
 [{"kode":"R533","stok_fisik":45}]
 Jika tidak bisa membaca, kembalikan [].`,
@@ -51,7 +56,7 @@ Jika tidak bisa membaca, kembalikan [].`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash-lite",
+          model: "google/gemini-2.5-flash",
           messages: [
             { role: "system", content: systemPrompt },
             {
