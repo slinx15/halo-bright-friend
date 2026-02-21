@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
-import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +15,27 @@ import { formatDate, formatNumber, formatRupiah } from "@/lib/formatters";
 import { OcrUpload } from "@/components/OcrUpload";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { deductFromStacks } from "@/lib/tumpukanUtils";
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+function getAuthHeaders(prefer = "return=minimal") {
+  const storageKey = `sb-${import.meta.env.VITE_SUPABASE_PROJECT_ID}-auth-token`;
+  let token = SUPABASE_KEY;
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      token = parsed?.access_token || SUPABASE_KEY;
+    }
+  } catch {}
+  return {
+    "Content-Type": "application/json",
+    "apikey": SUPABASE_KEY,
+    "Authorization": `Bearer ${token}`,
+    "Prefer": prefer,
+  };
+}
 
 const BarangKeluar = () => {
   const { user } = useAuth();
@@ -46,13 +66,13 @@ const BarangKeluar = () => {
   const { data: history } = useQuery({
     queryKey: ["stock_out_history"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("stock_out")
-        .select("*, products(kode, nama)")
-        .order("created_at", { ascending: false })
-        .limit(50);
-      if (error) throw error;
-      return data;
+      const headers = getAuthHeaders("return=representation");
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/stock_out?select=*,products(kode,nama)&order=created_at.desc&limit=50`,
+        { headers }
+      );
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
     },
   });
 
@@ -71,27 +91,40 @@ const BarangKeluar = () => {
     }
     setSubmitting(true);
     try {
-      await supabase.from("stock_out").insert({
-        product_id: matched.id,
-        qty_pesan: qtyPesan,
-        qty_kirim: qtyKirim,
-        harga_type: hargaType,
-        harga_satuan: hargaSatuan,
-        total_harga: totalHarga,
-        catatan: catatan || null,
-        toko: toko.trim() || "",
-        user_id: user!.id,
+      const headers = getAuthHeaders();
+
+      // Insert stock_out
+      const outRes = await fetch(`${SUPABASE_URL}/rest/v1/stock_out`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          product_id: matched.id,
+          qty_pesan: qtyPesan,
+          qty_kirim: qtyKirim,
+          harga_type: hargaType,
+          harga_satuan: hargaSatuan,
+          total_harga: totalHarga,
+          catatan: catatan || null,
+          toko: toko.trim() || "",
+          user_id: user!.id,
+        }),
       });
+      if (!outRes.ok) throw new Error(await outRes.text());
 
       // Update stock with tumpukan deduction
       const newStacks = deductFromStacks(currentStacks, qtyKirim);
-      await supabase
-        .from("stock")
-        .update({
-          jumlah: stokTersedia - qtyKirim,
-          tumpukan_detail: newStacks,
-        })
-        .eq("product_id", matched.id);
+      const stockRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/stock?product_id=eq.${matched.id}`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({
+            jumlah: stokTersedia - qtyKirim,
+            tumpukan_detail: newStacks,
+          }),
+        }
+      );
+      if (!stockRes.ok) throw new Error(await stockRes.text());
 
       toast({ title: "Berhasil", description: `${matched.kode} keluar ${qtyKirim} pcs` });
       setKode("");
@@ -176,7 +209,6 @@ const BarangKeluar = () => {
             </div>
           </div>
 
-          {/* Stack preview */}
           {matched && currentStacks.length > 0 && (
             <div className="bg-muted/50 rounded-md p-3 space-y-2">
               <div className="flex items-center gap-2 text-xs">
