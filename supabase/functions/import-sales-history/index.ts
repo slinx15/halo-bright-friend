@@ -95,7 +95,6 @@ Deno.serve(async (req) => {
 
       const qtyPesan = row.pesanan || 0;
       const qtyKirim = row.kiriman || 0;
-      if (qtyKirim <= 0) continue;
 
       // Parse date - try various formats
       let createdAt: string;
