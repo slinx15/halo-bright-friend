@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useProducts } from "@/hooks/useProducts";
-import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 // WMA weights: 70% recent, 30% older (from Telegram bot script)
 const WMA_RECENT = 0.7;
@@ -33,17 +33,30 @@ export function useStockAnalysis(recentDays = 7, olderDays = 14) {
   const { data: stockOutData } = useQuery({
     queryKey: ["stock_out_all"],
     queryFn: async () => {
+      // Use raw fetch to avoid Supabase SDK Navigator LockManager hangs
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
       const PAGE_SIZE = 1000;
       let allData: any[] = [];
       let from = 0;
       let hasMore = true;
+
       while (hasMore) {
-        const { data, error } = await supabase
-          .from("stock_out")
-          .select("product_id, qty_kirim, qty_pesan, created_at, toko, total_harga, harga_satuan")
-          .order("created_at", { ascending: false })
-          .range(from, from + PAGE_SIZE - 1);
-        if (error) throw error;
+        const res = await fetch(
+          `${supabaseUrl}/rest/v1/stock_out?select=product_id,qty_kirim,qty_pesan,created_at,toko,total_harga,harga_satuan&order=created_at.desc&offset=${from}&limit=${PAGE_SIZE}`,
+          {
+            headers: {
+              apikey: anonKey,
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+          }
+        );
+        if (!res.ok) throw new Error("Failed to fetch stock_out");
+        const data = await res.json();
         allData = allData.concat(data || []);
         hasMore = (data?.length ?? 0) === PAGE_SIZE;
         from += PAGE_SIZE;
