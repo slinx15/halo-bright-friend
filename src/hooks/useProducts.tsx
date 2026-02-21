@@ -6,7 +6,7 @@ export interface ProductWithDetails {
   nama: string;
   kategori: string | null;
   is_active: boolean;
-  stock?: { jumlah: number; tumpukan: string | null };
+  stock?: { jumlah: number; tumpukan: string | null; tumpukan_detail: number[] | null };
   prices?: { harga_modal: number; harga_normal: number; harga_grosir: number };
 }
 

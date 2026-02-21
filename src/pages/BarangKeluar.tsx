@@ -11,10 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { PackageMinus, Send, Upload, ClipboardPaste } from "lucide-react";
+import { PackageMinus, Send } from "lucide-react";
 import { formatDate, formatNumber, formatRupiah } from "@/lib/formatters";
 import { OcrUpload } from "@/components/OcrUpload";
+import { TumpukanBadges } from "@/components/TumpukanBadges";
+import { deductFromStacks } from "@/lib/tumpukanUtils";
 
 const BarangKeluar = () => {
   const { user } = useAuth();
@@ -28,10 +29,6 @@ const BarangKeluar = () => {
   const [catatan, setCatatan] = useState("");
   const [toko, setToko] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [bulkText, setBulkText] = useState("");
-  const [bulkParsed, setBulkParsed] = useState<any[]>([]);
-  const [bulkImporting, setBulkImporting] = useState(false);
-  const [showBulk, setShowBulk] = useState(false);
 
   const matched = products?.find((p) => p.kode.toUpperCase() === kode.toUpperCase());
   const hargaSatuan = matched?.prices
@@ -39,6 +36,12 @@ const BarangKeluar = () => {
     : 0;
   const totalHarga = hargaSatuan * qtyKirim;
   const stokTersedia = matched?.stock?.jumlah ?? 0;
+  const currentStacks = (matched?.stock?.tumpukan_detail as number[]) ?? [];
+
+  // Preview deduction
+  const previewStacks = qtyKirim > 0 && qtyKirim <= stokTersedia
+    ? deductFromStacks(currentStacks, qtyKirim)
+    : currentStacks;
 
   const { data: history } = useQuery({
     queryKey: ["stock_out_history"],
@@ -79,10 +82,15 @@ const BarangKeluar = () => {
         toko: toko.trim() || "",
         user_id: user!.id,
       });
-      // Update stock
+
+      // Update stock with tumpukan deduction
+      const newStacks = deductFromStacks(currentStacks, qtyKirim);
       await supabase
         .from("stock")
-        .update({ jumlah: stokTersedia - qtyKirim })
+        .update({
+          jumlah: stokTersedia - qtyKirim,
+          tumpukan_detail: newStacks,
+        })
         .eq("product_id", matched.id);
 
       toast({ title: "Berhasil", description: `${matched.kode} keluar ${qtyKirim} pcs` });
@@ -168,7 +176,27 @@ const BarangKeluar = () => {
             </div>
           </div>
 
-          {matched && qtyKirim > 0 && (
+          {/* Stack preview */}
+          {matched && currentStacks.length > 0 && (
+            <div className="bg-muted/50 rounded-md p-3 space-y-2">
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-muted-foreground">Tumpukan sekarang:</span>
+                <TumpukanBadges stacks={currentStacks} kode={matched.kode} compact />
+              </div>
+              {qtyKirim > 0 && qtyKirim <= stokTersedia && (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-muted-foreground font-medium">Setelah keluar:</span>
+                  <TumpukanBadges stacks={previewStacks} kode={matched.kode} compact />
+                  <span className="text-muted-foreground">= {previewStacks.reduce((s, v) => s + v, 0)}</span>
+                </div>
+              )}
+              {qtyKirim > stokTersedia && (
+                <p className="text-xs text-destructive font-medium">⚠️ Stok tidak cukup!</p>
+              )}
+            </div>
+          )}
+
+          {matched && qtyKirim > 0 && qtyKirim <= stokTersedia && (
             <div className="bg-muted p-3 rounded-lg text-sm space-y-1">
               <div className="flex justify-between"><span>Harga Satuan</span><span className="font-semibold">{formatRupiah(hargaSatuan)}</span></div>
               <div className="flex justify-between"><span>Total</span><span className="font-bold text-primary">{formatRupiah(totalHarga)}</span></div>

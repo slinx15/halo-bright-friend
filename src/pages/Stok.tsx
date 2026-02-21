@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Package, Search } from "lucide-react";
 import { formatNumber, formatRupiah, getStockStatus, getStockStatusColor } from "@/lib/formatters";
+import { TumpukanBadges } from "@/components/TumpukanBadges";
 
 const Stok = () => {
   const { data: products, isLoading } = useProducts();
@@ -87,12 +88,15 @@ const Stok = () => {
                 ) : filtered?.map((p) => {
                   const jumlah = p.stock?.jumlah ?? 0;
                   const status = getStockStatus(jumlah);
+                  const stacks = (p.stock?.tumpukan_detail as number[]) ?? [];
                   return (
                     <TableRow key={p.id}>
                       <TableCell className="font-mono font-semibold">{p.kode}</TableCell>
                       <TableCell>{p.nama}</TableCell>
                       <TableCell className="text-right font-bold">{formatNumber(jumlah)}</TableCell>
-                      <TableCell>{p.stock?.tumpukan || "-"}</TableCell>
+                      <TableCell>
+                        <TumpukanBadges stacks={stacks} kode={p.kode} />
+                      </TableCell>
                       <TableCell className="text-right text-sm">{p.prices ? formatRupiah(p.prices.harga_modal) : "-"}</TableCell>
                       <TableCell className="text-right text-sm">{p.prices ? formatRupiah(p.prices.harga_normal) : "-"}</TableCell>
                       <TableCell className="text-right text-sm">{p.prices ? formatRupiah(p.prices.harga_grosir) : "-"}</TableCell>
