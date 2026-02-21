@@ -7,12 +7,21 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-async function getAuthHeaders() {
-  const { data: { session } } = await supabase.auth.getSession();
+function getAuthHeaders() {
+  // Bypass SDK entirely to avoid Navigator LockManager hang
+  const storageKey = `sb-${import.meta.env.VITE_SUPABASE_PROJECT_ID}-auth-token`;
+  let token = SUPABASE_KEY;
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      token = parsed?.access_token || SUPABASE_KEY;
+    }
+  } catch {}
   return {
     "Content-Type": "application/json",
     "apikey": SUPABASE_KEY,
-    "Authorization": `Bearer ${session?.access_token || SUPABASE_KEY}`,
+    "Authorization": `Bearer ${token}`,
     "Prefer": "return=minimal",
   };
 }
@@ -78,7 +87,7 @@ const Opname = () => {
         });
       }
 
-      const headers = await getAuthHeaders();
+      const headers = getAuthHeaders();
 
       // Batch insert opname logs via REST
       if (opnameLogs.length > 0) {
