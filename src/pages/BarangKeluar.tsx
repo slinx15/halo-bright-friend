@@ -10,11 +10,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PackageMinus, Send } from "lucide-react";
 import { formatDate, formatNumber, formatRupiah } from "@/lib/formatters";
 import { OcrUpload } from "@/components/OcrUpload";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { deductFromStacks } from "@/lib/tumpukanUtils";
+import { BulkKeluarInput, type BulkKeluarItem } from "@/components/keluar/BulkKeluarInput";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -42,6 +44,8 @@ const BarangKeluar = () => {
   const { data: products } = useProducts();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  // Single mode state
   const [kode, setKode] = useState("");
   const [qtyPesan, setQtyPesan] = useState(0);
   const [qtyKirim, setQtyKirim] = useState(0);
@@ -49,6 +53,11 @@ const BarangKeluar = () => {
   const [catatan, setCatatan] = useState("");
   const [toko, setToko] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Bulk mode state
+  const [bulkToko, setBulkToko] = useState("");
+  const [bulkCatatan, setBulkCatatan] = useState("");
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
 
   const matched = products?.find((p) => p.kode.toUpperCase() === kode.toUpperCase());
   const hargaSatuan = matched?.prices
@@ -58,7 +67,6 @@ const BarangKeluar = () => {
   const stokTersedia = matched?.stock?.jumlah ?? 0;
   const currentStacks = (matched?.stock?.tumpukan_detail as number[]) ?? [];
 
-  // Preview deduction
   const previewStacks = qtyKirim > 0 && qtyKirim <= stokTersedia
     ? deductFromStacks(currentStacks, qtyKirim)
     : currentStacks;
@@ -92,8 +100,6 @@ const BarangKeluar = () => {
     setSubmitting(true);
     try {
       const headers = getAuthHeaders();
-
-      // Insert stock_out
       const outRes = await fetch(`${SUPABASE_URL}/rest/v1/stock_out`, {
         method: "POST",
         headers,
@@ -111,7 +117,6 @@ const BarangKeluar = () => {
       });
       if (!outRes.ok) throw new Error(await outRes.text());
 
-      // Update stock with tumpukan deduction
       const newStacks = deductFromStacks(currentStacks, qtyKirim);
       const stockRes = await fetch(
         `${SUPABASE_URL}/rest/v1/stock?product_id=eq.${matched.id}`,
@@ -140,6 +145,72 @@ const BarangKeluar = () => {
     setSubmitting(false);
   };
 
+  // Bulk submit handler
+  const handleBulkSubmit = async (items: BulkKeluarItem[]) => {
+    setBulkSubmitting(true);
+    const headers = getAuthHeaders();
+    let successCount = 0;
+
+    try {
+      for (const item of items) {
+        const product = item.product!;
+        const stok = product.stock?.jumlah ?? 0;
+        const stacks = (product.stock?.tumpukan_detail as number[]) ?? [];
+        const price = product.prices
+          ? item.hargaType === "grosir" ? product.prices.harga_grosir : product.prices.harga_normal
+          : 0;
+
+        // Insert stock_out
+        const outRes = await fetch(`${SUPABASE_URL}/rest/v1/stock_out`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            product_id: product.id,
+            qty_pesan: item.qtyPesan,
+            qty_kirim: item.qtyKirim,
+            harga_type: item.hargaType,
+            harga_satuan: price,
+            total_harga: price * item.qtyKirim,
+            catatan: bulkCatatan || null,
+            toko: bulkToko.trim() || "",
+            user_id: user!.id,
+          }),
+        });
+        if (!outRes.ok) throw new Error(await outRes.text());
+
+        // Update stock
+        const newStacks = deductFromStacks(stacks, item.qtyKirim);
+        const stockRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/stock?product_id=eq.${product.id}`,
+          {
+            method: "PATCH",
+            headers,
+            body: JSON.stringify({
+              jumlah: stok - item.qtyKirim,
+              tumpukan_detail: newStacks,
+            }),
+          }
+        );
+        if (!stockRes.ok) throw new Error(await stockRes.text());
+
+        successCount++;
+      }
+
+      toast({ title: "Berhasil", description: `${successCount} item berhasil disimpan` });
+      setBulkToko("");
+      setBulkCatatan("");
+      queryClient.invalidateQueries({ queryKey: ["stock_out_history"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: `${successCount} tersimpan, gagal: ${err.message}`,
+        variant: "destructive",
+      });
+    }
+    setBulkSubmitting(false);
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center gap-3">
@@ -150,106 +221,127 @@ const BarangKeluar = () => {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Input Barang Keluar</CardTitle>
-            <OcrUpload
-              mode="keluar"
-              onResult={(ocrItems) => {
-                if (ocrItems.length > 0) {
-                  const first = ocrItems[0];
-                  setKode((first.kode || "").toUpperCase());
-                  setQtyPesan(first.qty_pesan || 0);
-                  setQtyKirim(first.qty_kirim || 0);
-                  if (first.harga_type) setHargaType(first.harga_type);
-                  if (first.toko) setToko(first.toko);
-                }
-              }}
-            />
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>Kode Produk</Label>
-              <Input
-                placeholder="Kode..."
-                value={kode}
-                onChange={(e) => setKode(e.target.value.toUpperCase())}
-                list="product-codes-out"
-              />
-              <datalist id="product-codes-out">
-                {products?.map((p) => <option key={p.id} value={p.kode} />)}
-              </datalist>
-              {matched && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {matched.nama} — Stok: <span className="font-semibold">{stokTersedia}</span>
-                </p>
-              )}
-              {kode && !matched && <p className="text-xs text-destructive mt-1">Produk tidak ditemukan</p>}
-            </div>
-            <div>
-              <Label>Tipe Harga</Label>
-              <Select value={hargaType} onValueChange={setHargaType}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="normal">Normal {matched?.prices ? `(${formatRupiah(matched.prices.harga_normal)})` : ""}</SelectItem>
-                  <SelectItem value="grosir">Grosir {matched?.prices ? `(${formatRupiah(matched.prices.harga_grosir)})` : ""}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Qty Pesan</Label>
-              <Input type="number" min={0} value={qtyPesan} onChange={(e) => setQtyPesan(parseInt(e.target.value) || 0)} />
-            </div>
-            <div>
-              <Label>Qty Kirim</Label>
-              <Input type="number" min={0} value={qtyKirim} onChange={(e) => setQtyKirim(parseInt(e.target.value) || 0)} />
-            </div>
-          </div>
+      <Tabs defaultValue="bulk" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="single">Satuan</TabsTrigger>
+          <TabsTrigger value="bulk">Bulk / OCR</TabsTrigger>
+        </TabsList>
 
-          {matched && currentStacks.length > 0 && (
-            <div className="bg-muted/50 rounded-md p-3 space-y-2">
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-muted-foreground">Tumpukan sekarang:</span>
-                <TumpukanBadges stacks={currentStacks} kode={matched.kode} compact />
+        <TabsContent value="single">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Input Barang Keluar</CardTitle>
+                <OcrUpload
+                  mode="keluar"
+                  onResult={(ocrItems) => {
+                    if (ocrItems.length > 0) {
+                      const first = ocrItems[0];
+                      setKode((first.kode || "").toUpperCase());
+                      setQtyPesan(first.qty_pesan || 0);
+                      setQtyKirim(first.qty_kirim || 0);
+                      if (first.harga_type) setHargaType(first.harga_type);
+                      if (first.toko) setToko(first.toko);
+                    }
+                  }}
+                />
               </div>
-              {qtyKirim > 0 && qtyKirim <= stokTersedia && (
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="text-muted-foreground font-medium">Setelah keluar:</span>
-                  <TumpukanBadges stacks={previewStacks} kode={matched.kode} compact />
-                  <span className="text-muted-foreground">= {previewStacks.reduce((s, v) => s + v, 0)}</span>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Kode Produk</Label>
+                  <Input
+                    placeholder="Kode..."
+                    value={kode}
+                    onChange={(e) => setKode(e.target.value.toUpperCase())}
+                    list="product-codes-out"
+                  />
+                  <datalist id="product-codes-out">
+                    {products?.map((p) => <option key={p.id} value={p.kode} />)}
+                  </datalist>
+                  {matched && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {matched.nama} — Stok: <span className="font-semibold">{stokTersedia}</span>
+                    </p>
+                  )}
+                  {kode && !matched && <p className="text-xs text-destructive mt-1">Produk tidak ditemukan</p>}
+                </div>
+                <div>
+                  <Label>Tipe Harga</Label>
+                  <Select value={hargaType} onValueChange={setHargaType}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="normal">Normal {matched?.prices ? `(${formatRupiah(matched.prices.harga_normal)})` : ""}</SelectItem>
+                      <SelectItem value="grosir">Grosir {matched?.prices ? `(${formatRupiah(matched.prices.harga_grosir)})` : ""}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Qty Pesan</Label>
+                  <Input type="number" min={0} value={qtyPesan} onChange={(e) => setQtyPesan(parseInt(e.target.value) || 0)} />
+                </div>
+                <div>
+                  <Label>Qty Kirim</Label>
+                  <Input type="number" min={0} value={qtyKirim} onChange={(e) => setQtyKirim(parseInt(e.target.value) || 0)} />
+                </div>
+              </div>
+
+              {matched && currentStacks.length > 0 && (
+                <div className="bg-muted/50 rounded-md p-3 space-y-2">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-muted-foreground">Tumpukan sekarang:</span>
+                    <TumpukanBadges stacks={currentStacks} kode={matched.kode} compact />
+                  </div>
+                  {qtyKirim > 0 && qtyKirim <= stokTersedia && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-muted-foreground font-medium">Setelah keluar:</span>
+                      <TumpukanBadges stacks={previewStacks} kode={matched.kode} compact />
+                      <span className="text-muted-foreground">= {previewStacks.reduce((s, v) => s + v, 0)}</span>
+                    </div>
+                  )}
+                  {qtyKirim > stokTersedia && (
+                    <p className="text-xs text-destructive font-medium">⚠️ Stok tidak cukup!</p>
+                  )}
                 </div>
               )}
-              {qtyKirim > stokTersedia && (
-                <p className="text-xs text-destructive font-medium">⚠️ Stok tidak cukup!</p>
+
+              {matched && qtyKirim > 0 && qtyKirim <= stokTersedia && (
+                <div className="bg-muted p-3 rounded-lg text-sm space-y-1">
+                  <div className="flex justify-between"><span>Harga Satuan</span><span className="font-semibold">{formatRupiah(hargaSatuan)}</span></div>
+                  <div className="flex justify-between"><span>Total</span><span className="font-bold text-primary">{formatRupiah(totalHarga)}</span></div>
+                </div>
               )}
-            </div>
-          )}
 
-          {matched && qtyKirim > 0 && qtyKirim <= stokTersedia && (
-            <div className="bg-muted p-3 rounded-lg text-sm space-y-1">
-              <div className="flex justify-between"><span>Harga Satuan</span><span className="font-semibold">{formatRupiah(hargaSatuan)}</span></div>
-              <div className="flex justify-between"><span>Total</span><span className="font-bold text-primary">{formatRupiah(totalHarga)}</span></div>
-            </div>
-          )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Nama Toko / Pelanggan (opsional)</Label>
+                  <Input value={toko} onChange={(e) => setToko(e.target.value)} placeholder="Nama toko..." />
+                </div>
+                <div>
+                  <Label>Catatan (opsional)</Label>
+                  <Textarea value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder="Catatan..." rows={2} />
+                </div>
+              </div>
+              <Button onClick={handleSubmit} disabled={submitting || !matched} className="w-full">
+                <Send className="h-4 w-4 mr-2" /> {submitting ? "Menyimpan..." : "Simpan Barang Keluar"}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>Nama Toko / Pelanggan (opsional)</Label>
-              <Input value={toko} onChange={(e) => setToko(e.target.value)} placeholder="Nama toko..." />
-            </div>
-            <div>
-              <Label>Catatan (opsional)</Label>
-              <Textarea value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder="Catatan..." rows={2} />
-            </div>
-          </div>
-          <Button onClick={handleSubmit} disabled={submitting || !matched} className="w-full">
-            <Send className="h-4 w-4 mr-2" /> {submitting ? "Menyimpan..." : "Simpan Barang Keluar"}
-          </Button>
-        </CardContent>
-      </Card>
+        <TabsContent value="bulk">
+          <BulkKeluarInput
+            products={products ?? []}
+            onSubmit={handleBulkSubmit}
+            submitting={bulkSubmitting}
+            toko={bulkToko}
+            setToko={setBulkToko}
+            catatan={bulkCatatan}
+            setCatatan={setBulkCatatan}
+          />
+        </TabsContent>
+      </Tabs>
 
       <Card>
         <CardHeader><CardTitle className="text-lg">Riwayat Barang Keluar</CardTitle></CardHeader>
