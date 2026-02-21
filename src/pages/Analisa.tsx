@@ -222,7 +222,8 @@ const Analisa = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
+                <p><strong>Min Display:</strong> Stok 0 + demand rendah (&lt;0.3/hr) + bukan dead stock → order 1 batch untuk display</p>
+              </div>
     </TooltipProvider>
   );
 };
@@ -245,8 +246,18 @@ function AnalysisRow({ a, index }: { a: ProductAnalysis; index: number }) {
               {a.isSpecialColor === "black" ? "⬛" : "⬜"}
             </Badge>
           )}
-          {a.isNewProduct && (
+           {a.isNewProduct && (
             <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0 border-primary/40 text-primary">NEW</Badge>
+          )}
+          {a.isMinimumDisplay && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0 border-warning/40 text-warning cursor-help">Display</Badge>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="text-xs max-w-[200px]">
+                Minimum display stock to prevent empty shelf
+              </TooltipContent>
+            </Tooltip>
           )}
         </div>
         <p className="text-xs text-muted-foreground truncate max-w-[120px]">{a.nama}</p>

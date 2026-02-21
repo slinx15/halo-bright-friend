@@ -20,6 +20,7 @@ import {
   BATCH_CONFIG,
   COLOR_GROUPS,
   RESTOCK_SCHEDULE,
+  MINIMUM_DISPLAY_CONFIG,
   type DosStatus,
   type TrendStatus,
   type VolatilityLevel,
@@ -82,6 +83,7 @@ export interface ProductAnalysis {
   isSpecialColor: "black" | "white" | null;
   isDeadStock: boolean;
   isNewProduct: boolean;
+  isMinimumDisplay: boolean;
   daysSinceLastSale: number;
 }
 
@@ -479,14 +481,27 @@ export function analyzeAllProducts(
     const dead = isDeadStock(daysSinceLast);
 
     // Priority (advanced)
-    const priority = dead ? 0 : calcPriorityScore(
+    let priority = dead ? 0 : calcPriorityScore(
       forecastDaily, dos, trend, vol.cv, currentStock, maxForecast
     );
 
     // Restock qty: target = forecast × (lead_time + safety buffer equivalent days) = reorderPoint + buffer
     const targetStock = reorderPoint + Math.ceil(forecastDaily * minSafetyDays);
     const rawNeed = Math.max(0, targetStock - currentStock);
-    const recommendedQty = roundUpToBatch(rawNeed, batch);
+    let recommendedQty = roundUpToBatch(rawNeed, batch);
+
+    // ─── Minimum Display Rule (Mode B) ───────────────────
+    // Prevent empty shelves for slow-moving but active items
+    const isMinDisplay =
+      !dead &&
+      currentStock === 0 &&
+      forecastDaily < MINIMUM_DISPLAY_CONFIG.maxForecast &&
+      (!needsReorder || recommendedQty === 0);
+
+    if (isMinDisplay) {
+      recommendedQty = roundUpToBatch(1, batch); // 1 batch minimum
+      priority = Math.max(priority, MINIMUM_DISPLAY_CONFIG.priorityFloor);
+    }
 
     // Restock schedule
     const { nextRestockDay, orderDate } = getNextRestockDay(stockoutDate);
@@ -520,6 +535,7 @@ export function analyzeAllProducts(
       isSpecialColor: colorGroup,
       isDeadStock: dead,
       isNewProduct: isNew,
+      isMinimumDisplay: isMinDisplay,
       nextRestockDay: toDateKey(nextRestockDay),
       recommendedOrderDate: toDateKey(orderDate),
       daysSinceLastSale: daysSinceLast,

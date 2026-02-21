@@ -99,6 +99,14 @@ export const TREND_CONFIG = {
 
 export type TrendStatus = "UP" | "DOWN" | "STABLE";
 
+// ─── Minimum Display (Mode B) ─────────────────────────────
+export const MINIMUM_DISPLAY_CONFIG = {
+  /** Max forecast to be considered "low demand" */
+  maxForecast: 0.3,
+  /** Minimum priority score floor for display items */
+  priorityFloor: 40,
+};
+
 // ─── Dead Stock ───────────────────────────────────────────
 export const DEAD_STOCK_CONFIG = {
   /** Days without any sale to be considered dead */
