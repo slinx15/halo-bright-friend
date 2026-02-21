@@ -11,6 +11,7 @@ import {
   Settings,
   LogOut,
   User,
+  FileUp,
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +26,7 @@ const navItems = [
   { icon: ClipboardCheck, label: "Opname", path: "/opname" },
   { icon: BarChart3, label: "Analisa", path: "/analisa" },
   { icon: Settings, label: "Produk", path: "/produk" },
+  { icon: FileUp, label: "Import Histori", path: "/import-histori" },
 ];
 
 const AppSidebar = () => {
