@@ -8,19 +8,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { PackagePlus, Plus, Trash2, Send } from "lucide-react";
-import { formatDate, formatNumber, TUMPUKAN_OPTIONS } from "@/lib/formatters";
+import { formatDate, formatNumber } from "@/lib/formatters";
 import { OcrUpload } from "@/components/OcrUpload";
+import { TumpukanBadges } from "@/components/TumpukanBadges";
+import { splitIntoStacks, addStacks } from "@/lib/tumpukanUtils";
 
 interface LineItem {
   kode: string;
   qty: number;
-  tumpukan: string;
   productName?: string;
   productId?: string;
+  productKode?: string;
 }
 
 const BarangMasuk = () => {
@@ -28,7 +29,7 @@ const BarangMasuk = () => {
   const { data: products } = useProducts();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [items, setItems] = useState<LineItem[]>([{ kode: "", qty: 1, tumpukan: "" }]);
+  const [items, setItems] = useState<LineItem[]>([{ kode: "", qty: 1 }]);
   const [catatan, setCatatan] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -53,12 +54,13 @@ const BarangMasuk = () => {
         const found = products.find((p) => p.kode.toUpperCase() === String(value).toUpperCase());
         updated[index].productName = found?.nama;
         updated[index].productId = found?.id;
+        updated[index].productKode = found?.kode;
       }
       return updated;
     });
   };
 
-  const addLine = () => setItems((prev) => [...prev, { kode: "", qty: 1, tumpukan: "" }]);
+  const addLine = () => setItems((prev) => [...prev, { kode: "", qty: 1 }]);
   const removeLine = (i: number) => setItems((prev) => prev.filter((_, idx) => idx !== i));
 
   const handleSubmit = async () => {
@@ -70,34 +72,44 @@ const BarangMasuk = () => {
     setSubmitting(true);
     try {
       for (const item of validItems) {
+        const kode = item.productKode || item.kode;
+        const newStacks = splitIntoStacks(item.qty, kode);
+
         await supabase.from("stock_in").insert({
           product_id: item.productId!,
           qty: item.qty,
-          tumpukan: item.tumpukan || null,
+          tumpukan: newStacks.join(","),
           catatan: catatan || null,
           user_id: user!.id,
         });
-        // Update stock
+
+        // Update stock with tumpukan_detail
         const { data: existing } = await supabase
           .from("stock")
           .select("*")
           .eq("product_id", item.productId!)
           .maybeSingle();
+
         if (existing) {
+          const currentStacks = (existing.tumpukan_detail as number[]) ?? [];
+          const merged = addStacks(currentStacks, newStacks);
           await supabase
             .from("stock")
-            .update({ jumlah: existing.jumlah + item.qty, tumpukan: item.tumpukan || existing.tumpukan })
+            .update({
+              jumlah: existing.jumlah + item.qty,
+              tumpukan_detail: merged,
+            })
             .eq("id", existing.id);
         } else {
           await supabase.from("stock").insert({
             product_id: item.productId!,
             jumlah: item.qty,
-            tumpukan: item.tumpukan || null,
+            tumpukan_detail: newStacks,
           });
         }
       }
       toast({ title: "Berhasil", description: `${validItems.length} item masuk tercatat` });
-      setItems([{ kode: "", qty: 1, tumpukan: "" }]);
+      setItems([{ kode: "", qty: 1 }]);
       setCatatan("");
       queryClient.invalidateQueries({ queryKey: ["stock_in_history"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
@@ -129,62 +141,84 @@ const BarangMasuk = () => {
                   return {
                     kode: (o.kode || "").toUpperCase(),
                     qty: o.qty || 1,
-                    tumpukan: "",
                     productName: found?.nama || o.nama,
                     productId: found?.id,
+                    productKode: found?.kode,
                   };
                 });
-                setItems(newItems.length > 0 ? newItems : [{ kode: "", qty: 1, tumpukan: "" }]);
+                setItems(newItems.length > 0 ? newItems : [{ kode: "", qty: 1 }]);
                 if (ocrItems[0]?.catatan) setCatatan(ocrItems[0].catatan);
               }}
             />
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {items.map((item, i) => (
-            <div key={i} className="flex flex-wrap gap-2 items-end border-b border-border pb-3">
-              <div className="flex-1 min-w-[120px]">
-                <Label className="text-xs">Kode Produk</Label>
-                <Input
-                  placeholder="Kode..."
-                  value={item.kode}
-                  onChange={(e) => updateItem(i, "kode", e.target.value.toUpperCase())}
-                  list="product-codes"
-                />
-                {item.productName && (
-                  <p className="text-xs text-muted-foreground mt-0.5">{item.productName}</p>
+          {items.map((item, i) => {
+            const matchedProduct = products?.find((p) => p.id === item.productId);
+            const currentStacks = (matchedProduct?.stock?.tumpukan_detail as number[]) ?? [];
+            const previewNewStacks = item.productId && item.qty > 0
+              ? splitIntoStacks(item.qty, item.productKode || item.kode)
+              : [];
+            const previewMerged = item.productId && item.qty > 0
+              ? addStacks(currentStacks, previewNewStacks)
+              : currentStacks;
+
+            return (
+              <div key={i} className="border-b border-border pb-3 space-y-2">
+                <div className="flex flex-wrap gap-2 items-end">
+                  <div className="flex-1 min-w-[120px]">
+                    <Label className="text-xs">Kode Produk</Label>
+                    <Input
+                      placeholder="Kode..."
+                      value={item.kode}
+                      onChange={(e) => updateItem(i, "kode", e.target.value.toUpperCase())}
+                      list="product-codes"
+                    />
+                    {item.productName && (
+                      <p className="text-xs text-muted-foreground mt-0.5">{item.productName}</p>
+                    )}
+                    {item.kode && !item.productId && (
+                      <p className="text-xs text-destructive mt-0.5">Produk tidak ditemukan</p>
+                    )}
+                  </div>
+                  <div className="w-20">
+                    <Label className="text-xs">Qty</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={item.qty}
+                      onChange={(e) => updateItem(i, "qty", parseInt(e.target.value) || 0)}
+                    />
+                  </div>
+                  {items.length > 1 && (
+                    <Button variant="ghost" size="icon" onClick={() => removeLine(i)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  )}
+                </div>
+                {/* Stack preview */}
+                {item.productId && item.qty > 0 && (
+                  <div className="bg-muted/50 rounded-md p-2 space-y-1">
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-muted-foreground">Masuk:</span>
+                      <TumpukanBadges stacks={previewNewStacks} kode={item.productKode || item.kode} compact />
+                    </div>
+                    {currentStacks.length > 0 && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-muted-foreground">Sekarang:</span>
+                        <TumpukanBadges stacks={currentStacks} kode={item.productKode || item.kode} compact />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-muted-foreground font-medium">Setelah:</span>
+                      <TumpukanBadges stacks={previewMerged} kode={item.productKode || item.kode} compact />
+                      <span className="text-muted-foreground">= {previewMerged.reduce((s, v) => s + v, 0)}</span>
+                    </div>
+                  </div>
                 )}
-                {item.kode && !item.productId && (
-                  <p className="text-xs text-destructive mt-0.5">Produk tidak ditemukan</p>
-                )}
               </div>
-              <div className="w-20">
-                <Label className="text-xs">Qty</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={item.qty}
-                  onChange={(e) => updateItem(i, "qty", parseInt(e.target.value) || 0)}
-                />
-              </div>
-              <div className="w-24">
-                <Label className="text-xs">Tumpukan</Label>
-                <Select value={item.tumpukan} onValueChange={(v) => updateItem(i, "tumpukan", v)}>
-                  <SelectTrigger><SelectValue placeholder="-" /></SelectTrigger>
-                  <SelectContent>
-                    {TUMPUKAN_OPTIONS.map((t) => (
-                      <SelectItem key={t} value={t}>{t}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {items.length > 1 && (
-                <Button variant="ghost" size="icon" onClick={() => removeLine(i)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              )}
-            </div>
-          ))}
+            );
+          })}
           <datalist id="product-codes">
             {products?.map((p) => <option key={p.id} value={p.kode} />)}
           </datalist>
@@ -225,7 +259,7 @@ const BarangMasuk = () => {
                     <TableCell className="font-mono text-sm">{h.products?.kode}</TableCell>
                     <TableCell className="text-sm">{h.products?.nama}</TableCell>
                     <TableCell className="text-right font-semibold">{formatNumber(h.qty)}</TableCell>
-                    <TableCell>{h.tumpukan || "-"}</TableCell>
+                    <TableCell className="text-sm">{h.tumpukan || "-"}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{h.catatan || "-"}</TableCell>
                   </TableRow>
                 ))}

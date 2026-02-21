@@ -138,6 +138,7 @@ export type Database = {
           jumlah: number
           product_id: string
           tumpukan: string | null
+          tumpukan_detail: Json | null
           updated_at: string
         }
         Insert: {
@@ -145,6 +146,7 @@ export type Database = {
           jumlah?: number
           product_id: string
           tumpukan?: string | null
+          tumpukan_detail?: Json | null
           updated_at?: string
         }
         Update: {
@@ -152,6 +154,7 @@ export type Database = {
           jumlah?: number
           product_id?: string
           tumpukan?: string | null
+          tumpukan_detail?: Json | null
           updated_at?: string
         }
         Relationships: [
