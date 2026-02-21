@@ -13,6 +13,7 @@ import Stok from "@/pages/Stok";
 import Opname from "@/pages/Opname";
 import Analisa from "@/pages/Analisa";
 import ManajemenProduk from "@/pages/ManajemenProduk";
+import ImportHistori from "@/pages/ImportHistori";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,6 +54,7 @@ const App = () => (
               <Route path="/opname" element={<Opname />} />
               <Route path="/analisa" element={<Analisa />} />
               <Route path="/produk" element={<ManajemenProduk />} />
+              <Route path="/import-histori" element={<ImportHistori />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
