@@ -3,6 +3,19 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+async function getAuthHeaders() {
+  const { data: { session } } = await supabase.auth.getSession();
+  return {
+    "Content-Type": "application/json",
+    "apikey": SUPABASE_KEY,
+    "Authorization": `Bearer ${session?.access_token || SUPABASE_KEY}`,
+    "Prefer": "return=minimal",
+  };
+}
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -65,18 +78,26 @@ const Opname = () => {
         });
       }
 
-      // Batch insert opname logs
+      const headers = await getAuthHeaders();
+
+      // Batch insert opname logs via REST
       if (opnameLogs.length > 0) {
-        const { error: logErr } = await supabase.from("stock_opname_log").insert(opnameLogs);
-        if (logErr) throw logErr;
+        const logRes = await fetch(`${SUPABASE_URL}/rest/v1/stock_opname_log`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(opnameLogs),
+        });
+        if (!logRes.ok) throw new Error(await logRes.text());
       }
 
-      // Batch upsert stock (onConflict on product_id)
+      // Batch upsert stock via REST
       if (stockUpserts.length > 0) {
-        const { error: stockErr } = await supabase
-          .from("stock")
-          .upsert(stockUpserts, { onConflict: "product_id" });
-        if (stockErr) throw stockErr;
+        const stockRes = await fetch(`${SUPABASE_URL}/rest/v1/stock?on_conflict=product_id`, {
+          method: "POST",
+          headers: { ...headers, "Prefer": "resolution=merge-duplicates,return=minimal" },
+          body: JSON.stringify(stockUpserts),
+        });
+        if (!stockRes.ok) throw new Error(await stockRes.text());
       }
 
       toast({
