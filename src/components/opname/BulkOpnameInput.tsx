@@ -9,6 +9,7 @@ import { Send, FileText, CheckCircle2, AlertTriangle } from "lucide-react";
 import { parseOpnameText, type ParsedOpnameItem } from "@/lib/opnameParser";
 import { formatNumber } from "@/lib/formatters";
 import type { ProductWithDetails } from "@/hooks/useProducts";
+import { OcrUpload } from "@/components/OcrUpload";
 
 interface BulkOpnameInputProps {
   products: ProductWithDetails[];
@@ -20,6 +21,17 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
   const [text, setText] = useState("");
   const [parsed, setParsed] = useState<ParsedOpnameItem[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+
+  // Convert OCR results to textarea text format
+  const handleOcrResult = (ocrItems: any[]) => {
+    const lines = ocrItems.map((item) => {
+      const kode = String(item.kode || "").toUpperCase();
+      const qty = item.qty || item.stok_fisik || 0;
+      return `${kode} ${qty}`;
+    });
+    const newText = text ? text.trimEnd() + "\n" + lines.join("\n") : lines.join("\n");
+    setText(newText);
+  };
 
   const handleParse = () => {
     const items = parseOpnameText(text);
@@ -43,10 +55,13 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
-          <FileText className="h-5 w-5" />
-          Bulk Stock Opname
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Bulk Stock Opname
+          </CardTitle>
+          <OcrUpload mode="opname" onResult={handleOcrResult} />
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {!showPreview ? (
