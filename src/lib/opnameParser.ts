@@ -26,8 +26,9 @@ export function parseOpnameText(text: string): ParsedOpnameItem[] {
   const grouped = new Map<string, number[]>();
 
   for (const line of lines) {
-    // Match: KODE <space/tab> QTY
-    const match = line.match(/^([A-Za-z0-9]+)\s+(\d+)$/);
+    // Match: KODE <space/tab> QTY — lenient: allow leading/trailing chars, dots, dashes
+    const cleaned = line.replace(/[•\-–—·*#]/g, "").trim();
+    const match = cleaned.match(/^([A-Za-z0-9]+)\s+(\d+)/);
     if (!match) continue;
 
     const kode = match[1].toUpperCase();

@@ -37,7 +37,10 @@ const Opname = () => {
     setSubmitting(true);
 
     try {
-      let successCount = 0;
+      // Prepare all data first
+      const opnameLogs: any[] = [];
+      const stockUpserts: { product_id: string; jumlah: number; tumpukan_detail: number[] }[] = [];
+
       for (const item of items) {
         const product = products.find((p) => p.kode.toUpperCase() === item.kode.toUpperCase());
         if (!product) continue;
@@ -45,8 +48,7 @@ const Opname = () => {
         const stokSistem = product.stock?.jumlah ?? 0;
         const selisih = item.total - stokSistem;
 
-        // Log opname
-        await supabase.from("stock_opname_log").insert({
+        opnameLogs.push({
           product_id: product.id,
           stok_sistem: stokSistem,
           stok_fisik: item.total,
@@ -56,31 +58,30 @@ const Opname = () => {
           status: selisih === 0 ? "sesuai" : "selisih",
         });
 
-        // Update stock
-        const { data: existing } = await supabase
-          .from("stock")
-          .select("id")
-          .eq("product_id", product.id)
-          .maybeSingle();
+        stockUpserts.push({
+          product_id: product.id,
+          jumlah: item.total,
+          tumpukan_detail: item.stacks,
+        });
+      }
 
-        if (existing) {
-          await supabase
-            .from("stock")
-            .update({ jumlah: item.total, tumpukan_detail: item.stacks })
-            .eq("id", existing.id);
-        } else {
-          await supabase.from("stock").insert({
-            product_id: product.id,
-            jumlah: item.total,
-            tumpukan_detail: item.stacks,
-          });
-        }
-        successCount++;
+      // Batch insert opname logs
+      if (opnameLogs.length > 0) {
+        const { error: logErr } = await supabase.from("stock_opname_log").insert(opnameLogs);
+        if (logErr) throw logErr;
+      }
+
+      // Batch upsert stock (onConflict on product_id)
+      if (stockUpserts.length > 0) {
+        const { error: stockErr } = await supabase
+          .from("stock")
+          .upsert(stockUpserts, { onConflict: "product_id" });
+        if (stockErr) throw stockErr;
       }
 
       toast({
         title: "Bulk Opname Selesai",
-        description: `${successCount} produk berhasil di-update`,
+        description: `${stockUpserts.length} produk berhasil di-update`,
       });
       queryClient.invalidateQueries({ queryKey: ["opname_history"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
