@@ -33,12 +33,22 @@ export function useStockAnalysis(recentDays = 7, olderDays = 14) {
   const { data: stockOutData } = useQuery({
     queryKey: ["stock_out_all"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("stock_out")
-        .select("product_id, qty_kirim, qty_pesan, created_at, toko, total_harga, harga_satuan")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
+      const PAGE_SIZE = 1000;
+      let allData: any[] = [];
+      let from = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("stock_out")
+          .select("product_id, qty_kirim, qty_pesan, created_at, toko, total_harga, harga_satuan")
+          .order("created_at", { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) throw error;
+        allData = allData.concat(data || []);
+        hasMore = (data?.length ?? 0) === PAGE_SIZE;
+        from += PAGE_SIZE;
+      }
+      return allData;
     },
   });
 
