@@ -155,6 +155,13 @@ function parseDate(str: string): Date {
   if (!str) return new Date();
   const s = str.trim();
 
+  // DD/MM/YYYY HH:MM or DD/MM/YYYY HH:MM:SS or DD-MM-YYYY HH:MM
+  const dmyTime = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (dmyTime) {
+    const year = dmyTime[3].length === 2 ? 2000 + parseInt(dmyTime[3]) : parseInt(dmyTime[3]);
+    return new Date(year, parseInt(dmyTime[2]) - 1, parseInt(dmyTime[1]), parseInt(dmyTime[4]), parseInt(dmyTime[5]), parseInt(dmyTime[6] || "0"));
+  }
+
   // DD/MM/YYYY or DD-MM-YYYY
   const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
   if (dmy) {
@@ -162,15 +169,12 @@ function parseDate(str: string): Date {
     return new Date(year, parseInt(dmy[2]) - 1, parseInt(dmy[1]), 12, 0, 0);
   }
 
-  // YYYY-MM-DD
-  const ymd = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  // YYYY-MM-DD with optional time
+  const ymd = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
   if (ymd) {
     return new Date(parseInt(ymd[1]), parseInt(ymd[2]) - 1, parseInt(ymd[3]), 12, 0, 0);
   }
 
-  // Try native parse
-  const d = new Date(s);
-  if (!isNaN(d.getTime())) return d;
-
+  // Fallback - DO NOT use native Date() to avoid MM/DD vs DD/MM ambiguity
   return new Date();
 }
