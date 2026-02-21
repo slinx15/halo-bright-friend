@@ -228,7 +228,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
       </div>
 
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               📷 Hasil Baca Foto
@@ -254,7 +254,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
           )}
 
           {/* Items list */}
-          <ScrollArea className="flex-1 max-h-[50vh]">
+          <ScrollArea className="flex-1 min-h-0 max-h-[50vh]">
             <div className="space-y-2 pr-2">
               {ocrItems.map((item, idx) => (
                 <div
