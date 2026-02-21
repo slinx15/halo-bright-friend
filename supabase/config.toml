@@ -2,3 +2,6 @@ project_id = "bewacnnfyhiiwxhhbeem"
 
 [functions.ocr-nota]
 verify_jwt = false
+
+[functions.bulk-import]
+verify_jwt = false

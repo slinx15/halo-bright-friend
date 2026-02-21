@@ -76,90 +76,50 @@ export function BulkInputDialog() {
       return;
     }
     setSubmitting(true);
-    setProgress(0);
-    setProgressLabel("Memulai import...");
+    setProgress(10);
+    setProgressLabel("Mengirim data ke server...");
 
     try {
-      console.log("[BulkImport] Starting import with", validRows.length, "valid rows");
-      // 1. Deduplicate internal codes
-      const seen = new Set<string>();
-      const dedupedRows: BulkRow[] = [];
-      for (const row of validRows) {
-        const code = row.kode.toUpperCase();
-        if (!seen.has(code)) {
-          seen.add(code);
-          dedupedRows.push(row);
-        }
-      }
+      const payload = validRows.map(r => ({
+        kode: r.kode.toUpperCase(),
+        kategori: r.kategori || "",
+        modal: parseInt(r.modal) || 0,
+        normal: parseInt(r.normal) || 0,
+        grosir: parseInt(r.grosir) || 0,
+        stok: parseInt(r.stok) || 0,
+      }));
 
-      console.log("[BulkImport] Deduped to", dedupedRows.length, "rows");
-      setProgress(5);
+      setProgress(20);
+      setProgressLabel(`Mengimport ${payload.length} produk...`);
 
-      let totalInserted = 0;
-      let errors: string[] = [];
-      const BATCH = 200;
-      const total = dedupedRows.length;
-      const chunks: BulkRow[][] = [];
-      for (let i = 0; i < total; i += BATCH) chunks.push(dedupedRows.slice(i, i + BATCH));
+      const { data, error } = await supabase.functions.invoke("bulk-import", {
+        body: { rows: payload },
+      });
 
-      for (let ci = 0; ci < chunks.length; ci++) {
-        const chunk = chunks[ci];
-        const pct = 5 + Math.round(((ci + 1) / chunks.length) * 90);
-        setProgress(pct);
-        setProgressLabel(`Batch ${ci + 1}/${chunks.length} (${chunk.length} produk)`);
-
-        try {
-          // Batch insert products
-          const { data: prods, error: prodError } = await supabase
-            .from("products")
-            .insert(chunk.map(r => ({ kode: r.kode.toUpperCase(), nama: r.kode.toUpperCase(), kategori: r.kategori || null })))
-            .select();
-
-          if (prodError || !prods) {
-            console.error(`[BulkImport] Batch ${ci + 1}: ${prodError?.message}`);
-            errors.push(`Batch ${ci + 1}: ${prodError?.message}`);
-            continue;
-          }
-
-          totalInserted += prods.length;
-
-          // Batch insert prices
-          await supabase.from("prices").insert(
-            prods.map((p, i) => ({
-              product_id: p.id,
-              harga_modal: parseInt(chunk[i].modal) || 0,
-              harga_normal: parseInt(chunk[i].normal) || 0,
-              harga_grosir: parseInt(chunk[i].grosir) || 0,
-            }))
-          );
-
-          // Batch insert stock (only rows with stok > 0)
-          const stockRows = prods
-            .map((p, i) => ({ product_id: p.id, jumlah: parseInt(chunk[i].stok) || 0 }))
-            .filter(s => s.jumlah > 0);
-          if (stockRows.length > 0) {
-            await supabase.from("stock").insert(stockRows);
-          }
-        } catch (err: any) {
-          console.error(`[BulkImport] Batch ${ci + 1} exception:`, err.message);
-          errors.push(`Batch ${ci + 1}: ${err.message}`);
-        }
-      }
+      if (error) throw error;
 
       setProgress(100);
       setProgressLabel("Selesai!");
 
-      if (errors.length > 0) {
-        console.error("[BulkImport] Errors:", errors);
-        toast({ title: "Sebagian Gagal", description: `${totalInserted} berhasil, ${errors.length} gagal`, variant: "destructive" });
+      if (data.errors && data.errors.length > 0) {
+        console.error("[BulkImport] Errors:", data.errors);
+        toast({
+          title: "Sebagian Gagal",
+          description: `${data.totalInserted} berhasil, ${data.errors.length} batch gagal`,
+          variant: "destructive",
+        });
       } else {
-        toast({ title: "Import Selesai", description: `${totalInserted} produk berhasil diimport` });
+        toast({
+          title: "Import Selesai",
+          description: `${data.totalInserted} produk berhasil diimport`,
+        });
       }
 
       setRows([emptyRow(), emptyRow(), emptyRow(), emptyRow(), emptyRow()]);
       setOpen(false);
       queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch (err: any) {
+      console.error("[BulkImport] Error:", err);
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
     setSubmitting(false);
