@@ -21,6 +21,7 @@ import {
   COLOR_GROUPS,
   RESTOCK_SCHEDULE,
   MINIMUM_DISPLAY_CONFIG,
+  HYBRID_CONFIG,
   type DosStatus,
   type TrendStatus,
   type VolatilityLevel,
@@ -84,6 +85,7 @@ export interface ProductAnalysis {
   isDeadStock: boolean;
   isNewProduct: boolean;
   isMinimumDisplay: boolean;
+  isCoverageGuard: boolean;
   daysSinceLastSale: number;
 }
 
@@ -462,23 +464,35 @@ export function analyzeAllProducts(
     const safetyStockDynamic = Math.ceil(Math.max(dynamicSS, minFloor));
     const legacySafetyStock = Math.ceil(velocity * (colorGroup ? SAFETY_STOCK_CONFIG.specialDays : SAFETY_STOCK_CONFIG.normalDays));
 
-    // Reorder point
+    // Reorder point (existing ROP logic)
     const reorderPoint = Math.ceil(forecastDaily * RESTOCK_SCHEDULE.leadTimeDays + safetyStockDynamic);
-    const needsReorder = currentStock <= reorderPoint;
+    let needsReorder = currentStock <= reorderPoint;
 
-    // Days of stock (use forecast for better prediction)
+    // Days of stock
     const dos = calcDaysOfStock(currentStock, forecastDaily);
     const dosStatus = getDosStatus(dos);
 
-    // Predicted stockout date
-    const stockoutDate = new Date(today());
-    stockoutDate.setDate(stockoutDate.getDate() + Math.floor(dos));
+    // Dead stock
+    const dead = isDeadStock(daysSinceLast);
 
     // Trend
     const { trend, pct: trendPct } = calcTrend(dailyMap);
 
-    // Dead stock
-    const dead = isDeadStock(daysSinceLast);
+    // ─── Hybrid: Coverage Guard (Mode C) ─────────────────
+    const coverageTarget = HYBRID_CONFIG.targetCoverageDays - HYBRID_CONFIG.coverageTolerance;
+    const isCoverageGuard =
+      !dead &&
+      forecastDaily > 0 &&
+      dos < coverageTarget &&
+      dos <= HYBRID_CONFIG.overstockThreshold;
+
+    if (isCoverageGuard && !needsReorder) {
+      needsReorder = true;
+    }
+
+    // Predicted stockout date
+    const stockoutDate = new Date(today());
+    stockoutDate.setDate(stockoutDate.getDate() + Math.floor(dos));
 
     // Priority (advanced)
     let priority = dead ? 0 : calcPriorityScore(
@@ -490,8 +504,20 @@ export function analyzeAllProducts(
     const rawNeed = Math.max(0, targetStock - currentStock);
     let recommendedQty = roundUpToBatch(rawNeed, batch);
 
+    // ─── Coverage Guard Qty ──────────────────────────────
+    if (isCoverageGuard) {
+      const targetStockCoverage = Math.ceil(forecastDaily * HYBRID_CONFIG.targetCoverageDays);
+      const coverageRawNeed = Math.max(0, targetStockCoverage - currentStock);
+      const coverageQty = roundUpToBatch(coverageRawNeed, batch);
+      // Use the LARGER of ROP qty and coverage qty
+      recommendedQty = Math.max(recommendedQty, coverageQty);
+      // Priority floor for coverage-only triggers
+      if (currentStock > reorderPoint) {
+        priority = Math.max(priority, HYBRID_CONFIG.priorityFloor);
+      }
+    }
+
     // ─── Minimum Display Rule (Mode B) ───────────────────
-    // Prevent empty shelves for slow-moving but active items
     const isMinDisplay =
       !dead &&
       currentStock === 0 &&
@@ -499,7 +525,7 @@ export function analyzeAllProducts(
       (!needsReorder || recommendedQty === 0);
 
     if (isMinDisplay) {
-      recommendedQty = roundUpToBatch(1, batch); // 1 batch minimum
+      recommendedQty = roundUpToBatch(1, batch);
       priority = Math.max(priority, MINIMUM_DISPLAY_CONFIG.priorityFloor);
     }
 
@@ -536,6 +562,7 @@ export function analyzeAllProducts(
       isDeadStock: dead,
       isNewProduct: isNew,
       isMinimumDisplay: isMinDisplay,
+      isCoverageGuard,
       nextRestockDay: toDateKey(nextRestockDay),
       recommendedOrderDate: toDateKey(orderDate),
       daysSinceLastSale: daysSinceLast,
