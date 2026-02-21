@@ -42,10 +42,13 @@ Kembalikan HANYA JSON array tanpa markdown. Contoh:
 [{"kode":"R533","qty_pesan":10,"qty_kirim":10,"harga_type":"normal","toko":"Toko ABC"}]
 Jika tidak bisa membaca, kembalikan [].`,
 
-      opname: `Baca foto data stok opname kain/tekstil.
-Ekstrak setiap item: kode, stok_fisik.${codesHint}
+      opname: `Baca foto catatan stok opname kain/tekstil.
+Catatan biasanya ditulis per tumpukan: KODE JUMLAH, satu baris per tumpukan.
+Jika produk yang sama ditulis di beberapa baris, itu berarti tumpukan terpisah (JANGAN dijumlahkan).
+Ekstrak SETIAP baris sebagai satu entry: kode dan qty (jumlah per tumpukan).${codesHint}
 Kembalikan HANYA JSON array tanpa markdown. Contoh:
-[{"kode":"R533","stok_fisik":45}]
+[{"kode":"R533","qty":10},{"kode":"R533","qty":15},{"kode":"2115","qty":10}]
+Artinya R533 punya 2 tumpukan: 10 dan 15.
 Jika tidak bisa membaca, kembalikan [].`,
     };
 
