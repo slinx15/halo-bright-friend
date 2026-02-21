@@ -99,6 +99,18 @@ export const TREND_CONFIG = {
 
 export type TrendStatus = "UP" | "DOWN" | "STABLE";
 
+// ─── Hybrid Reorder (Coverage Guard) ──────────────────────
+export const HYBRID_CONFIG = {
+  /** Distributor-style coverage target in days */
+  targetCoverageDays: 5,
+  /** Small buffer to prevent noise triggers */
+  coverageTolerance: 0.5,
+  /** Minimum priority score floor for coverage-only triggers */
+  priorityFloor: 55,
+  /** DOS above this = overstocked, skip coverage guard */
+  overstockThreshold: 12,
+};
+
 // ─── Minimum Display (Mode B) ─────────────────────────────
 export const MINIMUM_DISPLAY_CONFIG = {
   /** Max forecast to be considered "low demand" */

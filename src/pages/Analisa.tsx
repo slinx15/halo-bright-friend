@@ -223,6 +223,7 @@ const Analisa = () => {
           </CardContent>
         </Card>
                 <p><strong>Min Display:</strong> Stok 0 + demand rendah (&lt;0.3/hr) + bukan dead stock → order 1 batch untuk display</p>
+                <p><strong>Coverage Guard:</strong> Sisa stok &lt;4.5 hari + forecast &gt;0 → reorder ke target 5 hari coverage</p>
               </div>
     </TooltipProvider>
   );
@@ -258,6 +259,18 @@ function AnalysisRow({ a, index }: { a: ProductAnalysis; index: number }) {
               </TooltipTrigger>
               <TooltipContent side="right" className="text-xs max-w-[200px]">
                 Minimum display stock to prevent empty shelf
+              </TooltipContent>
+            </Tooltip>
+          )}
+          {a.isCoverageGuard && !a.isMinimumDisplay && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="cursor-help">
+                  <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0 border-primary/40 text-primary">Coverage</Badge>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="text-xs max-w-[200px]">
+                Stock below healthy coverage target ({'\u003C'}5 hari)
               </TooltipContent>
             </Tooltip>
           )}
