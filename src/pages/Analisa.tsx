@@ -19,6 +19,7 @@ import { PalingUntung } from "@/components/analisa/PalingUntung";
 import { Pelanggan } from "@/components/analisa/Pelanggan";
 import { StokSedikit } from "@/components/analisa/StokSedikit";
 import { RingkasanStok } from "@/components/analisa/RingkasanStok";
+import { DemandSupply } from "@/components/analisa/DemandSupply";
 import { AlertTriangle, TrendingDown } from "lucide-react";
 
 const VIEW_OPTIONS = [
@@ -32,6 +33,7 @@ const VIEW_OPTIONS = [
   { value: "untung", label: "💵 Paling Untung" },
   { value: "stoksedikit", label: "📉 Stok Sedikit" },
   { value: "pelanggan", label: "👥 Pelanggan" },
+  { value: "demand", label: "📦 Demand vs Supply" },
   { value: "deadstock", label: "💀 Tidak Laku" },
   { value: "ringkasan", label: "📊 Ringkasan" },
 ];
@@ -123,6 +125,7 @@ const Analisa = () => {
       {view === "untung" && <PalingUntung products={products} stockOutData={stockOutData} />}
       {view === "stoksedikit" && <StokSedikit analysis={analysis} />}
       {view === "pelanggan" && <Pelanggan stockOutData={stockOutData} products={products} />}
+      {view === "demand" && <DemandSupply analysis={analysis} />}
 
       {view === "deadstock" && (
         <Card>

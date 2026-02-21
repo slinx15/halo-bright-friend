@@ -21,6 +21,10 @@ export interface AnalysisResult {
   restockQty: number;
   restockCost: number;
   priorityScore: number;
+  totalPesan: number;
+  totalKirim: number;
+  fulfillmentRate: number;
+  demandVelocity: number;
 }
 
 export function useStockAnalysis(recentDays = 7, olderDays = 14) {
@@ -31,7 +35,7 @@ export function useStockAnalysis(recentDays = 7, olderDays = 14) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stock_out")
-        .select("product_id, qty_kirim, created_at, toko, total_harga, harga_satuan")
+        .select("product_id, qty_kirim, qty_pesan, created_at, toko, total_harga, harga_satuan")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -54,6 +58,9 @@ export function useStockAnalysis(recentDays = 7, olderDays = 14) {
       const recentSales = sales
         .filter((s) => new Date(s.created_at) >= recentCutoff)
         .reduce((sum, s) => sum + s.qty_kirim, 0);
+      const recentDemand = sales
+        .filter((s) => new Date(s.created_at) >= recentCutoff)
+        .reduce((sum, s) => sum + s.qty_pesan, 0);
       const olderSales = sales
         .filter((s) => new Date(s.created_at) >= olderCutoff && new Date(s.created_at) < recentCutoff)
         .reduce((sum, s) => sum + s.qty_kirim, 0);
@@ -86,6 +93,11 @@ export function useStockAnalysis(recentDays = 7, olderDays = 14) {
       const priorityScore =
         velocity * 0.4 + urgency * 30 * 0.3 + trendScore * 10 * 0.2 + stockScore * 10 * 0.1;
 
+      const totalPesan = sales.reduce((sum, s) => sum + s.qty_pesan, 0);
+      const totalKirim = sales.reduce((sum, s) => sum + s.qty_kirim, 0);
+      const fulfillmentRate = totalPesan > 0 ? (totalKirim / totalPesan) * 100 : 100;
+      const demandVelocity = Math.round((recentDemand / recentDays) * 100) / 100;
+
       return {
         kode: p.kode,
         nama: p.nama,
@@ -98,6 +110,10 @@ export function useStockAnalysis(recentDays = 7, olderDays = 14) {
         restockQty,
         restockCost,
         priorityScore: Math.round(priorityScore * 100) / 100,
+        totalPesan,
+        totalKirim,
+        fulfillmentRate: Math.round(fulfillmentRate * 10) / 10,
+        demandVelocity,
       };
     }).sort((a, b) => b.priorityScore - a.priorityScore);
   }, [products, stockOutData, recentDays, olderDays]);
