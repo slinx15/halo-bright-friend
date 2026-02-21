@@ -31,7 +31,9 @@ export function parseOpnameText(text: string): ParsedOpnameItem[] {
     const match = cleaned.match(/^([A-Za-z0-9]+)\s+(\d+)/);
     if (!match) continue;
 
-    const kode = match[1].toUpperCase();
+    // Strip leading zeros (e.g. "032" → "32") but keep single "0"
+    const rawKode = match[1].toUpperCase();
+    const kode = rawKode.replace(/^0+/, "") || "0";
     const qty = parseInt(match[2], 10);
     if (qty <= 0) continue;
 
