@@ -83,12 +83,13 @@ export function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko,
   };
 
   const validItems = items.filter((i) => i.isValid);
+  const submitItems = validItems.filter((i) => i.qtyKirim > 0);
   const invalidItems = items.filter((i) => !i.isValid && i.kode);
-  const overStockItems = validItems.filter((i) => i.qtyKirim > (i.product?.stock?.jumlah ?? 0));
+  const overStockItems = submitItems.filter((i) => i.qtyKirim > (i.product?.stock?.jumlah ?? 0));
 
-  const canSubmit = validItems.length > 0 && overStockItems.length === 0 && validItems.every((i) => i.qtyKirim > 0);
+  const canSubmit = submitItems.length > 0 && overStockItems.length === 0;
 
-  const totalRevenue = validItems.reduce((sum, item) => {
+  const totalRevenue = submitItems.reduce((sum, item) => {
     const price = item.product?.prices
       ? item.hargaType === "grosir" ? item.product.prices.harga_grosir : item.product.prices.harga_normal
       : 0;
@@ -96,7 +97,7 @@ export function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko,
   }, 0);
 
   const handleSubmit = async () => {
-    await onSubmit(validItems);
+    await onSubmit(submitItems);
     setItems([]);
   };
 
@@ -243,15 +244,18 @@ export function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko,
         )}
 
         {/* Summary */}
-        {validItems.length > 0 && (
+        {submitItems.length > 0 && (
           <div className="bg-muted p-3 rounded-lg text-sm flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Badge variant="secondary">
                 <CheckCircle2 className="h-3 w-3 mr-1" />
-                {validItems.length} item valid
+                {submitItems.length} item akan dikirim
               </Badge>
+              {validItems.length > submitItems.length && (
+                <span className="text-xs text-muted-foreground">({validItems.length - submitItems.length} dilewati, kirim=0)</span>
+              )}
               <span className="text-muted-foreground">
-                Total kirim: <strong>{formatNumber(validItems.reduce((s, i) => s + i.qtyKirim, 0))}</strong> pcs
+                Total kirim: <strong>{formatNumber(submitItems.reduce((s, i) => s + i.qtyKirim, 0))}</strong> pcs
               </span>
             </div>
             <span className="font-bold text-primary">{formatRupiah(totalRevenue)}</span>
@@ -264,7 +268,7 @@ export function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko,
           className="w-full"
         >
           <Send className="h-4 w-4 mr-2" />
-          {submitting ? "Menyimpan..." : `Simpan ${validItems.length} Barang Keluar`}
+          {submitting ? "Menyimpan..." : `Simpan ${submitItems.length} Barang Keluar`}
         </Button>
       </CardContent>
     </Card>
