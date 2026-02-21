@@ -27,9 +27,13 @@ serve(async (req) => {
       masuk: `Baca foto formulir order/nota pembelian kain/tekstil.
 Format tabel biasanya: NO | KETERANGAN (kode) | ISI | BAL | JUMLAH.
 Ekstrak HANYA baris yang ada isinya (JUMLAH > 0 atau ada kode di KETERANGAN).
-Untuk setiap item: kode = KETERANGAN, qty = JUMLAH.${codesHint}
+Untuk setiap item: kode = KETERANGAN, qty = JUMLAH.
+PENTING:
+- Kolom KETERANGAN berisi kode produk. Jika ada tambahan teks seperti "G-29", "G-19", atau keterangan lain setelah kode angka, ABAIKAN teks tambahannya. Contoh: "110 G-29" → kode = "110", "2135 G-19" → kode = "2135".
+- Abaikan baris header/judul seperti "B.OBRAS", "REKAPAN", "TOTAL" dsb.
+- Strip leading zero dari kode: "004" → "4", "035" → "35".${codesHint}
 Kembalikan HANYA JSON array tanpa markdown. Contoh:
-[{"kode":"R533","qty":25},{"kode":"BLK","qty":100}]
+[{"kode":"533","qty":25},{"kode":"BLK","qty":100}]
 Jika tidak bisa membaca, kembalikan [].`,
 
       keluar: `Baca foto nota penjualan kain/tekstil.
