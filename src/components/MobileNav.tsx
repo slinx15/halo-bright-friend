@@ -9,6 +9,7 @@ import {
   BarChart3,
   Settings,
   LogOut,
+  FileUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +21,7 @@ const navItems = [
   { icon: ClipboardCheck, label: "Opname", path: "/opname" },
   { icon: BarChart3, label: "Analisa", path: "/analisa" },
   { icon: Settings, label: "Produk", path: "/produk" },
+  { icon: FileUp, label: "Import", path: "/import-histori" },
 ];
 
 const MobileNav = () => {
