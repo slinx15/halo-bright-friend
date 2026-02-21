@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/tooltip";
 import type { VolatilityLevel } from "@/lib/stockAnalyticsConfig";
 
-type FilterTab = "ALL" | "CRITICAL" | "WARNING" | "ATTENTION" | "SAFE" | "DEAD";
+type FilterTab = "ALL" | "CRITICAL" | "WARNING" | "ATTENTION" | "SAFE" | "DEAD" | "DISPLAY" | "COVERAGE";
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
   CRITICAL: { label: "Restock Sekarang", icon: <AlertTriangle className="h-3.5 w-3.5" />, className: "bg-destructive/15 text-destructive border-destructive/30" },
@@ -64,9 +64,21 @@ const Analisa = () => {
     return getTotalRestockCost(analyses, products);
   }, [analyses, products]);
 
+  const coverageCount = useMemo(() =>
+    analyses.filter(a => a.isCoverageGuard && !a.isMinimumDisplay && !a.isDeadStock).length,
+    [analyses]
+  );
+
+  const displayCount = useMemo(() =>
+    analyses.filter(a => a.isMinimumDisplay && !a.isDeadStock).length,
+    [analyses]
+  );
+
   const filtered = useMemo(() => {
     let list = analyses;
     if (filter === "DEAD") list = list.filter((a) => a.isDeadStock);
+    else if (filter === "DISPLAY") list = list.filter((a) => a.isMinimumDisplay && !a.isDeadStock);
+    else if (filter === "COVERAGE") list = list.filter((a) => a.isCoverageGuard && !a.isMinimumDisplay && !a.isDeadStock);
     else if (filter !== "ALL") list = list.filter((a) => !a.isDeadStock && a.dosStatus === filter);
 
     const sorted = [...list];
@@ -118,11 +130,13 @@ const Analisa = () => {
         </div>
 
         {/* Status Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
           <StatusCard label="🔴 Critical" count={counts.critical} sub="≤2 hari" onClick={() => setFilter("CRITICAL")} active={filter === "CRITICAL"} className="border-destructive/30" />
           <StatusCard label="🟠 Warning" count={counts.warning} sub="≤4 hari" onClick={() => setFilter("WARNING")} active={filter === "WARNING"} className="border-warning/30" />
           <StatusCard label="🟡 Attention" count={counts.attention} sub="≤7 hari" onClick={() => setFilter("ATTENTION")} active={filter === "ATTENTION"} className="border-accent/30" />
           <StatusCard label="🟢 Aman" count={counts.safe} sub=">7 hari" onClick={() => setFilter("SAFE")} active={filter === "SAFE"} className="border-success/30" />
+          <StatusCard label="🛡 Coverage" count={coverageCount} sub="< 5 hari" onClick={() => setFilter("COVERAGE")} active={filter === "COVERAGE"} className="border-primary/30" />
+          <StatusCard label="🪟 Display" count={displayCount} sub="min display" onClick={() => setFilter("DISPLAY")} active={filter === "DISPLAY"} className="border-warning/30" />
           <StatusCard label="💀 Dead" count={counts.dead} sub="≥60 hari" onClick={() => setFilter("DEAD")} active={filter === "DEAD"} className="border-border" />
           <StatusCard label="📦 Total" count={analyses.length} sub="semua produk" onClick={() => setFilter("ALL")} active={filter === "ALL"} className="border-primary/30" />
         </div>
