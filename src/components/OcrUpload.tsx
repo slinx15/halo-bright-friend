@@ -254,8 +254,8 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
           )}
 
           {/* Items list */}
-          <ScrollArea className="flex-1 min-h-0 max-h-[50vh]">
-            <div className="space-y-2 pr-2">
+          <div className="flex-1 min-h-0 max-h-[45vh] overflow-y-auto border rounded-md p-1">
+            <div className="space-y-2 pr-1">
               {ocrItems.map((item, idx) => (
                 <div
                   key={idx}
@@ -390,7 +390,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
                 </div>
               ))}
             </div>
-          </ScrollArea>
+          </div>
 
           <datalist id="ocr-product-codes">
             {products?.map((p) => <option key={p.id} value={p.kode} />)}
