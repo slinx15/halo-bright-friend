@@ -44,13 +44,13 @@ const Opname = () => {
   const { data: history } = useQuery({
     queryKey: ["opname_history"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("stock_opname_log")
-        .select("*, products(kode, nama)")
-        .order("created_at", { ascending: false })
-        .limit(50);
-      if (error) throw error;
-      return data;
+      const headers = getAuthHeaders();
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/stock_opname_log?select=*,products(kode,nama)&order=created_at.desc&limit=50`,
+        { headers: { ...headers, "Prefer": "return=representation" } }
+      );
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
     },
   });
 
