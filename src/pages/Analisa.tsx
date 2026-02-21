@@ -252,7 +252,9 @@ function AnalysisRow({ a, index }: { a: ProductAnalysis; index: number }) {
           {a.isMinimumDisplay && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0 border-warning/40 text-warning cursor-help">Display</Badge>
+                <span className="cursor-help">
+                  <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0 border-warning/40 text-warning">Display</Badge>
+                </span>
               </TooltipTrigger>
               <TooltipContent side="right" className="text-xs max-w-[200px]">
                 Minimum display stock to prevent empty shelf
