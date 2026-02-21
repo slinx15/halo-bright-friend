@@ -130,7 +130,7 @@ const Dashboard = () => {
                 <DollarSign className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-lg md:text-2xl font-bold">{formatRupiah(omzetHariIni)}</p>
+                <p className="text-sm md:text-2xl font-bold truncate">{formatRupiah(omzetHariIni)}</p>
                 <p className="text-xs text-muted-foreground">Omzet Hari Ini</p>
               </div>
             </div>
