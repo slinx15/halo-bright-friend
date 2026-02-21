@@ -409,8 +409,10 @@ function getFirstSaleDate(allSales: StockOutRecord[], productId: string): Date |
 
 export function analyzeAllProducts(
   products: ProductWithDetails[],
-  allSales: StockOutRecord[]
+  allSales: StockOutRecord[],
+  targetCoverageDaysOverride?: number
 ): ProductAnalysis[] {
+  const effectiveCoverageDays = targetCoverageDaysOverride ?? HYBRID_CONFIG.targetCoverageDays;
   const results: ProductAnalysis[] = [];
 
   // Pre-compute all product data
@@ -479,7 +481,7 @@ export function analyzeAllProducts(
     const { trend, pct: trendPct } = calcTrend(dailyMap);
 
     // ─── Hybrid: Coverage Guard (Mode C) ─────────────────
-    const coverageTarget = HYBRID_CONFIG.targetCoverageDays - HYBRID_CONFIG.coverageTolerance;
+    const coverageTarget = effectiveCoverageDays - HYBRID_CONFIG.coverageTolerance;
     const isCoverageGuard =
       !dead &&
       forecastDaily > 0 &&
@@ -506,7 +508,7 @@ export function analyzeAllProducts(
 
     // ─── Coverage Guard Qty ──────────────────────────────
     if (isCoverageGuard) {
-      const targetStockCoverage = Math.ceil(forecastDaily * HYBRID_CONFIG.targetCoverageDays);
+      const targetStockCoverage = Math.ceil(forecastDaily * effectiveCoverageDays);
       const coverageRawNeed = Math.max(0, targetStockCoverage - currentStock);
       const coverageQty = roundUpToBatch(coverageRawNeed, batch);
       // Use the LARGER of ROP qty and coverage qty

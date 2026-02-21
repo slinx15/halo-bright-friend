@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -51,11 +52,12 @@ const Analisa = () => {
   const [filter, setFilter] = useState<FilterTab>("ALL");
   const [sortKey, setSortKey] = useState<SortKey>("priority");
   const [sortAsc, setSortAsc] = useState(false);
+  const [coverageDays, setCoverageDays] = useState(5);
 
   const analyses = useMemo(() => {
     if (!products || !stockOutData) return [];
-    return analyzeAllProducts(products, stockOutData);
-  }, [products, stockOutData]);
+    return analyzeAllProducts(products, stockOutData, coverageDays);
+  }, [products, stockOutData, coverageDays]);
 
   const counts = useMemo(() => getStatusCounts(analyses), [analyses]);
 
@@ -119,14 +121,31 @@ const Analisa = () => {
     <TooltipProvider>
       <div className="p-4 md:p-6 space-y-5">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <ShoppingCart className="h-6 w-6 text-primary" />
-            Pro Inventory Intelligence
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Rule-based deterministik + layer prediktif — forecast, volatility, dynamic safety stock
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <ShoppingCart className="h-6 w-6 text-primary" />
+              Pro Inventory Intelligence
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Rule-based deterministik + layer prediktif — forecast, volatility, dynamic safety stock
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">Target restock:</span>
+            <Select value={String(coverageDays)} onValueChange={(v) => setCoverageDays(Number(v))}>
+              <SelectTrigger className="w-[100px] h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="3">3 hari</SelectItem>
+                <SelectItem value="5">5 hari</SelectItem>
+                <SelectItem value="7">7 hari</SelectItem>
+                <SelectItem value="10">10 hari</SelectItem>
+                <SelectItem value="14">14 hari</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Status Cards */}
@@ -135,7 +154,7 @@ const Analisa = () => {
           <StatusCard label="🟠 Warning" count={counts.warning} sub="≤4 hari" onClick={() => setFilter("WARNING")} active={filter === "WARNING"} className="border-warning/30" />
           <StatusCard label="🟡 Attention" count={counts.attention} sub="≤7 hari" onClick={() => setFilter("ATTENTION")} active={filter === "ATTENTION"} className="border-accent/30" />
           <StatusCard label="🟢 Aman" count={counts.safe} sub=">7 hari" onClick={() => setFilter("SAFE")} active={filter === "SAFE"} className="border-success/30" />
-          <StatusCard label="🛡 Coverage" count={coverageCount} sub="< 5 hari" onClick={() => setFilter("COVERAGE")} active={filter === "COVERAGE"} className="border-primary/30" />
+          <StatusCard label="🛡 Coverage" count={coverageCount} sub={`< ${coverageDays} hari`} onClick={() => setFilter("COVERAGE")} active={filter === "COVERAGE"} className="border-primary/30" />
           <StatusCard label="🪟 Display" count={displayCount} sub="min display" onClick={() => setFilter("DISPLAY")} active={filter === "DISPLAY"} className="border-warning/30" />
           <StatusCard label="💀 Dead" count={counts.dead} sub="≥60 hari" onClick={() => setFilter("DEAD")} active={filter === "DEAD"} className="border-border" />
           <StatusCard label="📦 Total" count={analyses.length} sub="semua produk" onClick={() => setFilter("ALL")} active={filter === "ALL"} className="border-primary/30" />
