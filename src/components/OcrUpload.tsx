@@ -59,9 +59,15 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
     // 3. Also try adding leading zeros to master code
     found = products?.find((p) => p.kode.toUpperCase().replace(/^0+/, "") === stripped);
     if (found) return found;
-    // 4. Alias table lookup
+    // 4. Strip suffix like "G-29", "G-19" etc and try again
+    const baseKode = kode.replace(/\s+[A-Z]-?\d+$/i, "").replace(/^0+/, "");
+    if (baseKode !== stripped) {
+      found = products?.find((p) => p.kode.toUpperCase() === baseKode || p.kode.toUpperCase().replace(/^0+/, "") === baseKode);
+      if (found) return found;
+    }
+    // 5. Alias table lookup
     if (aliases) {
-      const aliasEntry = aliases.find((a) => a.alias.toUpperCase() === kode);
+      const aliasEntry = aliases.find((a) => a.alias.toUpperCase() === kode || a.alias.toUpperCase() === stripped || a.alias.toUpperCase() === baseKode);
       if (aliasEntry) {
         found = products?.find((p) => p.id === aliasEntry.product_id);
         if (found) return found;
