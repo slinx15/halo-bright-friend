@@ -41,28 +41,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-    let initialSessionHandled = false;
 
     // Safety timeout
     const timeout = setTimeout(() => {
       if (mounted && loading) setLoading(false);
     }, 5000);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
+    // INITIAL load
+    const initializeAuth = async () => {
+      try {
+        const { data: { session: initSession } } = await supabase.auth.getSession();
         if (!mounted) return;
 
-        // Skip if this is the initial session — we handle it via getSession below
-        if (event === "INITIAL_SESSION") {
-          return;
+        setSession(initSession);
+        setUser(initSession?.user ?? null);
+
+        if (initSession?.user) {
+          const userRole = await fetchRole(initSession.user.id);
+          if (mounted) setRole(userRole);
         }
+      } catch (e) {
+        console.error("[initializeAuth] error:", e);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    // Listener for ONGOING auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, newSession) => {
+        if (!mounted) return;
+        if (event === "INITIAL_SESSION") return;
 
         setSession(newSession);
         setUser(newSession?.user ?? null);
 
         if (newSession?.user) {
-          const userRole = await fetchRole(newSession.user.id);
-          if (mounted) setRole(userRole);
+          // Use setTimeout to avoid deadlock with Supabase auth
+          setTimeout(() => {
+            if (!mounted) return;
+            fetchRole(newSession.user.id).then((userRole) => {
+              if (mounted) setRole(userRole);
+            });
+          }, 0);
         } else {
           setRole(null);
         }
@@ -70,26 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // Handle initial session
-    supabase.auth.getSession().then(async ({ data: { session: initSession } }) => {
-      if (!mounted || initialSessionHandled) return;
-      initialSessionHandled = true;
-
-      setSession(initSession);
-      setUser(initSession?.user ?? null);
-
-      if (initSession?.user) {
-        const userRole = await fetchRole(initSession.user.id);
-        if (mounted) {
-          setRole(userRole);
-          setLoading(false);
-        }
-      } else {
-        if (mounted) setLoading(false);
-      }
-    }).catch(() => {
-      if (mounted) setLoading(false);
-    });
+    initializeAuth();
 
     return () => {
       mounted = false;
