@@ -165,7 +165,7 @@ function buildDailySalesMap(sales: StockOutRecord[], productId: string): Record<
   for (const s of sales) {
     if (s.product_id !== productId) continue;
     const key = s.created_at.slice(0, 10);
-    map[key] = (map[key] ?? 0) + s.qty_kirim;
+    map[key] = (map[key] ?? 0) + s.qty_pesan;
   }
   return map;
 }
@@ -303,9 +303,9 @@ export function calculateTrendData(
     if (!productIdSet.has(s.product_id)) continue;
     const d = new Date(s.created_at);
     if (d >= weekAgo) {
-      thisWeek[s.product_id] = (thisWeek[s.product_id] ?? 0) + s.qty_kirim;
+      thisWeek[s.product_id] = (thisWeek[s.product_id] ?? 0) + s.qty_pesan;
     } else if (d >= twoWeeksAgo && d < weekAgo) {
-      lastWeek[s.product_id] = (lastWeek[s.product_id] ?? 0) + s.qty_kirim;
+      lastWeek[s.product_id] = (lastWeek[s.product_id] ?? 0) + s.qty_pesan;
     }
   }
 

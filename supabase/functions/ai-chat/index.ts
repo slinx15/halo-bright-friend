@@ -52,12 +52,12 @@ serve(async (req) => {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const recentSales = stockOut.filter((s: any) => new Date(s.created_at) >= sevenDaysAgo);
     const totalOmzet7d = recentSales.reduce((s: number, r: any) => s + (r.total_harga || 0), 0);
-    const totalPcs7d = recentSales.reduce((s: number, r: any) => s + (r.qty_kirim || 0), 0);
+    const totalPcs7d = recentSales.reduce((s: number, r: any) => s + (r.qty_pesan || 0), 0);
 
     // Top sellers
     const salesByProduct: Record<string, number> = {};
     recentSales.forEach((s: any) => {
-      salesByProduct[s.product_id] = (salesByProduct[s.product_id] || 0) + s.qty_kirim;
+      salesByProduct[s.product_id] = (salesByProduct[s.product_id] || 0) + s.qty_pesan;
     });
     const topSellers = Object.entries(salesByProduct)
       .sort(([, a], [, b]) => b - a)
@@ -72,7 +72,7 @@ serve(async (req) => {
     recentSales.forEach((s: any) => {
       const t = s.toko || "Tanpa nama";
       if (!salesByToko[t]) salesByToko[t] = { pcs: 0, omzet: 0 };
-      salesByToko[t].pcs += s.qty_kirim;
+      salesByToko[t].pcs += s.qty_pesan;
       salesByToko[t].omzet += s.total_harga;
     });
     const topCustomers = Object.entries(salesByToko)
