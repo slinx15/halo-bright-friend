@@ -73,7 +73,39 @@ const Analisa = () => {
   const needsReorder = useMemo(() => analyses.filter((a) => a.recommendedQty > 0).length, [analyses]);
 
   // Additional analysis features
-  const topSellers = useMemo(() => calcTopSellers(products, stockOutData), [products, stockOutData]);
+  // Top Seller derived from engine analyses (single source of truth for velocity)
+  const topSellers = useMemo(() => {
+    // Build sales qty map for "Terjual" column
+    const salesMap: Record<string, { qty: number; days: Set<string> }> = {};
+    const thirtyAgo = new Date();
+    thirtyAgo.setDate(thirtyAgo.getDate() - 30);
+    for (const s of stockOutData) {
+      if (new Date(s.created_at) < thirtyAgo) continue;
+      if (!salesMap[s.product_id]) salesMap[s.product_id] = { qty: 0, days: new Set() };
+      salesMap[s.product_id].qty += s.qty_kirim;
+      salesMap[s.product_id].days.add(s.created_at.slice(0, 10));
+    }
+    return analyses
+      .filter(a => {
+        const sm = salesMap[a.productId];
+        return sm && sm.qty > 0;
+      })
+      .sort((a, b) => b.velocity - a.velocity)
+      .slice(0, RULES.DISPLAY_TOP_ITEMS)
+      .map(a => {
+        const sm = salesMap[a.productId] ?? { qty: 0, days: new Set() };
+        return {
+          kode: a.kode,
+          productId: a.productId,
+          totalQty: sm.qty,
+          days: sm.days.size,
+          velocity: a.velocity,
+          stok: a.currentStock,
+          daysLeft: a.daysOfStock,
+          isBestSeller: a.isBestSeller,
+        };
+      });
+  }, [analyses, stockOutData]);
   const trendItems = useMemo(() => calcTrend(products, stockOutData), [products, stockOutData]);
   const deadStock = useMemo(() => calcDeadStock(products, stockOutData), [products, stockOutData]);
   const lowStock = useMemo(() => calcLowStock(products, stockOutData), [products, stockOutData]);
