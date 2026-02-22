@@ -15,6 +15,7 @@ import {
   Users,
   MoreHorizontal,
   X,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -74,6 +75,17 @@ const MobileNav = () => {
                 </button>
               );
             })}
+            <div className="border-t border-border/50 my-1" />
+            <button
+              onClick={() => {
+                setMoreOpen(false);
+                doLogout();
+              }}
+              className="flex items-center gap-3 w-full px-4 py-3 min-h-[48px] rounded-xl text-sm font-medium text-destructive active:bg-destructive/10 transition-all"
+            >
+              <LogOut className="h-[18px] w-[18px]" />
+              Keluar
+            </button>
           </div>
         </div>
       )}
