@@ -202,8 +202,13 @@ export function calculateWMAVelocity(
     const totalQty = period1Total + period2Total;
     const minDaysForCalc = 7;
 
-    const vel1 = period1Days > 0 ? period1Total / Math.max(period1Days, minDaysForCalc) : 0;
-    const vel2 = period2Days > 0 ? period2Total / Math.max(period2Days, minDaysForCalc) : 0;
+    // Bot parity: divide by CALENDAR period length (not active sale days)
+    // Period 1 = 14 calendar days, Period 2 = 16 calendar days (30 - 14)
+    const period1CalendarDays = RULES.WMA_PERIOD1_DAYS; // 14
+    const period2CalendarDays = 30 - RULES.WMA_PERIOD1_DAYS; // 16
+
+    const vel1 = period1Days > 0 ? period1Total / Math.max(period1CalendarDays, minDaysForCalc) : 0;
+    const vel2 = period2Days > 0 ? period2Total / Math.max(period2CalendarDays, minDaysForCalc) : 0;
 
     let velocity: number;
     let dataStatus: WMAInfo["dataStatus"];
