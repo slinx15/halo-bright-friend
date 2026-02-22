@@ -200,7 +200,7 @@ const BarangKeluar = () => {
       <Tabs defaultValue="bulk" className="space-y-4">
         <TabsList className="grid w-full grid-cols-2 rounded-xl h-11">
           <TabsTrigger value="single" className="rounded-lg font-semibold">Satuan</TabsTrigger>
-          <TabsTrigger value="bulk" className="rounded-lg font-semibold">Bulk / OCR</TabsTrigger>
+          <TabsTrigger value="bulk" className="rounded-lg font-semibold">Input Cepat</TabsTrigger>
         </TabsList>
 
         <TabsContent value="single">

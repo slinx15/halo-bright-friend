@@ -234,6 +234,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
   const invalidCount = ocrItems.filter((i) => !i.isValid).length;
 
   const modeLabel = { masuk: "nota pembelian", keluar: "nota penjualan", opname: "data stok" };
+  const scanLabel = { masuk: "Scan Nota", keluar: "Scan Nota", opname: "Scan Data" };
 
   return (
     <>
@@ -260,7 +261,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
           ) : (
             <Camera className="h-4 w-4 mr-1" />
           )}
-          {loading ? "Memproses..." : `Scan ${modeLabel[mode]}`}
+          {loading ? "Memproses..." : scanLabel[mode]}
         </Button>
       </div>
 

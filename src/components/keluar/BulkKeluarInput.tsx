@@ -107,7 +107,7 @@ export function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko,
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <PackageMinus className="h-5 w-5" />
-            Bulk Barang Keluar
+            Input Cepat Barang Keluar
           </CardTitle>
           <OcrUpload mode="keluar" onResult={handleOcrResult} />
         </div>
