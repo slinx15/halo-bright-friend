@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.import-sales-history]
 verify_jwt = false
+
+[functions.ai-chat]
+verify_jwt = false
+
+[functions.ai-insights]
+verify_jwt = false
