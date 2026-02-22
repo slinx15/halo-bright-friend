@@ -17,6 +17,7 @@ import { OcrUpload } from "@/components/OcrUpload";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { splitIntoStacks, addStacks } from "@/lib/tumpukanUtils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { TransactionSkeleton } from "@/components/LoadingSkeletons";
 
 interface LineItem {
   kode: string;

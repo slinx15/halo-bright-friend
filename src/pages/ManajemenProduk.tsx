@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Settings, Plus, Pencil, Trash2, Search, Package } from "lucide-react";
 import { formatRupiah, formatNumber } from "@/lib/formatters";
+import { ProdukSkeleton } from "@/components/LoadingSkeletons";
 import { BulkInputDialog } from "@/components/produk/BulkInputDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -152,7 +153,7 @@ const ManajemenProduk = () => {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="py-8 text-center text-muted-foreground">Memuat...</div>
+            <ProdukSkeleton />
           ) : isMobile ? (
             <div className="space-y-2.5">
               {filtered?.length === 0 && (

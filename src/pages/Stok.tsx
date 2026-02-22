@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Package, Search, AlertTriangle, TrendingUp } from "lucide-react";
 import { formatNumber, formatRupiah, getStockStatus, getStockStatusColor } from "@/lib/formatters";
+import { StokSkeleton } from "@/components/LoadingSkeletons";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Progress } from "@/components/ui/progress";
@@ -25,6 +26,8 @@ const Stok = () => {
   const totalStok = filtered?.reduce((sum, p) => sum + (p.stock?.jumlah ?? 0), 0) ?? 0;
   const kritis = filtered?.filter((p) => getStockStatus(p.stock?.jumlah ?? 0) === "kritis").length ?? 0;
   const warning = filtered?.filter((p) => getStockStatus(p.stock?.jumlah ?? 0) === "warning").length ?? 0;
+
+  if (isLoading) return <StokSkeleton />;
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full">
@@ -75,9 +78,7 @@ const Stok = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="py-8 text-center text-muted-foreground">Memuat...</div>
-          ) : isMobile ? (
+          {isMobile ? (
             /* Mobile: Cards */
             <div className="space-y-2.5">
               {filtered?.length === 0 && (

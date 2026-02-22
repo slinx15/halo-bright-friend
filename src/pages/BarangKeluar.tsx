@@ -19,6 +19,7 @@ import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { deductFromStacks } from "@/lib/tumpukanUtils";
 import { BulkKeluarInput, type BulkKeluarItem } from "@/components/keluar/BulkKeluarInput";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { TransactionSkeleton } from "@/components/LoadingSkeletons";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;

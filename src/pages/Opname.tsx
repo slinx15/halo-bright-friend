@@ -34,6 +34,7 @@ import { formatDate, formatNumber } from "@/lib/formatters";
 import { BulkOpnameInput } from "@/components/opname/BulkOpnameInput";
 import type { ParsedOpnameItem } from "@/lib/opnameParser";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { OpnameSkeleton } from "@/components/LoadingSkeletons";
 
 const Opname = () => {
   const { user } = useAuth();
