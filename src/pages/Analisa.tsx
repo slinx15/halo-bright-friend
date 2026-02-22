@@ -171,23 +171,16 @@ function BudgetPlanner({
         }
       }
     } else {
-      // Budget TIDAK cukup → proportional allocation
-      // Prioritas: Critical & Warning dapat full, sisanya proporsional
-      const urgent: typeof candidates = [];
-      const normal: typeof candidates = [];
-      for (const c of candidates) {
-        if (c.item.daysOfStock <= RULES.WARNING_DAYS || c.item.isStockOut) {
-          urgent.push(c);
-        } else {
-          normal.push(c);
-        }
-      }
+      // Budget TIDAK cukup → proportional allocation untuk SEMUA
+      // Scale ratio berdasarkan budget / total ideal cost
+      const ratio = budgetAmount / totalIdealCost;
 
-      // First: allocate urgent items
-      for (const c of urgent) {
+      // Apply proportional qty to all candidates (urgent tetap diprioritaskan via sort order)
+      for (const c of candidates) {
         if (remaining <= 0) break;
-        let qty = c.idealQty;
-        let cost = c.idealCost;
+        const scaledQty = Math.ceil(c.idealQty * ratio);
+        let qty = Math.max(c.minOrder, Math.ceil(scaledQty / c.batch) * c.batch);
+        let cost = qty * c.item.unitPrice;
         if (cost > remaining) {
           qty = Math.floor(Math.floor(remaining / c.item.unitPrice) / c.batch) * c.batch;
           if (qty < c.minOrder) continue;
@@ -195,26 +188,6 @@ function BudgetPlanner({
         }
         result.push({ item: c.item, qty, cost, reason: c.reason });
         remaining -= cost;
-      }
-
-      // Then: spread remaining budget across normal items proportionally
-      if (remaining > 0 && normal.length > 0) {
-        const normalTotalCost = normal.reduce((s, c) => s + c.idealCost, 0);
-        const ratio = Math.min(1, remaining / normalTotalCost);
-
-        for (const c of normal) {
-          if (remaining <= 0) break;
-          const scaledQty = Math.ceil(c.idealQty * ratio);
-          let qty = Math.max(c.minOrder, Math.ceil(scaledQty / c.batch) * c.batch);
-          let cost = qty * c.item.unitPrice;
-          if (cost > remaining) {
-            qty = Math.floor(Math.floor(remaining / c.item.unitPrice) / c.batch) * c.batch;
-            if (qty < c.minOrder) continue;
-            cost = qty * c.item.unitPrice;
-          }
-          result.push({ item: c.item, qty, cost, reason: c.reason });
-          remaining -= cost;
-        }
       }
     }
 
