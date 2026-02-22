@@ -8,7 +8,6 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 function getAuthHeaders() {
-  // Bypass SDK entirely to avoid Navigator LockManager hang
   const storageKey = `sb-${import.meta.env.VITE_SUPABASE_PROJECT_ID}-auth-token`;
   let token = SUPABASE_KEY;
   try {
@@ -25,14 +24,16 @@ function getAuthHeaders() {
     "Prefer": "return=minimal",
   };
 }
+
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardCheck } from "lucide-react";
+import { ClipboardCheck, Clock } from "lucide-react";
 import { formatDate, formatNumber } from "@/lib/formatters";
 import { BulkOpnameInput } from "@/components/opname/BulkOpnameInput";
 import type { ParsedOpnameItem } from "@/lib/opnameParser";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Opname = () => {
   const { user } = useAuth();
@@ -40,6 +41,7 @@ const Opname = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
+  const isMobile = useIsMobile();
 
   const { data: history } = useQuery({
     queryKey: ["opname_history"],
@@ -57,62 +59,34 @@ const Opname = () => {
   const handleBulkSubmit = async (items: ParsedOpnameItem[]) => {
     if (!user || !products) return;
     setSubmitting(true);
-
     try {
-      // Prepare all data first
       const opnameLogs: any[] = [];
       const stockUpserts: { product_id: string; jumlah: number; tumpukan_detail: number[] }[] = [];
-
       for (const item of items) {
         const product = products.find((p) => p.kode.toUpperCase() === item.kode.toUpperCase());
         if (!product) continue;
-
         const stokSistem = product.stock?.jumlah ?? 0;
         const selisih = item.total - stokSistem;
-
         opnameLogs.push({
-          product_id: product.id,
-          stok_sistem: stokSistem,
-          stok_fisik: item.total,
-          selisih,
-          catatan: `Bulk SO: tumpukan ${item.stacks.join(", ")}`,
-          user_id: user.id,
-          status: selisih === 0 ? "sesuai" : "selisih",
+          product_id: product.id, stok_sistem: stokSistem, stok_fisik: item.total,
+          selisih, catatan: `Bulk SO: tumpukan ${item.stacks.join(", ")}`,
+          user_id: user.id, status: selisih === 0 ? "sesuai" : "selisih",
         });
-
-        stockUpserts.push({
-          product_id: product.id,
-          jumlah: item.total,
-          tumpukan_detail: item.stacks,
-        });
+        stockUpserts.push({ product_id: product.id, jumlah: item.total, tumpukan_detail: item.stacks });
       }
-
       const headers = getAuthHeaders();
-
-      // Batch insert opname logs via REST
       if (opnameLogs.length > 0) {
-        const logRes = await fetch(`${SUPABASE_URL}/rest/v1/stock_opname_log`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(opnameLogs),
-        });
+        const logRes = await fetch(`${SUPABASE_URL}/rest/v1/stock_opname_log`, { method: "POST", headers, body: JSON.stringify(opnameLogs) });
         if (!logRes.ok) throw new Error(await logRes.text());
       }
-
-      // Batch upsert stock via REST
       if (stockUpserts.length > 0) {
         const stockRes = await fetch(`${SUPABASE_URL}/rest/v1/stock?on_conflict=product_id`, {
-          method: "POST",
-          headers: { ...headers, "Prefer": "resolution=merge-duplicates,return=minimal" },
+          method: "POST", headers: { ...headers, "Prefer": "resolution=merge-duplicates,return=minimal" },
           body: JSON.stringify(stockUpserts),
         });
         if (!stockRes.ok) throw new Error(await stockRes.text());
       }
-
-      toast({
-        title: "Bulk Opname Selesai",
-        description: `${stockUpserts.length} produk berhasil di-update`,
-      });
+      toast({ title: "Bulk Opname Selesai", description: `${stockUpserts.length} produk berhasil di-update` });
       queryClient.invalidateQueries({ queryKey: ["opname_history"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch (err: any) {
@@ -122,11 +96,13 @@ const Opname = () => {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full">
       <div className="flex items-center gap-3">
-        <ClipboardCheck className="h-6 w-6 text-warning" />
+        <div className="p-2.5 rounded-xl bg-warning/10">
+          <ClipboardCheck className="h-6 w-6 text-warning" />
+        </div>
         <div>
-          <h1 className="text-2xl font-bold">Stock Opname</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight">Stock Opname</h1>
           <p className="text-muted-foreground text-sm">Rekonsiliasi stok sistem vs fisik</p>
         </div>
       </div>
@@ -137,50 +113,100 @@ const Opname = () => {
         submitting={submitting}
       />
 
-      <Card>
-        <CardHeader><CardTitle className="text-lg">Riwayat Opname</CardTitle></CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Waktu</TableHead>
-                  <TableHead>Kode</TableHead>
-                  <TableHead className="text-right">Sistem</TableHead>
-                  <TableHead className="text-right">Fisik</TableHead>
-                  <TableHead className="text-right">Selisih</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Catatan</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {history?.map((h: any) => (
-                  <TableRow key={h.id}>
-                    <TableCell className="text-xs">{formatDate(h.created_at)}</TableCell>
-                    <TableCell className="font-mono text-sm">{h.products?.kode}</TableCell>
-                    <TableCell className="text-right">{formatNumber(h.stok_sistem)}</TableCell>
-                    <TableCell className="text-right">{formatNumber(h.stok_fisik)}</TableCell>
-                    <TableCell className={`text-right font-semibold ${h.selisih !== 0 ? "text-destructive" : "text-success"}`}>
-                      {h.selisih > 0 ? "+" : ""}{h.selisih}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className={h.status === "sesuai" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}>
-                        {h.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{h.catatan || "-"}</TableCell>
-                  </TableRow>
-                ))}
-                {(!history || history.length === 0) && (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                      Belum ada riwayat opname
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+      <Card className="boss-card">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" /> Riwayat Opname
+            </CardTitle>
+            {history && history.length > 0 && (
+              <Badge variant="secondary" className="text-[10px] rounded-full px-2">{history.length}</Badge>
+            )}
           </div>
+        </CardHeader>
+        <CardContent>
+          {isMobile ? (
+            <div className="space-y-2.5">
+              {(!history || history.length === 0) ? (
+                <div className="py-8 text-center">
+                  <ClipboardCheck className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Belum ada riwayat opname</p>
+                </div>
+              ) : history.map((h: any) => (
+                <div key={h.id} className={`rounded-xl border p-3.5 space-y-2 press-scale transition-all duration-200 ${
+                  h.selisih !== 0 ? "border-l-[3px] border-l-destructive border-border/60" : "border-l-[3px] border-l-success border-border/60"
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-sm">{h.products?.kode}</span>
+                    <Badge className={`rounded-full text-[10px] px-2 border-0 font-bold ${
+                      h.status === "sesuai" ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"
+                    }`}>
+                      {h.status}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-[11px]">
+                    <div>
+                      <span className="text-muted-foreground">Sistem</span>
+                      <p className="font-semibold tabular-nums">{formatNumber(h.stok_sistem)}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Fisik</span>
+                      <p className="font-semibold tabular-nums">{formatNumber(h.stok_fisik)}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Selisih</span>
+                      <p className={`font-bold tabular-nums ${h.selisih !== 0 ? "text-destructive" : "text-success"}`}>
+                        {h.selisih > 0 ? "+" : ""}{h.selisih}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center text-[11px] text-muted-foreground gap-1">
+                    <Clock className="h-3 w-3" /> {formatDate(h.created_at)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Waktu</TableHead>
+                    <TableHead>Kode</TableHead>
+                    <TableHead className="text-right">Sistem</TableHead>
+                    <TableHead className="text-right">Fisik</TableHead>
+                    <TableHead className="text-right">Selisih</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Catatan</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {history?.map((h: any) => (
+                    <TableRow key={h.id}>
+                      <TableCell className="text-xs">{formatDate(h.created_at)}</TableCell>
+                      <TableCell className="font-mono font-semibold text-sm">{h.products?.kode}</TableCell>
+                      <TableCell className="text-right tabular-nums">{formatNumber(h.stok_sistem)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{formatNumber(h.stok_fisik)}</TableCell>
+                      <TableCell className={`text-right font-bold tabular-nums ${h.selisih !== 0 ? "text-destructive" : "text-success"}`}>
+                        {h.selisih > 0 ? "+" : ""}{h.selisih}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className={`rounded-full ${h.status === "sesuai" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
+                          {h.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{h.catatan || "-"}</TableCell>
+                    </TableRow>
+                  ))}
+                  {(!history || history.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Belum ada riwayat opname</TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

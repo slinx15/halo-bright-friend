@@ -114,6 +114,8 @@
     font-family: 'Plus Jakarta Sans', sans-serif;
     overflow-x: hidden;
     max-width: 100vw;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
@@ -124,5 +126,39 @@
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Boss Mode: tabular numbers for financial/stock data */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Boss Mode: premium card style */
+  .boss-card {
+    @apply rounded-2xl border-0 shadow-md transition-all duration-200 ease-out;
+  }
+  .boss-card:hover {
+    @apply shadow-lg;
+    transform: translateY(-2px);
+  }
+  .boss-card:active {
+    transform: scale(0.97);
+  }
+
+  /* Boss Mode: press feedback */
+  .press-scale {
+    @apply transition-transform duration-200 ease-out;
+  }
+  .press-scale:active {
+    transform: scale(0.97);
+  }
+
+  /* Boss Mode: hover lift */
+  .hover-lift {
+    @apply transition-all duration-200 ease-out;
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    @apply shadow-lg;
   }
 }
