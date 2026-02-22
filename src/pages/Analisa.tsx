@@ -497,7 +497,7 @@ const Analisa = () => {
   const overallChange = totalLW > 0 ? ((totalTW - totalLW) / totalLW * 100) : 0;
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto w-full overflow-hidden">
+    <div className="p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto w-full overflow-y-auto overflow-x-hidden">
       {/* ═══════════════════════════════════════════════════════ */}
       {/* 🔴 ACTION SUMMARY BAR — STICKY */}
       {/* ═══════════════════════════════════════════════════════ */}
@@ -605,7 +605,7 @@ const Analisa = () => {
       {/* ═══════════════════════════════════════════════════════ */}
       <Tabs defaultValue="restock" className="w-full">
         {/* Simplified tab bar — reduced visual weight for secondary tabs */}
-        <TabsList className="w-full justify-start bg-transparent border-b border-border rounded-none h-auto p-0 gap-0 flex-nowrap overflow-x-auto scrollbar-hide">
+        <TabsList className="flex w-full justify-start bg-transparent border-b border-border rounded-none h-auto p-0 gap-0 flex-nowrap overflow-x-auto overflow-y-hidden scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
           <TabsTrigger value="restock" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-[11px] md:text-xs px-2.5 md:px-4 py-2.5 font-semibold shrink-0">
             <ShoppingCart className="h-3.5 w-3.5 mr-1" />Restock
             {needsReorder > 0 && (
