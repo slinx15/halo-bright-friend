@@ -399,7 +399,7 @@ function BudgetPlanner({
                   {recommendations.items.map((r, i) => (
                     <TableRow
                       key={r.item.productId}
-                      className={`${r.item.daysOfStock <= RULES.CRITICAL_DAYS ? "bg-destructive/[0.04]" : i % 2 === 0 ? "" : "bg-muted/15"} ${r.item.currentStock === 0 ? "border-l-[3px] border-l-destructive" : ""}`}
+                      className={`${r.item.currentStock === 0 ? "border-l-[3px] border-l-destructive" : ""}`}
                     >
                       <TableCell className="text-xs font-mono text-muted-foreground">{i + 1}</TableCell>
                       <TableCell>
@@ -690,15 +690,15 @@ const Analisa = () => {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/40 hover:bg-muted/40">
-                      <TableHead className="w-8 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">#</TableHead>
-                      <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
-                      <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Kode</TableHead>
-                      <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Stok</TableHead>
-                      <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Vel/{RULES.DISPLAY_CYCLE_DAYS}hr</TableHead>
-                      <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sisa Hari</TableHead>
-                      <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Target</TableHead>
-                      <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Rekomendasi</TableHead>
-                      <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Biaya</TableHead>
+                      <TableHead className="w-8">#</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Kode</TableHead>
+                      <TableHead className="text-right">Stok</TableHead>
+                      <TableHead className="text-right hidden sm:table-cell">Vel/{RULES.DISPLAY_CYCLE_DAYS}hr</TableHead>
+                      <TableHead className="text-right">Sisa Hari</TableHead>
+                      <TableHead className="text-right hidden lg:table-cell">Target</TableHead>
+                      <TableHead className="text-right">Rekomendasi</TableHead>
+                      <TableHead className="text-right hidden sm:table-cell">Biaya</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -711,8 +711,6 @@ const Analisa = () => {
                         <TableRow
                           key={a.productId}
                           className={`
-                            transition-colors
-                            ${isCriticalRow ? "bg-destructive/[0.04]" : i % 2 === 0 ? "bg-transparent" : "bg-muted/15"}
                             ${isZeroStock ? "border-l-[3px] border-l-destructive" : ""}
                           `}
                         >
@@ -723,18 +721,18 @@ const Analisa = () => {
                               {badge.label}
                             </Badge>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="font-semibold tracking-tight">
                             <div className="flex items-center gap-1">
-                              <span className="font-semibold text-sm">{a.kode}</span>
+                              <span className="text-sm">{a.kode}</span>
                               {a.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
                               {a.isStockOut && <span className="text-xs">🚨</span>}
                             </div>
                             <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">{a.nama}</div>
                           </TableCell>
-                          <TableCell className={`text-right font-mono text-sm ${isZeroStock ? "text-destructive font-bold" : ""}`}>
+                          <TableCell className={`text-right font-mono text-sm tabular-nums ${isZeroStock ? "text-destructive font-bold" : ""}`}>
                             {a.currentStock}
                           </TableCell>
-                          <TableCell className="text-right font-mono text-sm">{velPerCycle.toFixed(0)}</TableCell>
+                          <TableCell className="text-right font-mono text-sm tabular-nums hidden sm:table-cell">{velPerCycle.toFixed(0)}</TableCell>
                           <TableCell className="text-right">
                             <span className={`font-mono font-bold text-base ${
                               a.daysOfStock <= 2 ? "text-destructive" :
@@ -745,19 +743,19 @@ const Analisa = () => {
                               {formatDaysLeft(a.daysOfStock)}
                             </span>
                           </TableCell>
-                          <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                          <TableCell className="text-right font-mono text-xs text-muted-foreground tabular-nums hidden lg:table-cell">
                             {a.targetStock}
                           </TableCell>
                           <TableCell className="text-right">
                             {a.recommendedQty > 0 ? (
-                              <span className="inline-flex items-center justify-center min-w-[44px] px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
+                              <span className="inline-flex items-center justify-center min-w-[40px] px-2 py-0.5 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
                                 {a.recommendedQty}
                               </span>
                             ) : (
                               <span className="text-muted-foreground/40">—</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                          <TableCell className="text-right font-mono text-xs text-muted-foreground tabular-nums hidden sm:table-cell">
                             {a.cost > 0 ? formatRp(a.cost) : "—"}
                           </TableCell>
                         </TableRow>
@@ -953,7 +951,7 @@ const Analisa = () => {
                     {lowStock.map((l, i) => {
                       const icon = l.stok === 0 ? "🔴" : l.stok < 10 ? "🟡" : "🟢";
                       return (
-                        <TableRow key={l.productId} className={i % 2 === 0 ? "" : "bg-muted/20"}>
+                        <TableRow key={l.productId}>
                           <TableCell className="text-xs">{i + 1}</TableCell>
                           <TableCell className="font-semibold text-sm">{icon} {l.kode}{l.isBestSeller ? " 🔥" : ""}</TableCell>
                           <TableCell className={`text-right font-mono text-sm ${l.stok === 0 ? "text-destructive font-bold" : ""}`}>{l.stok}</TableCell>
@@ -1003,7 +1001,7 @@ const Analisa = () => {
                     {topSellers.map((t, i) => {
                       const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
                       return (
-                        <TableRow key={t.productId} className={i % 2 === 0 ? "" : "bg-muted/20"}>
+                        <TableRow key={t.productId}>
                           <TableCell className="font-medium">{medal}</TableCell>
                           <TableCell className="font-semibold text-sm">
                             {t.kode}{t.isBestSeller ? " 🔥" : ""}{t.days < 7 ? " ⚠️" : ""}
@@ -1073,7 +1071,7 @@ const Analisa = () => {
                     {trendItems.map((t, i) => {
                       const icon = t.changePct > 10 ? "📈" : t.changePct < -10 ? "📉" : "➡️";
                       return (
-                        <TableRow key={t.productId} className={i % 2 === 0 ? "" : "bg-muted/20"}>
+                        <TableRow key={t.productId}>
                           <TableCell className="text-xs">{i + 1}</TableCell>
                           <TableCell className="font-semibold text-sm">{icon} {t.kode}{t.isBestSeller ? " 🔥" : ""}</TableCell>
                           <TableCell className="text-right font-mono text-sm">{t.thisWeek}</TableCell>
@@ -1139,7 +1137,7 @@ const Analisa = () => {
                         {profitItems.slice(0, 20).map((p, i) => {
                           const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
                           return (
-                            <TableRow key={p.productId} className={i % 2 === 0 ? "" : "bg-muted/20"}>
+                            <TableRow key={p.productId}>
                               <TableCell>{medal}</TableCell>
                               <TableCell className="font-semibold text-sm">{p.kode}{p.isBestSeller ? " 🔥" : ""}</TableCell>
                               <TableCell className="text-right font-mono text-sm font-bold text-success">{formatRp(p.totalProfit)}</TableCell>
@@ -1212,7 +1210,7 @@ const Analisa = () => {
                         {tokoItems.slice(0, 15).map((t, i) => {
                           const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
                           return (
-                            <TableRow key={t.nama} className={i % 2 === 0 ? "" : "bg-muted/20"}>
+                            <TableRow key={t.nama}>
                               <TableCell>{medal}</TableCell>
                               <TableCell className="font-semibold text-sm">{t.nama}</TableCell>
                               <TableCell className="text-right font-mono text-sm">{t.totalQty}</TableCell>
@@ -1290,7 +1288,7 @@ const Analisa = () => {
                       </TableHeader>
                       <TableBody>
                         {deadStock.map((d, i) => (
-                          <TableRow key={d.productId} className={i % 2 === 0 ? "" : "bg-muted/20"}>
+                          <TableRow key={d.productId}>
                             <TableCell className="text-xs">{i + 1}</TableCell>
                             <TableCell className="font-semibold text-sm">{d.kode}</TableCell>
                             <TableCell className="text-right font-mono text-sm">{d.stok}</TableCell>
