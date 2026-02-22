@@ -57,6 +57,12 @@ const MATURITY_CONFIG = {
   divisorFloor: 7,   // same philosophy as bot
 };
 
+const HARD_MATURITY_CONFIG = {
+  immatureDaysThreshold: 7,  // salesDays < 7 → cap applies
+  velocityCapFactor: 0.55,   // strong but safe
+  minSalesForCap: 20,        // avoid capping tiny noise
+};
+
 const COLOR_BLACK = ["BLK", "BLCK", "HITAM", "BLACK"];
 const COLOR_WHITE = ["WHT", "PUTIH", "WHITE"];
 
@@ -239,6 +245,13 @@ export function calculateWMAVelocity(
     // Hard guard for extreme 1-day noise
     if (salesDaysTotal === 1 && velocity > 20) {
       adjustedVelocity = Math.min(adjustedVelocity, velocity * 0.5);
+    }
+
+    // Hard maturity cap — bot-style stabilization for immature data
+    const isHardImmature = salesDaysTotal > 0 && salesDaysTotal < HARD_MATURITY_CONFIG.immatureDaysThreshold;
+    const hasEnoughSales = totalQty >= HARD_MATURITY_CONFIG.minSalesForCap;
+    if (isHardImmature && hasEnoughSales) {
+      adjustedVelocity = adjustedVelocity * HARD_MATURITY_CONFIG.velocityCapFactor;
     }
 
     wmaData[product.id] = {
