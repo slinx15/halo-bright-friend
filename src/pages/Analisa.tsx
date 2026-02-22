@@ -571,54 +571,42 @@ const Analisa = () => {
         </div>
 
         {/* 4-Card Action Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div
-            className="relative overflow-hidden rounded-xl bg-destructive/8 border border-destructive/20 p-3 cursor-pointer transition-all hover:shadow-md hover:border-destructive/40 active:scale-[0.97]"
+            className="relative overflow-hidden rounded-xl bg-destructive/8 border border-destructive/20 p-4 cursor-pointer transition-all md:hover:shadow-md md:hover:border-destructive/40 active:scale-[0.97]"
             onClick={() => setFilter(filter === "CRITICAL" ? "ALL" : "CRITICAL")}
           >
             <div className="absolute top-0 right-0 w-16 h-16 bg-destructive/5 rounded-full -translate-y-4 translate-x-4" />
-            <div className="flex items-center gap-2 mb-1">
-              <AlertCircle className="h-4 w-4 text-destructive" />
-              <span className="text-[10px] font-medium text-destructive/80 uppercase tracking-wider">Harus Restock</span>
-            </div>
-            <p className="text-2xl md:text-3xl font-extrabold text-destructive tabular-nums">{criticalCount}</p>
-            <p className="text-[10px] text-muted-foreground">produk kritis</p>
+            <p className="text-xs font-medium text-destructive/80 mb-1">Harus Restock</p>
+            <p className="text-2xl md:text-3xl font-bold tracking-tight text-destructive tabular-nums">{criticalCount || "—"}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">produk kritis</p>
           </div>
 
           <div
-            className="relative overflow-hidden rounded-xl bg-warning/8 border border-warning/20 p-3 cursor-pointer transition-all hover:shadow-md hover:border-warning/40 active:scale-[0.97]"
+            className="relative overflow-hidden rounded-xl bg-warning/8 border border-warning/20 p-4 cursor-pointer transition-all md:hover:shadow-md md:hover:border-warning/40 active:scale-[0.97]"
             onClick={() => setFilter(filter === "WARNING" ? "ALL" : "WARNING")}
           >
             <div className="absolute top-0 right-0 w-16 h-16 bg-warning/5 rounded-full -translate-y-4 translate-x-4" />
-            <div className="flex items-center gap-2 mb-1">
-              <Clock className="h-4 w-4 text-warning" />
-              <span className="text-[10px] font-medium text-warning/80 uppercase tracking-wider">Segera Habis</span>
-            </div>
-            <p className="text-2xl md:text-3xl font-extrabold text-warning tabular-nums">{warningCount}</p>
-            <p className="text-[10px] text-muted-foreground">&lt;4 hari tersisa</p>
+            <p className="text-xs font-medium text-warning/80 mb-1">Segera Habis</p>
+            <p className="text-2xl md:text-3xl font-bold tracking-tight text-warning tabular-nums">{warningCount || "—"}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">&lt;4 hari tersisa</p>
           </div>
 
           <div
-            className="relative overflow-hidden rounded-xl bg-destructive/5 border border-destructive/15 p-3 cursor-pointer transition-all hover:shadow-md hover:border-destructive/30 active:scale-[0.97]"
+            className="relative overflow-hidden rounded-xl bg-destructive/5 border border-destructive/15 p-4 cursor-pointer transition-all md:hover:shadow-md md:hover:border-destructive/30 active:scale-[0.97]"
             onClick={() => setFilter(filter === "CRITICAL" ? "ALL" : "CRITICAL")}
           >
             <div className="absolute top-0 right-0 w-16 h-16 bg-destructive/3 rounded-full -translate-y-4 translate-x-4" />
-            <div className="flex items-center gap-2 mb-1">
-              <PackageX className="h-4 w-4 text-destructive/70" />
-              <span className="text-[10px] font-medium text-destructive/60 uppercase tracking-wider">Stok Kosong</span>
-            </div>
-            <p className="text-2xl md:text-3xl font-extrabold text-foreground tabular-nums">{zeroStockCount}</p>
-            <p className="text-[10px] text-muted-foreground">SKU habis</p>
+            <p className="text-xs font-medium text-destructive/60 mb-1">Stok Kosong</p>
+            <p className="text-2xl md:text-3xl font-bold tracking-tight tabular-nums">{zeroStockCount || "—"}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">SKU habis</p>
           </div>
 
-          <div className="relative overflow-hidden rounded-xl bg-muted/60 border border-border p-3">
+          <div className="relative overflow-hidden rounded-xl bg-muted/60 border border-border p-4">
             <div className="absolute top-0 right-0 w-16 h-16 bg-primary/3 rounded-full -translate-y-4 translate-x-4" />
-            <div className="flex items-center gap-2 mb-1">
-              <Wallet className="h-4 w-4 text-primary" />
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Modal Restock</span>
-            </div>
-            <p className="text-lg md:text-xl font-extrabold text-foreground leading-tight tabular-nums truncate">{formatRp(totalRestockCost)}</p>
-            <p className="text-[10px] text-muted-foreground">estimasi {filter !== "ALL" ? "filter" : "total"}</p>
+            <p className="text-xs font-medium text-muted-foreground mb-1">Modal Restock</p>
+            <p className="text-lg md:text-xl font-bold tracking-tight tabular-nums truncate">{formatRp(totalRestockCost) || "—"}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">estimasi {filter !== "ALL" ? "filter" : "total"}</p>
           </div>
         </div>
       </div>
