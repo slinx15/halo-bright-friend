@@ -309,12 +309,12 @@ function BudgetPlanner({
       <div className="grid grid-cols-3 gap-2.5">
         <div className="rounded-xl bg-primary/8 border border-primary/15 p-3">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Terpakai</p>
-          <p className="text-base md:text-lg font-extrabold text-primary tabular-nums">{formatRp(recommendations.totalCost)}</p>
+          <p className="text-base md:text-lg font-extrabold text-primary tabular-nums truncate">{formatRp(recommendations.totalCost)}</p>
           <p className="text-[10px] text-muted-foreground">{usedPct}% budget</p>
         </div>
         <div className="rounded-xl bg-success/8 border border-success/15 p-3">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Sisa Budget</p>
-          <p className="text-base md:text-lg font-extrabold text-success tabular-nums">{formatRp(recommendations.remaining)}</p>
+          <p className="text-base md:text-lg font-extrabold text-success tabular-nums truncate">{formatRp(recommendations.remaining)}</p>
           <p className="text-[10px] text-muted-foreground">{100 - usedPct}%</p>
         </div>
         <div className="rounded-xl bg-muted/60 border border-border p-3">
@@ -617,7 +617,7 @@ const Analisa = () => {
               <Wallet className="h-4 w-4 text-primary" />
               <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Modal Restock</span>
             </div>
-            <p className="text-lg md:text-xl font-extrabold text-foreground leading-tight tabular-nums">{formatRp(totalRestockCost)}</p>
+            <p className="text-lg md:text-xl font-extrabold text-foreground leading-tight tabular-nums truncate">{formatRp(totalRestockCost)}</p>
             <p className="text-[10px] text-muted-foreground">estimasi {filter !== "ALL" ? "filter" : "total"}</p>
           </div>
         </div>
@@ -1201,7 +1201,7 @@ const Analisa = () => {
                           <div><span className="text-muted-foreground">Hari Aktif</span><p className="font-semibold tabular-nums">{t.hariAktif}</p></div>
                         </div>
                         {t.favorit.length > 0 && (
-                          <p className="text-[10px] text-muted-foreground mt-1">Favorit: {t.favorit.join(", ")}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1 truncate">Favorit: {t.favorit.join(", ")}</p>
                         )}
                       </MobileRankedCard>
                     ))}
