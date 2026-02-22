@@ -58,7 +58,7 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Bulk Stock Opname
+            Input Cepat Stock Opname
           </CardTitle>
           <OcrUpload mode="opname" onResult={handleOcrResult} />
         </div>
