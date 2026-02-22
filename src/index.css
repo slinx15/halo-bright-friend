@@ -109,7 +109,7 @@
     @apply border-border;
   }
 
-  html, body {
+  html, body, #root {
     @apply bg-background text-foreground;
     font-family: 'Plus Jakarta Sans', sans-serif;
     overflow-x: hidden;
