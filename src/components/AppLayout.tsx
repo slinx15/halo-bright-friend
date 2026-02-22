@@ -38,7 +38,7 @@ const AppLayout = () => {
             Logout
           </Button>
         </header>
-        <main className="flex-1 pb-20 md:pb-0 overflow-auto">
+        <main className="flex-1 pb-20 md:pb-0 overflow-auto overflow-x-hidden">
           <Outlet />
         </main>
       </div>
