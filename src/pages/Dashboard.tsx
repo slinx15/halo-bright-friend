@@ -137,11 +137,11 @@ function StokRendahCard({ products, isLoading }: { products: any[] | undefined; 
                     status === "kritis" ? "border-l-[3px] border-l-destructive bg-destructive/5" : "border-l-[3px] border-l-warning bg-warning/5"
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0">
-                      <span className="font-mono font-bold text-sm">{p.kode}</span>
-                      <span className="text-muted-foreground ml-2 text-xs truncate">{p.nama}</span>
-                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                     <div className="min-w-0 flex items-center gap-1.5">
+                       <span className="font-mono font-bold text-sm shrink-0">{p.kode}</span>
+                       <span className="text-muted-foreground text-xs truncate">{p.nama}</span>
+                     </div>
                     <span className={`font-extrabold text-base ${status === "kritis" ? "text-destructive" : "text-warning"}`}>
                       {jumlah}
                     </span>
