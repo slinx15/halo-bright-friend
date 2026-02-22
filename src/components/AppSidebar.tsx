@@ -13,6 +13,7 @@ import {
   User,
   FileUp,
   Bot,
+  Users,
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,7 @@ const navItems = [
   { icon: Settings, label: "Produk", path: "/produk", group: "laporan" },
   { icon: FileUp, label: "Import Histori", path: "/import-histori", group: "laporan" },
   { icon: Bot, label: "AI Assistant", path: "/ai", group: "laporan" },
+  { icon: Users, label: "Kelola User", path: "/users", group: "admin" },
 ];
 
 const groups = [
@@ -35,6 +37,7 @@ const groups = [
   { key: "transaksi", label: "Transaksi" },
   { key: "inventaris", label: "Inventaris" },
   { key: "laporan", label: "Laporan & Data" },
+  { key: "admin", label: "Admin" },
 ];
 
 const AppSidebar = () => {
@@ -58,6 +61,8 @@ const AppSidebar = () => {
         {groups.map((group) => {
           const items = navItems.filter((i) => i.group === group.key);
           if (items.length === 0) return null;
+          // Hide admin group for non-admins
+          if (group.key === "admin" && role !== "admin") return null;
           return (
             <div key={group.key} className={group.label ? "pt-4 first:pt-0" : ""}>
               {group.label && (

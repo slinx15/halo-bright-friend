@@ -15,6 +15,7 @@ import Analisa from "@/pages/Analisa";
 import ManajemenProduk from "@/pages/ManajemenProduk";
 import ImportHistori from "@/pages/ImportHistori";
 import AiChat from "@/pages/AiChat";
+import ManajemenUser from "@/pages/ManajemenUser";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,6 +58,7 @@ const App = () => (
               <Route path="/produk" element={<ManajemenProduk />} />
               <Route path="/import-histori" element={<ImportHistori />} />
               <Route path="/ai" element={<AiChat />} />
+              <Route path="/users" element={<ManajemenUser />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
