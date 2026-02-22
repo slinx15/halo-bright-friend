@@ -177,12 +177,12 @@ const ManajemenProduk = () => {
                     <div><span className="text-muted-foreground">Grosir</span><p className="font-semibold tabular-nums">{p.prices ? formatRupiah(p.prices.harga_grosir) : "-"}</p></div>
                   </div>
                   {isAdmin && (
-                    <div className="flex gap-2 pt-1">
-                      <Button variant="outline" size="sm" className="flex-1 rounded-lg text-xs press-scale" onClick={() => handleEdit(p)}>
-                        <Pencil className="h-3 w-3 mr-1" /> Edit
+                    <div className="flex gap-3 pt-1">
+                      <Button variant="outline" size="sm" className="flex-1 rounded-xl text-xs press-scale" onClick={() => handleEdit(p)}>
+                        <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
                       </Button>
-                      <Button variant="outline" size="sm" className="rounded-lg text-xs text-destructive hover:bg-destructive/10 press-scale" onClick={() => handleDelete(p.id, p.kode)}>
-                        <Trash2 className="h-3 w-3" />
+                      <Button variant="outline" size="sm" className="rounded-xl text-xs text-destructive hover:bg-destructive/10 press-scale" onClick={() => handleDelete(p.id, p.kode)}>
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   )}

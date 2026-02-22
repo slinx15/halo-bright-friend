@@ -161,4 +161,16 @@
     transform: translateY(-2px);
     @apply shadow-lg;
   }
+
+  /* Thumb-friendly: minimum touch target */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+}
+
+/* Safe area bottom padding for pages with bottom nav */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+  }
 }

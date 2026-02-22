@@ -631,10 +631,10 @@ const Analisa = () => {
             ? analyses.length
             : counts[chip.key.toLowerCase() as keyof typeof counts];
           return (
-            <button
+              <button
               key={chip.key}
               onClick={() => setFilter(chip.key)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+              className={`inline-flex items-center gap-1.5 px-4 py-2.5 min-h-[40px] rounded-full text-xs font-medium whitespace-nowrap transition-all ${
                 isActive
                   ? `${chip.activeClass} shadow-sm`
                   : "bg-muted/50 text-muted-foreground hover:bg-muted"

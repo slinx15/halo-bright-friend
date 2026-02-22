@@ -63,7 +63,7 @@ const MobileNav = () => {
                     setMoreOpen(false);
                   }}
                   className={cn(
-                    "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
+                    "flex items-center gap-3 w-full px-4 py-3 min-h-[48px] rounded-xl text-sm font-medium transition-all",
                     active
                       ? "bg-primary/10 text-primary font-bold"
                       : "text-foreground/70 active:bg-muted"
@@ -80,7 +80,7 @@ const MobileNav = () => {
 
       {/* Bottom nav bar */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-t border-border/50 pb-[env(safe-area-inset-bottom)]">
-        <div className="flex justify-around py-1.5 px-1">
+        <div className="flex justify-around py-1 px-1">
           {primaryNav.map((item) => {
             const active = location.pathname === item.path;
             return (
@@ -88,13 +88,13 @@ const MobileNav = () => {
                 key={item.path}
                 onClick={() => navigate(item.path)}
                 className={cn(
-                  "flex flex-col items-center gap-0.5 px-2 py-1.5 text-[10px] font-medium transition-all duration-200 ease-out rounded-xl min-w-[44px]",
+                  "flex flex-col items-center gap-0.5 px-2 py-2 text-[10px] font-medium transition-all duration-200 ease-out rounded-xl min-w-[48px] min-h-[48px] justify-center",
                   active
                     ? "text-primary bg-primary/10"
                     : "text-muted-foreground active:scale-95"
                 )}
               >
-                <item.icon className={cn("h-[18px] w-[18px]", active && "stroke-[2.5]")} />
+                <item.icon className={cn("h-5 w-5", active && "stroke-[2.5]")} />
                 <span className={cn(active && "font-bold")}>{item.label}</span>
               </button>
             );
@@ -103,16 +103,16 @@ const MobileNav = () => {
           <button
             onClick={() => setMoreOpen((v) => !v)}
             className={cn(
-              "flex flex-col items-center gap-0.5 px-2 py-1.5 text-[10px] font-medium transition-all duration-200 ease-out rounded-xl min-w-[44px]",
+              "flex flex-col items-center gap-0.5 px-2 py-2 text-[10px] font-medium transition-all duration-200 ease-out rounded-xl min-w-[48px] min-h-[48px] justify-center",
               moreOpen || isSecondaryActive
                 ? "text-primary bg-primary/10"
                 : "text-muted-foreground active:scale-95"
             )}
           >
             {moreOpen ? (
-              <X className="h-[18px] w-[18px] stroke-[2.5]" />
+              <X className="h-5 w-5 stroke-[2.5]" />
             ) : (
-              <MoreHorizontal className={cn("h-[18px] w-[18px]", isSecondaryActive && "stroke-[2.5]")} />
+              <MoreHorizontal className={cn("h-5 w-5", isSecondaryActive && "stroke-[2.5]")} />
             )}
             <span className={cn((moreOpen || isSecondaryActive) && "font-bold")}>Lainnya</span>
           </button>
