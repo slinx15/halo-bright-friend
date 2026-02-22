@@ -3,11 +3,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
 import {
   AlertTriangle, Package, Skull,
   BarChart3, DollarSign, Store, ArrowDown,
-  ShoppingCart, Clock, Trophy, Activity
+  ShoppingCart, Clock, Trophy, Activity,
+  AlertCircle, PackageX, Wallet, Flame, TrendingUp, TrendingDown
 } from "lucide-react";
 import { useSalesAnalysis } from "@/hooks/useSalesAnalysis";
 import { analyzeAllProducts, getStatusCounts, RULES, type DosStatus } from "@/lib/stockAnalyticsEngine";
@@ -35,23 +35,24 @@ function urgencyIcon(days: number) {
   return "🟢";
 }
 
-// ─── Status Badge Config ──────────────────────────────────
+// ─── Types ────────────────────────────────────────────────
 
-type FilterTab = "ALL" | "CRITICAL" | "WARNING" | "ATTENTION" | "SAFE";
+type FilterChip = "ALL" | "CRITICAL" | "WARNING" | "ATTENTION" | "SAFE";
+
+const FILTER_CHIPS: { key: FilterChip; label: string; icon: string; activeClass: string }[] = [
+  { key: "CRITICAL", label: "Critical", icon: "🔴", activeClass: "bg-destructive text-destructive-foreground" },
+  { key: "WARNING", label: "<4 Hari", icon: "🟠", activeClass: "bg-warning text-warning-foreground" },
+  { key: "ATTENTION", label: "Perhatian", icon: "🟡", activeClass: "bg-amber-500 text-white" },
+  { key: "SAFE", label: "Aman", icon: "🟢", activeClass: "bg-success text-success-foreground" },
+  { key: "ALL", label: "Semua", icon: "🔵", activeClass: "bg-primary text-primary-foreground" },
+];
 
 const STATUS_BADGE: Record<DosStatus, { label: string; className: string }> = {
-  CRITICAL: { label: "Restock Sekarang", className: "bg-destructive/15 text-destructive border-destructive/30" },
-  WARNING: { label: "Segera Habis", className: "bg-warning/15 text-warning border-warning/30" },
-  ATTENTION: { label: "Perhatian", className: "bg-amber-500/15 text-amber-600 border-amber-500/30" },
-  SAFE: { label: "Aman", className: "bg-success/15 text-success border-success/30" },
+  CRITICAL: { label: "CRITICAL", className: "bg-destructive/15 text-destructive border-destructive/30" },
+  WARNING: { label: "SEGERA", className: "bg-warning/15 text-warning border-warning/30" },
+  ATTENTION: { label: "PERHATIAN", className: "bg-amber-500/15 text-amber-600 border-amber-500/30" },
+  SAFE: { label: "AMAN", className: "bg-success/15 text-success border-success/30" },
 };
-
-const STATUS_CARDS_CONFIG: { key: FilterTab; label: string; icon: string; gradient: string; textColor: string; sub: string }[] = [
-  { key: "CRITICAL", label: "Kritis", icon: "🔴", gradient: "from-red-500/10 to-red-500/5", textColor: "text-destructive", sub: "≤2 hari" },
-  { key: "WARNING", label: "Warning", icon: "🟠", gradient: "from-orange-500/10 to-orange-500/5", textColor: "text-warning", sub: "≤4 hari" },
-  { key: "ATTENTION", label: "Perhatian", icon: "🟡", gradient: "from-amber-500/10 to-amber-500/5", textColor: "text-amber-500", sub: "≤7 hari" },
-  { key: "SAFE", label: "Aman", icon: "🟢", gradient: "from-emerald-500/10 to-emerald-500/5", textColor: "text-success", sub: ">7 hari" },
-];
 
 // ─── Section Header Component ─────────────────────────────
 
@@ -73,7 +74,7 @@ function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementTyp
 
 const Analisa = () => {
   const { products, stockOutData, isLoading } = useSalesAnalysis();
-  const [filter, setFilter] = useState<FilterTab>("ALL");
+  const [filter, setFilter] = useState<FilterChip>("ALL");
 
   const analyses = useMemo(() => {
     if (!products.length) return [];
@@ -87,6 +88,14 @@ const Analisa = () => {
     return analyses.filter((a) => a.dosStatus === filter);
   }, [analyses, filter]);
 
+  // Action Summary computed values
+  const criticalCount = counts.critical;
+  const warningCount = counts.warning;
+  const zeroStockCount = useMemo(() => analyses.filter(a => a.isStockOut).length, [analyses]);
+  const totalRestockCost = useMemo(() => {
+    const items = filter === "ALL" ? analyses : filtered;
+    return items.reduce((s, a) => s + a.cost, 0);
+  }, [analyses, filtered, filter]);
   const needsReorder = useMemo(() => analyses.filter((a) => a.recommendedQty > 0).length, [analyses]);
 
   const topSellers = useMemo(() => {
@@ -125,8 +134,6 @@ const Analisa = () => {
   const budgetEstimates = useMemo(() => calcBudgetEstimates(products, stockOutData), [products, stockOutData]);
   const stats = useMemo(() => calcStats(products, stockOutData), [products, stockOutData]);
 
-  const totalRestockCost = useMemo(() => analyses.reduce((s, a) => s + a.cost, 0), [analyses]);
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -144,90 +151,151 @@ const Analisa = () => {
   const totalLW = trendItems.reduce((s, t) => s + t.lastWeek, 0);
   const overallChange = totalLW > 0 ? ((totalTW - totalLW) / totalLW * 100) : 0;
 
-  const totalProducts = analyses.length || 1;
-
   return (
-    <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl md:text-2xl font-bold tracking-tight">Analisa Stok</h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          WMA velocity · cycle {RULES.CYCLE_DAYS}d + safety + lead time {RULES.LEAD_TIME_DAYS}d
-        </p>
+    <div className="p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto">
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* 🔴 ACTION SUMMARY BAR — STICKY */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm pb-3 -mx-4 px-4 md:-mx-6 md:px-6 pt-2">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h1 className="text-lg md:text-xl font-bold tracking-tight">Command Center</h1>
+            <p className="text-[11px] text-muted-foreground">
+              {analyses.length} SKU · WMA {RULES.WMA_PERIOD1_DAYS}d · cycle {RULES.CYCLE_DAYS}d
+            </p>
+          </div>
+          {needsReorder > 0 && (
+            <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-xs font-semibold px-2.5 py-1">
+              {needsReorder} perlu restock
+            </Badge>
+          )}
+        </div>
+
+        {/* 4-Card Action Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+          {/* Card 1 — CRITICAL */}
+          <div
+            className="relative overflow-hidden rounded-xl bg-destructive/8 border border-destructive/20 p-3 cursor-pointer transition-all hover:shadow-md hover:border-destructive/40 group"
+            onClick={() => setFilter(filter === "CRITICAL" ? "ALL" : "CRITICAL")}
+          >
+            <div className="absolute top-0 right-0 w-16 h-16 bg-destructive/5 rounded-full -translate-y-4 translate-x-4" />
+            <div className="flex items-center gap-2 mb-1">
+              <AlertCircle className="h-4 w-4 text-destructive" />
+              <span className="text-[10px] font-medium text-destructive/80 uppercase tracking-wider">Harus Restock</span>
+            </div>
+            <p className="text-2xl md:text-3xl font-extrabold text-destructive">{criticalCount}</p>
+            <p className="text-[10px] text-muted-foreground">produk kritis</p>
+          </div>
+
+          {/* Card 2 — SEGERA HABIS */}
+          <div
+            className="relative overflow-hidden rounded-xl bg-warning/8 border border-warning/20 p-3 cursor-pointer transition-all hover:shadow-md hover:border-warning/40"
+            onClick={() => setFilter(filter === "WARNING" ? "ALL" : "WARNING")}
+          >
+            <div className="absolute top-0 right-0 w-16 h-16 bg-warning/5 rounded-full -translate-y-4 translate-x-4" />
+            <div className="flex items-center gap-2 mb-1">
+              <Clock className="h-4 w-4 text-warning" />
+              <span className="text-[10px] font-medium text-warning/80 uppercase tracking-wider">Segera Habis</span>
+            </div>
+            <p className="text-2xl md:text-3xl font-extrabold text-warning">{warningCount}</p>
+            <p className="text-[10px] text-muted-foreground">&lt;4 hari tersisa</p>
+          </div>
+
+          {/* Card 3 — BARANG KOSONG */}
+          <div
+            className="relative overflow-hidden rounded-xl bg-destructive/5 border border-destructive/15 p-3 cursor-pointer transition-all hover:shadow-md hover:border-destructive/30"
+            onClick={() => setFilter(filter === "CRITICAL" ? "ALL" : "CRITICAL")}
+          >
+            <div className="absolute top-0 right-0 w-16 h-16 bg-destructive/3 rounded-full -translate-y-4 translate-x-4" />
+            <div className="flex items-center gap-2 mb-1">
+              <PackageX className="h-4 w-4 text-destructive/70" />
+              <span className="text-[10px] font-medium text-destructive/60 uppercase tracking-wider">Stok Kosong</span>
+            </div>
+            <p className="text-2xl md:text-3xl font-extrabold text-foreground">{zeroStockCount}</p>
+            <p className="text-[10px] text-muted-foreground">SKU habis</p>
+          </div>
+
+          {/* Card 4 — ESTIMASI MODAL */}
+          <div className="relative overflow-hidden rounded-xl bg-muted/60 border border-border p-3">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-primary/3 rounded-full -translate-y-4 translate-x-4" />
+            <div className="flex items-center gap-2 mb-1">
+              <Wallet className="h-4 w-4 text-primary" />
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Modal Restock</span>
+            </div>
+            <p className="text-lg md:text-xl font-extrabold text-foreground leading-tight">{formatRp(totalRestockCost)}</p>
+            <p className="text-[10px] text-muted-foreground">estimasi {filter !== "ALL" ? "filter" : "total"}</p>
+          </div>
+        </div>
       </div>
 
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* 🎯 QUICK FILTER CHIPS */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        {FILTER_CHIPS.map((chip) => {
+          const isActive = filter === chip.key;
+          const count = chip.key === "ALL"
+            ? analyses.length
+            : counts[chip.key.toLowerCase() as keyof typeof counts];
+          return (
+            <button
+              key={chip.key}
+              onClick={() => setFilter(chip.key)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+                isActive
+                  ? `${chip.activeClass} shadow-sm`
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <span className="text-sm">{chip.icon}</span>
+              {chip.label}
+              <span className={`ml-0.5 text-[10px] ${isActive ? "opacity-90" : "opacity-60"}`}>({count})</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* MAIN CONTENT — TABS */}
+      {/* ═══════════════════════════════════════════════════════ */}
       <Tabs defaultValue="restock" className="w-full">
-        <TabsList className="w-full justify-start bg-muted/50 p-1 rounded-xl h-auto gap-0.5">
-          <TabsTrigger value="restock" className="rounded-lg text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm px-3 py-2">
+        {/* Simplified tab bar — reduced visual weight for secondary tabs */}
+        <TabsList className="w-full justify-start bg-transparent border-b border-border rounded-none h-auto p-0 gap-0">
+          <TabsTrigger value="restock" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-xs px-4 py-2.5 font-semibold">
             <ShoppingCart className="h-3.5 w-3.5 mr-1.5" />Restock
+            {needsReorder > 0 && (
+              <Badge variant="destructive" className="ml-1.5 h-4 min-w-[18px] px-1 text-[9px] rounded-full">
+                {needsReorder}
+              </Badge>
+            )}
           </TabsTrigger>
-          <TabsTrigger value="penjualan" className="rounded-lg text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm px-3 py-2">
+          <TabsTrigger value="penjualan" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-xs px-4 py-2.5">
             <Trophy className="h-3.5 w-3.5 mr-1.5" />Penjualan
           </TabsTrigger>
-          <TabsTrigger value="profit" className="rounded-lg text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm px-3 py-2">
+          <TabsTrigger value="profit" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-xs px-4 py-2.5">
             <DollarSign className="h-3.5 w-3.5 mr-1.5" />Profit
           </TabsTrigger>
-          <TabsTrigger value="toko" className="rounded-lg text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm px-3 py-2">
+          <TabsTrigger value="toko" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-xs px-4 py-2.5">
             <Store className="h-3.5 w-3.5 mr-1.5" />Toko
           </TabsTrigger>
-          <TabsTrigger value="dead" className="rounded-lg text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm px-3 py-2">
+          <TabsTrigger value="dead" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-xs px-4 py-2.5">
             <Skull className="h-3.5 w-3.5 mr-1.5" />Dead Stock
           </TabsTrigger>
-          <TabsTrigger value="ringkasan" className="rounded-lg text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm px-3 py-2">
+          <TabsTrigger value="ringkasan" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-xs px-4 py-2.5">
             <BarChart3 className="h-3.5 w-3.5 mr-1.5" />Ringkasan
           </TabsTrigger>
         </TabsList>
 
         {/* ══════════ RESTOCK ══════════ */}
-        <TabsContent value="restock" className="space-y-5 mt-5">
-          {/* Status Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {STATUS_CARDS_CONFIG.map((c) => {
-              const count = counts[c.key.toLowerCase() as keyof typeof counts];
-              const isActive = filter === c.key;
-              const pct = Math.round((count / totalProducts) * 100);
-              return (
-                <Card
-                  key={c.key}
-                  className={`cursor-pointer transition-all duration-200 hover:shadow-md border-0 bg-gradient-to-br ${c.gradient} ${isActive ? "ring-2 ring-primary shadow-md" : "hover:scale-[1.01]"}`}
-                  onClick={() => setFilter(filter === c.key ? "ALL" : c.key)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-muted-foreground">{c.label}</span>
-                      <span className="text-lg">{c.icon}</span>
-                    </div>
-                    <p className={`text-2xl font-bold ${c.textColor}`}>{count}</p>
-                    <div className="mt-2">
-                      <Progress value={pct} className="h-1.5" />
-                    </div>
-                    <p className="text-[10px] text-muted-foreground mt-1">{c.sub} · {pct}%</p>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-
-          {/* Quick Stats Bar */}
-          <div className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-xl bg-muted/40 text-xs">
-            <div className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-primary" />
-              <span className="text-muted-foreground">Perlu reorder:</span>
-              <span className="font-semibold">{needsReorder}</span>
-            </div>
-            <div className="h-4 w-px bg-border" />
-            <div className="flex items-center gap-1.5">
-              <span className="text-muted-foreground">Ditampilkan:</span>
-              <span className="font-semibold">{filtered.length}</span>
-            </div>
-            <div className="h-4 w-px bg-border" />
-            <div className="flex items-center gap-1.5">
-              <span className="text-muted-foreground">Total biaya:</span>
-              <span className="font-semibold">{formatRp(totalRestockCost)}</span>
-            </div>
+        <TabsContent value="restock" className="space-y-4 mt-4">
+          {/* Quick info */}
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span>Ditampilkan: <strong className="text-foreground">{filtered.length}</strong></span>
+            <span className="text-border">·</span>
+            <span>Perlu reorder: <strong className="text-foreground">{needsReorder}</strong></span>
             {filter !== "ALL" && (
               <>
-                <div className="h-4 w-px bg-border" />
+                <span className="text-border">·</span>
                 <button onClick={() => setFilter("ALL")} className="text-primary hover:underline font-medium">
                   Reset filter
                 </button>
@@ -235,61 +303,79 @@ const Analisa = () => {
             )}
           </div>
 
-          {/* Restock Table */}
+          {/* Restock Table — Enhanced */}
           <Card className="border-0 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/30 hover:bg-muted/30">
-                    <TableHead className="w-10 text-xs">#</TableHead>
-                    <TableHead className="text-xs">Kode</TableHead>
-                    <TableHead className="text-xs">Status</TableHead>
-                    <TableHead className="text-right text-xs">Stok</TableHead>
-                    <TableHead className="text-right text-xs">Velocity</TableHead>
-                    <TableHead className="text-right text-xs">Sisa Hari</TableHead>
-                    <TableHead className="text-right text-xs">Target</TableHead>
-                    <TableHead className="text-right text-xs">Rekomendasi</TableHead>
-                    <TableHead className="text-right text-xs">Biaya</TableHead>
+                  <TableRow className="bg-muted/40 hover:bg-muted/40">
+                    <TableHead className="w-8 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">#</TableHead>
+                    <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Kode</TableHead>
+                    <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Stok</TableHead>
+                    <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Vel/{RULES.DISPLAY_CYCLE_DAYS}hr</TableHead>
+                    <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sisa Hari</TableHead>
+                    <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Target</TableHead>
+                    <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Rekomendasi</TableHead>
+                    <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Biaya</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.map((a, i) => {
                     const badge = STATUS_BADGE[a.dosStatus];
                     const velPerCycle = a.velocity * RULES.DISPLAY_CYCLE_DAYS;
+                    const isCriticalRow = a.daysOfStock <= RULES.CRITICAL_DAYS;
+                    const isZeroStock = a.currentStock === 0;
                     return (
-                      <TableRow key={a.productId} className={i % 2 === 0 ? "bg-transparent" : "bg-muted/20"}>
-                        <TableCell className="text-muted-foreground text-xs">{i + 1}</TableCell>
+                      <TableRow
+                        key={a.productId}
+                        className={`
+                          transition-colors
+                          ${isCriticalRow ? "bg-destructive/[0.04]" : i % 2 === 0 ? "bg-transparent" : "bg-muted/15"}
+                          ${isZeroStock ? "border-l-[3px] border-l-destructive" : ""}
+                        `}
+                      >
+                        <TableCell className="text-muted-foreground text-xs font-mono">{i + 1}</TableCell>
                         <TableCell>
-                          <div className="font-semibold text-sm">
-                            {a.kode}
-                            {a.isBestSeller && " 🔥"}
-                            {a.isStockOut && " 🚨"}
-                          </div>
-                          <div className="text-[11px] text-muted-foreground truncate max-w-[100px]">{a.nama}</div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={`text-[11px] ${badge.className}`}>
-                            {a.dosStatus === "CRITICAL" && <AlertTriangle className="h-3 w-3 mr-1" />}
+                          <Badge variant="outline" className={`text-[10px] font-semibold ${badge.className}`}>
+                            {a.dosStatus === "CRITICAL" && <AlertTriangle className="h-3 w-3 mr-0.5" />}
                             {badge.label}
                           </Badge>
                         </TableCell>
-                        <TableCell className={`text-right font-mono text-sm ${a.currentStock === 0 ? "text-destructive font-bold" : ""}`}>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <span className="font-semibold text-sm">{a.kode}</span>
+                            {a.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
+                            {a.isStockOut && <span className="text-xs">🚨</span>}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">{a.nama}</div>
+                        </TableCell>
+                        <TableCell className={`text-right font-mono text-sm ${isZeroStock ? "text-destructive font-bold" : ""}`}>
                           {a.currentStock}
                         </TableCell>
-                        <TableCell className="text-right font-mono text-sm">{velPerCycle.toFixed(0)}/{RULES.DISPLAY_CYCLE_DAYS}hr</TableCell>
-                        <TableCell className={`text-right font-mono text-sm ${a.daysOfStock <= 2 ? "text-destructive font-bold" : a.daysOfStock <= 4 ? "text-warning font-bold" : ""}`}>
-                          {formatDaysLeft(a.daysOfStock)}
+                        <TableCell className="text-right font-mono text-sm">{velPerCycle.toFixed(0)}</TableCell>
+                        {/* SISA HARI — big & colored */}
+                        <TableCell className="text-right">
+                          <span className={`font-mono font-bold text-base ${
+                            a.daysOfStock <= 2 ? "text-destructive" :
+                            a.daysOfStock <= 4 ? "text-warning" :
+                            a.daysOfStock <= 7 ? "text-amber-500" :
+                            "text-success"
+                          }`}>
+                            {formatDaysLeft(a.daysOfStock)}
+                          </span>
                         </TableCell>
                         <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                          {a.targetStock} <span className="opacity-60">({a.targetDays}d)</span>
+                          {a.targetStock}
                         </TableCell>
+                        {/* REKOMENDASI — thick pill */}
                         <TableCell className="text-right">
                           {a.recommendedQty > 0 ? (
-                            <span className="inline-flex items-center justify-center min-w-[40px] px-2 py-0.5 rounded-md bg-primary/10 text-primary font-bold text-sm">
+                            <span className="inline-flex items-center justify-center min-w-[44px] px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
                               {a.recommendedQty}
                             </span>
                           ) : (
-                            <span className="text-muted-foreground">—</span>
+                            <span className="text-muted-foreground/40">—</span>
                           )}
                         </TableCell>
                         <TableCell className="text-right font-mono text-xs text-muted-foreground">
@@ -300,8 +386,9 @@ const Analisa = () => {
                   })}
                   {filtered.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center text-muted-foreground py-12">
-                        Tidak ada produk dalam kategori ini
+                      <TableCell colSpan={9} className="text-center text-muted-foreground py-16">
+                        <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                        <p className="text-sm">Tidak ada produk dalam kategori ini</p>
                       </TableCell>
                     </TableRow>
                   )}
@@ -385,7 +472,6 @@ const Analisa = () => {
 
         {/* ══════════ PENJUALAN ══════════ */}
         <TabsContent value="penjualan" className="space-y-5 mt-5">
-          {/* Top Seller */}
           <Card className="border-0 shadow-sm p-5 space-y-3">
             <SectionHeader icon={Trophy} title={`${RULES.DISPLAY_TOP_ITEMS} Barang Paling Laris`} subtitle="30 hari terakhir" />
             <div className="rounded-lg border overflow-x-auto">
@@ -424,7 +510,6 @@ const Analisa = () => {
             <p className="text-[11px] text-muted-foreground">⚠️ = data &lt; 7 hari (mungkin belum akurat)</p>
           </Card>
 
-          {/* Trend */}
           <Card className="border-0 shadow-sm p-5 space-y-3">
             <SectionHeader icon={Activity} title="Trend Penjualan 7 Hari" />
             <div className="flex flex-wrap gap-3">
@@ -637,7 +722,6 @@ const Analisa = () => {
 
         {/* ══════════ RINGKASAN ══════════ */}
         <TabsContent value="ringkasan" className="space-y-5 mt-5">
-          {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {[
               { icon: "📦", label: "Jenis Barang", value: String(stats.totalSKU), color: "" },
@@ -659,7 +743,6 @@ const Analisa = () => {
             ))}
           </div>
 
-          {/* Budget */}
           <Card className="border-0 shadow-sm p-5 space-y-3">
             <SectionHeader icon={DollarSign} title="Estimasi Budget Restock" />
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -676,7 +759,6 @@ const Analisa = () => {
             </div>
           </Card>
 
-          {/* Settings */}
           <Card className="border-0 shadow-sm">
             <CardContent className="p-4 space-y-1.5 text-xs text-muted-foreground">
               <p className="font-semibold text-foreground text-sm">⚙️ Pengaturan Analisa</p>
