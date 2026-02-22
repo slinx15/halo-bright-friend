@@ -34,7 +34,7 @@ serve(async (req) => {
 
     // Fetch business context
     const [productsRes, stockOutRes] = await Promise.all([
-      supabase.from("products").select("kode, nama, kategori, stock(jumlah, tumpukan_detail), prices(harga_modal, harga_normal, harga_grosir)").eq("is_active", true),
+      supabase.from("products").select("id, kode, nama, kategori, stock(jumlah, tumpukan_detail), prices(harga_modal, harga_normal, harga_grosir)").eq("is_active", true),
       supabase.from("stock_out").select("product_id, qty_kirim, qty_pesan, total_harga, harga_satuan, harga_type, toko, created_at").order("created_at", { ascending: false }).limit(500),
     ]);
 
