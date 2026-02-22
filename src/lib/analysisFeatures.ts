@@ -266,22 +266,12 @@ export function calcPredictions(
 ): PredictionItem[] {
   const t = new Date();
   t.setHours(0, 0, 0, 0);
-
-  // Simple velocity from 30-day sales
-  const salesMap: Record<string, { qty: number; days: number }> = {};
-  const thirtyAgo = new Date(t.getTime() - 30 * 86400000);
-
-  for (const s of sales) {
-    if (new Date(s.created_at) < thirtyAgo) continue;
-    if (!salesMap[s.product_id]) salesMap[s.product_id] = { qty: 0, days: 30 };
-    salesMap[s.product_id].qty += s.qty_kirim;
-  }
+  const wmaData = calculateWMAVelocity(sales, products);
 
   const items: PredictionItem[] = [];
   for (const p of products) {
     const stok = p.stock?.jumlah ?? 0;
-    const s = salesMap[p.id] ?? { qty: 0, days: 30 };
-    const vel = s.qty / Math.max(1, s.days);
+    const vel = wmaData[p.id]?.adjustedVelocity ?? 0;
     if (vel <= 0) continue;
 
     const daysLeft = stok / vel;
@@ -312,6 +302,7 @@ export function calcProfit(
   const t = new Date();
   t.setHours(0, 0, 0, 0);
   const thirtyAgo = new Date(t.getTime() - 30 * 86400000);
+  const wmaData = calculateWMAVelocity(sales, products);
 
   const salesMap: Record<string, number> = {};
   for (const s of sales) {
@@ -329,7 +320,7 @@ export function calcProfit(
     const margin = jual - modal;
     if (margin <= 0) continue;
 
-    const vel = qty / 30;
+    const vel = wmaData[p.id]?.adjustedVelocity ?? 0;
     items.push({
       kode: p.kode,
       productId: p.id,
