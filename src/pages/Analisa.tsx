@@ -43,6 +43,37 @@ function urgencyIcon(days: number) {
 // ─── Types ────────────────────────────────────────────────
 
 type FilterChip = "ALL" | "CRITICAL" | "WARNING" | "ATTENTION" | "SAFE";
+type PriorityLevel = "critical" | "high" | "medium" | "safe";
+
+const PRIORITY_ORDER: Record<PriorityLevel, number> = { critical: 0, high: 1, medium: 2, safe: 3 };
+
+function getPriorityLevel(status: DosStatus): PriorityLevel {
+  if (status === "CRITICAL") return "critical";
+  if (status === "WARNING") return "high";
+  if (status === "ATTENTION") return "medium";
+  return "safe";
+}
+
+const PRIORITY_BAR_COLOR: Record<PriorityLevel, string> = {
+  critical: "bg-red-500",
+  high: "bg-amber-500",
+  medium: "bg-yellow-500",
+  safe: "bg-emerald-500",
+};
+
+const PRIORITY_ROW_BG: Record<PriorityLevel, string> = {
+  critical: "bg-red-50/40 dark:bg-red-950/20",
+  high: "",
+  medium: "",
+  safe: "",
+};
+
+const PRIORITY_LEGEND = [
+  { color: "bg-red-500", label: "Kritis", desc: "stok hampir habis" },
+  { color: "bg-amber-500", label: "Segera Habis", desc: "perlu perhatian" },
+  { color: "bg-yellow-500", label: "Perhatian", desc: "monitor" },
+  { color: "bg-emerald-500", label: "Aman", desc: "stok cukup" },
+];
 
 const FILTER_CHIPS: { key: FilterChip; label: string; icon: string; activeClass: string }[] = [
   { key: "CRITICAL", label: "Critical", icon: "🔴", activeClass: "bg-destructive text-destructive-foreground" },
@@ -487,8 +518,8 @@ const Analisa = () => {
   const counts = useMemo(() => getStatusCounts(analyses), [analyses]);
 
   const filtered = useMemo(() => {
-    if (filter === "ALL") return analyses;
-    return analyses.filter((a) => a.dosStatus === filter);
+    const base = filter === "ALL" ? analyses : analyses.filter((a) => a.dosStatus === filter);
+    return [...base].sort((a, b) => PRIORITY_ORDER[getPriorityLevel(a.dosStatus)] - PRIORITY_ORDER[getPriorityLevel(b.dosStatus)]);
   }, [analyses, filter]);
 
   // Action Summary computed values
@@ -683,6 +714,17 @@ const Analisa = () => {
             )}
           </div>
 
+          {/* Priority Legend */}
+          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+            {PRIORITY_LEGEND.map((l) => (
+              <span key={l.label} className="inline-flex items-center gap-1.5">
+                <span className={`inline-block w-2.5 h-2.5 rounded-full ${l.color}`} />
+                <span className="font-medium text-foreground">{l.label}</span>
+                <span>— {l.desc}</span>
+              </span>
+            ))}
+          </div>
+
           {/* Restock Table — Desktop Only */}
           <div className="hidden md:block">
             <Card className="border-0 shadow-sm overflow-hidden">
@@ -690,6 +732,7 @@ const Analisa = () => {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/40 hover:bg-muted/40">
+                      <TableHead className="w-0 p-0"></TableHead>
                       <TableHead className="w-8">#</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Kode</TableHead>
@@ -705,15 +748,17 @@ const Analisa = () => {
                     {filtered.map((a, i) => {
                       const badge = STATUS_BADGE[a.dosStatus];
                       const velPerCycle = a.velocity * RULES.DISPLAY_CYCLE_DAYS;
-                      const isCriticalRow = a.daysOfStock <= RULES.CRITICAL_DAYS;
+                      const priority = getPriorityLevel(a.dosStatus);
                       const isZeroStock = a.currentStock === 0;
                       return (
                         <TableRow
                           key={a.productId}
-                          className={`
-                            ${isZeroStock ? "border-l-[3px] border-l-destructive" : ""}
-                          `}
+                          className={`relative ${PRIORITY_ROW_BG[priority]}`}
                         >
+                          {/* Priority Bar */}
+                          <td className="w-0 p-0 relative">
+                            <div className={`absolute left-0 top-0 bottom-0 w-1 sm:w-1.5 rounded-r ${PRIORITY_BAR_COLOR[priority]}`} />
+                          </td>
                           <TableCell className="text-muted-foreground text-xs font-mono">{i + 1}</TableCell>
                           <TableCell>
                             <Badge variant="outline" className={`text-[10px] font-semibold ${badge.className}`}>
@@ -726,6 +771,7 @@ const Analisa = () => {
                               <span className="text-sm">{a.kode}</span>
                               {a.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
                               {a.isStockOut && <span className="text-xs">🚨</span>}
+                              {priority === "critical" && <span className="text-[10px] font-bold text-red-600">HOT</span>}
                             </div>
                             <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">{a.nama}</div>
                           </TableCell>
@@ -763,7 +809,7 @@ const Analisa = () => {
                     })}
                     {filtered.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={9} className="text-center text-muted-foreground py-16">
+                        <TableCell colSpan={10} className="text-center text-muted-foreground py-16">
                           <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
                           <p className="text-sm">Tidak ada produk dalam kategori ini</p>
                         </TableCell>
@@ -785,20 +831,22 @@ const Analisa = () => {
             ) : (
               filtered.map((a) => {
                 const badge = STATUS_BADGE[a.dosStatus];
+                const priority = getPriorityLevel(a.dosStatus);
                 const isZeroStock = a.currentStock === 0;
                 const ringClass =
-                  a.dosStatus === "CRITICAL" ? "border-l-[3px] border-l-destructive border-border/60" :
-                  a.dosStatus === "WARNING" ? "border-l-[3px] border-l-warning border-border/60" :
-                  a.dosStatus === "ATTENTION" ? "border-l-[3px] border-l-amber-500 border-border/60" : "border-border/60";
+                  a.dosStatus === "CRITICAL" ? "border-l-[3px] border-l-red-500 border-border/60" :
+                  a.dosStatus === "WARNING" ? "border-l-[3px] border-l-amber-500 border-border/60" :
+                  a.dosStatus === "ATTENTION" ? "border-l-[3px] border-l-yellow-500 border-border/60" : "border-l-[3px] border-l-emerald-500 border-border/60";
 
                 return (
                   <div
                     key={a.productId}
-                    className={`rounded-xl border bg-card p-3.5 transition-all active:scale-[0.99] w-full ${ringClass}`}
+                    className={`rounded-xl border bg-card p-3.5 transition-all active:scale-[0.99] w-full ${ringClass} ${PRIORITY_ROW_BG[priority]}`}
                   >
                     <div className="flex items-center justify-between mb-2.5">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="font-bold text-sm truncate">{a.kode}</span>
+                        {priority === "critical" && <span className="text-[10px] font-bold text-red-600">HOT</span>}
                         {a.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning shrink-0" />}
                         {a.isStockOut && <span className="text-xs shrink-0">🚨</span>}
                         <Badge variant="outline" className={`text-[9px] font-semibold shrink-0 ${badge.className}`}>
