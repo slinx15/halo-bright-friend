@@ -209,8 +209,8 @@ export function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko,
                         {item.isValid && item.qtyKirim > 0 ? formatRupiah(total) : "-"}
                       </TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeItem(idx)}>
-                          <Trash2 className="h-3.5 w-3.5" />
+                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeItem(idx)}>
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -225,7 +225,7 @@ export function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko,
           {products?.map((p) => <option key={p.id} value={p.kode} />)}
         </datalist>
 
-        <Button variant="outline" size="sm" onClick={addEmptyRow} className="w-full">
+        <Button variant="outline" size="sm" onClick={addEmptyRow} className="w-full rounded-xl">
           <Plus className="h-4 w-4 mr-1" /> Tambah Baris
         </Button>
 
@@ -265,7 +265,7 @@ export function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko,
         <Button
           onClick={handleSubmit}
           disabled={submitting || !canSubmit}
-          className="w-full"
+          className="w-full rounded-xl"
         >
           <Send className="h-4 w-4 mr-2" />
           {submitting ? "Menyimpan..." : `Simpan ${submitItems.length} Barang Keluar`}

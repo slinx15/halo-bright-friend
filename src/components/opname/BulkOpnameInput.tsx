@@ -78,7 +78,7 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 rows={10}
-                className="font-mono text-sm"
+                className="font-mono text-base md:text-sm"
               />
             </div>
             <Button
@@ -154,18 +154,18 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
               </Badge>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <Button
                 variant="outline"
                 onClick={() => setShowPreview(false)}
-                className="flex-1"
+                className="flex-1 rounded-xl"
               >
                 Edit Ulang
               </Button>
               <Button
                 onClick={handleSubmit}
                 disabled={submitting || validItems.length === 0}
-                className="flex-1"
+                className="flex-1 rounded-xl"
               >
                 <Send className="h-4 w-4 mr-2" />
                 {submitting ? "Menyimpan..." : `Simpan ${validItems.length} Opname`}
