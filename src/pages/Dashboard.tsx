@@ -277,9 +277,15 @@ const Dashboard = () => {
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-extrabold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground text-sm">Command center RRCollections</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground font-medium">Selamat datang kembali 👋</p>
+          <h1 className="text-2xl font-extrabold tracking-tight">Dashboard</h1>
+        </div>
+        <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full">
+          <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
+          Live
+        </div>
       </div>
 
       {/* 1. Command Center Chips */}
