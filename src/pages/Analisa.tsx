@@ -3,14 +3,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import {
   AlertTriangle, Package, Skull,
   BarChart3, DollarSign, Store, ArrowDown,
   ShoppingCart, Clock, Trophy, Activity,
-  AlertCircle, PackageX, Wallet, Flame, TrendingUp, TrendingDown
+  AlertCircle, PackageX, Wallet, Flame, TrendingUp, TrendingDown,
+  Calculator, CheckCircle2
 } from "lucide-react";
 import { useSalesAnalysis } from "@/hooks/useSalesAnalysis";
-import { analyzeAllProducts, getStatusCounts, RULES, type DosStatus } from "@/lib/stockAnalyticsEngine";
+import { analyzeAllProducts, getStatusCounts, RULES, type DosStatus, type ProductAnalysis, isBlackWhiteCode } from "@/lib/stockAnalyticsEngine";
 import {
   calcTrend, calcDeadStock, calcLowStock,
   calcPredictions, calcProfit, calcTokoAnalysis, calcBudgetEstimates, calcStats,
@@ -70,11 +73,253 @@ function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementTyp
   );
 }
 
+// ─── Budget Planner Component ─────────────────────────────
+
+const BUDGET_PRESETS = [1000000, 2000000, 3000000, 5000000, 10000000];
+const DAYS_PRESETS = [3, 5, 7, 14];
+
+function BudgetPlanner({
+  analyses,
+  budgetAmount,
+  setBudgetAmount,
+  budgetDays,
+  setBudgetDays,
+}: {
+  analyses: ProductAnalysis[];
+  budgetAmount: number;
+  setBudgetAmount: (v: number) => void;
+  budgetDays: number;
+  setBudgetDays: (v: number) => void;
+}) {
+  const recommendations = useMemo(() => {
+    // Sort by priority (combinedScore DESC) — most urgent first
+    const sorted = [...analyses]
+      .filter(a => a.velocity > 0)
+      .sort((a, b) => b.combinedScore - a.combinedScore);
+
+    const result: { item: ProductAnalysis; qty: number; cost: number; reason: string }[] = [];
+    let remaining = budgetAmount;
+
+    for (const item of sorted) {
+      if (remaining <= 0) break;
+
+      // Calculate qty needed for target days
+      const neededStock = Math.ceil(item.velocity * budgetDays);
+      const deficit = neededStock - item.currentStock;
+      if (deficit <= 0) continue;
+
+      // Round up to batch
+      const isBW = isBlackWhiteCode(item.kode);
+      const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
+      const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
+      const qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
+      const cost = qty * item.unitPrice;
+
+      if (cost > remaining) {
+        // Try fitting a smaller batch
+        const maxAffordableQty = Math.floor(remaining / item.unitPrice);
+        const affordableBatch = Math.floor(maxAffordableQty / batch) * batch;
+        if (affordableBatch >= minOrder) {
+          const actualCost = affordableBatch * item.unitPrice;
+          const reason = item.daysOfStock <= RULES.CRITICAL_DAYS ? "🔴 Kritis" :
+            item.daysOfStock <= RULES.WARNING_DAYS ? "🟠 Segera habis" :
+            item.isStockOut ? "🚨 Stok kosong" : "📦 Perlu restock";
+          result.push({ item, qty: affordableBatch, cost: actualCost, reason });
+          remaining -= actualCost;
+        }
+        continue;
+      }
+
+      const reason = item.daysOfStock <= RULES.CRITICAL_DAYS ? "🔴 Kritis" :
+        item.daysOfStock <= RULES.WARNING_DAYS ? "🟠 Segera habis" :
+        item.isStockOut ? "🚨 Stok kosong" : "📦 Perlu restock";
+      result.push({ item, qty, cost, reason });
+      remaining -= cost;
+    }
+
+    return { items: result, totalCost: budgetAmount - remaining, remaining };
+  }, [analyses, budgetAmount, budgetDays]);
+
+  const usedPct = budgetAmount > 0 ? Math.round((recommendations.totalCost / budgetAmount) * 100) : 0;
+
+  return (
+    <div className="space-y-4">
+      {/* Input Section */}
+      <Card className="border-0 shadow-sm overflow-hidden">
+        <CardContent className="p-5 space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10">
+              <Calculator className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-base">Budget Restock Planner</h3>
+              <p className="text-xs text-muted-foreground">Masukkan budget & target hari, dapatkan saran restock optimal</p>
+            </div>
+          </div>
+
+          {/* Budget Input */}
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Budget Tersedia</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">Rp</span>
+              <Input
+                type="number"
+                value={budgetAmount}
+                onChange={(e) => setBudgetAmount(Number(e.target.value) || 0)}
+                className="pl-10 text-lg font-bold h-12"
+                placeholder="2000000"
+              />
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {BUDGET_PRESETS.map(p => (
+                <button
+                  key={p}
+                  onClick={() => setBudgetAmount(p)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                    budgetAmount === p
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {(p / 1000000).toFixed(p >= 1000000 && p % 1000000 === 0 ? 0 : 1)}jt
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Days Input */}
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Target Stok (Hari)</label>
+            <div className="flex gap-2">
+              {DAYS_PRESETS.map(d => (
+                <button
+                  key={d}
+                  onClick={() => setBudgetDays(d)}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                    budgetDays === d
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {d} hari
+                </button>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Result Summary */}
+      <div className="grid grid-cols-3 gap-2.5">
+        <div className="rounded-xl bg-primary/8 border border-primary/15 p-3">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Terpakai</p>
+          <p className="text-base md:text-lg font-extrabold text-primary">{formatRp(recommendations.totalCost)}</p>
+          <p className="text-[10px] text-muted-foreground">{usedPct}% budget</p>
+        </div>
+        <div className="rounded-xl bg-success/8 border border-success/15 p-3">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Sisa Budget</p>
+          <p className="text-base md:text-lg font-extrabold text-success">{formatRp(recommendations.remaining)}</p>
+          <p className="text-[10px] text-muted-foreground">{100 - usedPct}%</p>
+        </div>
+        <div className="rounded-xl bg-muted/60 border border-border p-3">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Produk</p>
+          <p className="text-base md:text-lg font-extrabold">{recommendations.items.length}</p>
+          <p className="text-[10px] text-muted-foreground">item restock</p>
+        </div>
+      </div>
+
+      {/* Budget usage bar */}
+      <div className="h-2 rounded-full bg-muted overflow-hidden">
+        <div
+          className="h-full rounded-full bg-primary transition-all duration-500"
+          style={{ width: `${Math.min(usedPct, 100)}%` }}
+        />
+      </div>
+
+      {/* Recommendation Table */}
+      {recommendations.items.length > 0 ? (
+        <Card className="border-0 shadow-sm overflow-hidden">
+          <div className="px-4 py-3 bg-muted/30 border-b flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold">Saran Restock — {budgetDays} Hari</span>
+            <span className="text-xs text-muted-foreground ml-auto">Urut prioritas tertinggi</span>
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/20 hover:bg-muted/20">
+                  <TableHead className="w-8 text-[10px] font-semibold uppercase tracking-wider">#</TableHead>
+                  <TableHead className="text-[10px] font-semibold uppercase tracking-wider">Kode</TableHead>
+                  <TableHead className="text-[10px] font-semibold uppercase tracking-wider">Alasan</TableHead>
+                  <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider">Stok</TableHead>
+                  <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider">Sisa Hari</TableHead>
+                  <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider">Beli</TableHead>
+                  <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider">Biaya</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recommendations.items.map((r, i) => (
+                  <TableRow
+                    key={r.item.productId}
+                    className={`${r.item.daysOfStock <= RULES.CRITICAL_DAYS ? "bg-destructive/[0.04]" : i % 2 === 0 ? "" : "bg-muted/15"} ${r.item.currentStock === 0 ? "border-l-[3px] border-l-destructive" : ""}`}
+                  >
+                    <TableCell className="text-xs font-mono text-muted-foreground">{i + 1}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <span className="font-semibold text-sm">{r.item.kode}</span>
+                        {r.item.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-xs">{r.reason}</span>
+                    </TableCell>
+                    <TableCell className={`text-right font-mono text-sm ${r.item.currentStock === 0 ? "text-destructive font-bold" : ""}`}>
+                      {r.item.currentStock}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span className={`font-mono font-bold text-sm ${
+                        r.item.daysOfStock <= 2 ? "text-destructive" :
+                        r.item.daysOfStock <= 4 ? "text-warning" :
+                        "text-foreground"
+                      }`}>
+                        {formatDaysLeft(r.item.daysOfStock)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span className="inline-flex items-center justify-center min-w-[44px] px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
+                        {r.qty}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                      {formatRp(r.cost)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+      ) : (
+        <Card className="border-0 shadow-sm">
+          <CardContent className="py-16 text-center">
+            <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
+            <p className="text-sm text-muted-foreground">
+              {budgetAmount === 0 ? "Masukkan budget untuk melihat saran" : "Tidak ada produk yang perlu restock untuk periode ini"}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────
 
 const Analisa = () => {
   const { products, stockOutData, isLoading } = useSalesAnalysis();
   const [filter, setFilter] = useState<FilterChip>("ALL");
+  const [budgetAmount, setBudgetAmount] = useState<number>(2000000);
+  const [budgetDays, setBudgetDays] = useState<number>(3);
 
   const analyses = useMemo(() => {
     if (!products.length) return [];
@@ -280,6 +525,9 @@ const Analisa = () => {
           </TabsTrigger>
           <TabsTrigger value="dead" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-xs px-4 py-2.5">
             <Skull className="h-3.5 w-3.5 mr-1.5" />Dead Stock
+          </TabsTrigger>
+          <TabsTrigger value="budget" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-xs px-4 py-2.5 font-semibold">
+            <Calculator className="h-3.5 w-3.5 mr-1.5" />Budget
           </TabsTrigger>
           <TabsTrigger value="ringkasan" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-xs px-4 py-2.5">
             <BarChart3 className="h-3.5 w-3.5 mr-1.5" />Ringkasan
@@ -718,6 +966,17 @@ const Analisa = () => {
               </>
             )}
           </Card>
+        </TabsContent>
+
+        {/* ══════════ BUDGET PLANNER ══════════ */}
+        <TabsContent value="budget" className="space-y-4 mt-4">
+          <BudgetPlanner
+            analyses={analyses}
+            budgetAmount={budgetAmount}
+            setBudgetAmount={setBudgetAmount}
+            budgetDays={budgetDays}
+            setBudgetDays={setBudgetDays}
+          />
         </TabsContent>
 
         {/* ══════════ RINGKASAN ══════════ */}
