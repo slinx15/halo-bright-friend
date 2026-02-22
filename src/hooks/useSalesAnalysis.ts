@@ -30,7 +30,7 @@ function useStockOutData() {
       const limit = 1000;
 
       while (true) {
-        const url = `${SUPABASE_URL}/rest/v1/stock_out?select=product_id,qty_kirim,created_at&created_at=gte.${cutoffStr}&order=created_at.desc&limit=${limit}&offset=${offset}`;
+        const url = `${SUPABASE_URL}/rest/v1/stock_out?select=product_id,qty_kirim,qty_pesan,created_at,toko,harga_satuan,harga_type&created_at=gte.${cutoffStr}&order=created_at.desc&limit=${limit}&offset=${offset}`;
         const res = await fetch(url, {
           headers: {
             "apikey": SUPABASE_KEY,
