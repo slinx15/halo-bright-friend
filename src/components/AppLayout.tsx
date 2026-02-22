@@ -22,9 +22,9 @@ const AppLayout = () => {
   const { user } = useAuth();
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-background w-full max-w-[100vw] overflow-x-hidden">
       <AppSidebar />
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card sticky top-0 z-40">
           <div className="flex items-center gap-2">
             <img src={logo} alt="RRCollections" className="h-8 w-8 rounded-lg object-contain" />
