@@ -92,49 +92,85 @@ function BudgetPlanner({
   setBudgetDays: (v: number) => void;
 }) {
   const recommendations = useMemo(() => {
-    // Sort by priority (combinedScore DESC) — most urgent first
     const sorted = [...analyses]
       .filter(a => a.velocity > 0)
       .sort((a, b) => b.combinedScore - a.combinedScore);
 
     const result: { item: ProductAnalysis; qty: number; cost: number; reason: string }[] = [];
     let remaining = budgetAmount;
+    const pickedIds = new Set<string>();
 
-    for (const item of sorted) {
-      if (remaining <= 0) break;
-
-      // Calculate qty needed for target days
-      const neededStock = Math.ceil(item.velocity * budgetDays);
-      const deficit = neededStock - item.currentStock;
-      if (deficit <= 0) continue;
-
-      // Round up to batch
+    function tryAdd(item: ProductAnalysis, deficit: number, reason: string) {
+      if (remaining <= 0 || deficit <= 0 || pickedIds.has(item.productId)) return;
       const isBW = isBlackWhiteCode(item.kode);
       const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
       const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
-      const qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
-      const cost = qty * item.unitPrice;
+      let qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
+      let cost = qty * item.unitPrice;
 
       if (cost > remaining) {
-        // Try fitting a smaller batch
-        const maxAffordableQty = Math.floor(remaining / item.unitPrice);
-        const affordableBatch = Math.floor(maxAffordableQty / batch) * batch;
-        if (affordableBatch >= minOrder) {
-          const actualCost = affordableBatch * item.unitPrice;
-          const reason = item.daysOfStock <= RULES.CRITICAL_DAYS ? "🔴 Kritis" :
-            item.daysOfStock <= RULES.WARNING_DAYS ? "🟠 Segera habis" :
-            item.isStockOut ? "🚨 Stok kosong" : "📦 Perlu restock";
-          result.push({ item, qty: affordableBatch, cost: actualCost, reason });
-          remaining -= actualCost;
-        }
-        continue;
+        const maxQty = Math.floor(remaining / item.unitPrice);
+        qty = Math.floor(maxQty / batch) * batch;
+        if (qty < minOrder) return;
+        cost = qty * item.unitPrice;
       }
 
+      result.push({ item, qty, cost, reason });
+      remaining -= cost;
+      pickedIds.add(item.productId);
+    }
+
+    // PASS 1: Urgent — products that need restock within target days
+    for (const item of sorted) {
+      if (remaining <= 0) break;
+      const neededStock = Math.ceil(item.velocity * budgetDays);
+      const deficit = neededStock - item.currentStock;
+      if (deficit <= 0) continue;
       const reason = item.daysOfStock <= RULES.CRITICAL_DAYS ? "🔴 Kritis" :
         item.daysOfStock <= RULES.WARNING_DAYS ? "🟠 Segera habis" :
         item.isStockOut ? "🚨 Stok kosong" : "📦 Perlu restock";
-      result.push({ item, qty, cost, reason });
-      remaining -= cost;
+      tryAdd(item, deficit, reason);
+    }
+
+    // PASS 2: Top-up — if budget remains, extend coverage to 2x target days
+    if (remaining > 0) {
+      const extendedDays = budgetDays * 2;
+      for (const item of sorted) {
+        if (remaining <= 0) break;
+        if (pickedIds.has(item.productId)) continue;
+        const neededStock = Math.ceil(item.velocity * extendedDays);
+        const deficit = neededStock - item.currentStock;
+        if (deficit <= 0) continue;
+        tryAdd(item, deficit, "🔄 Top-up stok");
+      }
+    }
+
+    // PASS 3: Safety buffer — if STILL budget remains, add extra batch to best sellers
+    if (remaining > 0) {
+      for (const item of sorted) {
+        if (remaining <= 0) break;
+        if (!item.isBestSeller) continue;
+        if (pickedIds.has(item.productId)) {
+          // Add extra batch to already-picked best sellers
+          const isBW = isBlackWhiteCode(item.kode);
+          const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
+          const cost = batch * item.unitPrice;
+          if (cost <= remaining) {
+            const existing = result.find(r => r.item.productId === item.productId);
+            if (existing) {
+              existing.qty += batch;
+              existing.cost += cost;
+              existing.reason = "🔥 Best seller + extra";
+              remaining -= cost;
+            }
+          }
+        } else {
+          // Add best sellers not yet picked
+          const isBW = isBlackWhiteCode(item.kode);
+          const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
+          tryAdd(item, batch, "🔥 Best seller buffer");
+        }
+      }
     }
 
     return { items: result, totalCost: budgetAmount - remaining, remaining };
