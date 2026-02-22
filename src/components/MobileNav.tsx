@@ -51,13 +51,6 @@ const MobileNav = () => {
             </button>
           );
         })}
-        <button
-          onClick={doLogout}
-          className="flex flex-col items-center gap-0.5 px-2 py-1.5 text-[10px] font-medium text-destructive transition-all duration-200 active:scale-95 rounded-xl min-w-[44px]"
-        >
-          <LogOut className="h-[18px] w-[18px]" />
-          Logout
-        </button>
       </div>
     </nav>
   );
