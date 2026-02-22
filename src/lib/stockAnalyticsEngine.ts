@@ -63,6 +63,13 @@ const HARD_MATURITY_CONFIG = {
   minSalesForCap: 20,        // avoid capping tiny noise
 };
 
+const BEST_SELLER_PUSH_CONFIG = {
+  minVelocity4d: 40,          // fast mover threshold (per 4 days)
+  minDaysOfStock: 2,          // avoid pushing near-zero panic items
+  maxDaysOfStock: 10,         // don't push if already overstocked
+  extraBatchMultiplier: 1,    // add +1 batch only (SAFE)
+};
+
 const COLOR_BLACK = ["BLK", "BLCK", "HITAM", "BLACK"];
 const COLOR_WHITE = ["WHT", "PUTIH", "WHITE"];
 
@@ -415,6 +422,27 @@ export function analyzeAllProducts(
       } else {
         recommendedQty = Math.max(minOrder, roundUpToBatch(rawButuh, minOrder));
       }
+    }
+
+    // Soft best seller push — bot-style extra batch for true fast movers
+    const isFastMover = velocity >= BEST_SELLER_PUSH_CONFIG.minVelocity4d;
+    const isHealthyStock =
+      daysOfStock >= BEST_SELLER_PUSH_CONFIG.minDaysOfStock &&
+      daysOfStock <= BEST_SELLER_PUSH_CONFIG.maxDaysOfStock;
+    const alreadyReordering = recommendedQty > 0;
+    const isImmatureProduct = wma?.isImmature ?? false;
+    const isDeadStock = velocity === 0 && currentStock > 0;
+
+    if (isFastMover && isHealthyStock && alreadyReordering && !isImmatureProduct && !isDeadStock) {
+      recommendedQty += batchSize * BEST_SELLER_PUSH_CONFIG.extraBatchMultiplier;
+    }
+
+    // Safety clamp — prevent runaway overstock
+    const maxReasonableStock = Math.ceil(velocity * (targetDays + 3));
+    const projectedStock = currentStock + recommendedQty;
+    if (projectedStock > maxReasonableStock && recommendedQty > 0) {
+      const allowedNeed = maxReasonableStock - currentStock;
+      recommendedQty = Math.max(0, roundUpToBatch(allowedNeed, batchSize));
     }
 
     // Harga & cost
