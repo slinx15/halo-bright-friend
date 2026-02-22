@@ -290,9 +290,13 @@ function BudgetPlanner({
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">Rp</span>
               <Input
-                type="number"
-                value={budgetAmount}
-                onChange={(e) => setBudgetAmount(Number(e.target.value) || 0)}
+                type="text"
+                inputMode="numeric"
+                value={budgetAmount === 0 ? "" : budgetAmount}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/[^0-9]/g, "");
+                  setBudgetAmount(raw === "" ? 0 : Number(raw));
+                }}
                 className="pl-10 text-lg font-bold h-12"
                 placeholder="2000000"
               />

@@ -206,22 +206,7 @@ const BarangKeluar = () => {
         <TabsContent value="single">
           <Card className="boss-card">
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-bold">Input Barang Keluar</CardTitle>
-                <OcrUpload
-                  mode="keluar"
-                  onResult={(ocrItems) => {
-                    if (ocrItems.length > 0) {
-                      const first = ocrItems[0];
-                      setKode((first.kode || "").toUpperCase());
-                      setQtyPesan(first.qty_pesan || 0);
-                      setQtyKirim(first.qty_kirim || 0);
-                      if (first.harga_type) setHargaType(first.harga_type);
-                      if (first.toko) setToko(first.toko);
-                    }
-                  }}
-                />
-              </div>
+              <CardTitle className="text-base font-bold">Input Barang Keluar</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
