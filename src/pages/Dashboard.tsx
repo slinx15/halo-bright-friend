@@ -1,4 +1,5 @@
 import { Package, PackagePlus, PackageMinus, ClipboardCheck, AlertTriangle, TrendingUp, DollarSign, ShoppingCart, BarChart3, AlertCircle, PackageX } from "lucide-react";
+import { DashboardSkeleton } from "@/components/LoadingSkeletons";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -268,6 +269,8 @@ const Dashboard = () => {
     });
     return days;
   })();
+
+  if (isLoading) return <DashboardSkeleton />;
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full">

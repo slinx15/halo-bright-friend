@@ -19,6 +19,7 @@ import {
   calcPredictions, calcProfit, calcTokoAnalysis, calcBudgetEstimates, calcStats,
 } from "@/lib/analysisFeatures";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { AnalisaSkeleton } from "@/components/LoadingSkeletons";
 
 // ─── Formatting Helpers ───────────────────────────────────
 
@@ -537,11 +538,7 @@ const Analisa = () => {
   const stats = useMemo(() => calcStats(products, stockOutData), [products, stockOutData]);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
+    return <AnalisaSkeleton />;
   }
 
   const predCritical = predictions.filter(p => p.urgency === "critical");
