@@ -73,9 +73,7 @@ const Analisa = () => {
   const needsReorder = useMemo(() => analyses.filter((a) => a.recommendedQty > 0).length, [analyses]);
 
   // Additional analysis features
-  // Top Seller derived from engine analyses (single source of truth for velocity)
   const topSellers = useMemo(() => {
-    // Build sales qty map for "Terjual" column
     const salesMap: Record<string, { qty: number; days: Set<string> }> = {};
     const thirtyAgo = new Date();
     thirtyAgo.setDate(thirtyAgo.getDate() - 30);
@@ -106,6 +104,7 @@ const Analisa = () => {
         };
       });
   }, [analyses, stockOutData]);
+
   const trendItems = useMemo(() => calcTrend(products, stockOutData), [products, stockOutData]);
   const deadStock = useMemo(() => calcDeadStock(products, stockOutData), [products, stockOutData]);
   const lowStock = useMemo(() => calcLowStock(products, stockOutData), [products, stockOutData]);
@@ -125,6 +124,17 @@ const Analisa = () => {
     );
   }
 
+  // Predictions grouped by urgency (for Restock tab section)
+  const predCritical = predictions.filter(p => p.urgency === "critical");
+  const predWarning = predictions.filter(p => p.urgency === "warning");
+  const predAttention = predictions.filter(p => p.urgency === "attention");
+  const predSafe = predictions.filter(p => p.urgency === "safe");
+
+  // Trend summary
+  const totalTW = trendItems.reduce((s, t) => s + t.thisWeek, 0);
+  const totalLW = trendItems.reduce((s, t) => s + t.lastWeek, 0);
+  const overallChange = totalLW > 0 ? ((totalTW - totalLW) / totalLW * 100) : 0;
+
   return (
     <div className="space-y-6">
       <div>
@@ -139,19 +149,17 @@ const Analisa = () => {
       <Tabs defaultValue="restock" className="w-full">
         <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="restock" className="text-xs"><ShoppingCart className="h-3 w-3 mr-1" />Restock</TabsTrigger>
-          <TabsTrigger value="budget" className="text-xs"><DollarSign className="h-3 w-3 mr-1" />Budget</TabsTrigger>
-          <TabsTrigger value="prediksi" className="text-xs"><Clock className="h-3 w-3 mr-1" />Prediksi</TabsTrigger>
-          <TabsTrigger value="top" className="text-xs"><Trophy className="h-3 w-3 mr-1" />Top Seller</TabsTrigger>
-          <TabsTrigger value="trend" className="text-xs"><Activity className="h-3 w-3 mr-1" />Trend</TabsTrigger>
+          <TabsTrigger value="penjualan" className="text-xs"><Trophy className="h-3 w-3 mr-1" />Penjualan</TabsTrigger>
           <TabsTrigger value="profit" className="text-xs"><DollarSign className="h-3 w-3 mr-1" />Profit</TabsTrigger>
           <TabsTrigger value="toko" className="text-xs"><Store className="h-3 w-3 mr-1" />Toko</TabsTrigger>
           <TabsTrigger value="dead" className="text-xs"><Skull className="h-3 w-3 mr-1" />Dead Stock</TabsTrigger>
-          <TabsTrigger value="low" className="text-xs"><ArrowDown className="h-3 w-3 mr-1" />Low Stock</TabsTrigger>
-          <TabsTrigger value="stats" className="text-xs"><BarChart3 className="h-3 w-3 mr-1" />Ringkasan</TabsTrigger>
+          <TabsTrigger value="ringkasan" className="text-xs"><BarChart3 className="h-3 w-3 mr-1" />Ringkasan</TabsTrigger>
         </TabsList>
 
-        {/* === RESTOCK TAB === */}
-        <TabsContent value="restock" className="space-y-4">
+        {/* ══════════════════════════════════════════════════
+            RESTOCK TAB (merged: Restock + Prediksi + Low Stock)
+            ══════════════════════════════════════════════════ */}
+        <TabsContent value="restock" className="space-y-6">
           {/* Status Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             {FILTER_CARDS.map((c) => {
@@ -202,7 +210,7 @@ const Analisa = () => {
             </span>
           </div>
 
-          {/* Table */}
+          {/* Main Restock Table */}
           <div className="rounded-lg border overflow-x-auto">
             <Table>
               <TableHeader>
@@ -272,167 +280,173 @@ const Analisa = () => {
               </TableBody>
             </Table>
           </div>
-        </TabsContent>
 
-        {/* === BUDGET TAB === */}
-        <TabsContent value="budget" className="space-y-4">
-          <h2 className="text-lg font-bold">📊 Estimasi Budget Restock</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            {budgetEstimates.map((e) => {
-              const label = e.days === 4 ? "1 siklus" : e.days === 7 ? "1 minggu" : e.days === 14 ? "2 minggu" : e.days === 21 ? "3 minggu" : "1 bulan";
-              return (
-                <Card key={e.days}>
-                  <CardContent className="p-4">
-                    <p className="text-sm text-muted-foreground">📅 {e.days} hari ({label})</p>
-                    <p className="text-xl font-bold mt-1">{formatRp(e.cost)}</p>
-                    <p className="text-xs text-muted-foreground">{e.items} item | {e.qty} pcs</p>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </TabsContent>
-
-        {/* === PREDIKSI TAB === */}
-        <TabsContent value="prediksi" className="space-y-4">
-          <h2 className="text-lg font-bold">🔮 Prediksi Kehabisan Stok</h2>
-          {(() => {
-            const critical = predictions.filter(p => p.urgency === "critical");
-            const warning = predictions.filter(p => p.urgency === "warning");
-            const attention = predictions.filter(p => p.urgency === "attention");
-            const safe = predictions.filter(p => p.urgency === "safe");
-            return (
-              <div className="space-y-4">
-                {[
-                  { items: critical, label: `🔴 KRITIS (≤${RULES.CRITICAL_DAYS} hari)`, color: "text-destructive" },
-                  { items: warning, label: `🟠 WARNING (${RULES.CRITICAL_DAYS+1}-${RULES.WARNING_DAYS} hari)`, color: "text-warning" },
-                  { items: attention, label: `🟡 PERHATIAN (${RULES.WARNING_DAYS+1}-${RULES.ATTENTION_DAYS} hari)`, color: "text-amber-600" },
-                ].map(({ items, label, color }) => items.length > 0 && (
-                  <div key={label}>
-                    <h3 className={`font-semibold ${color}`}>{label} ({items.length})</h3>
-                    <div className="rounded-lg border mt-2 overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Kode</TableHead>
-                            <TableHead className="text-right">Stok</TableHead>
-                            <TableHead className="text-right">Velocity</TableHead>
-                            <TableHead className="text-right">Habis Dalam</TableHead>
-                            <TableHead>Tanggal Habis</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {items.map(p => (
-                            <TableRow key={p.productId}>
-                              <TableCell className="font-semibold">{p.kode}{p.isBestSeller ? " 🔥" : ""}</TableCell>
-                              <TableCell className="text-right font-mono">{p.stok}</TableCell>
-                              <TableCell className="text-right font-mono">{p.velocity.toFixed(1)}/hr</TableCell>
-                              <TableCell className="text-right font-mono">{formatDaysLeft(p.daysLeft)}</TableCell>
-                              <TableCell className="text-xs">{p.predictedDate.toLocaleDateString("id-ID")}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                ))}
-                <p className="text-sm text-muted-foreground">🟢 AMAN ({`>${RULES.ATTENTION_DAYS} hari`}): {safe.length} item</p>
-                <p className="text-xs text-muted-foreground">Total dipantau: {predictions.length} item | Perlu perhatian: {predictions.length - safe.length} item</p>
-              </div>
-            );
-          })()}
-        </TabsContent>
-
-        {/* === TOP SELLER TAB === */}
-        <TabsContent value="top" className="space-y-4">
-          <h2 className="text-lg font-bold">🏆 {RULES.DISPLAY_TOP_ITEMS} Barang Paling Laris</h2>
-          <div className="rounded-lg border overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">#</TableHead>
-                  <TableHead>Kode</TableHead>
-                  <TableHead className="text-right">Terjual</TableHead>
-                  <TableHead className="text-right">Hari Data</TableHead>
-                  <TableHead className="text-right">Laku/{RULES.DISPLAY_CYCLE_DAYS}hr</TableHead>
-                  <TableHead className="text-right">Stok</TableHead>
-                  <TableHead className="text-right">Sisa Hari</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {topSellers.map((t, i) => {
-                  const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
-                  return (
-                    <TableRow key={t.productId}>
-                      <TableCell>{medal}</TableCell>
-                      <TableCell className="font-semibold">
-                        {t.kode}{t.isBestSeller ? " 🔥" : ""}{t.days < 7 ? " ⚠️" : ""}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">{t.totalQty}</TableCell>
-                      <TableCell className="text-right font-mono">{t.days}</TableCell>
-                      <TableCell className="text-right font-mono">{(t.velocity * RULES.DISPLAY_CYCLE_DAYS).toFixed(0)}</TableCell>
-                      <TableCell className="text-right font-mono">{t.stok}</TableCell>
-                      <TableCell className="text-right">{urgencyIcon(t.daysLeft)} {formatDaysLeft(t.daysLeft)}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-          <p className="text-xs text-muted-foreground">⚠️ = data &lt; 7 hari (mungkin belum akurat)</p>
-        </TabsContent>
-
-        {/* === TREND TAB === */}
-        <TabsContent value="trend" className="space-y-4">
-          <h2 className="text-lg font-bold">📈 Trend Penjualan 7 Hari</h2>
-          {(() => {
-            const totalTW = trendItems.reduce((s, t) => s + t.thisWeek, 0);
-            const totalLW = trendItems.reduce((s, t) => s + t.lastWeek, 0);
-            const overallChange = totalLW > 0 ? ((totalTW - totalLW) / totalLW * 100) : 0;
-            return (
-              <>
-                <div className="flex gap-4 text-sm">
-                  <span>Minggu ini: <strong>{totalTW} pcs</strong></span>
-                  <span>Minggu lalu: <strong>{totalLW} pcs</strong></span>
-                  <span>Perubahan: <strong className={overallChange >= 0 ? "text-success" : "text-destructive"}>
-                    {overallChange >= 0 ? "+" : ""}{overallChange.toFixed(1)}%
-                  </strong></span>
-                </div>
-                <div className="rounded-lg border overflow-x-auto">
+          {/* ── Prediksi Kehabisan Stok (merged from Prediksi tab) ── */}
+          <div className="space-y-3">
+            <h3 className="text-base font-bold flex items-center gap-2">
+              <Clock className="h-4 w-4" /> Prediksi Kehabisan Stok
+            </h3>
+            {[
+              { items: predCritical, label: `🔴 KRITIS (≤${RULES.CRITICAL_DAYS} hari)`, color: "text-destructive" },
+              { items: predWarning, label: `🟠 WARNING (${RULES.CRITICAL_DAYS + 1}-${RULES.WARNING_DAYS} hari)`, color: "text-warning" },
+              { items: predAttention, label: `🟡 PERHATIAN (${RULES.WARNING_DAYS + 1}-${RULES.ATTENTION_DAYS} hari)`, color: "text-amber-600" },
+            ].map(({ items, label, color }) => items.length > 0 && (
+              <div key={label}>
+                <h4 className={`text-sm font-semibold ${color}`}>{label} ({items.length})</h4>
+                <div className="rounded-lg border mt-1 overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-12">#</TableHead>
                         <TableHead>Kode</TableHead>
-                        <TableHead className="text-right">Minggu Ini</TableHead>
-                        <TableHead className="text-right">Minggu Lalu</TableHead>
-                        <TableHead className="text-right">Perubahan</TableHead>
+                        <TableHead className="text-right">Stok</TableHead>
+                        <TableHead className="text-right">Velocity</TableHead>
+                        <TableHead className="text-right">Habis Dalam</TableHead>
+                        <TableHead>Tanggal Habis</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {trendItems.map((t, i) => {
-                        const icon = t.changePct > 10 ? "📈" : t.changePct < -10 ? "📉" : "➡️";
-                        return (
-                          <TableRow key={t.productId}>
-                            <TableCell>{i + 1}</TableCell>
-                            <TableCell className="font-semibold">{icon} {t.kode}{t.isBestSeller ? " 🔥" : ""}</TableCell>
-                            <TableCell className="text-right font-mono">{t.thisWeek}</TableCell>
-                            <TableCell className="text-right font-mono">{t.lastWeek}</TableCell>
-                            <TableCell className={`text-right font-mono ${t.changePct > 0 ? "text-success" : t.changePct < 0 ? "text-destructive" : ""}`}>
-                              {t.changePct > 0 ? "+" : ""}{t.changePct.toFixed(0)}%
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
+                      {items.map(p => (
+                        <TableRow key={p.productId}>
+                          <TableCell className="font-semibold">{p.kode}{p.isBestSeller ? " 🔥" : ""}</TableCell>
+                          <TableCell className="text-right font-mono">{p.stok}</TableCell>
+                          <TableCell className="text-right font-mono">{p.velocity.toFixed(1)}/hr</TableCell>
+                          <TableCell className="text-right font-mono">{formatDaysLeft(p.daysLeft)}</TableCell>
+                          <TableCell className="text-xs">{p.predictedDate.toLocaleDateString("id-ID")}</TableCell>
+                        </TableRow>
+                      ))}
                     </TableBody>
                   </Table>
                 </div>
-              </>
-            );
-          })()}
+              </div>
+            ))}
+            <p className="text-sm text-muted-foreground">🟢 AMAN ({`>${RULES.ATTENTION_DAYS} hari`}): {predSafe.length} item</p>
+          </div>
+
+          {/* ── 10 Stok Paling Sedikit (merged from Low Stock tab) ── */}
+          <div className="space-y-3">
+            <h3 className="text-base font-bold flex items-center gap-2">
+              <ArrowDown className="h-4 w-4" /> 10 Stok Paling Sedikit
+            </h3>
+            <div className="rounded-lg border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">#</TableHead>
+                    <TableHead>Kode</TableHead>
+                    <TableHead className="text-right">Stok</TableHead>
+                    <TableHead className="text-right">Laku/{RULES.DISPLAY_CYCLE_DAYS}hr</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {lowStock.map((l, i) => {
+                    const icon = l.stok === 0 ? "🔴" : l.stok < 10 ? "🟡" : "🟢";
+                    return (
+                      <TableRow key={l.productId}>
+                        <TableCell>{i + 1}</TableCell>
+                        <TableCell className="font-semibold">{icon} {l.kode}{l.isBestSeller ? " 🔥" : ""}</TableCell>
+                        <TableCell className={`text-right font-mono ${l.stok === 0 ? "text-destructive font-bold" : ""}`}>{l.stok}</TableCell>
+                        <TableCell className="text-right font-mono">{(l.velocity * RULES.DISPLAY_CYCLE_DAYS).toFixed(0)}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
         </TabsContent>
 
-        {/* === PROFIT TAB === */}
+        {/* ══════════════════════════════════════════════════
+            PENJUALAN TAB (merged: Top Seller + Trend)
+            ══════════════════════════════════════════════════ */}
+        <TabsContent value="penjualan" className="space-y-6">
+          {/* ── Top Seller Section ── */}
+          <div className="space-y-3">
+            <h3 className="text-base font-bold flex items-center gap-2">
+              <Trophy className="h-4 w-4" /> {RULES.DISPLAY_TOP_ITEMS} Barang Paling Laris
+            </h3>
+            <div className="rounded-lg border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">#</TableHead>
+                    <TableHead>Kode</TableHead>
+                    <TableHead className="text-right">Terjual</TableHead>
+                    <TableHead className="text-right">Hari Data</TableHead>
+                    <TableHead className="text-right">Laku/{RULES.DISPLAY_CYCLE_DAYS}hr</TableHead>
+                    <TableHead className="text-right">Stok</TableHead>
+                    <TableHead className="text-right">Sisa Hari</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {topSellers.map((t, i) => {
+                    const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
+                    return (
+                      <TableRow key={t.productId}>
+                        <TableCell>{medal}</TableCell>
+                        <TableCell className="font-semibold">
+                          {t.kode}{t.isBestSeller ? " 🔥" : ""}{t.days < 7 ? " ⚠️" : ""}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">{t.totalQty}</TableCell>
+                        <TableCell className="text-right font-mono">{t.days}</TableCell>
+                        <TableCell className="text-right font-mono">{(t.velocity * RULES.DISPLAY_CYCLE_DAYS).toFixed(0)}</TableCell>
+                        <TableCell className="text-right font-mono">{t.stok}</TableCell>
+                        <TableCell className="text-right">{urgencyIcon(t.daysLeft)} {formatDaysLeft(t.daysLeft)}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+            <p className="text-xs text-muted-foreground">⚠️ = data &lt; 7 hari (mungkin belum akurat)</p>
+          </div>
+
+          {/* ── Trend Section ── */}
+          <div className="space-y-3">
+            <h3 className="text-base font-bold flex items-center gap-2">
+              <Activity className="h-4 w-4" /> Trend Penjualan 7 Hari
+            </h3>
+            <div className="flex flex-wrap gap-4 text-sm">
+              <span>Minggu ini: <strong>{totalTW} pcs</strong></span>
+              <span>Minggu lalu: <strong>{totalLW} pcs</strong></span>
+              <span>Perubahan: <strong className={overallChange >= 0 ? "text-success" : "text-destructive"}>
+                {overallChange >= 0 ? "+" : ""}{overallChange.toFixed(1)}%
+              </strong></span>
+            </div>
+            <div className="rounded-lg border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">#</TableHead>
+                    <TableHead>Kode</TableHead>
+                    <TableHead className="text-right">Minggu Ini</TableHead>
+                    <TableHead className="text-right">Minggu Lalu</TableHead>
+                    <TableHead className="text-right">Perubahan</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {trendItems.map((t, i) => {
+                    const icon = t.changePct > 10 ? "📈" : t.changePct < -10 ? "📉" : "➡️";
+                    return (
+                      <TableRow key={t.productId}>
+                        <TableCell>{i + 1}</TableCell>
+                        <TableCell className="font-semibold">{icon} {t.kode}{t.isBestSeller ? " 🔥" : ""}</TableCell>
+                        <TableCell className="text-right font-mono">{t.thisWeek}</TableCell>
+                        <TableCell className="text-right font-mono">{t.lastWeek}</TableCell>
+                        <TableCell className={`text-right font-mono ${t.changePct > 0 ? "text-success" : t.changePct < 0 ? "text-destructive" : ""}`}>
+                          {t.changePct > 0 ? "+" : ""}{t.changePct.toFixed(0)}%
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ══════════════════════════════════════════════════
+            PROFIT TAB (unchanged)
+            ══════════════════════════════════════════════════ */}
         <TabsContent value="profit" className="space-y-4">
           <h2 className="text-lg font-bold">💵 Barang Paling Untung (30 Hari)</h2>
           {profitItems.length === 0 ? (
@@ -476,7 +490,9 @@ const Analisa = () => {
           )}
         </TabsContent>
 
-        {/* === TOKO TAB === */}
+        {/* ══════════════════════════════════════════════════
+            TOKO TAB (unchanged)
+            ══════════════════════════════════════════════════ */}
         <TabsContent value="toko" className="space-y-4">
           <h2 className="text-lg font-bold">🏪 Top Pelanggan (30 Hari)</h2>
           {tokoItems.length === 0 ? (
@@ -523,7 +539,9 @@ const Analisa = () => {
           )}
         </TabsContent>
 
-        {/* === DEAD STOCK TAB === */}
+        {/* ══════════════════════════════════════════════════
+            DEAD STOCK TAB (unchanged)
+            ══════════════════════════════════════════════════ */}
         <TabsContent value="dead" className="space-y-4">
           <h2 className="text-lg font-bold">💀 Barang Tidak Laku ({RULES.DEAD_STOCK_DAYS}+ hari)</h2>
           {deadStock.length === 0 ? (
@@ -566,65 +584,65 @@ const Analisa = () => {
           )}
         </TabsContent>
 
-        {/* === LOW STOCK TAB === */}
-        <TabsContent value="low" className="space-y-4">
-          <h2 className="text-lg font-bold">📉 10 Stok Paling Sedikit</h2>
-          <div className="rounded-lg border overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">#</TableHead>
-                  <TableHead>Kode</TableHead>
-                  <TableHead className="text-right">Stok</TableHead>
-                  <TableHead className="text-right">Laku/{RULES.DISPLAY_CYCLE_DAYS}hr</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {lowStock.map((l, i) => {
-                  const icon = l.stok === 0 ? "🔴" : l.stok < 10 ? "🟡" : "🟢";
-                  return (
-                    <TableRow key={l.productId}>
-                      <TableCell>{i + 1}</TableCell>
-                      <TableCell className="font-semibold">{icon} {l.kode}{l.isBestSeller ? " 🔥" : ""}</TableCell>
-                      <TableCell className={`text-right font-mono ${l.stok === 0 ? "text-destructive font-bold" : ""}`}>{l.stok}</TableCell>
-                      <TableCell className="text-right font-mono">{(l.velocity * RULES.DISPLAY_CYCLE_DAYS).toFixed(0)}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+        {/* ══════════════════════════════════════════════════
+            RINGKASAN TAB (merged: Budget + Stats)
+            ══════════════════════════════════════════════════ */}
+        <TabsContent value="ringkasan" className="space-y-6">
+          {/* ── Stats Section ── */}
+          <div className="space-y-3">
+            <h3 className="text-base font-bold flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" /> Ringkasan Stok
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <Card><CardContent className="p-4">
+                <p className="text-sm text-muted-foreground">📦 Jenis Barang</p>
+                <p className="text-2xl font-bold">{stats.totalSKU}</p>
+              </CardContent></Card>
+              <Card><CardContent className="p-4">
+                <p className="text-sm text-muted-foreground">🧵 Total Stok</p>
+                <p className="text-2xl font-bold">{stats.totalStock.toLocaleString("id-ID")} pcs</p>
+              </CardContent></Card>
+              <Card><CardContent className="p-4">
+                <p className="text-sm text-muted-foreground">💵 Nilai Barang</p>
+                <p className="text-2xl font-bold">{formatRp(stats.totalValue)}</p>
+              </CardContent></Card>
+              <Card><CardContent className="p-4">
+                <p className="text-sm text-muted-foreground">🔴 Habis</p>
+                <p className="text-2xl font-bold text-destructive">{stats.outOfStock}</p>
+              </CardContent></Card>
+              <Card><CardContent className="p-4">
+                <p className="text-sm text-muted-foreground">⚠️ Mau Habis</p>
+                <p className="text-2xl font-bold text-warning">{stats.criticalCount}</p>
+              </CardContent></Card>
+              <Card><CardContent className="p-4">
+                <p className="text-sm text-muted-foreground">🔥 Laris</p>
+                <p className="text-2xl font-bold text-primary">{stats.bestSellerCount}</p>
+              </CardContent></Card>
+            </div>
           </div>
-        </TabsContent>
 
-        {/* === STATS TAB === */}
-        <TabsContent value="stats" className="space-y-4">
-          <h2 className="text-lg font-bold">📊 Ringkasan Stok</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <Card><CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">📦 Jenis Barang</p>
-              <p className="text-2xl font-bold">{stats.totalSKU}</p>
-            </CardContent></Card>
-            <Card><CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">🧵 Total Stok</p>
-              <p className="text-2xl font-bold">{stats.totalStock.toLocaleString("id-ID")} pcs</p>
-            </CardContent></Card>
-            <Card><CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">💵 Nilai Barang</p>
-              <p className="text-2xl font-bold">{formatRp(stats.totalValue)}</p>
-            </CardContent></Card>
-            <Card><CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">🔴 Habis</p>
-              <p className="text-2xl font-bold text-destructive">{stats.outOfStock}</p>
-            </CardContent></Card>
-            <Card><CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">⚠️ Mau Habis</p>
-              <p className="text-2xl font-bold text-warning">{stats.criticalCount}</p>
-            </CardContent></Card>
-            <Card><CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">🔥 Laris</p>
-              <p className="text-2xl font-bold text-primary">{stats.bestSellerCount}</p>
-            </CardContent></Card>
+          {/* ── Budget Section ── */}
+          <div className="space-y-3">
+            <h3 className="text-base font-bold flex items-center gap-2">
+              <DollarSign className="h-4 w-4" /> Estimasi Budget Restock
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {budgetEstimates.map((e) => {
+                const label = e.days === 4 ? "1 siklus" : e.days === 7 ? "1 minggu" : e.days === 14 ? "2 minggu" : e.days === 21 ? "3 minggu" : "1 bulan";
+                return (
+                  <Card key={e.days}>
+                    <CardContent className="p-4">
+                      <p className="text-sm text-muted-foreground">📅 {e.days} hari ({label})</p>
+                      <p className="text-xl font-bold mt-1">{formatRp(e.cost)}</p>
+                      <p className="text-xs text-muted-foreground">{e.items} item | {e.qty} pcs</p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
+
+          {/* ── Settings Info ── */}
           <Card>
             <CardContent className="p-4 space-y-1 text-sm">
               <p className="font-semibold">⚙️ Pengaturan Analisa:</p>
