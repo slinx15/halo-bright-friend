@@ -181,7 +181,7 @@ export function analyzeAllProducts(
     const targetDays = CYCLE_DAYS + safetyDays;
     const targetStock = Math.ceil(velocity * targetDays);
     const rawNeed = targetStock - currentStock;
-    const recommendedQty = roundUpToBatch(rawNeed, batch);
+    const recommendedQty = rawNeed > 0 ? roundUpToBatch(rawNeed, batch) : 0;
 
     // Status
     const dosStatus = getDosStatus(daysOfStock);
