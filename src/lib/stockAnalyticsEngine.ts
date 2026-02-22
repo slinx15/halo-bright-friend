@@ -8,6 +8,7 @@ import type { ProductWithDetails } from "@/hooks/useProducts";
 
 // ─── Constants (match bot) ────────────────────────────────
 const CYCLE_DAYS = 3;
+const LEAD_TIME_DAYS = 3;
 const SAFETY_NORMAL = 1;
 const SAFETY_BW = 2;
 const BATCH_NORMAL = 25;
@@ -15,6 +16,7 @@ const BATCH_BW = 50;
 const ANOMALY_MULTIPLIER = 3;
 const NEW_PRODUCT_AGE_DAYS = 7;
 const NEW_PRODUCT_VELOCITY = 1;
+const SLOW_MOVER_THRESHOLD = 0.3;
 
 const COLOR_BLACK = ["BLK", "BLCK", "HITAM", "BLACK"];
 const COLOR_WHITE = ["WHT", "PUTIH", "WHITE"];
@@ -174,14 +176,26 @@ export function analyzeAllProducts(
 
     const velocity = isNew ? NEW_PRODUCT_VELOCITY : calcVelocity(dailyMap);
 
+    // Slow mover skip (bot behavior): skip zero-stock items that barely sell
+    const isSlowMover = velocity < SLOW_MOVER_THRESHOLD;
+    if (currentStock === 0 && isSlowMover) {
+      continue;
+    }
+
     // Days of stock
     const daysOfStock = velocity > 0 ? currentStock / velocity : (currentStock > 0 ? 999 : 0);
 
-    // Reorder target (bot style)
-    const targetDays = CYCLE_DAYS + safetyDays;
+    // Reorder target (bot style) — includes lead time for parity
+    const targetDays = CYCLE_DAYS + safetyDays + LEAD_TIME_DAYS;
     const targetStock = Math.ceil(velocity * targetDays);
     const rawNeed = targetStock - currentStock;
-    const recommendedQty = rawNeed > 0 ? roundUpToBatch(rawNeed, batch) : 0;
+    let recommendedQty = rawNeed > 0 ? roundUpToBatch(rawNeed, batch) : 0;
+
+    // Zero stock force buy (bot rule): if stock=0 and item is selling, force minimum 1 batch
+    const isSelling = velocity > 0;
+    if (currentStock === 0 && isSelling && recommendedQty === 0) {
+      recommendedQty = batch;
+    }
 
     // Status
     const dosStatus = getDosStatus(daysOfStock);
