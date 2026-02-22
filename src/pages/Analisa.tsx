@@ -605,32 +605,32 @@ const Analisa = () => {
       {/* ═══════════════════════════════════════════════════════ */}
       <Tabs defaultValue="restock" className="w-full">
         {/* Simplified tab bar — reduced visual weight for secondary tabs */}
-        <TabsList className="w-full justify-start bg-transparent border-b border-border rounded-none h-auto p-0 gap-0 overflow-x-auto overflow-y-hidden scrollbar-hide">
-          <TabsTrigger value="restock" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-xs px-4 py-2.5 font-semibold">
-            <ShoppingCart className="h-3.5 w-3.5 mr-1.5" />Restock
+        <TabsList className="w-full justify-start bg-transparent border-b border-border rounded-none h-auto p-0 gap-0 flex-nowrap overflow-x-auto scrollbar-hide">
+          <TabsTrigger value="restock" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-[11px] md:text-xs px-2.5 md:px-4 py-2.5 font-semibold shrink-0">
+            <ShoppingCart className="h-3.5 w-3.5 mr-1" />Restock
             {needsReorder > 0 && (
-              <Badge variant="destructive" className="ml-1.5 h-4 min-w-[18px] px-1 text-[9px] rounded-full">
+              <Badge variant="destructive" className="ml-1 h-4 min-w-[18px] px-1 text-[9px] rounded-full">
                 {needsReorder}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="penjualan" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-xs px-4 py-2.5">
-            <Trophy className="h-3.5 w-3.5 mr-1.5" />Penjualan
+          <TabsTrigger value="penjualan" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-[11px] md:text-xs px-2.5 md:px-4 py-2.5 shrink-0">
+            <Trophy className="h-3.5 w-3.5 mr-1" />Penjualan
           </TabsTrigger>
-          <TabsTrigger value="profit" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-xs px-4 py-2.5">
-            <DollarSign className="h-3.5 w-3.5 mr-1.5" />Profit
+          <TabsTrigger value="profit" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-[11px] md:text-xs px-2.5 md:px-4 py-2.5 shrink-0">
+            <DollarSign className="h-3.5 w-3.5 mr-1" />Profit
           </TabsTrigger>
-          <TabsTrigger value="toko" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-xs px-4 py-2.5">
-            <Store className="h-3.5 w-3.5 mr-1.5" />Toko
+          <TabsTrigger value="toko" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-[11px] md:text-xs px-2.5 md:px-4 py-2.5 shrink-0">
+            <Store className="h-3.5 w-3.5 mr-1" />Toko
           </TabsTrigger>
-          <TabsTrigger value="dead" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-xs px-4 py-2.5">
-            <Skull className="h-3.5 w-3.5 mr-1.5" />Dead Stock
+          <TabsTrigger value="dead" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-[11px] md:text-xs px-2.5 md:px-4 py-2.5 shrink-0">
+            <Skull className="h-3.5 w-3.5 mr-1" />Dead
           </TabsTrigger>
-          <TabsTrigger value="budget" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-xs px-4 py-2.5 font-semibold">
-            <Calculator className="h-3.5 w-3.5 mr-1.5" />Budget
+          <TabsTrigger value="budget" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-[11px] md:text-xs px-2.5 md:px-4 py-2.5 font-semibold shrink-0">
+            <Calculator className="h-3.5 w-3.5 mr-1" />Budget
           </TabsTrigger>
-          <TabsTrigger value="ringkasan" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-xs px-4 py-2.5">
-            <BarChart3 className="h-3.5 w-3.5 mr-1.5" />Ringkasan
+          <TabsTrigger value="ringkasan" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-[11px] md:text-xs px-2.5 md:px-4 py-2.5 shrink-0">
+            <BarChart3 className="h-3.5 w-3.5 mr-1" />Ringkasan
           </TabsTrigger>
         </TabsList>
 
