@@ -1,5 +1,6 @@
 import { Package, PackagePlus, PackageMinus, ClipboardCheck, AlertTriangle, TrendingUp, DollarSign, ShoppingCart, BarChart3, AlertCircle, PackageX } from "lucide-react";
 import { DashboardSkeleton } from "@/components/LoadingSkeletons";
+import { AiInsightsCard } from "@/components/AiInsightsCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -326,13 +327,16 @@ const Dashboard = () => {
         <StokRendahCard products={products} isLoading={isLoading} />
       </div>
 
-      {/* 4. Info Ringkasan */}
+      {/* 4. AI Insights */}
+      <AiInsightsCard />
+
+      {/* 5. Info Ringkasan */}
       <div className="grid grid-cols-2 gap-3">
         <KpiCard icon={Package} value={isLoading ? "..." : formatNumber(totalItems)} label="Total Item" color="text-primary" bgColor="bg-primary/10" />
         <KpiCard icon={TrendingUp} value={isLoading ? "..." : formatNumber(totalStok)} label="Total Stok" color="text-success" bgColor="bg-success/10" />
       </div>
 
-      {/* 5. Quick Actions */}
+      {/* 6. Quick Actions */}
       <QuickActions />
     </div>
   );

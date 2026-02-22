@@ -10,6 +10,7 @@ import {
   Settings,
   LogOut,
   FileUp,
+  Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ const navItems = [
   { icon: BarChart3, label: "Analisa", path: "/analisa" },
   { icon: Settings, label: "Produk", path: "/produk" },
   { icon: FileUp, label: "Import", path: "/import-histori" },
+  { icon: Bot, label: "AI", path: "/ai" },
 ];
 
 const MobileNav = () => {

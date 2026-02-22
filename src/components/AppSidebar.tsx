@@ -12,6 +12,7 @@ import {
   LogOut,
   User,
   FileUp,
+  Bot,
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ const navItems = [
   { icon: BarChart3, label: "Analisa", path: "/analisa", group: "laporan" },
   { icon: Settings, label: "Produk", path: "/produk", group: "laporan" },
   { icon: FileUp, label: "Import Histori", path: "/import-histori", group: "laporan" },
+  { icon: Bot, label: "AI Assistant", path: "/ai", group: "laporan" },
 ];
 
 const groups = [
