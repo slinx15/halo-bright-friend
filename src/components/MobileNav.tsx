@@ -79,8 +79,8 @@ const MobileNav = () => {
       )}
 
       {/* Bottom nav bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-t border-border/50 pb-[env(safe-area-inset-bottom)]">
-        <div className="flex justify-around py-1 px-1">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border/40 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] pb-[env(safe-area-inset-bottom)]">
+        <div className="flex justify-around px-1 py-1">
           {primaryNav.map((item) => {
             const active = location.pathname === item.path;
             return (
@@ -88,14 +88,14 @@ const MobileNav = () => {
                 key={item.path}
                 onClick={() => navigate(item.path)}
                 className={cn(
-                  "flex flex-col items-center gap-0.5 px-2 py-2 text-[10px] font-medium transition-all duration-200 ease-out rounded-xl min-w-[48px] min-h-[48px] justify-center",
+                  "flex flex-col items-center justify-center gap-1 flex-1 min-h-[56px] rounded-xl transition-colors duration-150",
                   active
-                    ? "text-primary bg-primary/10"
+                    ? "text-primary"
                     : "text-muted-foreground active:scale-95"
                 )}
               >
                 <item.icon className={cn("h-5 w-5", active && "stroke-[2.5]")} />
-                <span className={cn(active && "font-bold")}>{item.label}</span>
+                <span className={cn("text-[11px]", active ? "font-semibold" : "font-medium")}>{item.label}</span>
               </button>
             );
           })}
@@ -103,9 +103,9 @@ const MobileNav = () => {
           <button
             onClick={() => setMoreOpen((v) => !v)}
             className={cn(
-              "flex flex-col items-center gap-0.5 px-2 py-2 text-[10px] font-medium transition-all duration-200 ease-out rounded-xl min-w-[48px] min-h-[48px] justify-center",
+              "flex flex-col items-center justify-center gap-1 flex-1 min-h-[56px] rounded-xl transition-colors duration-150",
               moreOpen || isSecondaryActive
-                ? "text-primary bg-primary/10"
+                ? "text-primary"
                 : "text-muted-foreground active:scale-95"
             )}
           >
@@ -114,7 +114,7 @@ const MobileNav = () => {
             ) : (
               <MoreHorizontal className={cn("h-5 w-5", isSecondaryActive && "stroke-[2.5]")} />
             )}
-            <span className={cn((moreOpen || isSecondaryActive) && "font-bold")}>Lainnya</span>
+            <span className={cn("text-[11px]", (moreOpen || isSecondaryActive) ? "font-semibold" : "font-medium")}>Lainnya</span>
           </button>
         </div>
       </nav>
