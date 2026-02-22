@@ -137,20 +137,21 @@
   .boss-card {
     @apply rounded-2xl border-0 shadow-md transition-all duration-200 ease-out;
   }
-  .boss-card:hover {
-    @apply shadow-lg;
-    transform: translateY(-2px);
-  }
-  .boss-card:active {
-    transform: scale(0.97);
+  @media (hover: hover) and (pointer: fine) {
+    .boss-card:hover {
+      @apply shadow-lg;
+      transform: translateY(-2px);
+    }
   }
 
-  /* Boss Mode: press feedback */
+  /* Boss Mode: press feedback — desktop only */
   .press-scale {
     @apply transition-transform duration-200 ease-out;
   }
-  .press-scale:active {
-    transform: scale(0.97);
+  @media (hover: hover) and (pointer: fine) {
+    .press-scale:active {
+      transform: scale(0.97);
+    }
   }
 
   /* Boss Mode: hover lift */
