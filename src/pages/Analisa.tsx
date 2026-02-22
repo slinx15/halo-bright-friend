@@ -96,79 +96,124 @@ function BudgetPlanner({
       .filter(a => a.velocity > 0)
       .sort((a, b) => b.combinedScore - a.combinedScore);
 
-    const result: { item: ProductAnalysis; qty: number; cost: number; reason: string }[] = [];
+    type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string };
+    const result: RecItem[] = [];
     let remaining = budgetAmount;
-    const pickedIds = new Set<string>();
 
-    function tryAdd(item: ProductAnalysis, deficit: number, reason: string) {
-      if (remaining <= 0 || deficit <= 0 || pickedIds.has(item.productId)) return;
-      const isBW = isBlackWhiteCode(item.kode);
-      const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
-      const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
-      let qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
-      let cost = qty * item.unitPrice;
+    // Step 1: Calculate ideal qty for ALL products that need restock
+    const candidates: { item: ProductAnalysis; idealQty: number; idealCost: number; reason: string; batch: number; minOrder: number }[] = [];
 
-      if (cost > remaining) {
-        const maxQty = Math.floor(remaining / item.unitPrice);
-        qty = Math.floor(maxQty / batch) * batch;
-        if (qty < minOrder) return;
-        cost = qty * item.unitPrice;
-      }
-
-      result.push({ item, qty, cost, reason });
-      remaining -= cost;
-      pickedIds.add(item.productId);
-    }
-
-    // PASS 1: Urgent — products that need restock within target days
     for (const item of sorted) {
-      if (remaining <= 0) break;
       const neededStock = Math.ceil(item.velocity * budgetDays);
       const deficit = neededStock - item.currentStock;
       if (deficit <= 0) continue;
+
+      const isBW = isBlackWhiteCode(item.kode);
+      const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
+      const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
+      const qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
+      const cost = qty * item.unitPrice;
       const reason = item.daysOfStock <= RULES.CRITICAL_DAYS ? "🔴 Kritis" :
         item.daysOfStock <= RULES.WARNING_DAYS ? "🟠 Segera habis" :
         item.isStockOut ? "🚨 Stok kosong" : "📦 Perlu restock";
-      tryAdd(item, deficit, reason);
+      candidates.push({ item, idealQty: qty, idealCost: cost, reason, batch, minOrder });
     }
 
-    // PASS 2: Top-up — if budget remains, extend coverage to 2x target days
-    if (remaining > 0) {
-      const extendedDays = budgetDays * 2;
-      for (const item of sorted) {
-        if (remaining <= 0) break;
-        if (pickedIds.has(item.productId)) continue;
-        const neededStock = Math.ceil(item.velocity * extendedDays);
-        const deficit = neededStock - item.currentStock;
-        if (deficit <= 0) continue;
-        tryAdd(item, deficit, "🔄 Top-up stok");
+    const totalIdealCost = candidates.reduce((s, c) => s + c.idealCost, 0);
+
+    if (totalIdealCost <= budgetAmount) {
+      // Budget cukup untuk semua — beli semua ideal qty
+      for (const c of candidates) {
+        result.push({ item: c.item, qty: c.idealQty, cost: c.idealCost, reason: c.reason });
+        remaining -= c.idealCost;
       }
-    }
 
-    // PASS 3: Safety buffer — if STILL budget remains, add extra batch to best sellers
-    if (remaining > 0) {
-      for (const item of sorted) {
-        if (remaining <= 0) break;
-        if (!item.isBestSeller) continue;
-        if (pickedIds.has(item.productId)) {
-          // Add extra batch to already-picked best sellers
+      // Sisa budget → top-up extended coverage (2x target days)
+      const pickedIds = new Set(result.map(r => r.item.productId));
+      if (remaining > 0) {
+        const extendedDays = budgetDays * 2;
+        for (const item of sorted) {
+          if (remaining <= 0) break;
+          if (pickedIds.has(item.productId)) continue;
+          const neededStock = Math.ceil(item.velocity * extendedDays);
+          const deficit = neededStock - item.currentStock;
+          if (deficit <= 0) continue;
           const isBW = isBlackWhiteCode(item.kode);
           const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
-          const cost = batch * item.unitPrice;
-          if (cost <= remaining) {
-            const existing = result.find(r => r.item.productId === item.productId);
-            if (existing) {
-              existing.qty += batch;
-              existing.cost += cost;
-              existing.reason = "🔥 Best seller + extra";
-              remaining -= cost;
-            }
+          const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
+          let qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
+          let cost = qty * item.unitPrice;
+          if (cost > remaining) {
+            qty = Math.floor(Math.floor(remaining / item.unitPrice) / batch) * batch;
+            if (qty < minOrder) continue;
+            cost = qty * item.unitPrice;
           }
-        } else {
-          // Add best sellers not yet picked
-          const isBW = isBlackWhiteCode(item.kode);
+          result.push({ item, qty, cost, reason: "🔄 Top-up stok" });
+          remaining -= cost;
+          pickedIds.add(item.productId);
+        }
+      }
+
+      // Still remaining → extra batch to best sellers
+      if (remaining > 0) {
+        for (const r of [...result]) {
+          if (remaining <= 0) break;
+          if (!r.item.isBestSeller) continue;
+          const isBW = isBlackWhiteCode(r.item.kode);
           const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
-          tryAdd(item, batch, "🔥 Best seller buffer");
+          const cost = batch * r.item.unitPrice;
+          if (cost <= remaining) {
+            r.qty += batch;
+            r.cost += cost;
+            r.reason = "🔥 Best seller + extra";
+            remaining -= cost;
+          }
+        }
+      }
+    } else {
+      // Budget TIDAK cukup → proportional allocation
+      // Prioritas: Critical & Warning dapat full, sisanya proporsional
+      const urgent: typeof candidates = [];
+      const normal: typeof candidates = [];
+      for (const c of candidates) {
+        if (c.item.daysOfStock <= RULES.WARNING_DAYS || c.item.isStockOut) {
+          urgent.push(c);
+        } else {
+          normal.push(c);
+        }
+      }
+
+      // First: allocate urgent items
+      for (const c of urgent) {
+        if (remaining <= 0) break;
+        let qty = c.idealQty;
+        let cost = c.idealCost;
+        if (cost > remaining) {
+          qty = Math.floor(Math.floor(remaining / c.item.unitPrice) / c.batch) * c.batch;
+          if (qty < c.minOrder) continue;
+          cost = qty * c.item.unitPrice;
+        }
+        result.push({ item: c.item, qty, cost, reason: c.reason });
+        remaining -= cost;
+      }
+
+      // Then: spread remaining budget across normal items proportionally
+      if (remaining > 0 && normal.length > 0) {
+        const normalTotalCost = normal.reduce((s, c) => s + c.idealCost, 0);
+        const ratio = Math.min(1, remaining / normalTotalCost);
+
+        for (const c of normal) {
+          if (remaining <= 0) break;
+          const scaledQty = Math.ceil(c.idealQty * ratio);
+          let qty = Math.max(c.minOrder, Math.ceil(scaledQty / c.batch) * c.batch);
+          let cost = qty * c.item.unitPrice;
+          if (cost > remaining) {
+            qty = Math.floor(Math.floor(remaining / c.item.unitPrice) / c.batch) * c.batch;
+            if (qty < c.minOrder) continue;
+            cost = qty * c.item.unitPrice;
+          }
+          result.push({ item: c.item, qty, cost, reason: c.reason });
+          remaining -= cost;
         }
       }
     }
