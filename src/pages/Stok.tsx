@@ -43,22 +43,22 @@ const Stok = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-4 md:overflow-visible">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         {[
           { icon: Package, label: "Total Item", value: formatNumber(totalItems), color: "text-primary", bg: "bg-primary/10" },
           { icon: TrendingUp, label: "Total Stok", value: formatNumber(totalStok), color: "text-success", bg: "bg-success/10" },
           { icon: AlertTriangle, label: "Warning", value: String(warning), color: "text-warning", bg: "bg-warning/10" },
           { icon: AlertTriangle, label: "Kritis", value: String(kritis), color: "text-destructive", bg: "bg-destructive/10" },
         ].map((kpi) => (
-          <Card key={kpi.label} className="boss-card min-w-[150px] snap-start">
+          <Card key={kpi.label} className="rounded-2xl border bg-card shadow-sm transition-all duration-150 md:hover:shadow-md md:hover:-translate-y-[1px]">
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-xl ${kpi.bg}`}>
+              <div className="flex items-start gap-3">
+                <div className={`p-2 rounded-xl ${kpi.bg} shrink-0`}>
                   <kpi.icon className={`h-5 w-5 ${kpi.color}`} />
                 </div>
-                <div>
-                  <p className="text-xl font-extrabold tabular-nums">{kpi.value}</p>
-                  <p className="text-[11px] text-muted-foreground font-medium">{kpi.label}</p>
+                <div className="min-w-0 space-y-0.5">
+                  <p className="text-xs text-muted-foreground font-medium">{kpi.label}</p>
+                  <p className="text-2xl md:text-3xl font-bold tracking-tight tabular-nums">{kpi.value || "—"}</p>
                 </div>
               </div>
             </CardContent>

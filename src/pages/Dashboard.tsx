@@ -73,19 +73,20 @@ function CommandCenter({ products, isLoading }: { products: any[] | undefined; i
 }
 
 // ── KPI Card ──────────────────────────────────────────────────────
-function KpiCard({ icon: Icon, value, label, color, bgColor }: {
-  icon: any; value: string; label: string; color: string; bgColor: string;
+function KpiCard({ icon: Icon, value, label, sub, color, bgColor }: {
+  icon: any; value: string; label: string; sub?: string; color: string; bgColor: string;
 }) {
   return (
-    <Card className="rounded-2xl shadow-md border-0 min-w-[160px] snap-start transition-all duration-150 hover:shadow-lg hover:-translate-y-0.5">
-      <CardContent className="p-5">
+    <Card className="rounded-2xl border bg-card shadow-sm min-w-[160px] snap-start transition-all duration-150 md:hover:shadow-md md:hover:-translate-y-[1px]">
+      <CardContent className="p-4">
         <div className="flex items-start gap-3">
-          <div className={`p-2.5 rounded-xl ${bgColor}`}>
+          <div className={`p-2 rounded-xl ${bgColor} shrink-0`}>
             <Icon className={`h-5 w-5 ${color}`} />
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xl md:text-2xl font-extrabold truncate leading-tight">{value}</p>
-            <p className="text-[11px] text-muted-foreground font-medium mt-0.5">{label}</p>
+          <div className="min-w-0 flex-1 space-y-0.5">
+            <p className="text-xs text-muted-foreground font-medium">{label}</p>
+            <p className="text-2xl md:text-3xl font-bold tracking-tight tabular-nums truncate">{value || "—"}</p>
+            {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
           </div>
         </div>
       </CardContent>
@@ -285,9 +286,9 @@ const Dashboard = () => {
       <CommandCenter products={products} isLoading={isLoading} />
 
       {/* 2. KPI Cards — horizontal scroll mobile, grid desktop */}
-      <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-4 md:overflow-visible">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         <KpiCard icon={DollarSign} value={formatRupiah(omzetHariIni)} label="Omzet Hari Ini" color="text-primary" bgColor="bg-primary/10" />
-        <KpiCard icon={ShoppingCart} value={formatNumber(pcsHariIni)} label="Pcs Terjual" color="text-success" bgColor="bg-success/10" />
+        <KpiCard icon={ShoppingCart} value={formatNumber(pcsHariIni)} label="Pcs Terjual" sub="hari ini" color="text-success" bgColor="bg-success/10" />
         <KpiCard icon={AlertTriangle} value={isLoading ? "..." : String(warning)} label="Stok Warning" color="text-warning" bgColor="bg-warning/10" />
         <KpiCard icon={AlertTriangle} value={isLoading ? "..." : String(kritis)} label="Stok Kritis" color="text-destructive" bgColor="bg-destructive/10" />
       </div>
@@ -332,8 +333,8 @@ const Dashboard = () => {
 
       {/* 5. Info Ringkasan */}
       <div className="grid grid-cols-2 gap-3">
-        <KpiCard icon={Package} value={isLoading ? "..." : formatNumber(totalItems)} label="Total Item" color="text-primary" bgColor="bg-primary/10" />
-        <KpiCard icon={TrendingUp} value={isLoading ? "..." : formatNumber(totalStok)} label="Total Stok" color="text-success" bgColor="bg-success/10" />
+        <KpiCard icon={Package} value={isLoading ? "..." : formatNumber(totalItems)} label="Total Item" sub="produk aktif" color="text-primary" bgColor="bg-primary/10" />
+        <KpiCard icon={TrendingUp} value={isLoading ? "..." : formatNumber(totalStok)} label="Total Stok" sub="semua gudang" color="text-success" bgColor="bg-success/10" />
       </div>
 
       {/* 6. Quick Actions */}
