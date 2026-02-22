@@ -52,6 +52,11 @@ export const RULES = {
   WARNA_SUPER_VELOCITY: 5,
 };
 
+const MATURITY_CONFIG = {
+  minSalesDays: 3,   // below this → immature data
+  divisorFloor: 7,   // same philosophy as bot
+};
+
 const COLOR_BLACK = ["BLK", "BLCK", "HITAM", "BLACK"];
 const COLOR_WHITE = ["WHT", "PUTIH", "WHITE"];
 
@@ -71,6 +76,7 @@ export interface StockOutRecord {
 
 export interface WMAInfo {
   velocity: number;
+  adjustedVelocity: number;
   period1Days: number;
   period2Days: number;
   totalDays: number;
@@ -78,6 +84,7 @@ export interface WMAInfo {
   period1Velocity: number;
   period2Velocity: number;
   dataStatus: "full" | "partial" | "minimal" | "none";
+  isImmature: boolean;
 }
 
 export interface ProductAnalysis {
@@ -215,15 +222,31 @@ export function calculateWMAVelocity(
       dataStatus = "none";
     }
 
+    // Maturity dampening (bot-style stability)
+    const salesDaysTotal = period1Days + period2Days;
+    const isImmature = salesDaysTotal > 0 && salesDaysTotal < MATURITY_CONFIG.minSalesDays;
+
+    let adjustedVelocity = velocity;
+    if (isImmature) {
+      const maturityFactor = MATURITY_CONFIG.minSalesDays / salesDaysTotal;
+      adjustedVelocity = velocity / maturityFactor;
+    }
+    // Hard guard for extreme 1-day noise
+    if (salesDaysTotal === 1 && velocity > 20) {
+      adjustedVelocity = Math.min(adjustedVelocity, velocity * 0.5);
+    }
+
     wmaData[product.id] = {
       velocity,
+      adjustedVelocity,
       period1Days,
       period2Days,
-      totalDays,
+      totalDays: salesDaysTotal,
       totalQty,
       period1Velocity: vel1,
       period2Velocity: vel2,
       dataStatus,
+      isImmature,
     };
   }
 
@@ -315,10 +338,11 @@ export function analyzeAllProducts(
   const wmaData = calculateWMAVelocity(allSales, products);
   const trendData = calculateTrendData(allSales, products);
 
-  // Collect all velocities for normalization
+  // Collect all adjusted velocities for normalization
   const allVelocities: number[] = [];
   for (const product of products) {
-    const vel = wmaData[product.id]?.velocity ?? 0;
+    const wma = wmaData[product.id];
+    const vel = wma?.adjustedVelocity ?? 0;
     if (vel > 0) allVelocities.push(vel);
   }
   const maxVelocity = allVelocities.length > 0 ? Math.max(...allVelocities) : 1;
@@ -340,7 +364,8 @@ export function analyzeAllProducts(
     const isNew = ageDays < RULES.NEW_PRODUCT_WAIT_DAYS;
 
     const wma = wmaData[product.id];
-    let velocity = isNew ? RULES.NEW_PRODUCT_DEFAULT_VEL : (wma?.velocity ?? 0);
+    const rawVelocity = isNew ? RULES.NEW_PRODUCT_DEFAULT_VEL : (wma?.velocity ?? 0);
+    let velocity = isNew ? RULES.NEW_PRODUCT_DEFAULT_VEL : (wma?.adjustedVelocity ?? 0);
 
     // Bot parity: slow mover skip
     const isSlowMover = velocity < RULES.SLOWMOVER_VELOCITY;
