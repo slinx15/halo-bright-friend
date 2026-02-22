@@ -497,7 +497,7 @@ const Analisa = () => {
   const overallChange = totalLW > 0 ? ((totalTW - totalLW) / totalLW * 100) : 0;
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto">
+    <div className="p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto w-full overflow-x-hidden">
       {/* ═══════════════════════════════════════════════════════ */}
       {/* 🔴 ACTION SUMMARY BAR — STICKY */}
       {/* ═══════════════════════════════════════════════════════ */}
@@ -651,99 +651,177 @@ const Analisa = () => {
             )}
           </div>
 
-          {/* Restock Table — Enhanced */}
-          <Card className="border-0 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/40 hover:bg-muted/40">
-                    <TableHead className="w-8 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">#</TableHead>
-                    <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
-                    <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Kode</TableHead>
-                    <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Stok</TableHead>
-                    <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Vel/{RULES.DISPLAY_CYCLE_DAYS}hr</TableHead>
-                    <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sisa Hari</TableHead>
-                    <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Target</TableHead>
-                    <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Rekomendasi</TableHead>
-                    <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Biaya</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((a, i) => {
-                    const badge = STATUS_BADGE[a.dosStatus];
-                    const velPerCycle = a.velocity * RULES.DISPLAY_CYCLE_DAYS;
-                    const isCriticalRow = a.daysOfStock <= RULES.CRITICAL_DAYS;
-                    const isZeroStock = a.currentStock === 0;
-                    return (
-                      <TableRow
-                        key={a.productId}
-                        className={`
-                          transition-colors
-                          ${isCriticalRow ? "bg-destructive/[0.04]" : i % 2 === 0 ? "bg-transparent" : "bg-muted/15"}
-                          ${isZeroStock ? "border-l-[3px] border-l-destructive" : ""}
-                        `}
-                      >
-                        <TableCell className="text-muted-foreground text-xs font-mono">{i + 1}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={`text-[10px] font-semibold ${badge.className}`}>
-                            {a.dosStatus === "CRITICAL" && <AlertTriangle className="h-3 w-3 mr-0.5" />}
-                            {badge.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <span className="font-semibold text-sm">{a.kode}</span>
-                            {a.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
-                            {a.isStockOut && <span className="text-xs">🚨</span>}
-                          </div>
-                          <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">{a.nama}</div>
-                        </TableCell>
-                        <TableCell className={`text-right font-mono text-sm ${isZeroStock ? "text-destructive font-bold" : ""}`}>
-                          {a.currentStock}
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-sm">{velPerCycle.toFixed(0)}</TableCell>
-                        {/* SISA HARI — big & colored */}
-                        <TableCell className="text-right">
-                          <span className={`font-mono font-bold text-base ${
-                            a.daysOfStock <= 2 ? "text-destructive" :
-                            a.daysOfStock <= 4 ? "text-warning" :
-                            a.daysOfStock <= 7 ? "text-amber-500" :
-                            "text-success"
-                          }`}>
-                            {formatDaysLeft(a.daysOfStock)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                          {a.targetStock}
-                        </TableCell>
-                        {/* REKOMENDASI — thick pill */}
-                        <TableCell className="text-right">
-                          {a.recommendedQty > 0 ? (
-                            <span className="inline-flex items-center justify-center min-w-[44px] px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
-                              {a.recommendedQty}
+          {/* Restock Table — Desktop Only */}
+          <div className="hidden md:block">
+            <Card className="border-0 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/40 hover:bg-muted/40">
+                      <TableHead className="w-8 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">#</TableHead>
+                      <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+                      <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Kode</TableHead>
+                      <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Stok</TableHead>
+                      <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Vel/{RULES.DISPLAY_CYCLE_DAYS}hr</TableHead>
+                      <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sisa Hari</TableHead>
+                      <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Target</TableHead>
+                      <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Rekomendasi</TableHead>
+                      <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Biaya</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((a, i) => {
+                      const badge = STATUS_BADGE[a.dosStatus];
+                      const velPerCycle = a.velocity * RULES.DISPLAY_CYCLE_DAYS;
+                      const isCriticalRow = a.daysOfStock <= RULES.CRITICAL_DAYS;
+                      const isZeroStock = a.currentStock === 0;
+                      return (
+                        <TableRow
+                          key={a.productId}
+                          className={`
+                            transition-colors
+                            ${isCriticalRow ? "bg-destructive/[0.04]" : i % 2 === 0 ? "bg-transparent" : "bg-muted/15"}
+                            ${isZeroStock ? "border-l-[3px] border-l-destructive" : ""}
+                          `}
+                        >
+                          <TableCell className="text-muted-foreground text-xs font-mono">{i + 1}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={`text-[10px] font-semibold ${badge.className}`}>
+                              {a.dosStatus === "CRITICAL" && <AlertTriangle className="h-3 w-3 mr-0.5" />}
+                              {badge.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <span className="font-semibold text-sm">{a.kode}</span>
+                              {a.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
+                              {a.isStockOut && <span className="text-xs">🚨</span>}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">{a.nama}</div>
+                          </TableCell>
+                          <TableCell className={`text-right font-mono text-sm ${isZeroStock ? "text-destructive font-bold" : ""}`}>
+                            {a.currentStock}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm">{velPerCycle.toFixed(0)}</TableCell>
+                          <TableCell className="text-right">
+                            <span className={`font-mono font-bold text-base ${
+                              a.daysOfStock <= 2 ? "text-destructive" :
+                              a.daysOfStock <= 4 ? "text-warning" :
+                              a.daysOfStock <= 7 ? "text-amber-500" :
+                              "text-success"
+                            }`}>
+                              {formatDaysLeft(a.daysOfStock)}
                             </span>
-                          ) : (
-                            <span className="text-muted-foreground/40">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                          {a.cost > 0 ? formatRp(a.cost) : "—"}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                            {a.targetStock}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {a.recommendedQty > 0 ? (
+                              <span className="inline-flex items-center justify-center min-w-[44px] px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
+                                {a.recommendedQty}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground/40">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                            {a.cost > 0 ? formatRp(a.cost) : "—"}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {filtered.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center text-muted-foreground py-16">
+                          <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                          <p className="text-sm">Tidak ada produk dalam kategori ini</p>
                         </TableCell>
                       </TableRow>
-                    );
-                  })}
-                  {filtered.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={9} className="text-center text-muted-foreground py-16">
-                        <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                        <p className="text-sm">Tidak ada produk dalam kategori ini</p>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </Card>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </Card>
+          </div>
+
+          {/* Mobile Boss Cards */}
+          <div className="md:hidden space-y-2.5">
+            {filtered.length === 0 ? (
+              <div className="text-center py-16">
+                <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                <p className="text-sm text-muted-foreground">Tidak ada produk dalam kategori ini</p>
+              </div>
+            ) : (
+              filtered.map((a) => {
+                const badge = STATUS_BADGE[a.dosStatus];
+                const isZeroStock = a.currentStock === 0;
+                const ringClass =
+                  a.dosStatus === "CRITICAL" ? "ring-1 ring-destructive/30" :
+                  a.dosStatus === "WARNING" ? "ring-1 ring-warning/30" :
+                  a.dosStatus === "ATTENTION" ? "ring-1 ring-amber-500/20" : "";
+
+                return (
+                  <div
+                    key={a.productId}
+                    className={`rounded-2xl border bg-card shadow-sm p-4 transition-transform active:scale-[0.99] w-full ${ringClass}`}
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-bold text-sm truncate">{a.kode}</span>
+                        {a.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning shrink-0" />}
+                        {a.isStockOut && <span className="text-xs shrink-0">🚨</span>}
+                        <Badge variant="outline" className={`text-[9px] font-semibold shrink-0 ${badge.className}`}>
+                          {badge.label}
+                        </Badge>
+                      </div>
+                      <div className="text-right shrink-0 pl-2">
+                        <span className={`font-mono font-extrabold text-lg leading-none ${
+                          a.daysOfStock <= 2 ? "text-destructive" :
+                          a.daysOfStock <= 4 ? "text-warning" :
+                          a.daysOfStock <= 7 ? "text-amber-500" :
+                          "text-success"
+                        }`}>
+                          {formatDaysLeft(a.daysOfStock)}
+                        </span>
+                        <p className="text-[9px] text-muted-foreground">sisa</p>
+                      </div>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="h-px bg-border mb-3" />
+
+                    {/* Metrics Grid */}
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Stok</p>
+                        <p className={`font-mono font-bold text-sm ${isZeroStock ? "text-destructive" : ""}`}>
+                          {a.currentStock}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Beli</p>
+                        {a.recommendedQty > 0 ? (
+                          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-primary text-primary-foreground font-bold text-sm">
+                            {a.recommendedQty}
+                          </span>
+                        ) : (
+                          <p className="text-sm text-muted-foreground/40">—</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Biaya</p>
+                        <p className="font-mono text-xs font-semibold">
+                          {a.cost > 0 ? formatRp(a.cost) : "—"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
 
           {/* Prediksi */}
           <Card className="border-0 shadow-sm p-5 space-y-4">
