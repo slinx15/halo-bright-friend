@@ -109,6 +109,8 @@ export const HYBRID_CONFIG = {
   priorityFloor: 55,
   /** DOS above this = overstocked, skip coverage guard */
   overstockThreshold: 12,
+  /** Max days of stock that coverage logic can add in one reorder */
+  maxCoverageTopUpDays: 5,
 };
 
 // ─── Minimum Display (Mode B) ─────────────────────────────

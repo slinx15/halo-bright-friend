@@ -506,12 +506,18 @@ export function analyzeAllProducts(
     const rawNeed = Math.max(0, targetStock - currentStock);
     let recommendedQty = roundUpToBatch(rawNeed, batch);
 
-    // ─── Coverage Guard Qty ──────────────────────────────
+    // ─── Coverage Guard Qty (with Top-Up Limiter) ──────────
     if (isCoverageGuard) {
-      const targetStockCoverage = Math.ceil(forecastDaily * effectiveCoverageDays);
-      const coverageRawNeed = Math.max(0, targetStockCoverage - currentStock);
+      // Step 1: current DOS already computed above
+      // Step 2: how many days we WANT to add
+      const desiredTopUpDays = effectiveCoverageDays - dos;
+      // Step 3: clamp to maxCoverageTopUpDays
+      const limitedTopUpDays = Math.max(0, Math.min(desiredTopUpDays, HYBRID_CONFIG.maxCoverageTopUpDays));
+      // Step 4: convert to quantity
+      const coverageRawNeed = forecastDaily * limitedTopUpDays;
+      // Step 5: round up to batch
       const coverageQty = roundUpToBatch(coverageRawNeed, batch);
-      // Use the LARGER of ROP qty and coverage qty
+      // Merge rule: ROP protection always wins if larger
       recommendedQty = Math.max(recommendedQty, coverageQty);
       // Priority floor for coverage-only triggers
       if (currentStock > reorderPoint) {
