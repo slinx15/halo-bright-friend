@@ -171,23 +171,69 @@ function BudgetPlanner({
         }
       }
     } else {
-      // Budget TIDAK cukup → proportional allocation untuk SEMUA
-      // Scale ratio berdasarkan budget / total ideal cost
-      const ratio = budgetAmount / totalIdealCost;
+      // Budget TIDAK cukup → 3-Tier Waterfall Algorithm
+      const tier1: typeof candidates = []; // Urgent: stok habis / critical (≤2 hari)
+      const tier2: typeof candidates = []; // Best seller dengan stok > critical
+      const tier3: typeof candidates = []; // Sisanya
 
-      // Apply proportional qty to all candidates (urgent tetap diprioritaskan via sort order)
       for (const c of candidates) {
+        const isUrgent = c.item.isStockOut || c.item.daysOfStock <= RULES.CRITICAL_DAYS;
+        if (isUrgent) {
+          tier1.push(c);
+        } else if (c.item.isBestSeller) {
+          tier2.push(c);
+        } else {
+          tier3.push(c);
+        }
+      }
+
+      // --- Tier 1: Urgent → full coverage (wajib beli) ---
+      for (const c of tier1) {
         if (remaining <= 0) break;
-        const scaledQty = Math.ceil(c.idealQty * ratio);
-        let qty = Math.max(c.minOrder, Math.ceil(scaledQty / c.batch) * c.batch);
-        let cost = qty * c.item.unitPrice;
+        let qty = c.idealQty;
+        let cost = c.idealCost;
+        if (cost > remaining) {
+          // Budget tidak cukup bahkan untuk urgent → beli sebisanya
+          qty = Math.floor(Math.floor(remaining / c.item.unitPrice) / c.batch) * c.batch;
+          if (qty < c.minOrder) continue;
+          cost = qty * c.item.unitPrice;
+        }
+        result.push({ item: c.item, qty, cost, reason: c.item.isStockOut ? "🚨 Stok kosong" : "🔴 Kritis" });
+        remaining -= cost;
+      }
+
+      // --- Tier 2: Best seller → full coverage ---
+      for (const c of tier2) {
+        if (remaining <= 0) break;
+        let qty = c.idealQty;
+        let cost = c.idealCost;
         if (cost > remaining) {
           qty = Math.floor(Math.floor(remaining / c.item.unitPrice) / c.batch) * c.batch;
           if (qty < c.minOrder) continue;
           cost = qty * c.item.unitPrice;
         }
-        result.push({ item: c.item, qty, cost, reason: c.reason });
+        result.push({ item: c.item, qty, cost, reason: "🔥 Best seller" });
         remaining -= cost;
+      }
+
+      // --- Tier 3: Sisanya → proporsional berdasarkan combinedScore ---
+      if (remaining > 0 && tier3.length > 0) {
+        const tier3TotalCost = tier3.reduce((s, c) => s + c.idealCost, 0);
+        const ratio = Math.min(1, remaining / tier3TotalCost);
+
+        for (const c of tier3) {
+          if (remaining <= 0) break;
+          const scaledQty = Math.ceil(c.idealQty * ratio);
+          let qty = Math.max(c.minOrder, Math.ceil(scaledQty / c.batch) * c.batch);
+          let cost = qty * c.item.unitPrice;
+          if (cost > remaining) {
+            qty = Math.floor(Math.floor(remaining / c.item.unitPrice) / c.batch) * c.batch;
+            if (qty < c.minOrder) continue;
+            cost = qty * c.item.unitPrice;
+          }
+          result.push({ item: c.item, qty, cost, reason: "📦 Restock" });
+          remaining -= cost;
+        }
       }
     }
 
