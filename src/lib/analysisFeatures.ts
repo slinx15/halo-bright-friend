@@ -128,35 +128,31 @@ export function calcTopSellers(
   const t = new Date();
   t.setHours(0, 0, 0, 0);
   const thirtyAgo = new Date(t.getTime() - 30 * 86400000);
+  const wmaData = calculateWMAVelocity(sales, products);
 
   // Sum sales per product
-  const salesMap: Record<string, { qty: number; minDate: Date | null; maxDate: Date | null }> = {};
+  const salesMap: Record<string, { qty: number; days: Set<string> }> = {};
   for (const s of sales) {
     if (new Date(s.created_at) < thirtyAgo) continue;
-    if (!salesMap[s.product_id]) salesMap[s.product_id] = { qty: 0, minDate: null, maxDate: null };
+    if (!salesMap[s.product_id]) salesMap[s.product_id] = { qty: 0, days: new Set() };
     salesMap[s.product_id].qty += s.qty_kirim;
-    const d = new Date(s.created_at);
-    if (!salesMap[s.product_id].minDate || d < salesMap[s.product_id].minDate!) salesMap[s.product_id].minDate = d;
-    if (!salesMap[s.product_id].maxDate || d > salesMap[s.product_id].maxDate!) salesMap[s.product_id].maxDate = d;
+    salesMap[s.product_id].days.add(s.created_at.slice(0, 10));
   }
 
   const items: TopSellerItem[] = [];
   for (const p of products) {
     const s = salesMap[p.id];
     if (!s || s.qty === 0) continue;
-    let days = 30;
-    if (s.minDate && s.maxDate) {
-      const diff = Math.abs(s.maxDate.getTime() - s.minDate.getTime());
-      days = Math.max(1, Math.ceil(diff / 86400000) + 1);
-    }
-    const vel = s.qty / Math.max(1, days);
+    const wma = wmaData[p.id];
+    // Use adjustedVelocity (maturity-dampened) for ranking
+    const vel = wma?.adjustedVelocity ?? (s.qty / 30);
     const stok = p.stock?.jumlah ?? 0;
     const daysLeft = vel > 0 ? stok / vel : 999;
     items.push({
       kode: p.kode,
       productId: p.id,
       totalQty: s.qty,
-      days,
+      days: s.days.size,
       velocity: vel,
       stok,
       daysLeft,
@@ -181,7 +177,7 @@ export function calcTrend(
   for (const p of products) {
     const t = trendData[p.id];
     if (!t || (t.thisWeek === 0 && t.lastWeek === 0)) continue;
-    const vel = wmaData[p.id]?.velocity ?? 0;
+    const vel = wmaData[p.id]?.adjustedVelocity ?? 0;
     items.push({
       kode: p.kode,
       productId: p.id,
@@ -248,7 +244,7 @@ export function calcLowStock(
   const wmaData = calculateWMAVelocity(sales, products);
 
   const items: LowStockItem[] = products.map((p) => {
-    const vel = wmaData[p.id]?.velocity ?? 0;
+    const vel = wmaData[p.id]?.adjustedVelocity ?? 0;
     return {
       kode: p.kode,
       productId: p.id,
@@ -432,7 +428,7 @@ export function calcBudgetEstimates(
 
     for (const p of products) {
       const stok = p.stock?.jumlah ?? 0;
-      const vel = wmaData[p.id]?.velocity ?? 0;
+      const vel = wmaData[p.id]?.adjustedVelocity ?? 0;
       if (vel <= 0) continue;
 
       const targetStock = Math.ceil(vel * targetDays);
@@ -468,7 +464,7 @@ export function calcStats(
 
   for (const p of products) {
     const stok = p.stock?.jumlah ?? 0;
-    const vel = wmaData[p.id]?.velocity ?? 0;
+    const vel = wmaData[p.id]?.adjustedVelocity ?? 0;
     const daysLeft = vel > 0 ? stok / vel : 999;
     const harga = getHargaModal(p);
 
