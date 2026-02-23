@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle, Download, Loader2, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { useProducts } from "@/hooks/useProducts";
@@ -71,6 +72,7 @@ const ImportHistori = () => {
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState("");
   const [importing, setImporting] = useState(false);
+  const [clearBeforeImport, setClearBeforeImport] = useState(false);
   const [result, setResult] = useState<{ inserted: number; skipped: number; not_found: string[] } | null>(null);
 
   const handleFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,7 +102,7 @@ const ImportHistori = () => {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/import-sales-history`, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify({ rows }),
+        body: JSON.stringify({ rows, clear_before_import: clearBeforeImport }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Import gagal");
@@ -207,6 +209,18 @@ const ImportHistori = () => {
                         )}
                       </tbody>
                     </table>
+                  </div>
+
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/5 border border-destructive/20">
+                    <Checkbox
+                      id="clearBefore"
+                      checked={clearBeforeImport}
+                      onCheckedChange={(v) => setClearBeforeImport(v === true)}
+                    />
+                    <Label htmlFor="clearBefore" className="text-sm cursor-pointer">
+                      <span className="font-semibold text-destructive">Hapus semua data penjualan lama</span>
+                      <span className="text-muted-foreground"> sebelum import (untuk menghindari duplikat)</span>
+                    </Label>
                   </div>
 
                   <Button onClick={handleImport} disabled={importing} className="w-full rounded-xl h-12 text-base font-bold press-scale shadow-md hover:shadow-lg">
