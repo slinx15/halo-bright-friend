@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,17 +24,53 @@ interface BulkOpnameInputProps {
   submitting: boolean;
 }
 
+const DRAFT_KEY = "opname_draft_rows";
+
+function saveDraft(rows: InputRow[]) {
+  try {
+    const data = rows.filter(r => r.kode.trim() || r.qty.trim());
+    if (data.length > 0) {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+    } else {
+      localStorage.removeItem(DRAFT_KEY);
+    }
+  } catch {}
+}
+
+function loadDraft(): InputRow[] | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as InputRow[];
+    if (data.length === 0) return null;
+    // Re-assign IDs to avoid conflicts
+    return data.map((r, i) => ({ ...r, id: i + 1 }));
+  } catch {
+    return null;
+  }
+}
+
 let rowIdCounter = 0;
 
 export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameInputProps) {
-  const [rows, setRows] = useState<InputRow[]>([
-    { id: ++rowIdCounter, kode: "", qty: "", status: "idle" },
-  ]);
+  const draft = useMemo(() => loadDraft(), []);
+  const initialRows: InputRow[] = draft
+    ? [...draft, { id: draft.length + 1, kode: "", qty: "", status: "idle" as const }]
+    : [{ id: 1, kode: "", qty: "", status: "idle" as const }];
+  rowIdCounter = initialRows[initialRows.length - 1].id;
+
+  const [rows, setRows] = useState<InputRow[]>(initialRows);
   const [showPreview, setShowPreview] = useState(false);
   const [parsed, setParsed] = useState<ParsedOpnameItem[]>([]);
 
   const kodeRefs = useRef<Map<number, HTMLInputElement>>(new Map());
   const qtyRefs = useRef<Map<number, HTMLInputElement>>(new Map());
+
+
+  // Auto-save draft to localStorage
+  useEffect(() => {
+    saveDraft(rows);
+  }, [rows]);
 
   const productKodeSet = useMemo(() => {
     const set = new Map<string, ProductWithDetails>();
@@ -179,6 +215,7 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
     setRows([{ id: ++rowIdCounter, kode: "", qty: "", status: "idle" }]);
     setParsed([]);
     setShowPreview(false);
+    localStorage.removeItem(DRAFT_KEY);
   };
 
   const validRows = rows.filter((r) => r.status === "valid" && r.qty.trim() && parseInt(r.qty) > 0);
