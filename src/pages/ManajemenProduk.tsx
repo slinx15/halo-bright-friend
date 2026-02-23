@@ -99,7 +99,7 @@ const ManajemenProduk = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-primary/10">
             <Settings className="h-6 w-6 text-primary" />
@@ -110,11 +110,11 @@ const ManajemenProduk = () => {
           </div>
         </div>
         {isAdmin && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full">
             <BulkInputDialog />
             <Dialog open={showAdd} onOpenChange={(v) => { setShowAdd(v); if (!v) resetForm(); }}>
               <DialogTrigger asChild>
-                <Button size={isMobile ? "default" : "sm"} className="rounded-xl press-scale">
+                <Button className="rounded-xl press-scale">
                   <Plus className="h-4 w-4 mr-1" /> Tambah
                 </Button>
               </DialogTrigger>
