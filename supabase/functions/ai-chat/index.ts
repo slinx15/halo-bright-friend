@@ -91,6 +91,11 @@ serve(async (req) => {
       `${p.kode}: stok ${p._stok}, modal Rp${p._hargaModal}`
     );
 
+    // Build full product list for AI context
+    const allProductsList = products.map((p: any) =>
+      `${p.kode}|${p.nama}|stok:${p._stok}|modal:${p._hargaModal}|kat:${p.kategori || '-'}`
+    ).join("\n");
+
     const systemPrompt = `Kamu adalah AI assistant untuk RRCollections, toko benang craft. 
 Kamu membantu boss/pemilik toko menganalisa stok, penjualan, dan keputusan bisnis.
 
@@ -109,6 +114,9 @@ PENJUALAN 7 HARI TERAKHIR:
 STOK RENDAH/KRITIS:
 ${lowStockList.join("\n") || "Semua stok aman"}
 
+DAFTAR SEMUA PRODUK (kode|nama|stok|modal|kategori):
+${allProductsList}
+
 ATURAN RESPON:
 1. Jawab dalam Bahasa Indonesia, gaya ringkas dan to-the-point
 2. Gunakan angka konkret dari data di atas
@@ -116,7 +124,8 @@ ATURAN RESPON:
 4. Gunakan emoji secukupnya untuk readability
 5. Format dengan markdown (bold, list, dll)
 6. Jangan mengarang data — hanya pakai data yang tersedia
-7. Jika ditanya hal di luar konteks toko, bilang fokusmu adalah membantu bisnis RRCollections`;
+7. Jika user tanya produk tertentu, CARI di daftar produk di atas berdasarkan kode
+8. Jika ditanya hal di luar konteks toko, bilang fokusmu adalah membantu bisnis RRCollections`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
