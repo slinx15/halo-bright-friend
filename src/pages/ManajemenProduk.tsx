@@ -114,7 +114,9 @@ const ManajemenProduk = () => {
             <BulkInputDialog />
             <Dialog open={showAdd} onOpenChange={(v) => { setShowAdd(v); if (!v) resetForm(); }}>
               <DialogTrigger asChild>
-                <Button size="sm" className="rounded-xl press-scale"><Plus className="h-4 w-4 mr-1" /> Tambah</Button>
+                <Button size={isMobile ? "default" : "sm"} className="rounded-xl press-scale">
+                  <Plus className="h-4 w-4 mr-1" /> Tambah
+                </Button>
               </DialogTrigger>
               <DialogContent className="rounded-2xl">
                 <DialogHeader><DialogTitle className="font-bold">{editId ? "Edit Produk" : "Tambah Produk"}</DialogTitle></DialogHeader>
