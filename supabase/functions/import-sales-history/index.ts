@@ -35,8 +35,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { rows } = await req.json() as {
+    const { rows, clear_before_import } = await req.json() as {
       rows: { tanggal: string; toko: string; kode: string; pesanan: number; kiriman: number }[];
+      clear_before_import?: boolean;
     };
 
     if (!rows || !Array.isArray(rows) || rows.length === 0) {
@@ -44,6 +45,18 @@ Deno.serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Clear existing stock_out if requested
+    if (clear_before_import) {
+      const { error: delError } = await supabase.from("stock_out").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      if (delError) {
+        console.error("Delete error:", delError);
+        return new Response(JSON.stringify({ error: "Gagal menghapus data lama: " + delError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Fetch all products with prices
