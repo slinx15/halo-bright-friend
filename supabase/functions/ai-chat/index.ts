@@ -221,49 +221,103 @@ atau [] jika tidak ada yang perlu diingat.`;
     const restockSummary = needRestock.slice(0, 20).map((a: any) => `${a.kode}: order ${a.rekomendasi} pcs (${a.dosStatus === "CRITICAL" ? "darurat" : a.dosStatus === "WARNING" ? "menipis" : "pantau"}, laku ${a.velocity}/hari, stok ${a.stok})`).join("\n");
     const allProductsList = products.map((p: any) => { const a = analyses.find((x: any) => x.kode === p.kode); return a ? `${p.kode}|${p.nama}|stok:${p._stok}|laku:${a.velocity}/hari|cukup:${a.dos}hari|status:${a.dosStatus}|order:${a.rekomendasi}|modal:${p._hargaModal}` : `${p.kode}|${p.nama}|stok:${p._stok}|modal:${p._hargaModal}|kat:${p.kategori || '-'}`; }).join("\n");
 
-    const systemPrompt = `Kamu PARTNER BISNIS UTAMA Boss RRCollections — toko benang craft/obras. Keahlian setara konsultan senior industri craft & textile.
-
-═══ KNOWLEDGE ═══
-
-📦 INDUSTRI BENANG: Jenis: obras/overlock, jahit, bordir, rajut, sulam, nilon, polyester, cotton. BW (hitam/putih) SELALU paling laris→wajib stok banyak. Warna terang=seasonal. Supplier: Bandung/Solo/Surabaya, lead time 2-5 hari. Margin ideal: 30-50%. Pelanggan: tukang jahit, konveksi, crafter, toko jahit. Ramai: pra-Lebaran, tahun ajaran baru, wedding. Sepi: pasca-Lebaran, awal tahun.
-
-🛒 JUALAN OFFLINE: Grosir→pelanggan tetap/konveksi, retail→walk-in. Loyalitas: diskon setia, bonus besar, poin. Piutang: batas kredit, jatuh tempo, follow-up. Nawar→kasih bundling, jangan potong harga. Display: kelompok warna/jenis, rak mudah. Upsell: "Beli 10 cone, harga turun". Cross-sell: obras+jarum+kain perca starter pack.
-
-🌐 JUALAN ONLINE (boss belum online): Platform: Shopee(volume), Tokopedia(trust), TikTok Shop(viral). Mulai: pilih 10-20 best seller, foto bg putih+close-up tekstur, judul SEO "Benang Obras Polyester [WARNA] 5000 Yard Kualitas Premium", harga sedikit>offline, free shipping awal. Marketplace: flash sale↑ranking, bundling, minta review offline→online, live selling demo. Sosmed: IG/TikTok video jahit, WA Business katalog+broadcast, FB Group crafter.
-
-📊 STRATEGI BISNIS: ABC analysis (20% SKU=80% revenue→full stock). Pareto: 20% pelanggan=80% omzet. Break-even: minimal jual/hari tutup operasional. Cash flow: sisakan 2-3 bulan operasional. Pricing: cost-plus(aman), competitive, value-based, psychological(49.900 vs 50.000). Ekspansi: horizontal(jarum,gunting,kain), vertical(distributor), geografis(cabang/online). KPI: omzet, pelanggan baru vs repeat, margin/transaksi, stock turnover, dead stock ratio(>30 hari).
-
-📈 MARKETING: Brand "RRCollections — Benang Berkualitas, Harga Bersahabat". Persona: konveksi=harga+volume, crafter=variasi+kualitas. Promo: "Beli 20 gratis 2", "50 cone+free ongkir", "Diskon 10% pelanggan pertama", "Happy Hour order<jam 12 kirim hari ini". Seasonal: pra-Ramadan(baju muslim), back-to-school(seragam putih/navy/abu), year-end clearance.
-
-💰 KEUANGAN: Profit=omzet-HPP-operasional(sewa,gaji,listrik,transport). Naikin harga kalau modal naik>5% atau margin<20%. Diskon kalau dead stock atau tarik pelanggan baru. Reinvestasi: stok best seller→peralatan→ekspansi.
-
-🎯 PSIKOLOGI PELANGGAN & CLOSING:
+    // ─── Knowledge Modules ───
+    const KNOWLEDGE_MODULES: Record<string, { keywords: string[]; content: string }> = {
+      industri: {
+        keywords: ["benang", "obras", "craft", "jenis", "supplier", "margin", "musim", "ramai", "sepi", "konveksi", "tailor", "crafter", "polyester", "cotton", "bordir", "rajut", "sulam"],
+        content: `📦 INDUSTRI BENANG: Jenis: obras/overlock, jahit, bordir, rajut, sulam, nilon, polyester, cotton. BW (hitam/putih) SELALU paling laris→wajib stok banyak. Warna terang=seasonal. Supplier: Bandung/Solo/Surabaya, lead time 2-5 hari. Margin ideal: 30-50%. Pelanggan: tukang jahit, konveksi, crafter, toko jahit. Ramai: pra-Lebaran, tahun ajaran baru, wedding. Sepi: pasca-Lebaran, awal tahun.`,
+      },
+      offline: {
+        keywords: ["offline", "toko", "grosir", "retail", "walk-in", "loyalitas", "piutang", "nawar", "display", "upsell", "cross-sell", "bundling"],
+        content: `🛒 JUALAN OFFLINE: Grosir→pelanggan tetap/konveksi, retail→walk-in. Loyalitas: diskon setia, bonus besar, poin. Piutang: batas kredit, jatuh tempo, follow-up. Nawar→kasih bundling, jangan potong harga. Display: kelompok warna/jenis, rak mudah. Upsell: "Beli 10 cone, harga turun". Cross-sell: obras+jarum+kain perca starter pack.`,
+      },
+      online: {
+        keywords: ["online", "shopee", "tokopedia", "tiktok", "marketplace", "jualan online", "e-commerce", "digital"],
+        content: `🌐 JUALAN ONLINE (boss belum online): Platform: Shopee(volume), Tokopedia(trust), TikTok Shop(viral). Mulai: pilih 10-20 best seller, foto bg putih+close-up tekstur, judul SEO "Benang Obras Polyester [WARNA] 5000 Yard Kualitas Premium", harga sedikit>offline, free shipping awal. Marketplace: flash sale↑ranking, bundling, minta review offline→online, live selling demo. Sosmed: IG/TikTok video jahit, WA Business katalog+broadcast, FB Group crafter.`,
+      },
+      strategi: {
+        keywords: ["strategi", "abc", "pareto", "break-even", "cash flow", "pricing", "ekspansi", "kpi", "target", "rencana", "planning", "bisnis"],
+        content: `📊 STRATEGI BISNIS: ABC analysis (20% SKU=80% revenue→full stock). Pareto: 20% pelanggan=80% omzet. Break-even: minimal jual/hari tutup operasional. Cash flow: sisakan 2-3 bulan operasional. Pricing: cost-plus(aman), competitive, value-based, psychological(49.900 vs 50.000). Ekspansi: horizontal(jarum,gunting,kain), vertical(distributor), geografis(cabang/online). KPI: omzet, pelanggan baru vs repeat, margin/transaksi, stock turnover, dead stock ratio(>30 hari).`,
+      },
+      marketing: {
+        keywords: ["marketing", "brand", "branding", "promo", "promosi", "seasonal", "persona", "iklan"],
+        content: `📈 MARKETING: Brand "RRCollections — Benang Berkualitas, Harga Bersahabat". Persona: konveksi=harga+volume, crafter=variasi+kualitas. Promo: "Beli 20 gratis 2", "50 cone+free ongkir", "Diskon 10% pelanggan pertama", "Happy Hour order<jam 12 kirim hari ini". Seasonal: pra-Ramadan(baju muslim), back-to-school(seragam putih/navy/abu), year-end clearance.`,
+      },
+      keuangan: {
+        keywords: ["keuangan", "profit", "untung", "rugi", "harga", "modal", "margin", "diskon", "investasi", "biaya", "omzet", "pendapatan", "uang"],
+        content: `💰 KEUANGAN: Profit=omzet-HPP-operasional(sewa,gaji,listrik,transport). Naikin harga kalau modal naik>5% atau margin<20%. Diskon kalau dead stock atau tarik pelanggan baru. Reinvestasi: stok best seller→peralatan→ekspansi.`,
+      },
+      psikologi: {
+        keywords: ["pelanggan", "closing", "handle", "keberatan", "nawar", "mahal", "psikologi", "langganan", "loyal", "repeat", "customer"],
+        content: `🎯 PSIKOLOGI PELANGGAN & CLOSING:
 Tipe: Konveksi besar(harga termurah,rutin)→harga khusus+jaminan stok. Konveksi kecil(fleksibel)→"Ambil 20 cone harga turun". Tukang jahit(satuan,loyal)→sample+personal relationship. Crafter(variasi,bayar lebih)→koleksi lengkap+inspirasi. Reseller→harga reseller+margin menarik.
 Closing: Urgency("tinggal sedikit"), Social proof("konveksi X juga pakai"), Bundling("paket 5 warna lebih murah"), Trial("coba 5 dulu"), Reciprocity(bonus kecil→hutang budi), Anchoring(harga normal dulu→spesial).
 Keberatan: "Mahal"→"Kualitas premium, murah=boros 2x". "Pikir-pikir"→"Harga sampai akhir minggu, mau disisihkan?". "Lain lebih murah"→"Berapa? Cek kualitas+panjang juga". "Ga butuh"→"Menjelang [musim] harga naik".
 Langganan: Follow-up WA 1 minggu, kartu nama/stiker, grup WA, loyalty "Beli 10x diskon 15% ke-11", ingat nama pelanggan.
-Psikologi harga: ganjil(49.900), "Hemat Rp 5.000" > "Diskon 5%", tampil harga/cone DAN /lusin, jangan turun harga tanpa alasan.
-
-🔍 KOMPETITOR & PASAR:
+Psikologi harga: ganjil(49.900), "Hemat Rp 5.000" > "Diskon 5%", tampil harga/cone DAN /lusin, jangan turun harga tanpa alasan.`,
+      },
+      kompetitor: {
+        keywords: ["kompetitor", "pesaing", "saingan", "pasar", "benchmark", "harga pasar", "perbandingan", "lawan"],
+        content: `🔍 KOMPETITOR & PASAR:
 Landscape: toko offline(perang harga), online/marketplace(murah tapi ongkir), distributor(murah tapi MOQ besar), pabrik(termurah, MOQ ratusan).
 Analisa: cek harga marketplace 1-2 minggu sekali, perhatikan harga+MOQ+review+variasi+service. Spreadsheet top 5.
 Strategi: murah→fokus VALUE(stok lengkap,kirim cepat). Lengkap→fokus niche dulu. Besar→personal service. Online→kelebihan offline(lihat/pegang langsung).
 Benchmark 2024-2025: obras polyester 5000yd Rp 8.000-15.000/cone, jahit Rp 5.000-12.000, bordir rayon Rp 15.000-30.000. Margin sehat: retail 25-40%, grosir 15-25%. Harga naik pra-Lebaran.
-Harga kompetitif: modal+margin min 25%, cek 3-5 kompetitor, posisi tengah, best seller→tipis margin, niche→tebal margin.
-
-📣 PROMOSI OFFLINE:
+Harga kompetitif: modal+margin min 25%, cek 3-5 kompetitor, posisi tengah, best seller→tipis margin, niche→tebal margin.`,
+      },
+      promosi_offline: {
+        keywords: ["promosi offline", "banner", "spanduk", "word of mouth", "referral", "event", "b2b", "impulse", "promo toko"],
+        content: `📣 PROMOSI OFFLINE:
 Toko: banner mencolok "Beli 10 Gratis 1", price tag tiap rak, display eye-level, sample terbuka, zona best seller & promo.
 Word-of-mouth: kasih 2-3 kartu nama extra, referral "temen beli→diskon 10%", service luar biasa=promosi gratis, ucapan Lebaran/Natal.
 Seasonal: pra-Ramadan "Stok Lebaran Harga Spesial", back-to-school "Seragam diskon 15%", akhir tahun clearance, anniversary doorprize.
 B2B: kontrak 100 cone/bulan→turun Rp 1.000, free delivery>Rp 500.000, konsinyasi pelanggan terpercaya, diskon qty 50→5% 100→10% 200+→nego.
-Impulse: "Tambah Rp 5.000 dapat 1 lagi!", trial pack 3 warna, Happy Hour 10-12 diskon 5%, tas branded=promosi gratis.
-
-📱 PROMOSI ONLINE:
+Impulse: "Tambah Rp 5.000 dapat 1 lagi!", trial pack 3 warna, Happy Hour 10-12 diskon 5%, tas branded=promosi gratis.`,
+      },
+      promosi_online: {
+        keywords: ["promosi online", "whatsapp", "instagram", "tiktok", "wa", "ig", "sosmed", "social media", "konten", "reels", "live"],
+        content: `📱 PROMOSI ONLINE:
 WA: WA Business katalog+foto+harga, broadcast mingguan(jangan spam), Status 3-5x/hari, quick reply template, grup VIP, jam terbaik 08-09/12-13/19-21.
 Instagram: close-up tekstur, video jahit, before-after, Reels tren warna/tips, Story BTS+testimoni. Hashtag: #benangobras #benangcraft #konveksi. Posting 3-4x/minggu+1 Reels. Balas komentar<1 jam.
 TikTok: tes kekuatan benang, koleksi 100+ warna(satisfying), packing 500 cone(BTS), tips jahitan, trend hijacking. TikTok Shop link produk. Live selling demo. 1-2 video/hari 30 hari.
 Marketplace: judul SEO "Benang Obras Polyester 5000 Yard [WARNA] Premium Anti Putus", min 5 foto, flash sale↑ranking, voucher "Diskon Rp 5.000 min 50.000", free ongkir=#1 faktor, thank-you card→review bintang 5, chat<5 menit.
-Konten: rumus 80/20 (80% value, 20% jualan), jangan hard-selling, storytelling pelanggan sukses, UGC repost, konsistensi>viral.
+Konten: rumus 80/20 (80% value, 20% jualan), jangan hard-selling, storytelling pelanggan sukses, UGC repost, konsistensi>viral.`,
+      },
+    };
+
+    // ─── Topic Detection ───
+    function detectTopics(msgs: { role: string; content: string }[]): string[] {
+      // Use last 3 user messages for context
+      const recentUserMsgs = msgs.filter(m => m.role === "user").slice(-3).map(m => m.content.toLowerCase()).join(" ");
+      const matched: string[] = [];
+      for (const [key, mod] of Object.entries(KNOWLEDGE_MODULES)) {
+        if (mod.keywords.some(kw => recentUserMsgs.includes(kw))) {
+          matched.push(key);
+        }
+      }
+      return matched;
+    }
+
+    const detectedTopics = detectTopics(messages);
+    // Fallback: if 0-1 topics detected or ambiguous, send all modules
+    const useAllModules = detectedTopics.length === 0 || detectedTopics.length > 5;
+    const selectedModules = useAllModules
+      ? Object.values(KNOWLEDGE_MODULES).map(m => m.content)
+      : detectedTopics.map(t => KNOWLEDGE_MODULES[t].content);
+
+    // Always include industri (core) if not already
+    if (!useAllModules && !detectedTopics.includes("industri")) {
+      selectedModules.unshift(KNOWLEDGE_MODULES.industri.content);
+    }
+
+    const knowledgeBlock = selectedModules.join("\n\n");
+    const topicDebug = useAllModules ? "ALL" : detectedTopics.join(",");
+
+    const systemPrompt = `Kamu PARTNER BISNIS UTAMA Boss RRCollections — toko benang craft/obras. Keahlian setara konsultan senior industri craft & textile.
+
+═══ KNOWLEDGE [${topicDebug}] ═══
+
+${knowledgeBlock}
 
 ═══ MEMORY ═══
 ${memoryBlock}
