@@ -50,16 +50,22 @@ function loadDraft(): InputRow[] | null {
   }
 }
 
-let rowIdCounter = 0;
+function getNextId() {
+  return ++getNextId.counter;
+}
+getNextId.counter = 0;
 
 export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameInputProps) {
-  const draft = useMemo(() => loadDraft(), []);
-  const initialRows: InputRow[] = draft
-    ? [...draft, { id: draft.length + 1, kode: "", qty: "", status: "idle" as const }]
-    : [{ id: 1, kode: "", qty: "", status: "idle" as const }];
-  rowIdCounter = initialRows[initialRows.length - 1].id;
-
-  const [rows, setRows] = useState<InputRow[]>(initialRows);
+  const [rows, setRows] = useState<InputRow[]>(() => {
+    const draft = loadDraft();
+    if (draft) {
+      const maxId = Math.max(...draft.map(r => r.id), 0);
+      getNextId.counter = maxId;
+      return [...draft, { id: getNextId(), kode: "", qty: "", status: "idle" as const }];
+    }
+    getNextId.counter = 0;
+    return [{ id: getNextId(), kode: "", qty: "", status: "idle" as const }];
+  });
   const [showPreview, setShowPreview] = useState(false);
   const [parsed, setParsed] = useState<ParsedOpnameItem[]>([]);
 
@@ -107,7 +113,7 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
   };
 
   const addNewRow = useCallback(() => {
-    const newId = ++rowIdCounter;
+    const newId = getNextId();
     setRows((prev) => [...prev, { id: newId, kode: "", qty: "", status: "idle" }]);
     setTimeout(() => {
       kodeRefs.current.get(newId)?.focus();
@@ -119,7 +125,7 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
     setRows((prev) => {
       const filtered = prev.filter((r) => r.id !== id);
       if (filtered.length === 0) {
-        const newId = ++rowIdCounter;
+        const newId = getNextId();
         return [{ id: newId, kode: "", qty: "", status: "idle" as const }];
       }
       return filtered;
@@ -141,7 +147,7 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
       setRows((prev) => {
         const idx = prev.findIndex((r) => r.id === row.id);
         if (idx === prev.length - 1) {
-          const newId = ++rowIdCounter;
+          const newId = getNextId();
           setTimeout(() => kodeRefs.current.get(newId)?.focus(), 50);
           return [...prev, { id: newId, kode: "", qty: "", status: "idle" as const }];
         }
@@ -175,13 +181,13 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
         const kode = String(item.kode || "").toUpperCase();
         const qty = String(item.qty || item.stok_fisik || 0);
         const status = validateKode(kode);
-        return { id: ++rowIdCounter, kode, qty, status };
+        return { id: getNextId(), kode, qty, status };
       })
       .filter((r) => r.kode);
 
     setRows((prev) => {
       const existing = prev.filter((r) => r.kode.trim() || r.qty.trim());
-      const newId = ++rowIdCounter;
+      const newId = getNextId();
       return [...existing, ...newRows, { id: newId, kode: "", qty: "", status: "idle" as const }];
     });
   };
@@ -211,8 +217,8 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
 
   const handleSubmit = async () => {
     await onSubmit(parsed);
-    rowIdCounter = 0;
-    setRows([{ id: ++rowIdCounter, kode: "", qty: "", status: "idle" }]);
+    getNextId.counter = 0;
+    setRows([{ id: getNextId(), kode: "", qty: "", status: "idle" }]);
     setParsed([]);
     setShowPreview(false);
     localStorage.removeItem(DRAFT_KEY);
