@@ -19,6 +19,7 @@ import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { splitIntoStacks, addStacks } from "@/lib/tumpukanUtils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TransactionSkeleton } from "@/components/LoadingSkeletons";
+import { PageHeader } from "@/components/PageHeader";
 
 interface LineItem {
   kode: string;
@@ -127,15 +128,13 @@ const BarangMasuk = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full">
-      <div className="flex items-center gap-3">
-        <div className="p-2.5 rounded-xl bg-success/10">
-          <PackagePlus className="h-6 w-6 text-success" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Barang Masuk</h1>
-          <p className="text-muted-foreground text-sm">Catat barang masuk ke gudang</p>
-        </div>
-      </div>
+      <PageHeader
+        icon={PackagePlus}
+        iconColor="text-success"
+        iconBg="bg-success/10"
+        title="Barang Masuk"
+        subtitle="Catat barang masuk ke gudang"
+      />
 
       <Card className="rounded-2xl shadow-md border-0">
         <CardHeader className="pb-3">
@@ -256,8 +255,8 @@ const BarangMasuk = () => {
         </CardContent>
       </Card>
 
-      <Collapsible>
-        <Card className="rounded-2xl shadow-md border-0">
+      <Card className="rounded-2xl shadow-md border-0">
+        <Collapsible>
           <CardHeader className="pb-2">
             <CollapsibleTrigger asChild>
               <button className="flex items-center justify-between w-full text-left">
@@ -362,8 +361,8 @@ const BarangMasuk = () => {
               )}
             </CardContent>
           </CollapsibleContent>
-        </Card>
-      </Collapsible>
+        </Collapsible>
+      </Card>
     </div>
   );
 };

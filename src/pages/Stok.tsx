@@ -9,6 +9,7 @@ import { formatNumber, formatRupiah, getStockStatus, getStockStatusColor } from 
 import { StokSkeleton } from "@/components/LoadingSkeletons";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { PageHeader } from "@/components/PageHeader";
 import { Progress } from "@/components/ui/progress";
 
 const Stok = () => {
@@ -32,15 +33,13 @@ const Stok = () => {
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-2.5 rounded-xl bg-primary/10">
-          <Package className="h-6 w-6 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Manajemen Stok</h1>
-          <p className="text-muted-foreground text-sm">Lihat semua stok produk</p>
-        </div>
-      </div>
+      <PageHeader
+        icon={Package}
+        iconColor="text-primary"
+        iconBg="bg-primary/10"
+        title="Manajemen Stok"
+        subtitle="Lihat semua stok produk"
+      />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
