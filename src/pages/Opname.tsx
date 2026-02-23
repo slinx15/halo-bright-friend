@@ -29,7 +29,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardCheck, Clock } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ClipboardCheck, Clock, ChevronDown } from "lucide-react";
 import { formatDate, formatNumber } from "@/lib/formatters";
 import { BulkOpnameInput } from "@/components/opname/BulkOpnameInput";
 import type { ParsedOpnameItem } from "@/lib/opnameParser";
@@ -114,102 +115,111 @@ const Opname = () => {
         submitting={submitting}
       />
 
-      <Card className="boss-card">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" /> Riwayat Opname
-            </CardTitle>
-            {history && history.length > 0 && (
-              <Badge variant="secondary" className="text-[10px] rounded-full px-2">{history.length}</Badge>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isMobile ? (
-            <div className="space-y-2.5">
-              {(!history || history.length === 0) ? (
-                <div className="py-8 text-center">
-                  <ClipboardCheck className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Belum ada riwayat opname</p>
+      <Collapsible>
+        <Card className="boss-card">
+          <CardHeader className="pb-2">
+            <CollapsibleTrigger asChild>
+              <button className="flex items-center justify-between w-full text-left">
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" /> Riwayat Opname
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  {history && history.length > 0 && (
+                    <Badge variant="secondary" className="text-[10px] rounded-full px-2">{history.length}</Badge>
+                  )}
+                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
                 </div>
-              ) : history.map((h: any) => (
-                <div key={h.id} className={`rounded-xl border p-3.5 space-y-2 press-scale transition-all duration-200 ${
-                  h.selisih !== 0 ? "border-l-[3px] border-l-destructive border-border/60" : "border-l-[3px] border-l-success border-border/60"
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono font-bold text-sm">{h.products?.kode}</span>
-                    <Badge className={`rounded-full text-[10px] px-2 border-0 font-bold ${
-                      h.status === "sesuai" ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"
+              </button>
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent>
+              {isMobile ? (
+                <div className="space-y-2.5">
+                  {(!history || history.length === 0) ? (
+                    <div className="py-8 text-center">
+                      <ClipboardCheck className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">Belum ada riwayat opname</p>
+                    </div>
+                  ) : history.map((h: any) => (
+                    <div key={h.id} className={`rounded-xl border p-3.5 space-y-2 transition-all duration-200 ${
+                      h.selisih !== 0 ? "border-l-[3px] border-l-destructive border-border/60" : "border-l-[3px] border-l-success border-border/60"
                     }`}>
-                      {h.status}
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-[11px]">
-                    <div>
-                      <span className="text-muted-foreground">Sistem</span>
-                      <p className="font-semibold tabular-nums">{formatNumber(h.stok_sistem)}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Fisik</span>
-                      <p className="font-semibold tabular-nums">{formatNumber(h.stok_fisik)}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Selisih</span>
-                      <p className={`font-bold tabular-nums ${h.selisih !== 0 ? "text-destructive" : "text-success"}`}>
-                        {h.selisih > 0 ? "+" : ""}{h.selisih}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center text-[11px] text-muted-foreground gap-1">
-                    <Clock className="h-3 w-3" /> {formatDate(h.created_at)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Waktu</TableHead>
-                    <TableHead>Kode</TableHead>
-                    <TableHead className="text-right">Sistem</TableHead>
-                    <TableHead className="text-right">Fisik</TableHead>
-                    <TableHead className="text-right">Selisih</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Catatan</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {history?.map((h: any) => (
-                    <TableRow key={h.id}>
-                      <TableCell className="text-xs">{formatDate(h.created_at)}</TableCell>
-                      <TableCell className="font-mono font-semibold text-sm">{h.products?.kode}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatNumber(h.stok_sistem)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatNumber(h.stok_fisik)}</TableCell>
-                      <TableCell className={`text-right font-bold tabular-nums ${h.selisih !== 0 ? "text-destructive" : "text-success"}`}>
-                        {h.selisih > 0 ? "+" : ""}{h.selisih}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className={`rounded-full ${h.status === "sesuai" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono font-bold text-sm">{h.products?.kode}</span>
+                        <Badge className={`rounded-full text-[10px] px-2 border-0 font-bold ${
+                          h.status === "sesuai" ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"
+                        }`}>
                           {h.status}
                         </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{h.catatan || "-"}</TableCell>
-                    </TableRow>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-[11px]">
+                        <div>
+                          <span className="text-muted-foreground">Sistem</span>
+                          <p className="font-semibold tabular-nums">{formatNumber(h.stok_sistem)}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Fisik</span>
+                          <p className="font-semibold tabular-nums">{formatNumber(h.stok_fisik)}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Selisih</span>
+                          <p className={`font-bold tabular-nums ${h.selisih !== 0 ? "text-destructive" : "text-success"}`}>
+                            {h.selisih > 0 ? "+" : ""}{h.selisih}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center text-[11px] text-muted-foreground gap-1">
+                        <Clock className="h-3 w-3" /> {formatDate(h.created_at)}
+                      </div>
+                    </div>
                   ))}
-                  {(!history || history.length === 0) && (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Belum ada riwayat opname</TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Waktu</TableHead>
+                        <TableHead>Kode</TableHead>
+                        <TableHead className="text-right">Sistem</TableHead>
+                        <TableHead className="text-right">Fisik</TableHead>
+                        <TableHead className="text-right">Selisih</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Catatan</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {history?.map((h: any) => (
+                        <TableRow key={h.id}>
+                          <TableCell className="text-xs">{formatDate(h.created_at)}</TableCell>
+                          <TableCell className="font-mono font-semibold text-sm">{h.products?.kode}</TableCell>
+                          <TableCell className="text-right tabular-nums">{formatNumber(h.stok_sistem)}</TableCell>
+                          <TableCell className="text-right tabular-nums">{formatNumber(h.stok_fisik)}</TableCell>
+                          <TableCell className={`text-right font-bold tabular-nums ${h.selisih !== 0 ? "text-destructive" : "text-success"}`}>
+                            {h.selisih > 0 ? "+" : ""}{h.selisih}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className={`rounded-full ${h.status === "sesuai" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
+                              {h.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{h.catatan || "-"}</TableCell>
+                        </TableRow>
+                      ))}
+                      {(!history || history.length === 0) && (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Belum ada riwayat opname</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
     </div>
   );
 };
