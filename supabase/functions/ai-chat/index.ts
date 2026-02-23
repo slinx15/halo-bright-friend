@@ -38,14 +38,21 @@ serve(async (req) => {
       supabase.from("stock_out").select("product_id, qty_kirim, qty_pesan, total_harga, harga_satuan, harga_type, toko, created_at").order("created_at", { ascending: false }).limit(500),
     ]);
 
-    const products = productsRes.data || [];
+    const rawProducts = productsRes.data || [];
     const stockOut = stockOutRes.data || [];
+
+    // Normalize stock — handle array or object from join
+    const products = rawProducts.map((p: any) => {
+      const stk = Array.isArray(p.stock) ? p.stock[0] : p.stock;
+      const prc = Array.isArray(p.prices) ? p.prices[0] : p.prices;
+      return { ...p, _stok: stk?.jumlah ?? 0, _tumpukan: stk?.tumpukan_detail, _hargaModal: prc?.harga_modal ?? 0 };
+    });
 
     // Build summary
     const totalProducts = products.length;
-    const totalStock = products.reduce((s: number, p: any) => s + (p.stock?.jumlah ?? 0), 0);
-    const lowStock = products.filter((p: any) => (p.stock?.jumlah ?? 0) <= 15);
-    const zeroStock = products.filter((p: any) => (p.stock?.jumlah ?? 0) === 0);
+    const totalStock = products.reduce((s: number, p: any) => s + p._stok, 0);
+    const lowStock = products.filter((p: any) => p._stok <= 15);
+    const zeroStock = products.filter((p: any) => p._stok === 0);
 
     // Sales last 7 days
     const sevenDaysAgo = new Date();
@@ -81,7 +88,7 @@ serve(async (req) => {
       .map(([name, data]) => `${name}: ${data.pcs} pcs, Rp ${data.omzet.toLocaleString("id-ID")}`);
 
     const lowStockList = lowStock.slice(0, 15).map((p: any) =>
-      `${p.kode}: stok ${p.stock?.jumlah ?? 0}, modal Rp${p.prices?.harga_modal ?? 0}`
+      `${p.kode}: stok ${p._stok}, modal Rp${p._hargaModal}`
     );
 
     const systemPrompt = `Kamu adalah AI assistant untuk RRCollections, toko benang craft. 
