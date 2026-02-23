@@ -21,6 +21,7 @@ import { deductFromStacks } from "@/lib/tumpukanUtils";
 import { BulkKeluarInput, type BulkKeluarItem } from "@/components/keluar/BulkKeluarInput";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TransactionSkeleton } from "@/components/LoadingSkeletons";
+import { PageHeader } from "@/components/PageHeader";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -188,15 +189,13 @@ const BarangKeluar = () => {
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-2.5 rounded-xl bg-destructive/10">
-          <PackageMinus className="h-6 w-6 text-destructive" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Barang Keluar</h1>
-          <p className="text-muted-foreground text-sm">Catat penjualan / pengiriman</p>
-        </div>
-      </div>
+      <PageHeader
+        icon={PackageMinus}
+        iconColor="text-destructive"
+        iconBg="bg-destructive/10"
+        title="Barang Keluar"
+        subtitle="Catat penjualan / pengiriman"
+      />
 
       <Tabs defaultValue="bulk" className="space-y-4">
         <TabsList className="grid w-full grid-cols-2 rounded-xl h-11">
@@ -295,8 +294,8 @@ const BarangKeluar = () => {
       </Tabs>
 
       {/* Riwayat */}
-      <Collapsible>
-        <Card className="boss-card">
+      <Card className="boss-card">
+        <Collapsible>
           <CardHeader className="pb-2">
             <CollapsibleTrigger asChild>
               <button className="flex items-center justify-between w-full text-left">
@@ -398,8 +397,8 @@ const BarangKeluar = () => {
               )}
             </CardContent>
           </CollapsibleContent>
-        </Card>
-      </Collapsible>
+        </Collapsible>
+      </Card>
     </div>
   );
 };

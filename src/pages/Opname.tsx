@@ -35,6 +35,7 @@ import { formatDate, formatNumber } from "@/lib/formatters";
 import { BulkOpnameInput } from "@/components/opname/BulkOpnameInput";
 import type { ParsedOpnameItem } from "@/lib/opnameParser";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { PageHeader } from "@/components/PageHeader";
 import { OpnameSkeleton } from "@/components/LoadingSkeletons";
 
 const Opname = () => {
@@ -99,15 +100,13 @@ const Opname = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full">
-      <div className="flex items-center gap-3">
-        <div className="p-2.5 rounded-xl bg-warning/10">
-          <ClipboardCheck className="h-6 w-6 text-warning" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Stock Opname</h1>
-          <p className="text-muted-foreground text-sm">Rekonsiliasi stok sistem vs fisik</p>
-        </div>
-      </div>
+      <PageHeader
+        icon={ClipboardCheck}
+        iconColor="text-warning"
+        iconBg="bg-warning/10"
+        title="Stock Opname"
+        subtitle="Rekonsiliasi stok sistem vs fisik"
+      />
 
       <BulkOpnameInput
         products={products ?? []}
@@ -115,8 +114,8 @@ const Opname = () => {
         submitting={submitting}
       />
 
-      <Collapsible>
-        <Card className="boss-card">
+      <Card className="boss-card">
+        <Collapsible>
           <CardHeader className="pb-2">
             <CollapsibleTrigger asChild>
               <button className="flex items-center justify-between w-full text-left">
@@ -218,8 +217,8 @@ const Opname = () => {
               )}
             </CardContent>
           </CollapsibleContent>
-        </Card>
-      </Collapsible>
+        </Collapsible>
+      </Card>
     </div>
   );
 };
