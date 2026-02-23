@@ -31,19 +31,22 @@ serve(async (req) => {
 
     // Fetch data
     const [productsRes, stockOutRes] = await Promise.all([
-      supabase.from("products").select("kode, nama, kategori, stock(jumlah), prices(harga_modal, harga_normal)").eq("is_active", true),
-      supabase.from("stock_out").select("product_id, qty_kirim, total_harga, toko, created_at").order("created_at", { ascending: false }).limit(1000),
+      supabase.from("products").select("id, kode, nama, kategori, stock(jumlah), prices(harga_modal, harga_normal)").eq("is_active", true),
+      supabase.from("stock_out").select("product_id, qty_kirim, qty_pesan, total_harga, toko, created_at").order("created_at", { ascending: false }).limit(1000),
     ]);
 
-    const products = productsRes.data || [];
+    const rawProducts = productsRes.data || [];
     const stockOut = stockOutRes.data || [];
 
-    const totalStock = products.reduce((s: number, p: any) => s + (p.stock?.jumlah ?? 0), 0);
-    const zeroStock = products.filter((p: any) => (p.stock?.jumlah ?? 0) === 0);
-    const lowStock = products.filter((p: any) => {
-      const j = p.stock?.jumlah ?? 0;
-      return j > 0 && j <= 15;
+    // Normalize stock — handle array or object from join
+    const products = rawProducts.map((p: any) => {
+      const stk = Array.isArray(p.stock) ? p.stock[0] : p.stock;
+      return { ...p, _stok: stk?.jumlah ?? 0 };
     });
+
+    const totalStock = products.reduce((s: number, p: any) => s + p._stok, 0);
+    const zeroStock = products.filter((p: any) => p._stok === 0);
+    const lowStock = products.filter((p: any) => p._stok > 0 && p._stok <= 15);
 
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -54,7 +57,7 @@ serve(async (req) => {
     // Velocity per product
     const salesByProduct: Record<string, number> = {};
     recentSales.forEach((s: any) => {
-      salesByProduct[s.product_id] = (salesByProduct[s.product_id] || 0) + s.qty_kirim;
+      salesByProduct[s.product_id] = (salesByProduct[s.product_id] || 0) + (s.qty_pesan || s.qty_kirim);
     });
 
     const topSellers = Object.entries(salesByProduct)
@@ -62,17 +65,16 @@ serve(async (req) => {
       .slice(0, 5)
       .map(([pid, qty]) => {
         const p = products.find((pr: any) => pr.id === pid);
-        return `${p?.kode || "?"}: ${qty} pcs (stok sisa: ${p?.stock?.jumlah ?? 0})`;
+        return `${p?.kode || "?"}: ${qty} pcs (stok sisa: ${p?._stok ?? 0})`;
       });
 
     const criticalProducts = products
       .filter((p: any) => {
-        const stok = p.stock?.jumlah ?? 0;
         const velocity = salesByProduct[p.id] || 0;
-        return stok <= 15 && velocity > 0;
+        return p._stok <= 15 && velocity > 0;
       })
       .slice(0, 10)
-      .map((p: any) => `${p.kode}: stok ${p.stock?.jumlah ?? 0}, terjual ${salesByProduct[p.id] || 0}/minggu`);
+      .map((p: any) => `${p.kode}: stok ${p._stok}, terjual ${salesByProduct[p.id] || 0}/minggu`);
 
     const prompt = `Kamu adalah AI business analyst untuk RRCollections (toko benang craft).
 Berikan 3-5 insight ACTIONABLE dalam format singkat.
