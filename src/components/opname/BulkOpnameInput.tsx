@@ -36,7 +36,6 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
   const kodeRefs = useRef<Map<number, HTMLInputElement>>(new Map());
   const qtyRefs = useRef<Map<number, HTMLInputElement>>(new Map());
 
-  // Build a lookup set for fast product matching
   const productKodeSet = useMemo(() => {
     const set = new Map<string, ProductWithDetails>();
     for (const p of products) {
@@ -74,7 +73,6 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
   const addNewRow = useCallback(() => {
     const newId = ++rowIdCounter;
     setRows((prev) => [...prev, { id: newId, kode: "", qty: "", status: "idle" }]);
-    // Focus kode input of new row after render
     setTimeout(() => {
       kodeRefs.current.get(newId)?.focus();
     }, 50);
@@ -92,31 +90,49 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
     });
   };
 
-  // When user presses Enter or Tab on qty field, auto-advance if valid
+  // On kode blur: if valid, auto-focus qty
+  const handleKodeBlur = (row: InputRow) => {
+    const status = validateKode(row.kode);
+    if (status === "valid") {
+      qtyRefs.current.get(row.id)?.focus();
+    }
+  };
+
+  // On qty blur: if valid kode + qty filled, auto-add new row
+  const handleQtyBlur = (row: InputRow) => {
+    if (row.status === "valid" && row.qty.trim() && parseInt(row.qty) > 0) {
+      // Check if this is the last row
+      setRows((prev) => {
+        const idx = prev.findIndex((r) => r.id === row.id);
+        if (idx === prev.length - 1) {
+          const newId = ++rowIdCounter;
+          setTimeout(() => kodeRefs.current.get(newId)?.focus(), 50);
+          return [...prev, { id: newId, kode: "", qty: "", status: "idle" as const }];
+        }
+        return prev;
+      });
+    }
+  };
+
+  // Keyboard support (desktop)
+  const handleKodeKeyDown = (e: React.KeyboardEvent, row: InputRow) => {
+    if (e.key === "Enter" && row.status === "valid") {
+      e.preventDefault();
+      qtyRefs.current.get(row.id)?.focus();
+    }
+  };
+
   const handleQtyKeyDown = (e: React.KeyboardEvent, row: InputRow) => {
-    if (e.key === "Enter" || e.key === "Tab") {
+    if (e.key === "Enter") {
+      e.preventDefault();
       if (row.status === "valid" && row.qty.trim() && parseInt(row.qty) > 0) {
-        e.preventDefault();
         addNewRow();
       } else if (row.status === "invalid") {
-        e.preventDefault();
-        // Focus back to kode to fix it
         kodeRefs.current.get(row.id)?.focus();
       }
     }
   };
 
-  // When user presses Enter on kode field, move to qty
-  const handleKodeKeyDown = (e: React.KeyboardEvent, row: InputRow) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      if (row.status === "valid") {
-        qtyRefs.current.get(row.id)?.focus();
-      }
-    }
-  };
-
-  // Handle OCR results
   const handleOcrResult = (ocrItems: any[]) => {
     const newRows: InputRow[] = ocrItems
       .map((item) => {
@@ -128,14 +144,12 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
       .filter((r) => r.kode);
 
     setRows((prev) => {
-      // Remove empty trailing row, add OCR rows, then add fresh empty row
       const existing = prev.filter((r) => r.kode.trim() || r.qty.trim());
       const newId = ++rowIdCounter;
       return [...existing, ...newRows, { id: newId, kode: "", qty: "", status: "idle" as const }];
     });
   };
 
-  // Build parsed items from rows
   const buildParsed = (): ParsedOpnameItem[] => {
     const grouped = new Map<string, number[]>();
     for (const row of rows) {
@@ -155,8 +169,7 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
   };
 
   const handleParse = () => {
-    const items = buildParsed();
-    setParsed(items);
+    setParsed(buildParsed());
     setShowPreview(true);
   };
 
@@ -174,110 +187,96 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
+          <CardTitle className="text-base flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Input Cepat Stock Opname
+            Input Opname
           </CardTitle>
           <OcrUpload mode="opname" onResult={handleOcrResult} />
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         {!showPreview ? (
           <>
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Ketik kode produk lalu jumlah. Tekan <kbd className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono border">Enter</kbd> untuk pindah ke baris berikutnya.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Kode yang sama di baris berbeda otomatis digabung jadi tumpukan terpisah.
-              </p>
-
-              {/* Header */}
-              <div className="grid grid-cols-[1fr_80px_36px] gap-2 text-xs font-medium text-muted-foreground px-1">
-                <span>Kode</span>
-                <span>Jumlah</span>
-                <span></span>
-              </div>
-
-              {/* Scrollable rows */}
-              <div className="max-h-[400px] overflow-y-auto space-y-1.5 pr-1">
-                {rows.map((row, idx) => (
-                  <div key={row.id} className="grid grid-cols-[1fr_80px_36px] gap-2 items-center">
-                    <div className="relative">
-                      <Input
-                        ref={(el) => {
-                          if (el) kodeRefs.current.set(row.id, el);
-                          else kodeRefs.current.delete(row.id);
-                        }}
-                        value={row.kode}
-                        onChange={(e) => updateRow(row.id, "kode", e.target.value.toUpperCase())}
-                        onKeyDown={(e) => handleKodeKeyDown(e, row)}
-                        placeholder="Kode"
-                        className={`font-mono text-sm h-9 min-h-0 pr-7 ${
-                          row.status === "invalid"
-                            ? "border-destructive focus-visible:ring-destructive/30"
-                            : row.status === "valid"
-                            ? "border-success focus-visible:ring-success/30"
-                            : ""
-                        }`}
-                        autoComplete="off"
-                      />
-                      {row.status === "valid" && (
-                        <CheckCircle2 className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-success" />
-                      )}
-                      {row.status === "invalid" && (
-                        <X className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-destructive" />
-                      )}
-                    </div>
+            {/* Rows */}
+            <div className="max-h-[60vh] overflow-y-auto space-y-2 -mx-1 px-1">
+              {rows.map((row) => (
+                <div key={row.id} className="flex gap-2 items-center">
+                  <div className="relative flex-1">
                     <Input
                       ref={(el) => {
-                        if (el) qtyRefs.current.set(row.id, el);
-                        else qtyRefs.current.delete(row.id);
+                        if (el) kodeRefs.current.set(row.id, el);
+                        else kodeRefs.current.delete(row.id);
                       }}
-                      type="number"
-                      inputMode="numeric"
-                      value={row.qty}
-                      onChange={(e) => updateRow(row.id, "qty", e.target.value)}
-                      onKeyDown={(e) => handleQtyKeyDown(e, row)}
-                      placeholder="Qty"
-                      className="font-mono text-sm h-9 min-h-0"
+                      value={row.kode}
+                      onChange={(e) => updateRow(row.id, "kode", e.target.value.toUpperCase())}
+                      onBlur={() => handleKodeBlur(row)}
+                      onKeyDown={(e) => handleKodeKeyDown(e, row)}
+                      placeholder="Kode"
+                      className={`font-mono text-sm pr-7 ${
+                        row.status === "invalid"
+                          ? "border-destructive focus-visible:ring-destructive/30"
+                          : row.status === "valid"
+                          ? "border-success focus-visible:ring-success/30"
+                          : ""
+                      }`}
                       autoComplete="off"
                     />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 text-muted-foreground hover:text-destructive"
-                      onClick={() => removeRow(row.id)}
-                      tabIndex={-1}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    {row.status === "valid" && (
+                      <CheckCircle2 className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-success" />
+                    )}
+                    {row.status === "invalid" && (
+                      <X className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-destructive" />
+                    )}
                   </div>
-                ))}
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={addNewRow}
-                className="w-full text-muted-foreground"
-              >
-                <Plus className="h-4 w-4 mr-1" /> Tambah Baris
-              </Button>
+                  <Input
+                    ref={(el) => {
+                      if (el) qtyRefs.current.set(row.id, el);
+                      else qtyRefs.current.delete(row.id);
+                    }}
+                    type="number"
+                    inputMode="numeric"
+                    value={row.qty}
+                    onChange={(e) => updateRow(row.id, "qty", e.target.value)}
+                    onBlur={() => handleQtyBlur(row)}
+                    onKeyDown={(e) => handleQtyKeyDown(e, row)}
+                    placeholder="Qty"
+                    className="font-mono text-sm w-20 shrink-0 tabular-nums"
+                    autoComplete="off"
+                  />
+                  <button
+                    type="button"
+                    className="shrink-0 h-[44px] w-[44px] flex items-center justify-center text-muted-foreground active:text-destructive"
+                    onClick={() => removeRow(row.id)}
+                    tabIndex={-1}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
             </div>
 
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>{validRows.length} baris valid dari {rows.filter((r) => r.kode.trim()).length} terisi</span>
-            </div>
+            <button
+              type="button"
+              onClick={addNewRow}
+              className="w-full py-2 text-sm text-muted-foreground flex items-center justify-center gap-1 active:text-foreground"
+            >
+              <Plus className="h-4 w-4" /> Tambah
+            </button>
+
+            {validRows.length > 0 && (
+              <p className="text-xs text-muted-foreground text-center tabular-nums">
+                {validRows.length} baris siap
+              </p>
+            )}
 
             <Button
               onClick={handleParse}
               disabled={validRows.length === 0}
               className="w-full"
             >
-              <FileText className="h-4 w-4 mr-2" /> Preview Hasil
+              Preview
             </Button>
           </>
         ) : (
@@ -285,61 +284,58 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
             {invalidItems.length > 0 && (
               <div className="bg-destructive/10 text-destructive p-3 rounded-lg text-sm">
                 <div className="flex items-center gap-2 font-medium mb-1">
-                  <AlertTriangle className="h-4 w-4" /> Kode tidak ditemukan:
+                  <AlertTriangle className="h-4 w-4" /> Tidak ditemukan:
                 </div>
-                {invalidItems.map((item) => (
-                  <span key={item.kode} className="font-mono mr-2">{item.kode}</span>
-                ))}
+                <div className="flex flex-wrap gap-1">
+                  {invalidItems.map((item) => (
+                    <span key={item.kode} className="font-mono text-xs bg-destructive/10 px-1.5 py-0.5 rounded">{item.kode}</span>
+                  ))}
+                </div>
               </div>
             )}
 
             {validItems.length > 0 && (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Kode</TableHead>
-                      <TableHead>Nama</TableHead>
-                      <TableHead>Tumpukan Fisik</TableHead>
-                      <TableHead className="text-right">Total Fisik</TableHead>
-                      <TableHead className="text-right">Stok Sistem</TableHead>
-                      <TableHead className="text-right">Selisih</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {validItems.map((item) => {
-                      const product = findProduct(item.kode)!;
-                      const stokSistem = product.stock?.jumlah ?? 0;
-                      const selisih = item.total - stokSistem;
-                      return (
-                        <TableRow key={item.kode}>
-                          <TableCell className="font-mono text-sm font-medium">{item.kode}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{product.nama}</TableCell>
-                          <TableCell>
-                            <TumpukanBadges stacks={item.stacks} kode={item.kode} compact />
-                          </TableCell>
-                          <TableCell className="text-right font-medium">{formatNumber(item.total)}</TableCell>
-                          <TableCell className="text-right">{formatNumber(stokSistem)}</TableCell>
-                          <TableCell className={`text-right font-semibold ${
-                            selisih === 0 ? "text-success" : "text-destructive"
-                          }`}>
-                            {selisih > 0 ? "+" : ""}{selisih}
-                            {selisih === 0 && " ✓"}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+              <div className="space-y-2">
+                {validItems.map((item) => {
+                  const product = findProduct(item.kode)!;
+                  const stokSistem = product.stock?.jumlah ?? 0;
+                  const selisih = item.total - stokSistem;
+                  return (
+                    <div
+                      key={item.kode}
+                      className={`rounded-xl border p-3 space-y-1.5 ${
+                        selisih !== 0
+                          ? "border-l-[3px] border-l-destructive"
+                          : "border-l-[3px] border-l-success"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono font-bold text-sm">{item.kode}</span>
+                        <span className={`text-sm font-bold tabular-nums ${
+                          selisih === 0 ? "text-success" : "text-destructive"
+                        }`}>
+                          {selisih > 0 ? "+" : ""}{selisih}{selisih === 0 && " ✓"}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{product.nama}</p>
+                      <div className="flex items-center justify-between">
+                        <TumpukanBadges stacks={item.stacks} kode={item.kode} compact />
+                        <div className="flex gap-3 text-[11px] tabular-nums">
+                          <span className="text-muted-foreground">Fisik <strong className="text-foreground">{formatNumber(item.total)}</strong></span>
+                          <span className="text-muted-foreground">Sistem <strong className="text-foreground">{formatNumber(stokSistem)}</strong></span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">
-                {validItems.length} produk valid
-                {invalidItems.length > 0 && `, ${invalidItems.length} tidak ditemukan`}
+                {validItems.length} produk
               </span>
-              <Badge variant="secondary" className="bg-success/10 text-success">
+              <Badge variant="secondary" className="bg-success/10 text-success text-[10px]">
                 <CheckCircle2 className="h-3 w-3 mr-1" />
                 {validItems.filter((i) => i.total === (findProduct(i.kode)?.stock?.jumlah ?? 0)).length} sesuai
               </Badge>
@@ -349,17 +345,17 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
               <Button
                 variant="outline"
                 onClick={() => setShowPreview(false)}
-                className="flex-1 rounded-xl"
+                className="flex-1"
               >
-                Edit Ulang
+                Edit
               </Button>
               <Button
                 onClick={handleSubmit}
                 disabled={submitting || validItems.length === 0}
-                className="flex-1 rounded-xl"
+                className="flex-1"
               >
                 <Send className="h-4 w-4 mr-2" />
-                {submitting ? "Menyimpan..." : `Simpan ${validItems.length} Opname`}
+                {submitting ? "Simpan..." : `Simpan ${validItems.length}`}
               </Button>
             </div>
           </>
