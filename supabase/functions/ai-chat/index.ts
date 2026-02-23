@@ -117,10 +117,17 @@ ${lowStockList.join("\n") || "Semua stok aman"}
 DAFTAR SEMUA PRODUK (kode|nama|stok|modal|kategori):
 ${allProductsList}
 
+ATURAN BISNIS RESTOCK:
+- Minimal order restock: 25 pcs per kode produk (1 tumpukan)
+- Khusus produk BLCK dan WHT: minimal 50 pcs per kode (1 tumpukan besar)
+- Sistem tumpukan: stok disimpan per tumpukan, maks 25 pcs (atau 50 untuk BLCK/WHT)
+- Saat rekomendasi restock, SELALU bulatkan ke kelipatan 25 (atau 50 untuk BLCK/WHT)
+- Contoh: jika butuh 30 pcs kode biasa → rekomendasikan 50 pcs (2 tumpukan). Jika butuh 10 pcs BLCK → rekomendasikan 50 pcs (1 tumpukan)
+
 ATURAN RESPON:
 1. Jawab dalam Bahasa Indonesia, gaya ringkas dan to-the-point
 2. Gunakan angka konkret dari data di atas
-3. Jika ditanya rekomendasi restock, prioritaskan produk kritis
+3. Jika ditanya rekomendasi restock, prioritaskan produk kritis dan pakai aturan minimal order di atas
 4. Gunakan emoji secukupnya untuk readability
 5. Format dengan markdown (bold, list, dll)
 6. Jangan mengarang data — hanya pakai data yang tersedia
