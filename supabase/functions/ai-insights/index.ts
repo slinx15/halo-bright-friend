@@ -144,30 +144,30 @@ serve(async (req) => {
     const lastWeekOmzet = lastWeekSales.reduce((s: number, r: any) => s + (r.total_harga || 0), 0);
     const omzetTrend = lastWeekOmzet > 0 ? ((totalOmzet - lastWeekOmzet) / lastWeekOmzet * 100).toFixed(1) : "N/A";
 
-    const prompt = `Kamu adalah AI business analyst untuk RRCollections (toko benang craft).
-Berikan 3-5 insight ACTIONABLE berdasarkan data yang sudah dihitung engine analisis.
+    const prompt = `Kamu adalah asisten toko RRCollections (toko benang craft).
+Kasih 3-5 tips singkat buat boss berdasarkan kondisi toko hari ini.
 
-DATA ANALISIS (sudah dihitung oleh engine WMA):
-- ${products.length} produk aktif, total stok ${products.reduce((s: number, p: any) => s + p._stok, 0)}
-- ${critical.length} produk KRITIS (DOS ≤ 2 hari) — harus restock SEGERA
-- ${warning.length} produk WARNING (DOS ≤ 4 hari)
-- ${bestSellers.length} best sellers (velocity ≥ 5/hari)
-- ${needRestock.length} produk perlu restock
+KONDISI TOKO:
+- ${products.length} produk aktif, total stok ${products.reduce((s: number, p: any) => s + p._stok, 0)} pcs
+- ${critical.length} produk darurat (stok tinggal 1-2 hari, bisa habis besok!)
+- ${warning.length} produk mulai menipis (stok cukup 3-4 hari)
+- ${bestSellers.length} produk paling laris (laku ≥ 5 pcs/hari)
+- ${needRestock.length} produk perlu diorder lagi
 - Omzet 7 hari: Rp ${totalOmzet.toLocaleString("id-ID")} (${totalPcs} pcs)
-- Tren omzet vs minggu lalu: ${omzetTrend}%
+- Dibanding minggu lalu: ${omzetTrend}%
 
-PRODUK KRITIS:
-${critical.slice(0, 5).map((a: any) => `${a.kode}: stok ${a.stok}, vel ${a.vel}/hari, DOS ${a.dos} hari`).join("\n") || "Tidak ada"}
+PRODUK DARURAT (bisa habis besok-lusa):
+${critical.slice(0, 5).map((a: any) => `${a.kode}: stok ${a.stok}, laku ${a.vel} pcs/hari, cukup ${a.dos} hari lagi`).join("\n") || "Tidak ada — semua aman 👍"}
 
-BEST SELLERS:
-${bestSellers.slice(0, 5).map((a: any) => `${a.kode}: vel ${a.vel}/hari, stok ${a.stok}, DOS ${a.dos} hari`).join("\n") || "Tidak ada"}
+PRODUK PALING LARIS:
+${bestSellers.slice(0, 5).map((a: any) => `${a.kode}: laku ${a.vel} pcs/hari, stok ${a.stok}, cukup ${a.dos} hari`).join("\n") || "Tidak ada"}
 
-FORMAT OUTPUT (wajib):
-- Tulis dalam Bahasa Indonesia
-- Maks 3-5 bullet points
-- Setiap point harus actionable (ada langkah konkret)
-- Gunakan angka velocity dan DOS dari data — JANGAN hitung sendiri
-- Gunakan emoji di awal setiap point
+ATURAN:
+- Bahasa Indonesia santai, kayak ngobrol sama temen
+- JANGAN pakai istilah teknis (velocity, DOS, WMA, threshold, engine, dsb)
+- Pakai bahasa awam: "laku X pcs/hari", "stok cukup X hari", "perlu order X pcs"
+- Maks 3-5 bullet points, setiap point ada langkah konkret
+- Emoji di awal setiap point 😊
 - Ringkas, maks 2 kalimat per point
 - Jangan mengarang data`;
 
