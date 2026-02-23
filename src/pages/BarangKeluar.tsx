@@ -12,7 +12,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { PackageMinus, Send, Clock, Store, Hash } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { PackageMinus, Send, Clock, Store, Hash, ChevronDown } from "lucide-react";
 import { formatDate, formatNumber, formatRupiah } from "@/lib/formatters";
 import { OcrUpload } from "@/components/OcrUpload";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
@@ -294,102 +295,111 @@ const BarangKeluar = () => {
       </Tabs>
 
       {/* Riwayat */}
-      <Card className="boss-card">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" /> Riwayat Barang Keluar
-            </CardTitle>
-            {history && history.length > 0 && (
-              <Badge variant="secondary" className="text-[10px] rounded-full px-2">{history.length}</Badge>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isMobile ? (
-            <div className="space-y-2.5">
-              {(!history || history.length === 0) ? (
-                <div className="py-8 text-center">
-                  <PackageMinus className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Belum ada riwayat</p>
-                </div>
-              ) : history.map((h: any) => (
-                <div key={h.id} className="rounded-xl border border-border/60 p-3.5 space-y-2 press-scale">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="font-mono font-bold text-sm">{h.products?.kode}</span>
-                      <span className="text-xs text-muted-foreground truncate">{h.products?.nama}</span>
-                    </div>
-                    <Badge className="rounded-full text-xs font-extrabold px-2.5 bg-destructive/15 text-destructive border-0">
-                      -{formatNumber(h.qty_kirim)}
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Pesan</span>
-                      <span className="font-semibold tabular-nums">{formatNumber(h.qty_pesan)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Total</span>
-                      <span className="font-bold text-primary tabular-nums">{formatRupiah(h.total_harga)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Harga</span>
-                      <span className="capitalize font-medium">{h.harga_type}</span>
-                    </div>
-                    {h.toko && (
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Store className="h-3 w-3" /> {h.toko}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center text-[11px] text-muted-foreground gap-1">
-                    <Clock className="h-3 w-3" /> {formatDate(h.created_at)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Waktu</TableHead>
-                    <TableHead>Kode</TableHead>
-                    <TableHead>Nama</TableHead>
-                    <TableHead>Toko</TableHead>
-                    <TableHead className="text-right">Pesan</TableHead>
-                    <TableHead className="text-right">Kirim</TableHead>
-                    <TableHead>Harga</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {history?.map((h: any) => (
-                    <TableRow key={h.id}>
-                      <TableCell className="text-xs">{formatDate(h.created_at)}</TableCell>
-                      <TableCell className="font-mono font-semibold text-sm">{h.products?.kode}</TableCell>
-                      <TableCell className="text-sm">{h.products?.nama}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{h.toko || "-"}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatNumber(h.qty_pesan)}</TableCell>
-                      <TableCell className="text-right">
-                        <Badge className="rounded-full bg-destructive/15 text-destructive border-0 font-bold">-{formatNumber(h.qty_kirim)}</Badge>
-                      </TableCell>
-                      <TableCell className="capitalize text-xs">{h.harga_type}</TableCell>
-                      <TableCell className="text-right font-bold tabular-nums">{formatRupiah(h.total_harga)}</TableCell>
-                    </TableRow>
-                  ))}
-                  {(!history || history.length === 0) && (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">Belum ada riwayat</TableCell>
-                    </TableRow>
+      <Collapsible>
+        <Card className="boss-card">
+          <CardHeader className="pb-2">
+            <CollapsibleTrigger asChild>
+              <button className="flex items-center justify-between w-full text-left">
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" /> Riwayat Barang Keluar
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  {history && history.length > 0 && (
+                    <Badge variant="secondary" className="text-[10px] rounded-full px-2">{history.length}</Badge>
                   )}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+                </div>
+              </button>
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent>
+              {isMobile ? (
+                <div className="space-y-2.5">
+                  {(!history || history.length === 0) ? (
+                    <div className="py-8 text-center">
+                      <PackageMinus className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">Belum ada riwayat</p>
+                    </div>
+                  ) : history.map((h: any) => (
+                    <div key={h.id} className="rounded-xl border border-border/60 p-3.5 space-y-2 press-scale">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-mono font-bold text-sm">{h.products?.kode}</span>
+                          <span className="text-xs text-muted-foreground truncate">{h.products?.nama}</span>
+                        </div>
+                        <Badge className="rounded-full text-xs font-extrabold px-2.5 bg-destructive/15 text-destructive border-0">
+                          -{formatNumber(h.qty_kirim)}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Pesan</span>
+                          <span className="font-semibold tabular-nums">{formatNumber(h.qty_pesan)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Total</span>
+                          <span className="font-bold text-primary tabular-nums">{formatRupiah(h.total_harga)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Harga</span>
+                          <span className="capitalize font-medium">{h.harga_type}</span>
+                        </div>
+                        {h.toko && (
+                          <div className="flex items-center gap-1 text-muted-foreground">
+                            <Store className="h-3 w-3" /> {h.toko}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center text-[11px] text-muted-foreground gap-1">
+                        <Clock className="h-3 w-3" /> {formatDate(h.created_at)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Waktu</TableHead>
+                        <TableHead>Kode</TableHead>
+                        <TableHead>Nama</TableHead>
+                        <TableHead>Toko</TableHead>
+                        <TableHead className="text-right">Pesan</TableHead>
+                        <TableHead className="text-right">Kirim</TableHead>
+                        <TableHead>Harga</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {history?.map((h: any) => (
+                        <TableRow key={h.id}>
+                          <TableCell className="text-xs">{formatDate(h.created_at)}</TableCell>
+                          <TableCell className="font-mono font-semibold text-sm">{h.products?.kode}</TableCell>
+                          <TableCell className="text-sm">{h.products?.nama}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{h.toko || "-"}</TableCell>
+                          <TableCell className="text-right tabular-nums">{formatNumber(h.qty_pesan)}</TableCell>
+                          <TableCell className="text-right">
+                            <Badge className="rounded-full bg-destructive/15 text-destructive border-0 font-bold">-{formatNumber(h.qty_kirim)}</Badge>
+                          </TableCell>
+                          <TableCell className="capitalize text-xs">{h.harga_type}</TableCell>
+                          <TableCell className="text-right font-bold tabular-nums">{formatRupiah(h.total_harga)}</TableCell>
+                        </TableRow>
+                      ))}
+                      {(!history || history.length === 0) && (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center text-muted-foreground py-8">Belum ada riwayat</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
     </div>
   );
 };

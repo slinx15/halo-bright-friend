@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { PackagePlus, Plus, Trash2, Send, Clock, Package, Hash } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { PackagePlus, Plus, Trash2, Send, Clock, Package, Hash, ChevronDown } from "lucide-react";
 import { formatDate, formatNumber } from "@/lib/formatters";
 import { OcrUpload } from "@/components/OcrUpload";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
@@ -255,105 +256,114 @@ const BarangMasuk = () => {
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl shadow-md border-0">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              Riwayat Barang Masuk
-            </CardTitle>
-            {history && history.length > 0 && (
-              <Badge variant="secondary" className="text-[10px] rounded-full px-2">
-                {history.length} entri
-              </Badge>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isMobile ? (
-            <div className="space-y-2.5">
-              {(!history || history.length === 0) ? (
-                <div className="py-8 text-center">
-                  <Package className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Belum ada riwayat barang masuk</p>
+      <Collapsible>
+        <Card className="rounded-2xl shadow-md border-0">
+          <CardHeader className="pb-2">
+            <CollapsibleTrigger asChild>
+              <button className="flex items-center justify-between w-full text-left">
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  Riwayat Barang Masuk
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  {history && history.length > 0 && (
+                    <Badge variant="secondary" className="text-[10px] rounded-full px-2">
+                      {history.length} entri
+                    </Badge>
+                  )}
+                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+                </div>
+              </button>
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent>
+              {isMobile ? (
+                <div className="space-y-2.5">
+                  {(!history || history.length === 0) ? (
+                    <div className="py-8 text-center">
+                      <Package className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">Belum ada riwayat barang masuk</p>
+                    </div>
+                  ) : (
+                    history.map((h: any) => (
+                      <div
+                        key={h.id}
+                        className="rounded-xl border border-border/60 p-3.5 space-y-1.5 transition-all duration-150 active:scale-[0.98]"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-mono font-bold text-sm">{h.products?.kode}</span>
+                            <span className="text-xs text-muted-foreground truncate">{h.products?.nama}</span>
+                          </div>
+                          <Badge className="rounded-full text-xs font-extrabold px-2.5 bg-success/15 text-success border-0">
+                            +{formatNumber(h.qty)}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {formatDate(h.created_at)}
+                          </span>
+                          {h.tumpukan && (
+                            <span className="flex items-center gap-1">
+                              <Hash className="h-3 w-3" />
+                              {h.tumpukan}
+                            </span>
+                          )}
+                        </div>
+                        {h.catatan && (
+                          <p className="text-[11px] text-muted-foreground italic bg-muted/40 rounded-lg px-2 py-1">
+                            {h.catatan}
+                          </p>
+                        )}
+                      </div>
+                    ))
+                  )}
                 </div>
               ) : (
-                history.map((h: any) => (
-                  <div
-                    key={h.id}
-                    className="rounded-xl border border-border/60 p-3.5 space-y-1.5 transition-all duration-150 active:scale-[0.98]"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-mono font-bold text-sm">{h.products?.kode}</span>
-                        <span className="text-xs text-muted-foreground truncate">{h.products?.nama}</span>
-                      </div>
-                      <Badge className="rounded-full text-xs font-extrabold px-2.5 bg-success/15 text-success border-0">
-                        +{formatNumber(h.qty)}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {formatDate(h.created_at)}
-                      </span>
-                      {h.tumpukan && (
-                        <span className="flex items-center gap-1">
-                          <Hash className="h-3 w-3" />
-                          {h.tumpukan}
-                        </span>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Waktu</TableHead>
+                        <TableHead>Kode</TableHead>
+                        <TableHead>Nama</TableHead>
+                        <TableHead className="text-right">Qty</TableHead>
+                        <TableHead>Tumpukan</TableHead>
+                        <TableHead>Catatan</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {history?.map((h: any) => (
+                        <TableRow key={h.id}>
+                          <TableCell className="text-xs">{formatDate(h.created_at)}</TableCell>
+                          <TableCell className="font-mono font-semibold text-sm">{h.products?.kode}</TableCell>
+                          <TableCell className="text-sm">{h.products?.nama}</TableCell>
+                          <TableCell className="text-right">
+                            <Badge className="rounded-full bg-success/15 text-success border-0 font-bold">
+                              +{formatNumber(h.qty)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">{h.tumpukan || "-"}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{h.catatan || "-"}</TableCell>
+                        </TableRow>
+                      ))}
+                      {(!history || history.length === 0) && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                            Belum ada riwayat barang masuk
+                          </TableCell>
+                        </TableRow>
                       )}
-                    </div>
-                    {h.catatan && (
-                      <p className="text-[11px] text-muted-foreground italic bg-muted/40 rounded-lg px-2 py-1">
-                        {h.catatan}
-                      </p>
-                    )}
-                  </div>
-                ))
+                    </TableBody>
+                  </Table>
+                </div>
               )}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Waktu</TableHead>
-                    <TableHead>Kode</TableHead>
-                    <TableHead>Nama</TableHead>
-                    <TableHead className="text-right">Qty</TableHead>
-                    <TableHead>Tumpukan</TableHead>
-                    <TableHead>Catatan</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {history?.map((h: any) => (
-                    <TableRow key={h.id}>
-                      <TableCell className="text-xs">{formatDate(h.created_at)}</TableCell>
-                      <TableCell className="font-mono font-semibold text-sm">{h.products?.kode}</TableCell>
-                      <TableCell className="text-sm">{h.products?.nama}</TableCell>
-                      <TableCell className="text-right">
-                        <Badge className="rounded-full bg-success/15 text-success border-0 font-bold">
-                          +{formatNumber(h.qty)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm">{h.tumpukan || "-"}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{h.catatan || "-"}</TableCell>
-                    </TableRow>
-                  ))}
-                  {(!history || history.length === 0) && (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                        Belum ada riwayat barang masuk
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
     </div>
   );
 };
