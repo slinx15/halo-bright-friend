@@ -20,6 +20,7 @@ import {
 } from "@/lib/analysisFeatures";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AnalisaSkeleton } from "@/components/LoadingSkeletons";
+import { SalesTrendCharts } from "@/components/analisa/SalesTrendCharts";
 
 // ─── Formatting Helpers ───────────────────────────────────
 
@@ -1020,6 +1021,14 @@ const Analisa = () => {
 
         {/* ══════════ PENJUALAN ══════════ */}
         <TabsContent value="penjualan" className="space-y-5 mt-5">
+          {/* Visual Charts */}
+          <SalesTrendCharts
+            stockOutData={stockOutData}
+            topSellers={topSellers}
+            trendItems={trendItems}
+            isMobile={isMobile}
+          />
+
           <Card className="border-0 shadow-sm p-5 space-y-3">
             <SectionHeader icon={Trophy} title={`${RULES.DISPLAY_TOP_ITEMS} Barang Paling Laris`} subtitle="30 hari terakhir" />
             {isMobile ? (
