@@ -55,14 +55,15 @@ export function SalesTrendCharts({ stockOutData, topSellers, trendItems, isMobil
 
     for (let i = 29; i >= 0; i--) {
       const d = new Date(now.getTime() - i * 86400000);
-      const key = d.toISOString().slice(0, 10);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       const label = `${d.getDate()}/${d.getMonth() + 1}`;
       days.push({ date: key, label, qty: 0 });
     }
 
     const dayMap = new Map(days.map(d => [d.date, d]));
     for (const s of stockOutData) {
-      const key = s.created_at.slice(0, 10);
+      const localDate = new Date(s.created_at);
+      const key = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')}`;
       const day = dayMap.get(key);
       if (day) day.qty += s.qty_pesan;
     }
