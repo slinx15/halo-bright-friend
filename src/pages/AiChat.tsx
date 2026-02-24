@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bot, Send, User, Sparkles, Trash2, Plus, MessageSquare, Brain, X, ChevronLeft } from "lucide-react";
+import { Bot, Send, User, Sparkles, Trash2, Plus, MessageSquare, Brain, X, ChevronLeft, Search, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useAiConversations, type Msg } from "@/hooks/useAiConversations";
 import { useAiMemories } from "@/hooks/useAiMemories";
@@ -9,11 +9,18 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
-const QUICK_PROMPTS = [
+const CHAT_PROMPTS = [
   "Produk mana yang harus segera di-restock?",
   "Ringkasan penjualan 7 hari terakhir",
   "Kasih ide buat naikin omzet minggu ini",
   "Stok mana yang paling kritis?",
+];
+
+const RESEARCH_PROMPTS = [
+  "Riset harga benang obras Ivory 2 ons di Shopee, siapa kompetitornya?",
+  "Analisis warna-warna benang yang paling laku di marketplace",
+  "Strategi lengkap jualan benang di Shopee dari nol",
+  "Riset kompetitor toko benang online, harga & positioning mereka",
 ];
 
 function getAuthToken(): string {
@@ -39,6 +46,7 @@ const AiChat = () => {
   const { memories, deleteMemory, extractMemories } = useAiMemories();
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [researchMode, setResearchMode] = useState(false);
   const [showSidebar, setShowSidebar] = useState(!isMobile);
   const [showMemory, setShowMemory] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -76,7 +84,7 @@ const AiChat = () => {
           Authorization: `Bearer ${token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ messages: allMessages, conversation_id: convId }),
+        body: JSON.stringify({ messages: allMessages, conversation_id: convId, research_mode: researchMode }),
       });
 
       if (!resp.ok) {
@@ -151,7 +159,7 @@ const AiChat = () => {
       setIsLoading(false);
       inputRef.current?.focus();
     }
-  }, [messages, isLoading, activeId, createConversation, saveMessage, setMessages, extractMemories, isMobile]);
+  }, [messages, isLoading, activeId, createConversation, saveMessage, setMessages, extractMemories, isMobile, researchMode]);
 
   const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); sendMessage(input); };
 
@@ -227,27 +235,45 @@ const AiChat = () => {
           <div className="p-2 rounded-xl bg-primary/10">
             <Bot className="h-5 w-5 text-primary" />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h1 className="text-lg font-extrabold tracking-tight">AI Partner Bisnis</h1>
             <p className="text-muted-foreground text-xs truncate">Asisten pribadi RRCollections • {memories.length} memory tersimpan</p>
           </div>
+          <div className="flex items-center gap-1 bg-muted/60 rounded-xl p-1">
+            <button
+              onClick={() => setResearchMode(false)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${!researchMode ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+              Chat
+            </button>
+            <button
+              onClick={() => setResearchMode(true)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${researchMode ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <Search className="h-3.5 w-3.5" />
+              Riset
+            </button>
+           </div>
         </div>
 
         {/* Messages */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 space-y-3 pb-2">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full gap-5 py-8">
-              <div className="p-4 rounded-2xl bg-primary/5">
-                <Sparkles className="h-10 w-10 text-primary" />
+              <div className={`p-4 rounded-2xl ${researchMode ? "bg-primary/10" : "bg-primary/5"}`}>
+                {researchMode ? <Search className="h-10 w-10 text-primary" /> : <Sparkles className="h-10 w-10 text-primary" />}
               </div>
               <div className="text-center space-y-1">
-                <h2 className="font-bold text-lg">Halo Boss! 👋</h2>
+                <h2 className="font-bold text-lg">{researchMode ? "Mode Riset Mendalam 🔍" : "Halo Boss! 👋"}</h2>
                 <p className="text-sm text-muted-foreground max-w-xs">
-                  Tanya apa saja — stok, penjualan, ide bisnis, strategi marketing, atau curhat soal bisnis. Saya ingat semua percakapan kita! 🧠
+                  {researchMode
+                    ? "Tanya apa saja soal riset pasar — harga kompetitor, tren warna, strategi Shopee, analisis produk. AI akan memberikan analisis mendalam!"
+                    : "Tanya apa saja — stok, penjualan, ide bisnis, strategi marketing, atau curhat soal bisnis. Saya ingat semua percakapan kita! 🧠"}
                 </p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
-                {QUICK_PROMPTS.map(prompt => (
+                {(researchMode ? RESEARCH_PROMPTS : CHAT_PROMPTS).map(prompt => (
                   <button key={prompt} onClick={() => sendMessage(prompt)} className="text-left text-sm px-4 py-3 rounded-xl border border-border/60 hover:bg-muted/60 hover:shadow-sm transition-all duration-150 active:scale-[0.98]">
                     {prompt}
                   </button>
@@ -291,7 +317,7 @@ const AiChat = () => {
         {/* Input */}
         <div className="p-4 pt-2 pb-20 md:pb-4">
           <form onSubmit={handleSubmit} className="flex gap-2">
-            <Input ref={inputRef} value={input} onChange={e => setInput(e.target.value)} placeholder="Tanya AI tentang bisnis kamu..." disabled={isLoading} className="rounded-xl h-12 text-base" autoComplete="off" />
+            <Input ref={inputRef} value={input} onChange={e => setInput(e.target.value)} placeholder={researchMode ? "Riset apa? (misal: harga benang Ivory di Shopee)" : "Tanya AI tentang bisnis kamu..."} disabled={isLoading} className="rounded-xl h-12 text-base" autoComplete="off" />
             <Button type="submit" disabled={isLoading || !input.trim()} className="rounded-xl h-12 w-12 shrink-0 press-scale">
               <Send className="h-5 w-5" />
             </Button>
