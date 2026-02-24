@@ -192,10 +192,11 @@ const BarangMasuk = () => {
                   <div className="w-20">
                     <Label className="text-xs font-semibold text-muted-foreground">Qty</Label>
                     <Input
-                      type="number"
-                      min={1}
-                      value={item.qty}
-                      onChange={(e) => updateItem(i, "qty", parseInt(e.target.value) || 0)}
+                      type="text"
+                      inputMode="numeric"
+                      value={item.qty === 0 ? "" : item.qty}
+                      onChange={(e) => updateItem(i, "qty", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
+                      placeholder="0"
                       className="rounded-lg mt-1 text-center font-bold"
                     />
                   </div>

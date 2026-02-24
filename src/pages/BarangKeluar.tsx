@@ -231,11 +231,11 @@ const BarangKeluar = () => {
                 </div>
                 <div>
                   <Label className="text-xs font-semibold text-muted-foreground">Qty Pesan</Label>
-                  <Input type="number" min={0} value={qtyPesan} onChange={(e) => setQtyPesan(parseInt(e.target.value) || 0)} className="rounded-lg mt-1 tabular-nums" />
+                  <Input type="text" inputMode="numeric" value={qtyPesan === 0 ? "" : qtyPesan} onChange={(e) => setQtyPesan(e.target.value === "" ? 0 : parseInt(e.target.value) || 0)} placeholder="0" className="rounded-lg mt-1 tabular-nums" />
                 </div>
                 <div>
                   <Label className="text-xs font-semibold text-muted-foreground">Qty Kirim</Label>
-                  <Input type="number" min={0} value={qtyKirim} onChange={(e) => setQtyKirim(parseInt(e.target.value) || 0)} className="rounded-lg mt-1 tabular-nums" />
+                  <Input type="text" inputMode="numeric" value={qtyKirim === 0 ? "" : qtyKirim} onChange={(e) => setQtyKirim(e.target.value === "" ? 0 : parseInt(e.target.value) || 0)} placeholder="0" className="rounded-lg mt-1 tabular-nums" />
                 </div>
               </div>
 
