@@ -65,7 +65,7 @@ export function SalesTrendCharts({ stockOutData, topSellers, trendItems, isMobil
       const localDate = new Date(s.created_at);
       const key = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')}`;
       const day = dayMap.get(key);
-      if (day) day.qty += s.qty_pesan;
+      if (day) day.qty += s.qty_kirim;
     }
 
     return days;

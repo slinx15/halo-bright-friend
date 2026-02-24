@@ -303,9 +303,9 @@ export function calculateTrendData(
     if (!productIdSet.has(s.product_id)) continue;
     const d = new Date(s.created_at);
     if (d >= weekAgo) {
-      thisWeek[s.product_id] = (thisWeek[s.product_id] ?? 0) + s.qty_pesan;
+      thisWeek[s.product_id] = (thisWeek[s.product_id] ?? 0) + s.qty_kirim;
     } else if (d >= twoWeeksAgo && d < weekAgo) {
-      lastWeek[s.product_id] = (lastWeek[s.product_id] ?? 0) + s.qty_pesan;
+      lastWeek[s.product_id] = (lastWeek[s.product_id] ?? 0) + s.qty_kirim;
     }
   }
 
