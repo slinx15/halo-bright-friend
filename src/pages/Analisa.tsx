@@ -127,40 +127,141 @@ function BudgetPlanner({
   isMobile: boolean;
 }) {
   const recommendations = useMemo(() => {
-    // Bot parity: use the restock plan (already has recommendedQty calculated)
-    // Just iterate by combinedScore and allocate until budget runs out
     const sorted = [...analyses]
-      .filter(a => a.recommendedQty > 0)
+      .filter(a => a.velocity > 0)
       .sort((a, b) => b.combinedScore - a.combinedScore);
 
     type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string };
     const result: RecItem[] = [];
     let remaining = budgetAmount;
 
+    // Step 1: Calculate ideal qty for ALL products that need restock
+    const candidates: { item: ProductAnalysis; idealQty: number; idealCost: number; reason: string; batch: number; minOrder: number }[] = [];
+
     for (const item of sorted) {
-      if (remaining <= 0) break;
+      const neededStock = Math.ceil(item.velocity * budgetDays);
+      const deficit = neededStock - item.currentStock;
+      if (deficit <= 0) continue;
 
-      const batchSize = item.batchSize;
-      let qtyToBuy = item.recommendedQty;
-      let cost = qtyToBuy * item.unitPrice;
+      const isBW = isBlackWhiteCode(item.kode);
+      const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
+      const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
+      const qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
+      const cost = qty * item.unitPrice;
+      const reason = item.daysOfStock <= RULES.CRITICAL_DAYS ? "🔴 Kritis" :
+        item.daysOfStock <= RULES.WARNING_DAYS ? "🟠 Segera habis" :
+        item.isStockOut ? "🚨 Stok kosong" : "📦 Perlu restock";
+      candidates.push({ item, idealQty: qty, idealCost: cost, reason, batch, minOrder });
+    }
 
-      // If can't afford full qty, buy as many batches as possible
-      if (cost > remaining) {
-        const affordableBatches = Math.floor(remaining / (batchSize * item.unitPrice));
-        if (affordableBatches <= 0) continue;
-        qtyToBuy = affordableBatches * batchSize;
-        cost = qtyToBuy * item.unitPrice;
+    const totalIdealCost = candidates.reduce((s, c) => s + c.idealCost, 0);
+
+    if (totalIdealCost <= budgetAmount) {
+      for (const c of candidates) {
+        result.push({ item: c.item, qty: c.idealQty, cost: c.idealCost, reason: c.reason });
+        remaining -= c.idealCost;
       }
 
-      const reason = item.isStockOut ? "🚨 Stok kosong" :
-        item.daysOfStock <= RULES.CRITICAL_DAYS ? "🔴 Kritis" :
-        item.isBestSeller ? "🔥 Best seller" : "📦 Restock";
+      const pickedIds = new Set(result.map(r => r.item.productId));
+      if (remaining > 0) {
+        const extendedDays = budgetDays * 2;
+        for (const item of sorted) {
+          if (remaining <= 0) break;
+          if (pickedIds.has(item.productId)) continue;
+          const neededStock = Math.ceil(item.velocity * extendedDays);
+          const deficit = neededStock - item.currentStock;
+          if (deficit <= 0) continue;
+          const isBW = isBlackWhiteCode(item.kode);
+          const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
+          const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
+          let qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
+          let cost = qty * item.unitPrice;
+          if (cost > remaining) {
+            qty = Math.floor(Math.floor(remaining / item.unitPrice) / batch) * batch;
+            if (qty < minOrder) continue;
+            cost = qty * item.unitPrice;
+          }
+          result.push({ item, qty, cost, reason: "🔄 Top-up stok" });
+          remaining -= cost;
+          pickedIds.add(item.productId);
+        }
+      }
 
-      result.push({ item, qty: qtyToBuy, cost, reason });
-      remaining -= cost;
+      if (remaining > 0) {
+        for (const r of [...result]) {
+          if (remaining <= 0) break;
+          if (!r.item.isBestSeller) continue;
+          const isBW = isBlackWhiteCode(r.item.kode);
+          const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
+          const cost = batch * r.item.unitPrice;
+          if (cost <= remaining) {
+            r.qty += batch;
+            r.cost += cost;
+            r.reason = "🔥 Best seller + extra";
+            remaining -= cost;
+          }
+        }
+      }
+    } else {
+      const tier1: typeof candidates = [];
+      const tier2: typeof candidates = [];
+      const tier3: typeof candidates = [];
 
-      // Bot parity: stop if remaining budget too small for minimum purchase
-      if (remaining < RULES.BATCH * 5000) break;
+      for (const c of candidates) {
+        const isUrgent = c.item.isStockOut || c.item.daysOfStock <= RULES.CRITICAL_DAYS;
+        if (isUrgent) {
+          tier1.push(c);
+        } else if (c.item.isBestSeller) {
+          tier2.push(c);
+        } else {
+          tier3.push(c);
+        }
+      }
+
+      for (const c of tier1) {
+        if (remaining <= 0) break;
+        let qty = c.idealQty;
+        let cost = c.idealCost;
+        if (cost > remaining) {
+          qty = Math.floor(Math.floor(remaining / c.item.unitPrice) / c.batch) * c.batch;
+          if (qty < c.minOrder) continue;
+          cost = qty * c.item.unitPrice;
+        }
+        result.push({ item: c.item, qty, cost, reason: c.item.isStockOut ? "🚨 Stok kosong" : "🔴 Kritis" });
+        remaining -= cost;
+      }
+
+      for (const c of tier2) {
+        if (remaining <= 0) break;
+        let qty = c.idealQty;
+        let cost = c.idealCost;
+        if (cost > remaining) {
+          qty = Math.floor(Math.floor(remaining / c.item.unitPrice) / c.batch) * c.batch;
+          if (qty < c.minOrder) continue;
+          cost = qty * c.item.unitPrice;
+        }
+        result.push({ item: c.item, qty, cost, reason: "🔥 Best seller" });
+        remaining -= cost;
+      }
+
+      if (remaining > 0 && tier3.length > 0) {
+        const tier3TotalCost = tier3.reduce((s, c) => s + c.idealCost, 0);
+        const ratio = Math.min(1, remaining / tier3TotalCost);
+
+        for (const c of tier3) {
+          if (remaining <= 0) break;
+          const scaledQty = Math.ceil(c.idealQty * ratio);
+          let qty = Math.max(c.minOrder, Math.ceil(scaledQty / c.batch) * c.batch);
+          let cost = qty * c.item.unitPrice;
+          if (cost > remaining) {
+            qty = Math.floor(Math.floor(remaining / c.item.unitPrice) / c.batch) * c.batch;
+            if (qty < c.minOrder) continue;
+            cost = qty * c.item.unitPrice;
+          }
+          result.push({ item: c.item, qty, cost, reason: "📦 Restock" });
+          remaining -= cost;
+        }
+      }
     }
 
     return { items: result, totalCost: budgetAmount - remaining, remaining };

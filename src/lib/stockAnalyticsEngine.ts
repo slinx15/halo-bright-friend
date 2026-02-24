@@ -52,7 +52,23 @@ export const RULES = {
   WARNA_SUPER_VELOCITY: 5,
 };
 
-// No maturity dampening — matches bot exactly
+const MATURITY_CONFIG = {
+  minSalesDays: 3,   // below this → immature data
+  divisorFloor: 7,   // same philosophy as bot
+};
+
+const HARD_MATURITY_CONFIG = {
+  immatureDaysThreshold: 7,  // salesDays < 7 → cap applies
+  velocityCapFactor: 0.55,   // strong but safe
+  minSalesForCap: 20,        // avoid capping tiny noise
+};
+
+const BEST_SELLER_PUSH_CONFIG = {
+  minVelocity4d: 40,          // fast mover threshold (per 4 days)
+  minDaysOfStock: 2,          // avoid pushing near-zero panic items
+  maxDaysOfStock: 10,         // don't push if already overstocked
+  extraBatchMultiplier: 1,    // add +1 batch only (SAFE)
+};
 
 const COLOR_BLACK = ["BLK", "BLCK", "HITAM", "BLACK"];
 const COLOR_WHITE = ["WHT", "PUTIH", "WHITE"];
@@ -149,8 +165,7 @@ function buildDailySalesMap(sales: StockOutRecord[], productId: string): Record<
   for (const s of sales) {
     if (s.product_id !== productId) continue;
     const key = s.created_at.slice(0, 10);
-    // Bot parity: use qty_kirim (terkirim), not qty_pesan
-    map[key] = (map[key] ?? 0) + s.qty_kirim;
+    map[key] = (map[key] ?? 0) + s.qty_pesan;
   }
   return map;
 }
@@ -198,11 +213,15 @@ export function calculateWMAVelocity(
 
     const totalDays = period1Days + period2Days;
     const totalQty = period1Total + period2Total;
-    const minDaysForCalc = 10;
+    const minDaysForCalc = 7;
 
-    // Bot parity: divide by ACTIVE sale days (not calendar days)
-    const vel1 = period1Days > 0 ? period1Total / Math.max(period1Days, minDaysForCalc) : 0;
-    const vel2 = period2Days > 0 ? period2Total / Math.max(period2Days, minDaysForCalc) : 0;
+    // Bot parity: divide by CALENDAR period length (not active sale days)
+    // Period 1 = 14 calendar days, Period 2 = 16 calendar days (30 - 14)
+    const period1CalendarDays = RULES.WMA_PERIOD1_DAYS; // 14
+    const period2CalendarDays = 30 - RULES.WMA_PERIOD1_DAYS; // 16
+
+    const vel1 = period1Days > 0 ? period1Total / Math.max(period1CalendarDays, minDaysForCalc) : 0;
+    const vel2 = period2Days > 0 ? period2Total / Math.max(period2CalendarDays, minDaysForCalc) : 0;
 
     let velocity: number;
     let dataStatus: WMAInfo["dataStatus"];
@@ -221,20 +240,38 @@ export function calculateWMAVelocity(
       dataStatus = "none";
     }
 
-    // No maturity dampening — exact bot parity
-    const adjustedVelocity = velocity;
+    // Maturity dampening (bot-style stability)
+    const salesDaysTotal = period1Days + period2Days;
+    const isImmature = salesDaysTotal > 0 && salesDaysTotal < MATURITY_CONFIG.minSalesDays;
+
+    let adjustedVelocity = velocity;
+    if (isImmature) {
+      const maturityFactor = MATURITY_CONFIG.minSalesDays / salesDaysTotal;
+      adjustedVelocity = velocity / maturityFactor;
+    }
+    // Hard guard for extreme 1-day noise
+    if (salesDaysTotal === 1 && velocity > 20) {
+      adjustedVelocity = Math.min(adjustedVelocity, velocity * 0.5);
+    }
+
+    // Hard maturity cap — bot-style stabilization for immature data
+    const isHardImmature = salesDaysTotal > 0 && salesDaysTotal < HARD_MATURITY_CONFIG.immatureDaysThreshold;
+    const hasEnoughSales = totalQty >= HARD_MATURITY_CONFIG.minSalesForCap;
+    if (isHardImmature && hasEnoughSales) {
+      adjustedVelocity = adjustedVelocity * HARD_MATURITY_CONFIG.velocityCapFactor;
+    }
 
     wmaData[product.id] = {
       velocity,
       adjustedVelocity,
       period1Days,
       period2Days,
-      totalDays,
+      totalDays: salesDaysTotal,
       totalQty,
       period1Velocity: vel1,
       period2Velocity: vel2,
       dataStatus,
-      isImmature: false,
+      isImmature,
     };
   }
 
@@ -265,11 +302,10 @@ export function calculateTrendData(
   for (const s of allSales) {
     if (!productIdSet.has(s.product_id)) continue;
     const d = new Date(s.created_at);
-    // Bot parity: use qty_kirim
     if (d >= weekAgo) {
-      thisWeek[s.product_id] = (thisWeek[s.product_id] ?? 0) + s.qty_kirim;
+      thisWeek[s.product_id] = (thisWeek[s.product_id] ?? 0) + s.qty_pesan;
     } else if (d >= twoWeeksAgo && d < weekAgo) {
-      lastWeek[s.product_id] = (lastWeek[s.product_id] ?? 0) + s.qty_kirim;
+      lastWeek[s.product_id] = (lastWeek[s.product_id] ?? 0) + s.qty_pesan;
     }
   }
 
@@ -388,7 +424,26 @@ export function analyzeAllProducts(
       }
     }
 
-    // Bot does NOT have best seller push or safety clamp — removed for exact parity
+    // Soft best seller push — bot-style extra batch for true fast movers
+    const isFastMover = velocity >= BEST_SELLER_PUSH_CONFIG.minVelocity4d;
+    const isHealthyStock =
+      daysOfStock >= BEST_SELLER_PUSH_CONFIG.minDaysOfStock &&
+      daysOfStock <= BEST_SELLER_PUSH_CONFIG.maxDaysOfStock;
+    const alreadyReordering = recommendedQty > 0;
+    const isImmatureProduct = wma?.isImmature ?? false;
+    const isDeadStock = velocity === 0 && currentStock > 0;
+
+    if (isFastMover && isHealthyStock && alreadyReordering && !isImmatureProduct && !isDeadStock) {
+      recommendedQty += batchSize * BEST_SELLER_PUSH_CONFIG.extraBatchMultiplier;
+    }
+
+    // Safety clamp — prevent runaway overstock
+    const maxReasonableStock = Math.ceil(velocity * (targetDays + 3));
+    const projectedStock = currentStock + recommendedQty;
+    if (projectedStock > maxReasonableStock && recommendedQty > 0) {
+      const allowedNeed = maxReasonableStock - currentStock;
+      recommendedQty = Math.max(0, roundUpToBatch(allowedNeed, batchSize));
+    }
 
     // Harga & cost
     const unitPrice = getHargaModal(product);
