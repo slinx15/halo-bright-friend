@@ -175,20 +175,22 @@ export function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko,
                       </TableCell>
                       <TableCell>
                         <Input
-                          type="number"
-                          min={0}
+                          type="text"
+                          inputMode="numeric"
                           className="h-8 text-sm w-16"
-                          value={item.qtyPesan}
-                          onChange={(e) => updateItem(idx, "qtyPesan", parseInt(e.target.value) || 0)}
+                          value={item.qtyPesan === 0 ? "" : item.qtyPesan}
+                          onChange={(e) => updateItem(idx, "qtyPesan", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
+                          placeholder="0"
                         />
                       </TableCell>
                       <TableCell>
                         <Input
-                          type="number"
-                          min={0}
+                          type="text"
+                          inputMode="numeric"
                           className="h-8 text-sm w-16"
-                          value={item.qtyKirim}
-                          onChange={(e) => updateItem(idx, "qtyKirim", parseInt(e.target.value) || 0)}
+                          value={item.qtyKirim === 0 ? "" : item.qtyKirim}
+                          onChange={(e) => updateItem(idx, "qtyKirim", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
+                          placeholder="0"
                         />
                       </TableCell>
                       <TableCell>
