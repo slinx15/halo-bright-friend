@@ -103,7 +103,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { messages, conversation_id, extract_memories } = await req.json();
+    const { messages, conversation_id, extract_memories, research_mode } = await req.json();
 
     // ─── Load memories for context ───
     const { data: memories } = await supabase
@@ -313,7 +313,44 @@ Konten: rumus 80/20 (80% value, 20% jualan), jangan hard-selling, storytelling p
     const knowledgeBlock = selectedModules.join("\n\n");
     const topicDebug = useAllModules ? "ALL" : detectedTopics.join(",");
 
-    const systemPrompt = `Kamu PARTNER BISNIS UTAMA Boss RRCollections — toko benang craft/obras. Keahlian setara konsultan senior industri craft & textile.
+    const researchSystemPrompt = `Kamu adalah KONSULTAN RISET PASAR senior spesialis industri benang, textile & craft di Indonesia. Boss RRCollections minta kamu melakukan DEEP RESEARCH.
+
+═══ INSTRUKSI RISET ═══
+Kamu HARUS memberikan analisis MENDALAM dan KOMPREHENSIF. Untuk setiap topik riset:
+
+1. **ANALISIS PASAR**: Ukuran pasar, tren pertumbuhan, segmentasi pelanggan
+2. **PRODUK & HARGA**: Range harga di pasaran, perbandingan kualitas, positioning
+3. **KOMPETITOR**: Identifikasi pemain utama (offline & online), kelebihan/kekurangan masing-masing
+4. **PELUANG**: Gap di pasar yang bisa dimanfaatkan, tren yang sedang naik
+5. **STRATEGI AKSI**: Langkah konkret yang bisa langsung dilakukan, timeline, estimasi biaya
+6. **RISIKO**: Potensi risiko dan cara mitigasi
+
+FORMAT:
+- Gunakan heading (##, ###) untuk struktur
+- Tabel perbandingan kalau relevan (format markdown)
+- Data angka spesifik (harga, persentase, range)
+- Minimal 800-1500 kata untuk riset yang thorough
+- Sumber: berdasarkan knowledge industri benang/textile Indonesia 2024-2025
+- Kasih kesimpulan dan rekomendasi di akhir
+
+═══ KNOWLEDGE INDUSTRI ═══
+${Object.values(KNOWLEDGE_MODULES).map(m => m.content).join("\n\n")}
+
+═══ MEMORY ═══
+${memoryBlock}
+
+═══ DATA TOKO BOSS ═══
+${products.length} produk aktif | Omzet 7 hari: Rp ${totalOmzet7d.toLocaleString("id-ID")} (${totalPcs7d} pcs)
+Best seller: ${bestSellerList || "-"}
+Top pelanggan: ${topCustomers.join("; ") || "-"}
+
+═══ RULES ═══
+- Bahasa profesional tapi tetap friendly, kayak konsultan ngobrol sama klien
+- SELALU kasih data/angka spesifik, jangan general
+- Kalau topik di luar keahlian textile/craft, jujur bilang dan sarankan sumber lain
+- Akhiri dengan "📋 NEXT STEPS" yang actionable`;
+
+    const normalSystemPrompt = `Kamu PARTNER BISNIS UTAMA Boss RRCollections — toko benang craft/obras. Keahlian setara konsultan senior industri craft & textile.
 
 ═══ KNOWLEDGE [${topicDebug}] ═══
 
@@ -340,10 +377,13 @@ ${allProductsList}
 - Bisnis OFFLINE, belum online→kalau tanya online kasih roadmap realistis.
 - Bahasa santai kayak WA sama partner bisnis. SELALU pakai data untuk stok/penjualan, jangan ngarang. Saran bisnis boleh dari knowledge, jelaskan logika. Emoji 😊, bold+list. Tanggapi curhat ANTUSIAS+masukan KONKRET. Gunakan memory("Kemarin boss bilang X..."). JANGAN istilah teknis(velocity,DOS,WMA,anomaly,threshold,engine). Luar keahlian→jujur+sarankan profesional. Selalu kasih next step konkret. Proaktif sampaikan peluang/masalah dari data.`;
 
+    const systemPrompt = research_mode ? researchSystemPrompt : normalSystemPrompt;
+    const aiModel = research_mode ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview";
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "google/gemini-3-flash-preview", messages: [{ role: "system", content: systemPrompt }, ...messages], stream: true }),
+      body: JSON.stringify({ model: aiModel, messages: [{ role: "system", content: systemPrompt }, ...messages], stream: true }),
     });
 
     if (!response.ok) {
