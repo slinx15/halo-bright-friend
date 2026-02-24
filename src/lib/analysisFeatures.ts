@@ -135,7 +135,7 @@ export function calcTopSellers(
   for (const s of sales) {
     if (new Date(s.created_at) < thirtyAgo) continue;
     if (!salesMap[s.product_id]) salesMap[s.product_id] = { qty: 0, days: new Set() };
-    salesMap[s.product_id].qty += s.qty_pesan;
+    salesMap[s.product_id].qty += s.qty_kirim;
     salesMap[s.product_id].days.add(s.created_at.slice(0, 10));
   }
 
@@ -307,7 +307,7 @@ export function calcProfit(
   const salesMap: Record<string, number> = {};
   for (const s of sales) {
     if (new Date(s.created_at) < thirtyAgo) continue;
-    salesMap[s.product_id] = (salesMap[s.product_id] ?? 0) + s.qty_pesan;
+    salesMap[s.product_id] = (salesMap[s.product_id] ?? 0) + s.qty_kirim;
   }
 
   const items: ProfitItem[] = [];
@@ -369,16 +369,16 @@ export function calcTokoAnalysis(
     }
 
     const td = tokoData[toko];
-    td.totalQty += s.qty_pesan;
+    td.totalQty += s.qty_kirim;
     td.transaksiCount++;
     td.dates.add(s.created_at.slice(0, 10));
 
     const p = productMap.get(s.product_id);
     const hargaJual = p?.prices?.harga_normal ?? 0;
-    td.totalNilai += s.qty_pesan * hargaJual;
+    td.totalNilai += s.qty_kirim * hargaJual;
 
     const kode = p?.kode ?? s.product_id;
-    td.produkMap[kode] = (td.produkMap[kode] ?? 0) + s.qty_pesan;
+    td.produkMap[kode] = (td.produkMap[kode] ?? 0) + s.qty_kirim;
   }
 
   const items: TokoItem[] = [];
