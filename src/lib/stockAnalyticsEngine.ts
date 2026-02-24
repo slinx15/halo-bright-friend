@@ -198,7 +198,7 @@ export function calculateWMAVelocity(
 
     const totalDays = period1Days + period2Days;
     const totalQty = period1Total + period2Total;
-    const minDaysForCalc = 7;
+    const minDaysForCalc = 10;
 
     // Bot parity: divide by ACTIVE sale days (not calendar days)
     const vel1 = period1Days > 0 ? period1Total / Math.max(period1Days, minDaysForCalc) : 0;
