@@ -173,24 +173,26 @@ export function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko,
                           <span className={overStock ? "text-destructive font-semibold" : ""}>{formatNumber(stok)}</span>
                         ) : "-"}
                       </TableCell>
-                      <TableCell>
+                       <TableCell className="p-1">
                         <Input
-                          type="text"
+                          type="number"
                           inputMode="numeric"
-                          className="h-8 text-sm w-16"
+                          className="h-10 text-sm w-20 min-w-[5rem] touch-manipulation"
                           value={item.qtyPesan === 0 ? "" : item.qtyPesan}
                           onChange={(e) => updateItem(idx, "qtyPesan", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
                           placeholder="0"
+                          onClick={(e) => (e.target as HTMLInputElement).focus()}
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="p-1">
                         <Input
-                          type="text"
+                          type="number"
                           inputMode="numeric"
-                          className="h-8 text-sm w-16"
+                          className="h-10 text-sm w-20 min-w-[5rem] touch-manipulation"
                           value={item.qtyKirim === 0 ? "" : item.qtyKirim}
                           onChange={(e) => updateItem(idx, "qtyKirim", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
                           placeholder="0"
+                          onClick={(e) => (e.target as HTMLInputElement).focus()}
                         />
                       </TableCell>
                       <TableCell>
