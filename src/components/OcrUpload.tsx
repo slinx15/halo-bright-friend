@@ -351,80 +351,71 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
                     </div>
                   </div>
 
-                  {/* Mode-specific fields */}
-                  {editingIdx === idx && (
-                    <div className="flex gap-2 flex-wrap mt-1">
-                      {mode === "masuk" && (
+                  {/* Mode-specific fields - always editable */}
+                  <div className="flex gap-3 flex-wrap mt-1 items-center">
+                    {mode === "masuk" && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground">Qty:</span>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          className="h-9 w-20 text-sm font-semibold touch-manipulation"
+                          value={item.qty === 0 ? "" : item.qty || ""}
+                          onChange={(e) => updateOcrItem(idx, "qty", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
+                          placeholder="0"
+                        />
+                      </div>
+                    )}
+                    {mode === "keluar" && (
+                      <>
                         <div className="flex items-center gap-1">
-                          <span className="text-xs text-muted-foreground">Qty:</span>
+                          <span className="text-xs text-muted-foreground">Pesan:</span>
                           <Input
-                            type="number"
-                            className="h-7 w-16 text-sm"
-                            value={item.qty || 0}
-                            onChange={(e) => updateOcrItem(idx, "qty", parseInt(e.target.value) || 0)}
+                            type="text"
+                            inputMode="numeric"
+                            className="h-9 w-20 text-sm font-semibold touch-manipulation"
+                            value={item.qty_pesan === 0 ? "" : item.qty_pesan || ""}
+                            onChange={(e) => updateOcrItem(idx, "qty_pesan", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
+                            placeholder="0"
                           />
                         </div>
-                      )}
-                      {mode === "keluar" && (
-                        <>
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs text-muted-foreground">Pesan:</span>
-                            <Input
-                              type="number"
-                              className="h-7 w-16 text-sm"
-                              value={item.qty_pesan || 0}
-                              onChange={(e) => updateOcrItem(idx, "qty_pesan", parseInt(e.target.value) || 0)}
-                            />
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs text-muted-foreground">Kirim:</span>
-                            <Input
-                              type="number"
-                              className="h-7 w-16 text-sm"
-                              value={item.qty_kirim || 0}
-                              onChange={(e) => updateOcrItem(idx, "qty_kirim", parseInt(e.target.value) || 0)}
-                            />
-                          </div>
-                        </>
-                      )}
-                      {mode === "opname" && (
                         <div className="flex items-center gap-1">
-                          <span className="text-xs text-muted-foreground">Stok Fisik:</span>
+                          <span className="text-xs text-muted-foreground">Kirim:</span>
                           <Input
-                            type="number"
-                            className="h-7 w-16 text-sm"
-                            value={item.stok_fisik || 0}
-                            onChange={(e) => updateOcrItem(idx, "stok_fisik", parseInt(e.target.value) || 0)}
+                            type="text"
+                            inputMode="numeric"
+                            className="h-9 w-20 text-sm font-semibold touch-manipulation"
+                            value={item.qty_kirim === 0 ? "" : item.qty_kirim || ""}
+                            onChange={(e) => updateOcrItem(idx, "qty_kirim", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
+                            placeholder="0"
                           />
                         </div>
-                      )}
-                    </div>
-                  )}
-
-                  {editingIdx !== idx && (
-                    <div className="flex gap-3 text-xs text-muted-foreground">
-                      {mode === "masuk" && <span>Qty: <strong>{item.qty || 0}</strong></span>}
-                      {mode === "keluar" && (
-                        <>
-                          <span>Pesan: <strong>{item.qty_pesan || 0}</strong></span>
-                          <span>Kirim: <strong>{item.qty_kirim || 0}</strong></span>
-                        </>
-                      )}
-                      {mode === "opname" && (
-                        <>
-                          <span>Fisik: <strong>{item.stok_fisik || 0}</strong></span>
-                          {item.isValid && (
-                            <span>Sistem: <strong>{item.stokSistem || 0}</strong></span>
-                          )}
-                          {item.isValid && (
-                            <span className={(item.stok_fisik || 0) - (item.stokSistem || 0) !== 0 ? "text-destructive font-medium" : "text-success font-medium"}>
-                              Selisih: {(item.stok_fisik || 0) - (item.stokSistem || 0) > 0 ? "+" : ""}{(item.stok_fisik || 0) - (item.stokSistem || 0)}
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  )}
+                      </>
+                    )}
+                    {mode === "opname" && (
+                      <>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground">Fisik:</span>
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            className="h-9 w-20 text-sm font-semibold touch-manipulation"
+                            value={item.stok_fisik === 0 ? "" : item.stok_fisik || ""}
+                            onChange={(e) => updateOcrItem(idx, "stok_fisik", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
+                            placeholder="0"
+                          />
+                        </div>
+                        {item.isValid && (
+                          <span className="text-xs text-muted-foreground">Sistem: <strong>{item.stokSistem || 0}</strong></span>
+                        )}
+                        {item.isValid && (
+                          <span className={`text-xs ${(item.stok_fisik || 0) - (item.stokSistem || 0) !== 0 ? "text-destructive font-medium" : "text-success font-medium"}`}>
+                            Selisih: {(item.stok_fisik || 0) - (item.stokSistem || 0) > 0 ? "+" : ""}{(item.stok_fisik || 0) - (item.stokSistem || 0)}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
