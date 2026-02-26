@@ -35,7 +35,7 @@ export function parseOpnameText(text: string): ParsedOpnameItem[] {
     const rawKode = match[1].toUpperCase();
     const kode = rawKode.replace(/^0+/, "") || "0";
     const qty = parseInt(match[2], 10);
-    if (qty <= 0) continue;
+    if (qty < 0) continue;
 
     if (!grouped.has(kode)) {
       grouped.set(kode, []);

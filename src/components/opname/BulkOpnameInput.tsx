@@ -142,7 +142,7 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
 
   // On qty blur: if valid kode + qty filled, auto-add new row
   const handleQtyBlur = (row: InputRow) => {
-    if (row.status === "valid" && row.qty.trim() && parseInt(row.qty) > 0) {
+    if (row.status === "valid" && row.qty.trim() && parseInt(row.qty) >= 0) {
       // Check if this is the last row
       setRows((prev) => {
         const idx = prev.findIndex((r) => r.id === row.id);
@@ -167,7 +167,7 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
   const handleQtyKeyDown = (e: React.KeyboardEvent, row: InputRow) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      if (row.status === "valid" && row.qty.trim() && parseInt(row.qty) > 0) {
+      if (row.status === "valid" && row.qty.trim() && parseInt(row.qty) >= 0) {
         addNewRow();
       } else if (row.status === "invalid") {
         kodeRefs.current.get(row.id)?.focus();
@@ -198,7 +198,7 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
       if (row.status !== "valid" || !row.qty.trim()) continue;
       const kode = row.kode.toUpperCase().replace(/^0+/, "") || "0";
       const qty = parseInt(row.qty, 10);
-      if (qty <= 0) continue;
+      if (qty < 0) continue;
       if (!grouped.has(kode)) grouped.set(kode, []);
       grouped.get(kode)!.push(qty);
     }
@@ -224,7 +224,7 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
     localStorage.removeItem(DRAFT_KEY);
   };
 
-  const validRows = rows.filter((r) => r.status === "valid" && r.qty.trim() && parseInt(r.qty) > 0);
+  const validRows = rows.filter((r) => r.status === "valid" && r.qty.trim() && parseInt(r.qty) >= 0);
   const validItems = parsed.filter((item) => findProduct(item.kode));
   const invalidItems = parsed.filter((item) => !findProduct(item.kode));
 
