@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,12 +12,13 @@ import BarangMasuk from "@/pages/BarangMasuk";
 import BarangKeluar from "@/pages/BarangKeluar";
 import Stok from "@/pages/Stok";
 import Opname from "@/pages/Opname";
-import Analisa from "@/pages/Analisa";
 import ManajemenProduk from "@/pages/ManajemenProduk";
 import ImportHistori from "@/pages/ImportHistori";
 import AiChat from "@/pages/AiChat";
 import ManajemenUser from "@/pages/ManajemenUser";
 import NotFound from "@/pages/NotFound";
+
+const Analisa = lazy(() => import("@/pages/Analisa"));
 
 const queryClient = new QueryClient();
 
@@ -54,7 +56,7 @@ const App = () => (
               <Route path="/keluar" element={<BarangKeluar />} />
               <Route path="/stok" element={<Stok />} />
               <Route path="/opname" element={<Opname />} />
-              <Route path="/analisa" element={<Analisa />} />
+              <Route path="/analisa" element={<Suspense fallback={<div className="flex min-h-[60vh] items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><Analisa /></Suspense>} />
               <Route path="/produk" element={<ManajemenProduk />} />
               <Route path="/import-histori" element={<ImportHistori />} />
               <Route path="/ai" element={<AiChat />} />
