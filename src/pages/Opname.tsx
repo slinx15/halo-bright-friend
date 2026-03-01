@@ -145,7 +145,7 @@ const Opname = () => {
       />
 
       {/* ── Riwayat ── */}
-      <Card className="rounded-2xl shadow-md border-0">
+      <Card className="card-premium">
         <Collapsible>
           <CardHeader className="pb-2">
             <CollapsibleTrigger asChild>
