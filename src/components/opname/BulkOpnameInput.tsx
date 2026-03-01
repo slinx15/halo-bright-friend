@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,6 @@ import { Send, FileText, CheckCircle2, AlertTriangle, Plus, Trash2, X } from "lu
 import { formatNumber } from "@/lib/formatters";
 import type { ProductWithDetails } from "@/hooks/useProducts";
 import type { ParsedOpnameItem } from "@/lib/opnameParser";
-import { OcrUpload } from "@/components/OcrUpload";
 
 interface InputRow {
   id: number;
@@ -55,7 +54,11 @@ function getNextId() {
 }
 getNextId.counter = 0;
 
-export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameInputProps) {
+export interface BulkOpnameInputHandle {
+  handleOcrResult: (items: any[]) => void;
+}
+
+export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInputProps>(function BulkOpnameInput({ products, onSubmit, submitting }, ref) {
   const [rows, setRows] = useState<InputRow[]>(() => {
     const draft = loadDraft();
     if (draft) {
@@ -175,7 +178,7 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
     }
   };
 
-  const handleOcrResult = (ocrItems: any[]) => {
+  const handleOcrResult = useCallback((ocrItems: any[]) => {
     const newRows: InputRow[] = ocrItems
       .map((item) => {
         const kode = String(item.kode || "").toUpperCase();
@@ -190,7 +193,9 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
       const newId = getNextId();
       return [...existing, ...newRows, { id: newId, kode: "", qty: "", status: "idle" as const }];
     });
-  };
+  }, [validateKode]);
+
+  useImperativeHandle(ref, () => ({ handleOcrResult }), [handleOcrResult]);
 
   const buildParsed = (): ParsedOpnameItem[] => {
     const grouped = new Map<string, number[]>();
@@ -231,13 +236,10 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
   return (
     <Card className="rounded-2xl shadow-md border-0 overflow-hidden">
       <CardHeader className="pb-3 bg-gradient-to-r from-warning/5 to-transparent">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-bold flex items-center gap-2">
-            <FileText className="h-4 w-4 text-warning" />
-            Input Opname
-          </CardTitle>
-          <OcrUpload mode="opname" onResult={handleOcrResult} />
-        </div>
+        <CardTitle className="text-base font-bold flex items-center gap-2">
+          <FileText className="h-4 w-4 text-warning" />
+          Input Opname
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 pt-4">
         {!showPreview ? (
@@ -406,4 +408,4 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
       </CardContent>
     </Card>
   );
-}
+});
