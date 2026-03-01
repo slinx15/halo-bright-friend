@@ -91,8 +91,8 @@ const MobileNav = () => {
       )}
 
       {/* Bottom nav bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border/40 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] pb-[env(safe-area-inset-bottom)]">
-        <div className="flex justify-around px-1 py-1">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-t border-border/20 shadow-[0_-8px_32px_rgba(0,0,0,0.08)] pb-[env(safe-area-inset-bottom)]">
+        <div className="flex justify-around items-end px-2 pt-1.5 pb-1">
           {primaryNav.map((item) => {
             const active = location.pathname === item.path;
             return (
@@ -100,14 +100,27 @@ const MobileNav = () => {
                 key={item.path}
                 onClick={() => navigate(item.path)}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 flex-1 min-h-[56px] rounded-xl transition-colors duration-150",
+                  "relative flex flex-col items-center justify-center gap-0.5 flex-1 min-h-[52px] rounded-2xl transition-all duration-200",
                   active
                     ? "text-primary"
-                    : "text-muted-foreground active:scale-95"
+                    : "text-muted-foreground active:scale-90"
                 )}
               >
-                <item.icon className={cn("h-5 w-5", active && "stroke-[2.5]")} />
-                <span className={cn("text-[11px]", active ? "font-semibold" : "font-medium")}>{item.label}</span>
+                {active && (
+                  <span className="absolute -top-1.5 w-8 h-1 rounded-full bg-primary animate-fade-in" />
+                )}
+                <span className={cn(
+                  "flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200",
+                  active && "bg-primary/10"
+                )}>
+                  <item.icon className={cn("h-[20px] w-[20px] transition-all duration-200", active ? "stroke-[2.5]" : "stroke-[1.8]")} />
+                </span>
+                <span className={cn(
+                  "text-[10px] leading-tight transition-all duration-200",
+                  active ? "font-bold text-primary" : "font-medium text-muted-foreground"
+                )}>
+                  {item.label}
+                </span>
               </button>
             );
           })}
@@ -115,18 +128,31 @@ const MobileNav = () => {
           <button
             onClick={() => setMoreOpen((v) => !v)}
             className={cn(
-              "flex flex-col items-center justify-center gap-1 flex-1 min-h-[56px] rounded-xl transition-colors duration-150",
+              "relative flex flex-col items-center justify-center gap-0.5 flex-1 min-h-[52px] rounded-2xl transition-all duration-200",
               moreOpen || isSecondaryActive
                 ? "text-primary"
-                : "text-muted-foreground active:scale-95"
+                : "text-muted-foreground active:scale-90"
             )}
           >
-            {moreOpen ? (
-              <X className="h-5 w-5 stroke-[2.5]" />
-            ) : (
-              <MoreHorizontal className={cn("h-5 w-5", isSecondaryActive && "stroke-[2.5]")} />
+            {(moreOpen || isSecondaryActive) && (
+              <span className="absolute -top-1.5 w-8 h-1 rounded-full bg-primary animate-fade-in" />
             )}
-            <span className={cn("text-[11px]", (moreOpen || isSecondaryActive) ? "font-semibold" : "font-medium")}>Lainnya</span>
+            <span className={cn(
+              "flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200",
+              (moreOpen || isSecondaryActive) && "bg-primary/10"
+            )}>
+              {moreOpen ? (
+                <X className="h-[20px] w-[20px] stroke-[2.5]" />
+              ) : (
+                <MoreHorizontal className={cn("h-[20px] w-[20px] transition-all duration-200", isSecondaryActive ? "stroke-[2.5]" : "stroke-[1.8]")} />
+              )}
+            </span>
+            <span className={cn(
+              "text-[10px] leading-tight transition-all duration-200",
+              (moreOpen || isSecondaryActive) ? "font-bold text-primary" : "font-medium text-muted-foreground"
+            )}>
+              Lainnya
+            </span>
           </button>
         </div>
       </nav>
