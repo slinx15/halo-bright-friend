@@ -343,23 +343,25 @@ function BudgetPlanner({
                   {d} hari
                 </button>
               ))}
-              <div className="relative">
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  value={!DAYS_PRESETS.includes(budgetDays) && budgetDays > 0 ? budgetDays : ""}
-                  onChange={(e) => {
-                    const raw = e.target.value.replace(/[^0-9]/g, "");
-                    if (raw !== "") setBudgetDays(Math.min(Number(raw), 90));
-                  }}
-                  placeholder="Custom"
-                  className={`w-20 h-10 text-sm font-semibold text-center rounded-xl ${
-                    !DAYS_PRESETS.includes(budgetDays) && budgetDays > 0
-                      ? "border-primary ring-1 ring-primary"
-                      : ""
-                  }`}
-                />
-              </div>
+              <Input
+                type="text"
+                inputMode="numeric"
+                value={!DAYS_PRESETS.includes(budgetDays) && budgetDays > 0 ? budgetDays : ""}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/[^0-9]/g, "");
+                  if (raw === "") {
+                    setBudgetDays(DAYS_PRESETS[0]);
+                  } else {
+                    setBudgetDays(Math.min(Number(raw), 90));
+                  }
+                }}
+                placeholder="Lainnya"
+                className={`w-20 h-10 text-sm font-semibold text-center rounded-xl ${
+                  !DAYS_PRESETS.includes(budgetDays) && budgetDays > 0
+                    ? "border-primary ring-1 ring-primary"
+                    : ""
+                }`}
+              />
             </div>
           </div>
         </CardContent>
