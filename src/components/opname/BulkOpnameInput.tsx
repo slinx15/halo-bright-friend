@@ -229,17 +229,17 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
   const invalidItems = parsed.filter((item) => !findProduct(item.kode));
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
+    <Card className="rounded-2xl shadow-md border-0 overflow-hidden">
+      <CardHeader className="pb-3 bg-gradient-to-r from-warning/5 to-transparent">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
-            <FileText className="h-5 w-5" />
+          <CardTitle className="text-base font-bold flex items-center gap-2">
+            <FileText className="h-4 w-4 text-warning" />
             Input Opname
           </CardTitle>
           <OcrUpload mode="opname" onResult={handleOcrResult} />
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 pt-4">
         {!showPreview ? (
           <>
             {/* Rows */}
@@ -303,7 +303,7 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
             <button
               type="button"
               onClick={addNewRow}
-              className="w-full py-2 text-sm text-muted-foreground flex items-center justify-center gap-1 active:text-foreground"
+              className="w-full py-2.5 text-sm text-muted-foreground flex items-center justify-center gap-1 active:text-foreground rounded-xl border border-dashed border-border/60 hover:bg-muted/30 transition-colors min-h-[44px]"
             >
               <Plus className="h-4 w-4" /> Tambah
             </button>
@@ -317,7 +317,7 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
             <Button
               onClick={handleParse}
               disabled={validRows.length === 0}
-              className="w-full"
+              className="w-full rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white"
             >
               Preview
             </Button>
@@ -388,14 +388,14 @@ export function BulkOpnameInput({ products, onSubmit, submitting }: BulkOpnameIn
               <Button
                 variant="outline"
                 onClick={() => setShowPreview(false)}
-                className="flex-1"
+                className="flex-1 rounded-xl h-12 font-bold min-h-[44px]"
               >
                 Edit
               </Button>
               <Button
                 onClick={handleSubmit}
                 disabled={submitting || validItems.length === 0}
-                className="flex-1"
+                className="flex-1 rounded-xl h-12 font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white"
               >
                 <Send className="h-4 w-4 mr-2" />
                 {submitting ? "Simpan..." : `Simpan ${validItems.length}`}
