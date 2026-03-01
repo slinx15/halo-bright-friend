@@ -116,7 +116,7 @@ const ImportHistori = () => {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full">
+    <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*]:[animation-fill-mode:both]">
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="p-2.5 rounded-xl bg-primary/10">
