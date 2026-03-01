@@ -223,11 +223,11 @@ const Dashboard = () => {
     queryFn: async () => {
       const headers = getAuthHeaders();
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/stock_out?select=qty_kirim,total_harga,created_at&created_at=gte.${todayStart.toISOString()}&order=created_at.desc`,
+        `${SUPABASE_URL}/rest/v1/stock_out?select=product_id,qty_kirim,total_harga,created_at&created_at=gte.${todayStart.toISOString()}&order=created_at.desc`,
         { headers }
       );
       if (!res.ok) throw new Error(await res.text());
-      return res.json() as Promise<{ qty_kirim: number; total_harga: number; created_at: string }[]>;
+      return res.json() as Promise<{ product_id: string; qty_kirim: number; total_harga: number; created_at: string }[]>;
     },
     refetchInterval: 30000,
   });
@@ -252,6 +252,14 @@ const Dashboard = () => {
 
   const omzetHariIni = todaySales?.reduce((s, r) => s + r.total_harga, 0) ?? 0;
   const pcsHariIni = todaySales?.reduce((s, r) => s + r.qty_kirim, 0) ?? 0;
+
+  // Calculate profit: Omzet - Modal
+  const modalHariIni = todaySales?.reduce((s, r) => {
+    const product = products?.find(p => p.id === r.product_id);
+    const modal = product?.prices?.harga_modal ?? 0;
+    return s + (r.qty_kirim * modal);
+  }, 0) ?? 0;
+  const profitHariIni = omzetHariIni - modalHariIni;
 
   const chartData = (() => {
     // Helper: convert UTC timestamp to local YYYY-MM-DD string
@@ -302,9 +310,10 @@ const Dashboard = () => {
       <CriticalStockAlert />
 
       {/* 2. KPI Cards — horizontal scroll mobile, grid desktop */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <KpiCard icon={DollarSign} value={formatRupiah(omzetHariIni)} label="Omzet Hari Ini" color="text-primary" bgColor="bg-primary/10" />
-        <KpiCard icon={ShoppingCart} value={formatNumber(pcsHariIni)} label="Pcs Terjual" sub="hari ini" color="text-success" bgColor="bg-success/10" />
+        <KpiCard icon={TrendingUp} value={formatRupiah(profitHariIni)} label="Profit Hari Ini" sub={profitHariIni > 0 ? `margin ${omzetHariIni > 0 ? Math.round((profitHariIni / omzetHariIni) * 100) : 0}%` : undefined} color="text-success" bgColor="bg-success/10" />
+        <KpiCard icon={ShoppingCart} value={formatNumber(pcsHariIni)} label="Pcs Terjual" sub="hari ini" color="text-accent-foreground" bgColor="bg-accent/50" />
         <KpiCard icon={AlertTriangle} value={isLoading ? "..." : String(warning)} label="Stok Warning" color="text-warning" bgColor="bg-warning/10" />
         <KpiCard icon={AlertTriangle} value={isLoading ? "..." : String(kritis)} label="Stok Kritis" color="text-destructive" bgColor="bg-destructive/10" />
       </div>
