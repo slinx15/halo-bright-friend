@@ -98,8 +98,8 @@ function KpiCard({ icon: Icon, value, label, sub, color, bgColor }: {
 // ── Stok Rendah Card ──────────────────────────────────────────────
 function StokRendahCard({ products, isLoading }: { products: any[] | undefined; isLoading: boolean }) {
   const navigate = useNavigate();
-  const stokKritisList = products
-    ?.filter(p => p.stock && p.stock.jumlah <= 15)
+    const stokKritisList = products
+    ?.filter(p => p.stock && p.stock.jumlah > 0 && p.stock.jumlah <= 15)
     .sort((a: any, b: any) => (a.stock?.jumlah ?? 0) - (b.stock?.jumlah ?? 0))
     .slice(0, 5) ?? [];
 
@@ -142,8 +142,10 @@ function StokRendahCard({ products, isLoading }: { products: any[] | undefined; 
                     <div className="flex items-center justify-between gap-2">
                      <div className="min-w-0 flex items-center gap-1.5">
                        <span className="font-mono font-bold text-sm shrink-0">{p.kode}</span>
-                       <span className="text-muted-foreground text-xs truncate">{p.nama}</span>
-                     </div>
+                       {p.nama && p.nama !== p.kode && (
+                         <span className="text-muted-foreground text-xs truncate">{p.nama}</span>
+                       )}
+                      </div>
                     <span className={`font-extrabold text-base ${status === "kritis" ? "text-destructive" : "text-warning"}`}>
                       {jumlah}
                     </span>
@@ -332,7 +334,7 @@ const Dashboard = () => {
           <CardContent className="pt-2 pb-4">
             <div className="h-56 md:h-60">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
+                <BarChart data={chartData} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" vertical={false} />
                   <XAxis dataKey="label" tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v} />
@@ -362,8 +364,10 @@ const Dashboard = () => {
         <KpiCard icon={TrendingUp} value={isLoading ? "..." : formatNumber(totalStok)} label="Total Stok" sub="semua gudang" color="text-success" bgColor="bg-success/10" />
       </div>
 
-      {/* 6. Quick Actions */}
-      <QuickActions />
+      {/* 6. Quick Actions — hidden on mobile (bottom nav covers these) */}
+      <div className="hidden md:block">
+        <QuickActions />
+      </div>
     </div>
   );
 };
