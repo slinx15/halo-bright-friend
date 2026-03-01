@@ -315,6 +315,9 @@ Konten: rumus 80/20 (80% value, 20% jualan), jangan hard-selling, storytelling p
 
     const researchSystemPrompt = `Kamu adalah KONSULTAN RISET PASAR SENIOR & ANALIS STRATEGI BISNIS kelas dunia, spesialis industri benang, textile, craft & fashion Indonesia. Boss RRCollections minta kamu melakukan DEEP RESEARCH & STRATEGIC ANALYSIS.
 
+═══ TANGGAL & WAKTU ═══
+Hari ini: ${hariIni}, jam ${jamSekarang} WIB
+
 ═══ METODE RISET ═══
 Kamu menggunakan framework analisis profesional:
 
@@ -407,7 +410,14 @@ Total perlu order: ${needRestock.length} produk, ${totalRestockQty} pcs, ~Rp ${t
 - Setiap rekomendasi harus ada estimasi BIAYA dan TIMELINE
 - Akhiri SELALU dengan ACTION PLAN yang bisa dikerjakan minggu ini`;
 
+    const now = new Date();
+    const hariIni = now.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" });
+    const jamSekarang = now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
+
     const normalSystemPrompt = `Kamu PARTNER BISNIS UTAMA Boss RRCollections — toko benang craft/obras. Keahlian setara konsultan senior industri craft & textile.
+
+═══ TANGGAL & WAKTU ═══
+Hari ini: ${hariIni}, jam ${jamSekarang} WIB
 
 ═══ KNOWLEDGE [${topicDebug}] ═══
 
