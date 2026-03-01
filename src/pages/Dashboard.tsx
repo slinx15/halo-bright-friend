@@ -55,6 +55,7 @@ function CommandCenter({ products, isLoading }: { products: any[] | undefined; i
   const navigate = useNavigate();
   if (isLoading || !products) return null;
 
+  const total = products.length;
   const kosong = products.filter(p => (p.stock?.jumlah ?? 0) === 0).length;
   const kritis = products.filter(p => {
     const j = p.stock?.jumlah ?? 0;
@@ -64,26 +65,26 @@ function CommandCenter({ products, isLoading }: { products: any[] | undefined; i
     const j = p.stock?.jumlah ?? 0;
     return j > 5 && j <= 15;
   }).length;
+  const aman = total - kosong - kritis - warning;
 
-  const chips = [
-    { label: "Stok Kosong", count: kosong, bg: "bg-destructive/10", text: "text-destructive", border: "border-destructive/20", icon: PackageX },
-    { label: "Segera Habis", count: kritis, bg: "bg-orange-500/10", text: "text-orange-600", border: "border-orange-500/20", icon: AlertCircle },
-    { label: "Perlu Restock", count: warning, bg: "bg-warning/10", text: "text-warning", border: "border-warning/20", icon: AlertTriangle },
-  ].filter(c => c.count > 0);
-
-  if (chips.length === 0) return null;
+  const cards = [
+    { label: "Kosong", count: kosong, icon: PackageX, gradient: "from-red-500 to-rose-600", lightBg: "bg-destructive/8", lightText: "text-destructive", emoji: "🚨" },
+    { label: "Kritis", count: kritis, icon: AlertCircle, gradient: "from-orange-500 to-amber-600", lightBg: "bg-orange-500/8", lightText: "text-orange-600", emoji: "⚠️" },
+    { label: "Warning", count: warning, icon: AlertTriangle, gradient: "from-amber-400 to-yellow-500", lightBg: "bg-warning/8", lightText: "text-amber-600", emoji: "📦" },
+    { label: "Aman", count: aman, icon: Package, gradient: "from-emerald-500 to-green-600", lightBg: "bg-success/8", lightText: "text-success", emoji: "✅" },
+  ];
 
   return (
-    <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 md:mx-0 md:px-0">
-      {chips.map(chip => (
+    <div className="grid grid-cols-4 gap-2">
+      {cards.map(card => (
         <button
-          key={chip.label}
+          key={card.label}
           onClick={() => navigate("/stok")}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-full border ${chip.bg} ${chip.border} ${chip.text} shrink-0 transition-all duration-200 active:scale-95 hover:shadow-md`}
+          className={`relative overflow-hidden rounded-2xl ${card.lightBg} border border-border/30 p-3 flex flex-col items-center gap-1 transition-all duration-200 active:scale-95 hover:shadow-md`}
         >
-          <chip.icon className="h-3.5 w-3.5" />
-          <span className="font-extrabold text-base leading-none">{chip.count}</span>
-          <span className="text-[11px] font-semibold opacity-75">{chip.label}</span>
+          <span className="text-lg leading-none">{card.emoji}</span>
+          <span className={`text-2xl font-black tabular-nums leading-none ${card.lightText}`}>{card.count}</span>
+          <span className="text-[10px] font-semibold text-muted-foreground leading-tight">{card.label}</span>
         </button>
       ))}
     </div>
