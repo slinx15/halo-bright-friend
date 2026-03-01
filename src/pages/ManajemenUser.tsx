@@ -97,7 +97,7 @@ export default function ManajemenUser() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*]:[animation-fill-mode:both]">
       <div className="flex items-center gap-3">
         <div className="p-2 rounded-xl bg-primary/10">
           <Users className="h-5 w-5 text-primary" />

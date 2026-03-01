@@ -378,7 +378,7 @@ const Dashboard = () => {
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto w-full pb-24 md:pb-6">
       {/* Header — greeting based on time */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between animate-fade-in">
         <div>
           <p className="text-sm text-muted-foreground font-medium">
             {getGreeting()}, Boss {getGreetingEmoji()}
@@ -392,16 +392,22 @@ const Dashboard = () => {
       </div>
 
       {/* 1. Command Center Chips */}
-      <CommandCenter products={products} isLoading={isLoading} />
+      <div className="animate-fade-in" style={{ animationDelay: "50ms", animationFillMode: "both" }}>
+        <CommandCenter products={products} isLoading={isLoading} />
+      </div>
 
       {/* 2. Critical Stock Alert — DOS ≤ 2 hari */}
-      <CriticalStockAlert />
+      <div className="animate-fade-in" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
+        <CriticalStockAlert />
+      </div>
 
       {/* 3. Hero KPI — Omzet, Profit, Pcs */}
-      <HeroKpi omzet={omzetHariIni} profit={profitHariIni} pcs={pcsHariIni} margin={marginPct} />
+      <div className="animate-fade-in" style={{ animationDelay: "150ms", animationFillMode: "both" }}>
+        <HeroKpi omzet={omzetHariIni} profit={profitHariIni} pcs={pcsHariIni} margin={marginPct} />
+      </div>
 
       {/* 4. Chart + Stok Rendah */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 animate-fade-in" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
         <Card className="md:col-span-2 rounded-2xl shadow-sm border border-border/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold flex items-center gap-2">
@@ -436,13 +442,17 @@ const Dashboard = () => {
       </div>
 
       {/* 5. AI Insights */}
-      <AiInsightsCard />
+      <div className="animate-fade-in" style={{ animationDelay: "250ms", animationFillMode: "both" }}>
+        <AiInsightsCard />
+      </div>
 
       {/* 6. Inventory Summary */}
-      <InventorySummary totalItems={totalItems} totalStok={totalStok} isLoading={isLoading} />
+      <div className="animate-fade-in" style={{ animationDelay: "300ms", animationFillMode: "both" }}>
+        <InventorySummary totalItems={totalItems} totalStok={totalStok} isLoading={isLoading} />
+      </div>
 
       {/* 7. Quick Actions — desktop only */}
-      <div className="hidden md:block">
+      <div className="hidden md:block animate-fade-in" style={{ animationDelay: "350ms", animationFillMode: "both" }}>
         <QuickActions />
       </div>
     </div>
