@@ -1,6 +1,7 @@
 import { Package, PackagePlus, PackageMinus, ClipboardCheck, AlertTriangle, TrendingUp, DollarSign, ShoppingCart, BarChart3, AlertCircle, PackageX } from "lucide-react";
 import { DashboardSkeleton } from "@/components/LoadingSkeletons";
 import { AiInsightsCard } from "@/components/AiInsightsCard";
+import { CriticalStockAlert } from "@/components/CriticalStockAlert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -290,6 +291,9 @@ const Dashboard = () => {
 
       {/* 1. Command Center Chips */}
       <CommandCenter products={products} isLoading={isLoading} />
+
+      {/* 1.5 Critical Stock Alert — DOS ≤ 2 hari */}
+      <CriticalStockAlert />
 
       {/* 2. KPI Cards — horizontal scroll mobile, grid desktop */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
