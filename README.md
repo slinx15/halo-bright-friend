@@ -1,73 +1,100 @@
-# Welcome to your Lovable project
+# Halo Bright Friend — RRCollections Stock Management
 
-## Project info
+A modern, mobile-first inventory management system built for **RRCollections**, a textile products business. Manage products, track stock movements, perform stock opname, analyze sales trends, and leverage AI-powered business insights — all from a single Progressive Web App.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Features
 
-## How can I edit this code?
+- **Dashboard** — Real-time overview of stock levels, recent activity, and AI-generated business insights
+- **Product Management** — Add, edit, and bulk-import products with pricing tiers (modal, normal, grosir)
+- **Stock In / Stock Out** — Record incoming and outgoing inventory with per-transaction details (store, price type, notes)
+- **Stock Opname** — Bulk reconciliation of physical vs. system stock with variance tracking
+- **Sales Analysis** — 30-day sales trend charts, top products, and revenue breakdowns
+- **AI Chat** — Conversational assistant with memory for querying inventory data and getting recommendations
+- **AI Insights** — Automated business intelligence summaries powered by LLM
+- **OCR Nota** — Upload receipt images for automatic data extraction
+- **Import History** — Bulk import sales history from Excel/CSV files
+- **User Management** — Role-based access control (admin / karyawan)
+- **PWA Support** — Installable on mobile devices with offline-capable service worker
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18, TypeScript, Vite |
+| Styling | Tailwind CSS, shadcn/ui |
+| State | TanStack React Query |
+| Routing | React Router v6 |
+| Backend | Supabase (Auth, PostgreSQL, Edge Functions, RLS) |
+| AI | Lovable AI (Gemini / GPT models via Edge Functions) |
+| Charts | Recharts |
+| PWA | vite-plugin-pwa |
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Installation
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+git clone https://github.com/slinx15/halo-bright-friend.git
+cd halo-bright-friend
+npm install
 ```
 
-**Edit a file directly in GitHub**
+## Environment Variables
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Create a `.env` file in the project root:
 
-**Use GitHub Codespaces**
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_SUPABASE_PROJECT_ID=your-project-id
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+> **Note:** Never commit `.env` to version control. The anon key is a publishable key safe for client-side use — all data security is enforced through Row Level Security (RLS) policies on the database.
 
-## What technologies are used for this project?
+## Running the Project
 
-This project is built with:
+```bash
+# Development server
+npm run dev
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# Build for production
+npm run build
 
-## How can I deploy this project?
+# Preview production build
+npm run preview
+```
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+The development server starts at `http://localhost:8080`.
 
-## Can I connect a custom domain to my Lovable project?
+## Project Structure
 
-Yes, you can!
+```
+├── public/                  # Static assets & PWA icons
+├── src/
+│   ├── assets/              # Images and media
+│   ├── components/          # Reusable UI components
+│   │   ├── ui/              # shadcn/ui primitives
+│   │   ├── analisa/         # Sales analysis components
+│   │   ├── keluar/          # Stock-out components
+│   │   ├── opname/          # Stock opname components
+│   │   └── produk/          # Product management components
+│   ├── hooks/               # Custom React hooks (auth, products, sales)
+│   ├── integrations/        # Supabase client & auto-generated types
+│   ├── lib/                 # Utilities, parsers, analytics engine
+│   ├── pages/               # Route-level page components
+│   └── test/                # Test setup and specs
+├── supabase/
+│   └── functions/           # Edge Functions (AI chat, OCR, imports)
+└── index.html
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Future Improvements
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+- Offline-first data sync with background queue
+- Barcode / QR code scanning for faster stock entry
+- Export reports to PDF
+- Multi-warehouse support
+- Push notifications for low-stock alerts
+- Dashboard customization and widgets
+
+## License
+
+This project is proprietary software for RRCollections.
