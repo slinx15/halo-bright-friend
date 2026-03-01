@@ -24,11 +24,11 @@ const primaryNav = [
   { icon: PackagePlus, label: "Masuk", path: "/masuk" },
   { icon: PackageMinus, label: "Jual", path: "/keluar" },
   { icon: Package, label: "Stok", path: "/stok" },
-  { icon: ClipboardCheck, label: "Opname", path: "/opname" },
+  { icon: BarChart3, label: "Analisa", path: "/analisa" },
 ];
 
 const secondaryNav = [
-  { icon: BarChart3, label: "Analisa", path: "/analisa", adminOnly: false },
+  { icon: ClipboardCheck, label: "Opname", path: "/opname", adminOnly: false },
   { icon: Settings, label: "Produk", path: "/produk", adminOnly: false },
   { icon: FileUp, label: "Import & Export", path: "/import-histori", adminOnly: false },
   { icon: Bot, label: "AI Assistant", path: "/ai", adminOnly: false },
