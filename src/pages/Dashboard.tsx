@@ -1,4 +1,4 @@
-import { Package, PackagePlus, PackageMinus, ClipboardCheck, AlertTriangle, TrendingUp, DollarSign, ShoppingCart, BarChart3, AlertCircle, PackageX } from "lucide-react";
+import { Package, PackagePlus, PackageMinus, ClipboardCheck, AlertTriangle, TrendingUp, TrendingDown, DollarSign, ShoppingCart, BarChart3, AlertCircle, PackageX, ArrowUpRight, ArrowDownRight, Sparkles } from "lucide-react";
 import { DashboardSkeleton } from "@/components/LoadingSkeletons";
 import { AiInsightsCard } from "@/components/AiInsightsCard";
 import { CriticalStockAlert } from "@/components/CriticalStockAlert";
@@ -33,6 +33,23 @@ function getAuthHeaders() {
   };
 }
 
+// ── Time-based greeting ───────────────────────────────────────────
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 11) return "Selamat Pagi";
+  if (hour < 15) return "Selamat Siang";
+  if (hour < 18) return "Selamat Sore";
+  return "Selamat Malam";
+}
+
+function getGreetingEmoji() {
+  const hour = new Date().getHours();
+  if (hour < 11) return "☀️";
+  if (hour < 15) return "🌤️";
+  if (hour < 18) return "🌅";
+  return "🌙";
+}
+
 // ── Command Center Chips ──────────────────────────────────────────
 function CommandCenter({ products, isLoading }: { products: any[] | undefined; isLoading: boolean }) {
   const navigate = useNavigate();
@@ -49,9 +66,9 @@ function CommandCenter({ products, isLoading }: { products: any[] | undefined; i
   }).length;
 
   const chips = [
-    { label: "Stok Kosong", count: kosong, bg: "bg-destructive/15", text: "text-destructive", border: "border-destructive/30", icon: PackageX },
-    { label: "Segera Habis", count: kritis, bg: "bg-critical/15", text: "text-critical", border: "border-critical/30", icon: AlertCircle },
-    { label: "Perlu Restock", count: warning, bg: "bg-warning/15", text: "text-warning", border: "border-warning/30", icon: AlertTriangle },
+    { label: "Stok Kosong", count: kosong, bg: "bg-destructive/10", text: "text-destructive", border: "border-destructive/20", icon: PackageX },
+    { label: "Segera Habis", count: kritis, bg: "bg-orange-500/10", text: "text-orange-600", border: "border-orange-500/20", icon: AlertCircle },
+    { label: "Perlu Restock", count: warning, bg: "bg-warning/10", text: "text-warning", border: "border-warning/20", icon: AlertTriangle },
   ].filter(c => c.count > 0);
 
   if (chips.length === 0) return null;
@@ -62,58 +79,97 @@ function CommandCenter({ products, isLoading }: { products: any[] | undefined; i
         <button
           key={chip.label}
           onClick={() => navigate("/stok")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl border ${chip.bg} ${chip.border} ${chip.text} shrink-0 transition-all duration-150 active:scale-95 hover:shadow-md`}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-full border ${chip.bg} ${chip.border} ${chip.text} shrink-0 transition-all duration-200 active:scale-95 hover:shadow-md`}
         >
-          <chip.icon className="h-4 w-4" />
-          <span className="font-bold text-lg">{chip.count}</span>
-          <span className="text-xs font-semibold opacity-80">{chip.label}</span>
+          <chip.icon className="h-3.5 w-3.5" />
+          <span className="font-extrabold text-base leading-none">{chip.count}</span>
+          <span className="text-[11px] font-semibold opacity-75">{chip.label}</span>
         </button>
       ))}
     </div>
   );
 }
 
-// ── KPI Card ──────────────────────────────────────────────────────
-function KpiCard({ icon: Icon, value, label, sub, color, bgColor }: {
-  icon: any; value: string; label: string; sub?: string; color: string; bgColor: string;
-}) {
+// ── Hero KPI Section ──────────────────────────────────────────────
+function HeroKpi({ omzet, profit, pcs, margin }: { omzet: number; profit: number; pcs: number; margin: number }) {
   return (
-    <Card className="rounded-2xl border bg-card shadow-sm min-w-[160px] snap-start transition-all duration-150 md:hover:shadow-md md:hover:-translate-y-[1px]">
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
-          <div className={`p-2 rounded-xl ${bgColor} shrink-0`}>
-            <Icon className={`h-5 w-5 ${color}`} />
+    <div className="grid grid-cols-3 gap-2">
+      {/* Omzet */}
+      <div className="col-span-2 relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-4 text-primary-foreground shadow-lg">
+        <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+        <div className="absolute -right-2 bottom-0 h-16 w-16 rounded-full bg-white/5" />
+        <div className="relative">
+          <div className="flex items-center gap-1.5 mb-1">
+            <DollarSign className="h-3.5 w-3.5 opacity-80" />
+            <span className="text-xs font-medium opacity-80">Omzet Hari Ini</span>
           </div>
-          <div className="min-w-0 flex-1 space-y-0.5">
-            <p className="text-xs text-muted-foreground font-medium">{label}</p>
-            <p className="text-2xl md:text-3xl font-bold tracking-tight tabular-nums truncate">{value || "—"}</p>
-            {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
-          </div>
+          <p className="text-2xl font-extrabold tracking-tight tabular-nums">{formatRupiah(omzet)}</p>
+          {margin > 0 && (
+            <div className="flex items-center gap-1 mt-1.5">
+              <ArrowUpRight className="h-3 w-3" />
+              <span className="text-[11px] font-semibold opacity-90">margin {margin}%</span>
+            </div>
+          )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Pcs Terjual */}
+      <div className="rounded-2xl bg-card border border-border/50 p-4 shadow-sm flex flex-col justify-between">
+        <div className="flex items-center gap-1.5 mb-1">
+          <ShoppingCart className="h-3.5 w-3.5 text-muted-foreground" />
+        </div>
+        <div>
+          <p className="text-2xl font-extrabold tracking-tight tabular-nums">{formatNumber(pcs)}</p>
+          <span className="text-[10px] text-muted-foreground font-medium">pcs terjual</span>
+        </div>
+      </div>
+
+      {/* Profit */}
+      <div className="col-span-3 rounded-2xl bg-card border border-border/50 p-3.5 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-success/10">
+              <TrendingUp className="h-4 w-4 text-success" />
+            </div>
+            <div>
+              <p className="text-[11px] text-muted-foreground font-medium">Profit Hari Ini</p>
+              <p className="text-lg font-extrabold tracking-tight tabular-nums">{formatRupiah(profit)}</p>
+            </div>
+          </div>
+          {profit > 0 && (
+            <Badge className="bg-success/10 text-success border-0 text-[10px] font-bold px-2 py-0.5">
+              <ArrowUpRight className="h-3 w-3 mr-0.5" />
+              +{formatRupiah(profit)}
+            </Badge>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
 // ── Stok Rendah Card ──────────────────────────────────────────────
 function StokRendahCard({ products, isLoading }: { products: any[] | undefined; isLoading: boolean }) {
   const navigate = useNavigate();
-    const stokKritisList = products
+  const stokKritisList = products
     ?.filter(p => p.stock && p.stock.jumlah > 0 && p.stock.jumlah <= 15)
     .sort((a: any, b: any) => (a.stock?.jumlah ?? 0) - (b.stock?.jumlah ?? 0))
     .slice(0, 5) ?? [];
 
-  const maxStock = 15; // threshold for bar
+  const maxStock = 15;
 
   return (
-    <Card className="rounded-2xl shadow-md border-0 transition-all duration-150 hover:shadow-lg">
+    <Card className="rounded-2xl shadow-sm border border-border/50">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-bold flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-destructive" /> Stok Rendah
+          <CardTitle className="text-sm font-bold flex items-center gap-2">
+            <div className="p-1 rounded-md bg-destructive/10">
+              <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+            </div>
+            Stok Rendah
           </CardTitle>
           {stokKritisList.length > 0 && (
-            <Badge variant="destructive" className="text-[10px] px-2 py-0.5 rounded-full">
+            <Badge variant="destructive" className="text-[10px] px-2 py-0.5 rounded-full font-bold">
               {stokKritisList.length}
             </Badge>
           )}
@@ -127,7 +183,7 @@ function StokRendahCard({ products, isLoading }: { products: any[] | undefined; 
             <p className="text-sm text-muted-foreground">Semua stok aman 👍</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {stokKritisList.map((p: any) => {
               const jumlah = p.stock?.jumlah ?? 0;
               const status = getStockStatus(jumlah);
@@ -135,32 +191,32 @@ function StokRendahCard({ products, isLoading }: { products: any[] | undefined; 
               return (
                 <div
                   key={p.id}
-                  className={`flex flex-col gap-1.5 p-2.5 rounded-xl transition-all duration-150 ${
-                    status === "kritis" ? "border-l-[3px] border-l-destructive bg-destructive/5" : "border-l-[3px] border-l-warning bg-warning/5"
+                  className={`flex flex-col gap-1 p-2.5 rounded-xl ${
+                    status === "kritis" ? "bg-destructive/5 border-l-[3px] border-l-destructive" : "bg-warning/5 border-l-[3px] border-l-warning"
                   }`}
                 >
-                    <div className="flex items-center justify-between gap-2">
-                     <div className="min-w-0 flex items-center gap-1.5">
-                       <span className="font-mono font-bold text-sm shrink-0">{p.kode}</span>
-                       {p.nama && p.nama !== p.kode && (
-                         <span className="text-muted-foreground text-xs truncate">{p.nama}</span>
-                       )}
-                      </div>
-                    <span className={`font-extrabold text-base ${status === "kritis" ? "text-destructive" : "text-warning"}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0 flex items-center gap-1.5">
+                      <span className="font-mono font-bold text-sm shrink-0">{p.kode}</span>
+                      {p.nama && p.nama !== p.kode && (
+                        <span className="text-muted-foreground text-[11px] truncate">{p.nama}</span>
+                      )}
+                    </div>
+                    <span className={`font-extrabold text-sm tabular-nums ${status === "kritis" ? "text-destructive" : "text-warning"}`}>
                       {jumlah}
                     </span>
                   </div>
                   <Progress
                     value={pct}
-                    className={`h-1.5 ${status === "kritis" ? "[&>div]:bg-destructive" : "[&>div]:bg-warning"}`}
+                    className={`h-1 ${status === "kritis" ? "[&>div]:bg-destructive" : "[&>div]:bg-warning"}`}
                   />
                 </div>
               );
             })}
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="w-full text-xs mt-2 rounded-xl font-semibold hover:bg-primary/5 hover:text-primary transition-all duration-150"
+              className="w-full text-xs mt-1 rounded-xl font-semibold text-primary hover:bg-primary/5"
               onClick={() => navigate("/stok")}
             >
               Lihat semua stok →
@@ -172,7 +228,7 @@ function StokRendahCard({ products, isLoading }: { products: any[] | undefined; 
   );
 }
 
-// ── Quick Actions ─────────────────────────────────────────────────
+// ── Quick Actions (desktop only) ──────────────────────────────────
 function QuickActions() {
   const navigate = useNavigate();
   const actions = [
@@ -183,28 +239,58 @@ function QuickActions() {
   ];
 
   return (
-    <Card className="rounded-2xl shadow-md border-0 transition-all duration-150 hover:shadow-lg">
+    <Card className="rounded-2xl shadow-sm border border-border/50">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-bold">Aksi Cepat</CardTitle>
+        <CardTitle className="text-sm font-bold">Aksi Cepat</CardTitle>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-4 gap-3">
           {actions.map(action => (
             <Button
               key={action.path}
               variant="outline"
-              className="h-auto flex-col gap-2.5 py-5 rounded-xl border-border/60 transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 active:scale-95"
+              className="h-auto flex-col gap-2 py-4 rounded-xl border-border/50 hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-150"
               onClick={() => navigate(action.path)}
             >
-              <div className={`p-2.5 rounded-xl ${action.bg}`}>
-                <action.icon className={`h-6 w-6 ${action.color}`} strokeWidth={2.5} />
+              <div className={`p-2 rounded-lg ${action.bg}`}>
+                <action.icon className={`h-5 w-5 ${action.color}`} strokeWidth={2.5} />
               </div>
-              <span className="text-sm font-semibold">{action.label}</span>
+              <span className="text-xs font-semibold">{action.label}</span>
             </Button>
           ))}
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// ── Inventory Summary Mini ────────────────────────────────────────
+function InventorySummary({ totalItems, totalStok, isLoading }: { totalItems: number; totalStok: number; isLoading: boolean }) {
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      <div className="rounded-2xl bg-card border border-border/50 p-3.5 shadow-sm">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-primary/10">
+            <Package className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <p className="text-[11px] text-muted-foreground font-medium">Total Item</p>
+            <p className="text-xl font-extrabold tracking-tight tabular-nums">{isLoading ? "..." : formatNumber(totalItems)}</p>
+          </div>
+        </div>
+      </div>
+      <div className="rounded-2xl bg-card border border-border/50 p-3.5 shadow-sm">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-success/10">
+            <TrendingUp className="h-4 w-4 text-success" />
+          </div>
+          <div>
+            <p className="text-[11px] text-muted-foreground font-medium">Total Stok</p>
+            <p className="text-xl font-extrabold tracking-tight tabular-nums">{isLoading ? "..." : formatNumber(totalStok)}</p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -214,8 +300,6 @@ const Dashboard = () => {
 
   const totalItems = products?.length ?? 0;
   const totalStok = products?.reduce((sum, p) => sum + (p.stock?.jumlah ?? 0), 0) ?? 0;
-  const warning = products?.filter(p => getStockStatus(p.stock?.jumlah ?? 0) === "warning").length ?? 0;
-  const kritis = products?.filter(p => getStockStatus(p.stock?.jumlah ?? 0) === "kritis").length ?? 0;
 
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
@@ -255,16 +339,15 @@ const Dashboard = () => {
   const omzetHariIni = todaySales?.reduce((s, r) => s + r.total_harga, 0) ?? 0;
   const pcsHariIni = todaySales?.reduce((s, r) => s + r.qty_kirim, 0) ?? 0;
 
-  // Calculate profit: Omzet - Modal
   const modalHariIni = todaySales?.reduce((s, r) => {
     const product = products?.find(p => p.id === r.product_id);
     const modal = product?.prices?.harga_modal ?? 0;
     return s + (r.qty_kirim * modal);
   }, 0) ?? 0;
   const profitHariIni = omzetHariIni - modalHariIni;
+  const marginPct = omzetHariIni > 0 ? Math.round((profitHariIni / omzetHariIni) * 100) : 0;
 
   const chartData = (() => {
-    // Helper: convert UTC timestamp to local YYYY-MM-DD string
     const toLocalDateStr = (isoStr: string) => {
       const d = new Date(isoStr);
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -292,12 +375,14 @@ const Dashboard = () => {
   if (isLoading) return <DashboardSkeleton />;
 
   return (
-    <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full">
-      {/* Header */}
+    <div className="p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto w-full pb-24 md:pb-6">
+      {/* Header — greeting based on time */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-muted-foreground font-medium">Selamat datang kembali 👋</p>
-          <h1 className="text-2xl font-extrabold tracking-tight">Dashboard</h1>
+          <p className="text-sm text-muted-foreground font-medium">
+            {getGreeting()}, Boss {getGreetingEmoji()}
+          </p>
+          <h1 className="text-xl font-extrabold tracking-tight">Dashboard</h1>
         </div>
         <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full">
           <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
@@ -308,42 +393,36 @@ const Dashboard = () => {
       {/* 1. Command Center Chips */}
       <CommandCenter products={products} isLoading={isLoading} />
 
-      {/* 1.5 Critical Stock Alert — DOS ≤ 2 hari */}
+      {/* 2. Critical Stock Alert — DOS ≤ 2 hari */}
       <CriticalStockAlert />
 
-      {/* 2. KPI Cards — horizontal scroll mobile, grid desktop */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <KpiCard icon={DollarSign} value={formatRupiah(omzetHariIni)} label="Omzet Hari Ini" color="text-primary" bgColor="bg-primary/10" />
-        <KpiCard icon={TrendingUp} value={formatRupiah(profitHariIni)} label="Profit Hari Ini" sub={profitHariIni > 0 ? `margin ${omzetHariIni > 0 ? Math.round((profitHariIni / omzetHariIni) * 100) : 0}%` : undefined} color="text-success" bgColor="bg-success/10" />
-        <KpiCard icon={ShoppingCart} value={formatNumber(pcsHariIni)} label="Pcs Terjual" sub="hari ini" color="text-accent-foreground" bgColor="bg-accent/50" />
-        <KpiCard icon={AlertTriangle} value={isLoading ? "..." : String(warning)} label="Stok Warning" color="text-warning" bgColor="bg-warning/10" />
-        <KpiCard icon={AlertTriangle} value={isLoading ? "..." : String(kritis)} label="Stok Kritis" color="text-destructive" bgColor="bg-destructive/10" />
-      </div>
+      {/* 3. Hero KPI — Omzet, Profit, Pcs */}
+      <HeroKpi omzet={omzetHariIni} profit={profitHariIni} pcs={pcsHariIni} margin={marginPct} />
 
-      {/* 3. Chart + Stok Rendah */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="md:col-span-2 rounded-2xl shadow-md border-0 transition-all duration-150 hover:shadow-lg">
+      {/* 4. Chart + Stok Rendah */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <Card className="md:col-span-2 rounded-2xl shadow-sm border border-border/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-primary/10">
-                <BarChart3 className="h-4 w-4 text-primary" />
+            <CardTitle className="text-sm font-bold flex items-center gap-2">
+              <div className="p-1 rounded-md bg-primary/10">
+                <BarChart3 className="h-3.5 w-3.5 text-primary" />
               </div>
-              Penjualan 7 Hari Terakhir
+              Penjualan 7 Hari
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-2 pb-4">
-            <div className="h-56 md:h-60">
+          <CardContent className="pt-1 pb-3">
+            <div className="h-48 md:h-56">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v} />
+                <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10 }} className="fill-muted-foreground" axisLine={false} tickLine={false} tickFormatter={v => v >= 1000000 ? `${(v / 1000000).toFixed(1)}jt` : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v} />
                   <Tooltip
                     formatter={(value: number, name: string) => [
                       name === "omzet" ? formatRupiah(value) : formatNumber(value),
                       name === "omzet" ? "Omzet" : "Pcs",
                     ]}
-                    contentStyle={{ borderRadius: 12, fontSize: 12, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}
+                    contentStyle={{ borderRadius: 12, fontSize: 11, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}
                   />
                   <Bar dataKey="omzet" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
                 </BarChart>
@@ -355,16 +434,13 @@ const Dashboard = () => {
         <StokRendahCard products={products} isLoading={isLoading} />
       </div>
 
-      {/* 4. AI Insights */}
+      {/* 5. AI Insights */}
       <AiInsightsCard />
 
-      {/* 5. Info Ringkasan */}
-      <div className="grid grid-cols-2 gap-3">
-        <KpiCard icon={Package} value={isLoading ? "..." : formatNumber(totalItems)} label="Total Item" sub="produk aktif" color="text-primary" bgColor="bg-primary/10" />
-        <KpiCard icon={TrendingUp} value={isLoading ? "..." : formatNumber(totalStok)} label="Total Stok" sub="semua gudang" color="text-success" bgColor="bg-success/10" />
-      </div>
+      {/* 6. Inventory Summary */}
+      <InventorySummary totalItems={totalItems} totalStok={totalStok} isLoading={isLoading} />
 
-      {/* 6. Quick Actions — hidden on mobile (bottom nav covers these) */}
+      {/* 7. Quick Actions — desktop only */}
       <div className="hidden md:block">
         <QuickActions />
       </div>
