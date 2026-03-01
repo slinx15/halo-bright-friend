@@ -515,11 +515,14 @@ function BudgetPlanner({
 }
 
 // ─── Mobile Card Helper for simple ranked lists ───────────
-function MobileRankedCard({ rank, kode, isBestSeller, children, borderClass }: {
-  rank: number | string; kode: string; isBestSeller?: boolean; children: React.ReactNode; borderClass?: string;
+function MobileRankedCard({ rank, kode, isBestSeller, children, borderClass, index = 0 }: {
+  rank: number | string; kode: string; isBestSeller?: boolean; children: React.ReactNode; borderClass?: string; index?: number;
 }) {
   return (
-    <div className={`rounded-xl border p-3.5 space-y-2 transition-all active:scale-[0.99] ${borderClass || "border-border/60"}`}>
+    <div
+      className={`rounded-xl border p-3.5 space-y-2 transition-all active:scale-[0.99] animate-fade-in ${borderClass || "border-border/60"}`}
+      style={{ animationDelay: `${Math.min(index * 30, 300)}ms`, animationFillMode: "both" }}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-xs text-muted-foreground font-mono">{typeof rank === 'number' && rank <= 3 ? ['🥇','🥈','🥉'][rank-1] : `#${rank}`}</span>
@@ -643,9 +646,10 @@ const Analisa = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           <button
             onClick={() => setFilter(filter === "CRITICAL" ? "ALL" : "CRITICAL")}
-            className={`relative overflow-hidden rounded-2xl p-3.5 text-left transition-all duration-200 active:scale-[0.97] ${
+            className={`relative overflow-hidden rounded-2xl p-3.5 text-left transition-all duration-200 active:scale-[0.97] animate-fade-in ${
               filter === "CRITICAL" ? "ring-2 ring-destructive shadow-md" : ""
             } bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/30 border border-destructive/15`}
+            style={{ animationDelay: "0ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-destructive/8" />
             <span className="text-lg">🚨</span>
@@ -655,9 +659,10 @@ const Analisa = () => {
 
           <button
             onClick={() => setFilter(filter === "WARNING" ? "ALL" : "WARNING")}
-            className={`relative overflow-hidden rounded-2xl p-3.5 text-left transition-all duration-200 active:scale-[0.97] ${
+            className={`relative overflow-hidden rounded-2xl p-3.5 text-left transition-all duration-200 active:scale-[0.97] animate-fade-in ${
               filter === "WARNING" ? "ring-2 ring-warning shadow-md" : ""
             } bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-warning/15`}
+            style={{ animationDelay: "60ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-warning/8" />
             <span className="text-lg">⚠️</span>
@@ -667,7 +672,8 @@ const Analisa = () => {
 
           <button
             onClick={() => setFilter(filter === "CRITICAL" ? "ALL" : "CRITICAL")}
-            className={`relative overflow-hidden rounded-2xl p-3.5 text-left transition-all duration-200 active:scale-[0.97] bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-950/30 dark:to-gray-950/30 border border-border/40`}
+            className="relative overflow-hidden rounded-2xl p-3.5 text-left transition-all duration-200 active:scale-[0.97] animate-fade-in bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-950/30 dark:to-gray-950/30 border border-border/40"
+            style={{ animationDelay: "120ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-muted/40" />
             <span className="text-lg">📦</span>
@@ -675,7 +681,10 @@ const Analisa = () => {
             <p className="text-[10px] font-medium text-muted-foreground mt-0.5">Stok Kosong</p>
           </button>
 
-          <div className="relative overflow-hidden rounded-2xl p-3.5 text-left bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-primary/10">
+          <div
+            className="relative overflow-hidden rounded-2xl p-3.5 text-left animate-fade-in bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-primary/10"
+            style={{ animationDelay: "180ms", animationFillMode: "both" }}
+          >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-primary/5" />
             <span className="text-lg">💰</span>
             <p className="text-base font-black tabular-nums mt-1 truncate">{formatRp(totalRestockCost)}</p>
@@ -921,7 +930,7 @@ const Analisa = () => {
           </div>
 
           {/* Prediksi */}
-          <Card className="border-0 shadow-sm p-5 space-y-4">
+          <Card className="border-0 shadow-sm p-5 space-y-4 animate-fade-in" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
             <SectionHeader icon={Clock} title="Prediksi Kehabisan Stok" subtitle="Berdasarkan velocity saat ini" />
             {[
               { items: predCritical, label: `Kritis — ≤${RULES.CRITICAL_DAYS} hari`, color: "text-destructive", dot: "bg-destructive" },
@@ -935,10 +944,10 @@ const Analisa = () => {
                 </div>
                 {isMobile ? (
                   <div className="space-y-2">
-                    {items.map(p => (
-                      <div key={p.productId} className={`rounded-xl border p-3 space-y-1.5 ${
+                    {items.map((p, pIdx) => (
+                      <div key={p.productId} className={`rounded-xl border p-3 space-y-1.5 animate-fade-in ${
                         p.urgency === "critical" ? "border-l-[3px] border-l-destructive border-border/60" : "border-border/60"
-                      }`}>
+                      }`} style={{ animationDelay: `${Math.min(pIdx * 30, 300)}ms`, animationFillMode: "both" }}>
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-sm">{p.kode}{p.isBestSeller ? " 🔥" : ""}</span>
                           <span className={`font-mono font-bold tabular-nums ${color}`}>{formatDaysLeft(p.daysLeft)}</span>
@@ -983,16 +992,16 @@ const Analisa = () => {
           </Card>
 
           {/* Low Stock */}
-          <Card className="border-0 shadow-sm p-5 space-y-3">
+          <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
             <SectionHeader icon={ArrowDown} title="10 Stok Paling Sedikit" />
             {isMobile ? (
               <div className="space-y-2">
                 {lowStock.map((l, i) => {
                   const icon = l.stok === 0 ? "🔴" : l.stok < 10 ? "🟡" : "🟢";
                   return (
-                    <div key={l.productId} className={`rounded-xl border p-3 transition-all active:scale-[0.99] ${
+                    <div key={l.productId} className={`rounded-xl border p-3 transition-all active:scale-[0.99] animate-fade-in ${
                       l.stok === 0 ? "border-l-[3px] border-l-destructive border-border/60" : "border-border/60"
-                    }`}>
+                    }`} style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground">#{i + 1}</span>
@@ -1039,7 +1048,7 @@ const Analisa = () => {
         </TabsContent>
 
         {/* ══════════ PENJUALAN ══════════ */}
-        <TabsContent value="penjualan" className="space-y-5 mt-5">
+        <TabsContent value="penjualan" className="space-y-5 mt-5 animate-fade-in" style={{ animationFillMode: "both" }}>
           {/* Visual Charts */}
           <SalesTrendCharts
             stockOutData={stockOutData}
@@ -1048,12 +1057,12 @@ const Analisa = () => {
             isMobile={isMobile}
           />
 
-          <Card className="border-0 shadow-sm p-5 space-y-3">
+          <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
             <SectionHeader icon={Trophy} title={`${RULES.DISPLAY_TOP_ITEMS} Barang Paling Laris`} subtitle="30 hari terakhir" />
             {isMobile ? (
               <div className="space-y-2.5">
                 {topSellers.map((t, i) => (
-                  <MobileRankedCard key={t.productId} rank={i + 1} kode={t.kode} isBestSeller={t.isBestSeller}>
+                  <MobileRankedCard key={t.productId} rank={i + 1} kode={t.kode} isBestSeller={t.isBestSeller} index={i}>
                     <div className="grid grid-cols-2 gap-2 text-[11px] mt-1.5">
                       <div><span className="text-muted-foreground">Terjual</span><p className="font-bold tabular-nums">{t.totalQty} pcs</p></div>
                       <div><span className="text-muted-foreground">Hari Data</span><p className="font-semibold tabular-nums">{t.days}{t.days < 7 ? " ⚠️" : ""}</p></div>
@@ -1101,7 +1110,7 @@ const Analisa = () => {
             <p className="text-[11px] text-muted-foreground">⚠️ = data &lt; 7 hari (mungkin belum akurat)</p>
           </Card>
 
-          <Card className="border-0 shadow-sm p-5 space-y-3">
+          <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
             <SectionHeader icon={Activity} title="Trend Penjualan 7 Hari" />
             <div className="flex flex-wrap gap-3">
               {[
@@ -1120,7 +1129,7 @@ const Analisa = () => {
                 {trendItems.map((t, i) => {
                   const icon = t.changePct > 10 ? "📈" : t.changePct < -10 ? "📉" : "➡️";
                   return (
-                    <div key={t.productId} className="rounded-xl border border-border/60 p-3 space-y-1">
+                    <div key={t.productId} className="rounded-xl border border-border/60 p-3 space-y-1 animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-sm">{icon} {t.kode}{t.isBestSeller ? " 🔥" : ""}</span>
                         <span className={`font-mono font-bold text-sm tabular-nums ${t.changePct > 0 ? "text-success" : t.changePct < 0 ? "text-destructive" : ""}`}>
@@ -1170,8 +1179,8 @@ const Analisa = () => {
         </TabsContent>
 
         {/* ══════════ PROFIT ══════════ */}
-        <TabsContent value="profit" className="space-y-5 mt-5">
-          <Card className="border-0 shadow-sm p-5 space-y-3">
+        <TabsContent value="profit" className="space-y-5 mt-5 animate-fade-in" style={{ animationFillMode: "both" }}>
+          <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
             <SectionHeader icon={DollarSign} title="Barang Paling Untung" subtitle="30 hari terakhir" />
             {profitItems.length === 0 ? (
               <p className="text-sm text-muted-foreground py-8 text-center">Belum ada data profit. Pastikan data harga sudah diisi.</p>
@@ -1190,7 +1199,7 @@ const Analisa = () => {
                 {isMobile ? (
                   <div className="space-y-2.5">
                     {profitItems.slice(0, 20).map((p, i) => (
-                      <MobileRankedCard key={p.productId} rank={i + 1} kode={p.kode} isBestSeller={p.isBestSeller}>
+                      <MobileRankedCard key={p.productId} rank={i + 1} kode={p.kode} isBestSeller={p.isBestSeller} index={i}>
                         <div className="grid grid-cols-2 gap-2 text-[11px] mt-1.5">
                           <div><span className="text-muted-foreground">Total Untung</span><p className="font-bold text-success tabular-nums">{formatRp(p.totalProfit)}</p></div>
                           <div><span className="text-muted-foreground">Terjual</span><p className="font-semibold tabular-nums">{p.totalQty} pcs</p></div>
@@ -1237,8 +1246,8 @@ const Analisa = () => {
         </TabsContent>
 
         {/* ══════════ TOKO ══════════ */}
-        <TabsContent value="toko" className="space-y-5 mt-5">
-          <Card className="border-0 shadow-sm p-5 space-y-3">
+        <TabsContent value="toko" className="space-y-5 mt-5 animate-fade-in" style={{ animationFillMode: "both" }}>
+          <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
             <SectionHeader icon={Store} title="Top Pelanggan" subtitle="30 hari terakhir" />
             {tokoItems.length === 0 ? (
               <p className="text-sm text-muted-foreground py-8 text-center">Belum ada data transaksi per toko.</p>
@@ -1259,7 +1268,7 @@ const Analisa = () => {
                 {isMobile ? (
                   <div className="space-y-2.5">
                     {tokoItems.slice(0, 15).map((t, i) => (
-                      <MobileRankedCard key={t.nama} rank={i + 1} kode={t.nama}>
+                      <MobileRankedCard key={t.nama} rank={i + 1} kode={t.nama} index={i}>
                         <div className="grid grid-cols-2 gap-2 text-[11px] mt-1.5">
                           <div><span className="text-muted-foreground">Qty</span><p className="font-bold tabular-nums">{t.totalQty} pcs</p></div>
                           <div><span className="text-muted-foreground">Nilai</span><p className="font-semibold tabular-nums">{formatRp(t.totalNilai)}</p></div>
@@ -1311,8 +1320,8 @@ const Analisa = () => {
         </TabsContent>
 
         {/* ══════════ DEAD STOCK ══════════ */}
-        <TabsContent value="dead" className="space-y-5 mt-5">
-          <Card className="border-0 shadow-sm p-5 space-y-3">
+        <TabsContent value="dead" className="space-y-5 mt-5 animate-fade-in" style={{ animationFillMode: "both" }}>
+          <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
             <SectionHeader icon={Skull} title={`Barang Tidak Laku (${RULES.DEAD_STOCK_DAYS}+ hari)`} />
             {deadStock.length === 0 ? (
               <div className="text-center py-12">
@@ -1337,7 +1346,7 @@ const Analisa = () => {
                 {isMobile ? (
                   <div className="space-y-2.5">
                     {deadStock.map((d, i) => (
-                      <div key={d.productId} className="rounded-xl border border-l-[3px] border-l-destructive border-border/60 p-3.5 space-y-1.5 transition-all active:scale-[0.99]">
+                      <div key={d.productId} className="rounded-xl border border-l-[3px] border-l-destructive border-border/60 p-3.5 space-y-1.5 transition-all active:scale-[0.99] animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-muted-foreground">#{i + 1}</span>
@@ -1388,7 +1397,7 @@ const Analisa = () => {
         </TabsContent>
 
         {/* ══════════ BUDGET PLANNER ══════════ */}
-        <TabsContent value="budget" className="space-y-4 mt-4">
+        <TabsContent value="budget" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <BudgetPlanner
             analyses={analyses}
             budgetAmount={budgetAmount}
@@ -1400,7 +1409,7 @@ const Analisa = () => {
         </TabsContent>
 
         {/* ══════════ RINGKASAN ══════════ */}
-        <TabsContent value="ringkasan" className="space-y-5 mt-5">
+        <TabsContent value="ringkasan" className="space-y-5 mt-5 animate-fade-in" style={{ animationFillMode: "both" }}>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {[
               { icon: "📦", label: "Jenis Barang", value: String(stats.totalSKU), color: "" },
@@ -1409,8 +1418,8 @@ const Analisa = () => {
               { icon: "🔴", label: "Habis", value: String(stats.outOfStock), color: "text-destructive" },
               { icon: "⚠️", label: "Mau Habis", value: String(stats.criticalCount), color: "text-warning" },
               { icon: "🔥", label: "Laris", value: String(stats.bestSellerCount), color: "text-primary" },
-            ].map(s => (
-              <div key={s.label} className="rounded-2xl bg-card border border-border/50 shadow-sm p-3.5">
+            ].map((s, idx) => (
+              <div key={s.label} className="rounded-2xl bg-card border border-border/50 shadow-sm p-3.5 animate-fade-in" style={{ animationDelay: `${idx * 60}ms`, animationFillMode: "both" }}>
                 <div className="flex items-center gap-2 mb-1.5">
                   <span className="text-base">{s.icon}</span>
                   <span className="text-[11px] text-muted-foreground font-medium">{s.label}</span>
@@ -1420,7 +1429,7 @@ const Analisa = () => {
             ))}
           </div>
 
-          <Card className="border-0 shadow-sm p-5 space-y-3">
+          <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
             <SectionHeader icon={DollarSign} title="Estimasi Budget Restock" />
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {budgetEstimates.map((e) => {
@@ -1436,7 +1445,7 @@ const Analisa = () => {
             </div>
           </Card>
 
-          <Card className="border-0 shadow-sm">
+          <Card className="border-0 shadow-sm animate-fade-in" style={{ animationDelay: "300ms", animationFillMode: "both" }}>
             <CardContent className="p-4 space-y-1.5 text-xs text-muted-foreground">
               <p className="font-semibold text-foreground text-sm">⚙️ Pengaturan Analisa</p>
               <div className="grid grid-cols-2 gap-1">
