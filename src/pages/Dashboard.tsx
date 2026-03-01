@@ -56,6 +56,7 @@ function CommandCenter({ products, isLoading }: { products: any[] | undefined; i
   if (isLoading || !products) return null;
 
   const total = products.length;
+  const totalStok = products.reduce((sum, p) => sum + (p.stock?.jumlah ?? 0), 0);
   const kosong = products.filter(p => (p.stock?.jumlah ?? 0) === 0).length;
   const kritis = products.filter(p => {
     const j = p.stock?.jumlah ?? 0;
@@ -68,25 +69,40 @@ function CommandCenter({ products, isLoading }: { products: any[] | undefined; i
   const aman = total - kosong - kritis - warning;
 
   const cards = [
-    { label: "Kosong", count: kosong, icon: PackageX, gradient: "from-red-500 to-rose-600", lightBg: "bg-destructive/8", lightText: "text-destructive", emoji: "🚨" },
-    { label: "Kritis", count: kritis, icon: AlertCircle, gradient: "from-orange-500 to-amber-600", lightBg: "bg-orange-500/8", lightText: "text-orange-600", emoji: "⚠️" },
-    { label: "Warning", count: warning, icon: AlertTriangle, gradient: "from-amber-400 to-yellow-500", lightBg: "bg-warning/8", lightText: "text-amber-600", emoji: "📦" },
-    { label: "Aman", count: aman, icon: Package, gradient: "from-emerald-500 to-green-600", lightBg: "bg-success/8", lightText: "text-success", emoji: "✅" },
+    { label: "Kosong", count: kosong, icon: PackageX, lightBg: "bg-destructive/8", lightText: "text-destructive", emoji: "🚨" },
+    { label: "Kritis", count: kritis, icon: AlertCircle, lightBg: "bg-orange-500/8", lightText: "text-orange-600", emoji: "⚠️" },
+    { label: "Warning", count: warning, icon: AlertTriangle, lightBg: "bg-warning/8", lightText: "text-amber-600", emoji: "📦" },
+    { label: "Aman", count: aman, icon: Package, lightBg: "bg-success/8", lightText: "text-success", emoji: "✅" },
   ];
 
   return (
-    <div className="grid grid-cols-4 gap-2">
-      {cards.map(card => (
-        <button
-          key={card.label}
-          onClick={() => navigate("/stok")}
-          className={`relative overflow-hidden rounded-2xl ${card.lightBg} border border-border/30 p-3 flex flex-col items-center gap-1 transition-all duration-200 active:scale-95 hover:shadow-md`}
-        >
-          <span className="text-lg leading-none">{card.emoji}</span>
-          <span className={`text-2xl font-black tabular-nums leading-none ${card.lightText}`}>{card.count}</span>
-          <span className="text-[10px] font-semibold text-muted-foreground leading-tight">{card.label}</span>
-        </button>
-      ))}
+    <div className="space-y-2">
+      {/* Total Item & Stok summary */}
+      <div className="flex items-center gap-3 px-1">
+        <div className="flex items-center gap-1.5">
+          <Package className="h-3.5 w-3.5 text-primary" />
+          <span className="text-xs text-muted-foreground font-medium">{formatNumber(total)} item</span>
+        </div>
+        <span className="text-border">·</span>
+        <div className="flex items-center gap-1.5">
+          <TrendingUp className="h-3.5 w-3.5 text-success" />
+          <span className="text-xs text-muted-foreground font-medium">{formatNumber(totalStok)} stok</span>
+        </div>
+      </div>
+      {/* Status grid */}
+      <div className="grid grid-cols-4 gap-2">
+        {cards.map(card => (
+          <button
+            key={card.label}
+            onClick={() => navigate("/stok")}
+            className={`relative overflow-hidden rounded-2xl ${card.lightBg} border border-border/30 p-3 flex flex-col items-center gap-1 transition-all duration-200 active:scale-95 hover:shadow-md`}
+          >
+            <span className="text-lg leading-none">{card.emoji}</span>
+            <span className={`text-2xl font-black tabular-nums leading-none ${card.lightText}`}>{card.count}</span>
+            <span className="text-[10px] font-semibold text-muted-foreground leading-tight">{card.label}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -265,35 +281,7 @@ function QuickActions() {
   );
 }
 
-// ── Inventory Summary Mini ────────────────────────────────────────
-function InventorySummary({ totalItems, totalStok, isLoading }: { totalItems: number; totalStok: number; isLoading: boolean }) {
-  return (
-    <div className="grid grid-cols-2 gap-2">
-      <div className="rounded-2xl bg-card border border-border/50 p-3.5 shadow-sm">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-primary/10">
-            <Package className="h-4 w-4 text-primary" />
-          </div>
-          <div>
-            <p className="text-[11px] text-muted-foreground font-medium">Total Item</p>
-            <p className="text-xl font-extrabold tracking-tight tabular-nums">{isLoading ? "..." : formatNumber(totalItems)}</p>
-          </div>
-        </div>
-      </div>
-      <div className="rounded-2xl bg-card border border-border/50 p-3.5 shadow-sm">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-success/10">
-            <TrendingUp className="h-4 w-4 text-success" />
-          </div>
-          <div>
-            <p className="text-[11px] text-muted-foreground font-medium">Total Stok</p>
-            <p className="text-xl font-extrabold tracking-tight tabular-nums">{isLoading ? "..." : formatNumber(totalStok)}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+// InventorySummary removed — integrated into CommandCenter
 
 // ── Main Dashboard ────────────────────────────────────────────────
 const Dashboard = () => {
@@ -445,12 +433,6 @@ const Dashboard = () => {
       <div className="animate-fade-in" style={{ animationDelay: "250ms", animationFillMode: "both" }}>
         <AiInsightsCard />
       </div>
-
-      {/* 6. Inventory Summary */}
-      <div className="animate-fade-in" style={{ animationDelay: "300ms", animationFillMode: "both" }}>
-        <InventorySummary totalItems={totalItems} totalStok={totalStok} isLoading={isLoading} />
-      </div>
-
       {/* 7. Quick Actions — desktop only */}
       <div className="hidden md:block animate-fade-in" style={{ animationDelay: "350ms", animationFillMode: "both" }}>
         <QuickActions />
