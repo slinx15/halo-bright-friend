@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, TrendingDown, Clock, ArrowRight } from "lucide-react";
+import { AlertTriangle, TrendingDown, Clock, ArrowRight, Flame } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { useSalesAnalysis } from "@/hooks/useSalesAnalysis";
 import { analyzeAllProducts, type ProductAnalysis } from "@/lib/stockAnalyticsEngine";
@@ -21,20 +21,22 @@ export function CriticalStockAlert() {
     return analysis
       .filter((a) => a.dosStatus === "CRITICAL" && a.velocity > 0)
       .sort((a, b) => a.daysOfStock - b.daysOfStock)
-      .slice(0, 8);
+      .slice(0, 6);
   }, [products, stockOutData]);
 
   const isLoading = prodLoading || salesLoading;
 
   if (isLoading) {
     return (
-      <Card className="rounded-2xl border-destructive/30 bg-destructive/5 shadow-md">
+      <Card className="rounded-2xl shadow-md border-0">
         <CardHeader className="pb-2">
-          <Skeleton className="h-5 w-48" />
+          <Skeleton className="h-5 w-40" />
         </CardHeader>
-        <CardContent className="space-y-3">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
+        <CardContent>
+          <div className="grid grid-cols-2 gap-2">
+            <Skeleton className="h-20 rounded-xl" />
+            <Skeleton className="h-20 rounded-xl" />
+          </div>
         </CardContent>
       </Card>
     );
@@ -43,31 +45,33 @@ export function CriticalStockAlert() {
   if (criticalItems.length === 0) return null;
 
   return (
-    <Card className="rounded-2xl border-destructive/30 bg-destructive/5 shadow-md overflow-hidden">
+    <Card className="rounded-2xl shadow-md border-0 overflow-hidden transition-all duration-150 hover:shadow-lg">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-bold flex items-center gap-2 text-destructive">
-            <div className="p-1.5 rounded-lg bg-destructive/15 animate-pulse">
-              <AlertTriangle className="h-4 w-4" />
+          <CardTitle className="text-base font-bold flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-destructive/10">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
             </div>
-            Stok Kritis — Segera Habis!
+            Stok Kritis
           </CardTitle>
           <Badge variant="destructive" className="text-[10px] px-2 py-0.5 rounded-full font-bold">
-            {criticalItems.length} item
+            {criticalItems.length}
           </Badge>
         </div>
-        <p className="text-xs text-destructive/70 mt-1">
-          Produk berikut diprediksi habis dalam ≤2 hari berdasarkan kecepatan penjualan
+        <p className="text-[11px] text-muted-foreground mt-0.5">
+          Habis dalam ≤2 hari berdasarkan kecepatan jual
         </p>
       </CardHeader>
-      <CardContent className="pt-1 space-y-2">
-        {criticalItems.map((item) => (
-          <CriticalItemRow key={item.productId} item={item} />
-        ))}
+      <CardContent className="pt-1 pb-4">
+        <div className="grid grid-cols-2 gap-2">
+          {criticalItems.map((item) => (
+            <CriticalItemCard key={item.productId} item={item} />
+          ))}
+        </div>
         <Button
           variant="outline"
           size="sm"
-          className="w-full text-xs mt-2 rounded-xl font-semibold border-destructive/30 text-destructive hover:bg-destructive/10 transition-all duration-150"
+          className="w-full text-xs mt-3 rounded-xl font-semibold hover:bg-primary/5 hover:text-primary transition-all duration-150"
           onClick={() => navigate("/analisa")}
         >
           Lihat analisa lengkap <ArrowRight className="h-3 w-3 ml-1" />
@@ -77,49 +81,59 @@ export function CriticalStockAlert() {
   );
 }
 
-function CriticalItemRow({ item }: { item: ProductAnalysis }) {
+function CriticalItemCard({ item }: { item: ProductAnalysis }) {
   const dosText =
     item.daysOfStock < 1
       ? "< 1 hari"
-      : `${item.daysOfStock.toFixed(1)} hari`;
+      : `${item.daysOfStock.toFixed(1)} hr`;
+
+  const urgency = item.daysOfStock < 1 ? "extreme" : "high";
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-xl bg-background/80 border border-destructive/20 transition-all duration-150 hover:border-destructive/40">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="font-mono font-bold text-sm">{item.kode}</span>
-          {item.isBestSeller && (
-            <Badge variant="secondary" className="text-[9px] px-1.5 py-0 rounded-full bg-primary/10 text-primary">
-              Best Seller
-            </Badge>
-          )}
-          {item.isStockOut && (
-            <Badge variant="destructive" className="text-[9px] px-1.5 py-0 rounded-full">
-              HABIS
-            </Badge>
-          )}
-        </div>
-        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            Stok: <strong className="text-destructive">{formatNumber(item.currentStock)}</strong>
-          </span>
-          <span className="flex items-center gap-1">
-            <TrendingDown className="h-3 w-3" />
-            {item.velocity.toFixed(1)}/hari
-          </span>
-        </div>
-      </div>
-      <div className="text-right shrink-0">
-        <div className="flex items-center gap-1 text-destructive font-bold text-sm">
-          <Clock className="h-3.5 w-3.5" />
-          {dosText}
-        </div>
-        {item.recommendedQty > 0 && (
-          <p className="text-[10px] text-muted-foreground mt-0.5">
-            Restock: +{formatNumber(item.recommendedQty)}
-          </p>
+    <div
+      className={`relative p-3 rounded-xl border transition-all duration-150 ${
+        urgency === "extreme"
+          ? "border-destructive/40 bg-destructive/5"
+          : "border-destructive/20 bg-destructive/[0.03]"
+      }`}
+    >
+      {/* Kode + badge */}
+      <div className="flex items-center gap-1.5 mb-2">
+        <span className="font-mono font-bold text-sm truncate">{item.kode}</span>
+        {item.isBestSeller && (
+          <Flame className="h-3 w-3 text-primary shrink-0" />
         )}
       </div>
+
+      {/* DOS pill */}
+      <div
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${
+          urgency === "extreme"
+            ? "bg-destructive text-destructive-foreground"
+            : "bg-destructive/15 text-destructive"
+        }`}
+      >
+        <Clock className="h-3 w-3" />
+        {dosText}
+      </div>
+
+      {/* Stats */}
+      <div className="flex items-center justify-between mt-2 text-[11px] text-muted-foreground">
+        <span>
+          Stok <strong className="text-foreground">{formatNumber(item.currentStock)}</strong>
+        </span>
+        <span className="flex items-center gap-0.5">
+          <TrendingDown className="h-3 w-3" />
+          {item.velocity.toFixed(1)}/hr
+        </span>
+      </div>
+
+      {/* Restock hint */}
+      {item.recommendedQty > 0 && (
+        <div className="mt-1.5 text-[10px] text-primary font-semibold">
+          Restock +{formatNumber(item.recommendedQty)}
+        </div>
+      )}
     </div>
   );
 }
