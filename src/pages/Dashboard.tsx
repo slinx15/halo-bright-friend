@@ -91,11 +91,12 @@ function CommandCenter({ products, isLoading }: { products: any[] | undefined; i
       </div>
       {/* Status grid */}
       <div className="grid grid-cols-4 gap-2">
-        {cards.map(card => (
+        {cards.map((card, idx) => (
           <button
             key={card.label}
             onClick={() => navigate("/stok")}
-            className={`relative overflow-hidden rounded-2xl ${card.lightBg} border border-border/30 p-3 flex flex-col items-center gap-1 transition-all duration-200 active:scale-95 hover:shadow-md`}
+            className={`card-premium ${card.lightBg} p-3 flex flex-col items-center gap-1 transition-all duration-200 native-press animate-fade-in`}
+            style={{ animationDelay: `${idx * 60}ms`, animationFillMode: "both" }}
           >
             <span className="text-lg leading-none">{card.emoji}</span>
             <span className={`text-2xl font-black tabular-nums leading-none ${card.lightText}`}>{card.count}</span>
@@ -112,8 +113,8 @@ function HeroKpi({ omzet, profit, pcs, margin }: { omzet: number; profit: number
   return (
     <div className="grid grid-cols-3 gap-2">
       {/* Omzet */}
-      <div className="col-span-2 relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-4 text-primary-foreground shadow-lg">
-        <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+      <div className="col-span-2 relative overflow-hidden rounded-2xl p-4 text-primary-foreground shadow-premium-lg" style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(217 91% 40%))" }}>
+        <div className="absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/10 animate-glow-pulse" />
         <div className="absolute -right-2 bottom-0 h-16 w-16 rounded-full bg-white/5" />
         <div className="relative">
           <div className="flex items-center gap-1.5 mb-1">
@@ -131,7 +132,7 @@ function HeroKpi({ omzet, profit, pcs, margin }: { omzet: number; profit: number
       </div>
 
       {/* Pcs Terjual */}
-      <div className="rounded-2xl bg-card border border-border/50 p-4 shadow-sm flex flex-col justify-between">
+      <div className="card-premium p-4 flex flex-col justify-between">
         <div className="flex items-center gap-1.5 mb-1">
           <ShoppingCart className="h-3.5 w-3.5 text-muted-foreground" />
         </div>
@@ -142,7 +143,7 @@ function HeroKpi({ omzet, profit, pcs, margin }: { omzet: number; profit: number
       </div>
 
       {/* Profit */}
-      <div className="col-span-3 rounded-2xl bg-card border border-border/50 p-3.5 shadow-sm">
+      <div className="col-span-3 card-premium p-3.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-success/10">
@@ -176,7 +177,7 @@ function StokRendahCard({ products, isLoading }: { products: any[] | undefined; 
   const maxStock = 15;
 
   return (
-    <Card className="rounded-2xl shadow-sm border border-border/50">
+    <Card className="card-premium">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-bold flex items-center gap-2">
@@ -256,7 +257,7 @@ function QuickActions() {
   ];
 
   return (
-    <Card className="rounded-2xl shadow-sm border border-border/50">
+    <Card className="card-premium">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-bold">Aksi Cepat</CardTitle>
       </CardHeader>
@@ -373,8 +374,8 @@ const Dashboard = () => {
           </p>
           <h1 className="text-xl font-extrabold tracking-tight">Dashboard</h1>
         </div>
-        <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full">
-          <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
+        <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground glass px-3 py-1.5 rounded-full border border-border/20">
+          <span className="h-2 w-2 rounded-full bg-success animate-pulse shadow-glow" />
           Live
         </div>
       </div>
@@ -396,7 +397,7 @@ const Dashboard = () => {
 
       {/* 4. Chart + Stok Rendah */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 animate-fade-in" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
-        <Card className="md:col-span-2 rounded-2xl shadow-sm border border-border/50">
+        <Card className="md:col-span-2 card-premium">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold flex items-center gap-2">
               <div className="p-1 rounded-md bg-primary/10">
@@ -417,7 +418,7 @@ const Dashboard = () => {
                       name === "omzet" ? formatRupiah(value) : formatNumber(value),
                       name === "omzet" ? "Omzet" : "Pcs",
                     ]}
-                    contentStyle={{ borderRadius: 12, fontSize: 11, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}
+                    contentStyle={{ borderRadius: 12, fontSize: 11, border: "none", boxShadow: "0 8px 32px rgba(0,0,0,0.25)", background: "hsl(222 44% 9%)", color: "hsl(210 40% 96%)" }}
                   />
                   <Bar dataKey="omzet" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
                 </BarChart>
