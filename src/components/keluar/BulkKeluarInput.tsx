@@ -102,26 +102,26 @@ export function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko,
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="rounded-2xl shadow-md border-0 overflow-hidden">
+      <CardHeader className="pb-3 bg-gradient-to-r from-destructive/5 to-transparent">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <PackageMinus className="h-5 w-5" />
+          <CardTitle className="text-base font-bold flex items-center gap-2">
+            <PackageMinus className="h-4 w-4 text-destructive" />
             Input Cepat Barang Keluar
           </CardTitle>
           <OcrUpload mode="keluar" onResult={handleOcrResult} />
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 pt-4">
         {/* Toko & catatan */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <label className="text-sm font-medium">Nama Toko / Pelanggan</label>
-            <Input value={toko} onChange={(e) => setToko(e.target.value)} placeholder="Nama toko..." />
+            <label className="text-xs font-semibold text-muted-foreground">Nama Toko / Pelanggan</label>
+            <Input value={toko} onChange={(e) => setToko(e.target.value)} placeholder="Nama toko..." className="rounded-lg mt-1" />
           </div>
           <div>
-            <label className="text-sm font-medium">Catatan (opsional)</label>
-            <Input value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder="Catatan..." />
+            <label className="text-xs font-semibold text-muted-foreground">Catatan (opsional)</label>
+            <Input value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder="Catatan..." className="rounded-lg mt-1" />
           </div>
         </div>
 
@@ -227,7 +227,7 @@ export function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko,
           {products?.map((p) => <option key={p.id} value={p.kode} />)}
         </datalist>
 
-        <Button variant="outline" size="sm" onClick={addEmptyRow} className="w-full rounded-xl">
+        <Button variant="outline" size="sm" onClick={addEmptyRow} className="w-full rounded-xl transition-all duration-150 active:scale-95 min-h-[44px]">
           <Plus className="h-4 w-4 mr-1" /> Tambah Baris
         </Button>
 
@@ -267,9 +267,9 @@ export function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko,
         <Button
           onClick={handleSubmit}
           disabled={submitting || !canSubmit}
-          className="w-full rounded-xl"
+          className="w-full rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700"
         >
-          <Send className="h-4 w-4 mr-2" />
+          <Send className="h-5 w-5 mr-2" />
           {submitting ? "Menyimpan..." : `Simpan ${submitItems.length} Barang Keluar`}
         </Button>
       </CardContent>
