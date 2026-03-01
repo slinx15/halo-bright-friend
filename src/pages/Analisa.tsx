@@ -587,86 +587,96 @@ const Analisa = () => {
   const overallChange = totalLW > 0 ? ((totalTW - totalLW) / totalLW * 100) : 0;
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto w-full overflow-y-auto overflow-x-hidden">
+    <div className="p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto w-full overflow-y-auto overflow-x-hidden pb-24 md:pb-6">
       {/* ═══════════════════════════════════════════════════════ */}
       {/* 🔴 ACTION SUMMARY BAR — STICKY */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm pb-3 -mx-4 px-4 md:-mx-6 md:px-6 pt-2 overflow-hidden">
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md pb-3 -mx-4 px-4 md:-mx-6 md:px-6 pt-2 overflow-hidden">
+        {/* Header */}
         <div className="flex items-center justify-between mb-3">
-          <div>
-            <h1 className="text-lg md:text-xl font-bold tracking-tight">Command Center</h1>
-            <p className="text-[11px] text-muted-foreground">
-              {analyses.length} SKU · WMA {RULES.WMA_PERIOD1_DAYS}d · cycle {RULES.CYCLE_DAYS}d
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <BarChart3 className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-lg md:text-xl font-extrabold tracking-tight">Analisa</h1>
+              <p className="text-[10px] text-muted-foreground">
+                {analyses.length} SKU · WMA {RULES.WMA_PERIOD1_DAYS}d · cycle {RULES.CYCLE_DAYS}d
+              </p>
+            </div>
           </div>
           {needsReorder > 0 && (
-            <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-xs font-semibold px-2.5 py-1">
-              {needsReorder} perlu restock
+            <Badge className="bg-destructive text-destructive-foreground text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">
+              {needsReorder} restock
             </Badge>
           )}
         </div>
 
         {/* 4-Card Action Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div
-            className="relative overflow-hidden rounded-xl bg-destructive/8 border border-destructive/20 p-4 cursor-pointer transition-all md:hover:shadow-md md:hover:border-destructive/40 active:scale-[0.97]"
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <button
             onClick={() => setFilter(filter === "CRITICAL" ? "ALL" : "CRITICAL")}
+            className={`relative overflow-hidden rounded-2xl p-3.5 text-left transition-all duration-200 active:scale-[0.97] ${
+              filter === "CRITICAL" ? "ring-2 ring-destructive shadow-md" : ""
+            } bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/30 border border-destructive/15`}
           >
-            <div className="absolute top-0 right-0 w-16 h-16 bg-destructive/5 rounded-full -translate-y-4 translate-x-4" />
-            <p className="text-xs font-medium text-destructive/80 mb-1">Harus Restock</p>
-            <p className="text-2xl md:text-3xl font-bold tracking-tight text-destructive tabular-nums">{criticalCount || "—"}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">produk kritis</p>
-          </div>
+            <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-destructive/8" />
+            <span className="text-lg">🚨</span>
+            <p className="text-2xl font-black text-destructive tabular-nums mt-1">{criticalCount || "—"}</p>
+            <p className="text-[10px] font-medium text-destructive/70 mt-0.5">Harus Restock</p>
+          </button>
 
-          <div
-            className="relative overflow-hidden rounded-xl bg-warning/8 border border-warning/20 p-4 cursor-pointer transition-all md:hover:shadow-md md:hover:border-warning/40 active:scale-[0.97]"
+          <button
             onClick={() => setFilter(filter === "WARNING" ? "ALL" : "WARNING")}
+            className={`relative overflow-hidden rounded-2xl p-3.5 text-left transition-all duration-200 active:scale-[0.97] ${
+              filter === "WARNING" ? "ring-2 ring-warning shadow-md" : ""
+            } bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-warning/15`}
           >
-            <div className="absolute top-0 right-0 w-16 h-16 bg-warning/5 rounded-full -translate-y-4 translate-x-4" />
-            <p className="text-xs font-medium text-warning/80 mb-1">Segera Habis</p>
-            <p className="text-2xl md:text-3xl font-bold tracking-tight text-warning tabular-nums">{warningCount || "—"}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">&lt;4 hari tersisa</p>
-          </div>
+            <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-warning/8" />
+            <span className="text-lg">⚠️</span>
+            <p className="text-2xl font-black text-warning tabular-nums mt-1">{warningCount || "—"}</p>
+            <p className="text-[10px] font-medium text-warning/70 mt-0.5">Segera Habis</p>
+          </button>
 
-          <div
-            className="relative overflow-hidden rounded-xl bg-destructive/5 border border-destructive/15 p-4 cursor-pointer transition-all md:hover:shadow-md md:hover:border-destructive/30 active:scale-[0.97]"
+          <button
             onClick={() => setFilter(filter === "CRITICAL" ? "ALL" : "CRITICAL")}
+            className={`relative overflow-hidden rounded-2xl p-3.5 text-left transition-all duration-200 active:scale-[0.97] bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-950/30 dark:to-gray-950/30 border border-border/40`}
           >
-            <div className="absolute top-0 right-0 w-16 h-16 bg-destructive/3 rounded-full -translate-y-4 translate-x-4" />
-            <p className="text-xs font-medium text-destructive/60 mb-1">Stok Kosong</p>
-            <p className="text-2xl md:text-3xl font-bold tracking-tight tabular-nums">{zeroStockCount || "—"}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">SKU habis</p>
-          </div>
+            <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-muted/40" />
+            <span className="text-lg">📦</span>
+            <p className="text-2xl font-black tabular-nums mt-1">{zeroStockCount || "—"}</p>
+            <p className="text-[10px] font-medium text-muted-foreground mt-0.5">Stok Kosong</p>
+          </button>
 
-          <div className="relative overflow-hidden rounded-xl bg-muted/60 border border-border p-4">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-primary/3 rounded-full -translate-y-4 translate-x-4" />
-            <p className="text-xs font-medium text-muted-foreground mb-1">Modal Restock</p>
-            <p className="text-lg md:text-xl font-bold tracking-tight tabular-nums truncate">{formatRp(totalRestockCost) || "—"}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">estimasi {filter !== "ALL" ? "filter" : "total"}</p>
+          <div className="relative overflow-hidden rounded-2xl p-3.5 text-left bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-primary/10">
+            <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-primary/5" />
+            <span className="text-lg">💰</span>
+            <p className="text-base font-black tabular-nums mt-1 truncate">{formatRp(totalRestockCost)}</p>
+            <p className="text-[10px] font-medium text-muted-foreground mt-0.5">Modal Restock</p>
           </div>
         </div>
       </div>
 
       {/* 🎯 QUICK FILTER CHIPS */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
         {FILTER_CHIPS.map((chip) => {
           const isActive = filter === chip.key;
           const count = chip.key === "ALL"
             ? analyses.length
             : counts[chip.key.toLowerCase() as keyof typeof counts];
           return (
-              <button
+            <button
               key={chip.key}
               onClick={() => setFilter(chip.key)}
-              className={`inline-flex items-center gap-1.5 px-4 py-2.5 min-h-[40px] rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[36px] rounded-full text-[11px] font-semibold whitespace-nowrap transition-all duration-200 ${
                 isActive
-                  ? `${chip.activeClass} shadow-sm`
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                  ? `${chip.activeClass} shadow-sm scale-105`
+                  : "bg-muted/40 text-muted-foreground hover:bg-muted/70 active:scale-95"
               }`}
             >
-              <span className="text-sm">{chip.icon}</span>
+              <span>{chip.icon}</span>
               {chip.label}
-              <span className={`ml-0.5 text-[10px] ${isActive ? "opacity-90" : "opacity-60"}`}>({count})</span>
+              <span className={`text-[10px] tabular-nums ${isActive ? "opacity-90" : "opacity-50"}`}>({count})</span>
             </button>
           );
         })}
@@ -674,33 +684,30 @@ const Analisa = () => {
 
       {/* MAIN CONTENT — TABS */}
       <Tabs defaultValue="restock" className="w-full">
-        <TabsList className="flex w-full justify-start bg-transparent border-b border-border rounded-none h-auto p-0 gap-0 flex-nowrap overflow-x-auto overflow-y-hidden scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-          <TabsTrigger value="restock" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-[11px] md:text-xs px-2.5 md:px-4 py-2.5 font-semibold shrink-0">
-            <ShoppingCart className="h-3.5 w-3.5 mr-1" />Restock
-            {needsReorder > 0 && (
-              <Badge variant="destructive" className="ml-1 h-4 min-w-[18px] px-1 text-[9px] rounded-full">
-                {needsReorder}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="penjualan" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-[11px] md:text-xs px-2.5 md:px-4 py-2.5 shrink-0">
-            <Trophy className="h-3.5 w-3.5 mr-1" />Penjualan
-          </TabsTrigger>
-          <TabsTrigger value="profit" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-[11px] md:text-xs px-2.5 md:px-4 py-2.5 shrink-0">
-            <DollarSign className="h-3.5 w-3.5 mr-1" />Profit
-          </TabsTrigger>
-          <TabsTrigger value="toko" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-[11px] md:text-xs px-2.5 md:px-4 py-2.5 shrink-0">
-            <Store className="h-3.5 w-3.5 mr-1" />Toko
-          </TabsTrigger>
-          <TabsTrigger value="dead" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-[11px] md:text-xs px-2.5 md:px-4 py-2.5 shrink-0">
-            <Skull className="h-3.5 w-3.5 mr-1" />Dead
-          </TabsTrigger>
-          <TabsTrigger value="budget" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-[11px] md:text-xs px-2.5 md:px-4 py-2.5 font-semibold shrink-0">
-            <Calculator className="h-3.5 w-3.5 mr-1" />Budget
-          </TabsTrigger>
-          <TabsTrigger value="ringkasan" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-[11px] md:text-xs px-2.5 md:px-4 py-2.5 shrink-0">
-            <BarChart3 className="h-3.5 w-3.5 mr-1" />Ringkasan
-          </TabsTrigger>
+        <TabsList className="flex w-full justify-start bg-transparent border-b border-border/50 rounded-none h-auto p-0 gap-0 flex-nowrap overflow-x-auto overflow-y-hidden scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+          {[
+            { value: "restock", icon: ShoppingCart, label: "Restock", badge: needsReorder > 0 ? needsReorder : null },
+            { value: "penjualan", icon: Trophy, label: "Penjualan", badge: null },
+            { value: "profit", icon: DollarSign, label: "Profit", badge: null },
+            { value: "toko", icon: Store, label: "Toko", badge: null },
+            { value: "dead", icon: Skull, label: "Dead", badge: null },
+            { value: "budget", icon: Calculator, label: "Budget", badge: null },
+            { value: "ringkasan", icon: BarChart3, label: "Ringkasan", badge: null },
+          ].map(tab => (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-[11px] md:text-xs px-3 md:px-4 py-2.5 font-semibold shrink-0 gap-1"
+            >
+              <tab.icon className="h-3.5 w-3.5" />
+              {tab.label}
+              {tab.badge && (
+                <Badge variant="destructive" className="ml-0.5 h-4 min-w-[16px] px-1 text-[9px] rounded-full">
+                  {tab.badge}
+                </Badge>
+              )}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         {/* ══════════ RESTOCK ══════════ */}
@@ -1382,7 +1389,7 @@ const Analisa = () => {
 
         {/* ══════════ RINGKASAN ══════════ */}
         <TabsContent value="ringkasan" className="space-y-5 mt-5">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {[
               { icon: "📦", label: "Jenis Barang", value: String(stats.totalSKU), color: "" },
               { icon: "🧵", label: "Total Stok", value: `${stats.totalStock.toLocaleString("id-ID")} pcs`, color: "" },
@@ -1391,15 +1398,13 @@ const Analisa = () => {
               { icon: "⚠️", label: "Mau Habis", value: String(stats.criticalCount), color: "text-warning" },
               { icon: "🔥", label: "Laris", value: String(stats.bestSellerCount), color: "text-primary" },
             ].map(s => (
-              <Card key={s.label} className="border-0 shadow-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-base">{s.icon}</span>
-                    <span className="text-xs text-muted-foreground">{s.label}</span>
-                  </div>
-                  <p className={`text-xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
-                </CardContent>
-              </Card>
+              <div key={s.label} className="rounded-2xl bg-card border border-border/50 shadow-sm p-3.5">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-base">{s.icon}</span>
+                  <span className="text-[11px] text-muted-foreground font-medium">{s.label}</span>
+                </div>
+                <p className={`text-xl font-extrabold tabular-nums ${s.color}`}>{s.value}</p>
+              </div>
             ))}
           </div>
 
