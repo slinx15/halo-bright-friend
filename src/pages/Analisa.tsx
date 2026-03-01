@@ -683,30 +683,6 @@ const Analisa = () => {
         </div>
       </div>
 
-      {/* 🎯 QUICK FILTER CHIPS */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-        {FILTER_CHIPS.map((chip) => {
-          const isActive = filter === chip.key;
-          const count = chip.key === "ALL"
-            ? analyses.length
-            : counts[chip.key.toLowerCase() as keyof typeof counts];
-          return (
-            <button
-              key={chip.key}
-              onClick={() => setFilter(chip.key)}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[36px] rounded-full text-[11px] font-semibold whitespace-nowrap transition-all duration-200 ${
-                isActive
-                  ? `${chip.activeClass} shadow-sm scale-105`
-                  : "bg-muted/40 text-muted-foreground hover:bg-muted/70 active:scale-95"
-              }`}
-            >
-              <span>{chip.icon}</span>
-              {chip.label}
-              <span className={`text-[10px] tabular-nums ${isActive ? "opacity-90" : "opacity-50"}`}>({count})</span>
-            </button>
-          );
-        })}
-      </div>
 
       {/* MAIN CONTENT — TABS */}
       <Tabs defaultValue="restock" className="w-full">
@@ -740,28 +716,35 @@ const Analisa = () => {
 
         {/* ══════════ RESTOCK ══════════ */}
         <TabsContent value="restock" className="space-y-4 mt-4">
+          {/* Inline filter bar */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {FILTER_CHIPS.map((chip) => {
+              const isActive = filter === chip.key;
+              const count = chip.key === "ALL"
+                ? analyses.length
+                : counts[chip.key.toLowerCase() as keyof typeof counts];
+              return (
+                <button
+                  key={chip.key}
+                  onClick={() => setFilter(chip.key)}
+                  className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all duration-200 ${
+                    isActive
+                      ? `${chip.activeClass} shadow-sm`
+                      : "bg-muted/40 text-muted-foreground hover:bg-muted/70 active:scale-95"
+                  }`}
+                >
+                  <span className="text-xs">{chip.icon}</span>
+                  {chip.label}
+                  <span className={`text-[10px] tabular-nums ${isActive ? "opacity-90" : "opacity-50"}`}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <span>Ditampilkan: <strong className="text-foreground">{filtered.length}</strong></span>
             <span className="text-border">·</span>
             <span>Perlu reorder: <strong className="text-foreground">{needsReorder}</strong></span>
-            {filter !== "ALL" && (
-              <>
-                <span className="text-border">·</span>
-                <button onClick={() => setFilter("ALL")} className="text-primary hover:underline font-medium">
-                  Reset filter
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* Priority Legend — compact */}
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
-            {PRIORITY_LEGEND.map(l => (
-              <span key={l.label} className="inline-flex items-center gap-1.5 text-muted-foreground">
-                <span className={`inline-block w-2 h-2 rounded-full ${l.color}`} />
-                <span className="font-medium text-foreground">{l.label}</span>
-              </span>
-            ))}
           </div>
 
           {/* Restock Table — Desktop Only */}
