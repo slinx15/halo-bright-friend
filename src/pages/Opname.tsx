@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,7 +32,8 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ClipboardCheck, Clock, ChevronDown, CheckCircle2, AlertTriangle, ArrowUpDown } from "lucide-react";
 import { formatDate, formatNumber } from "@/lib/formatters";
-import { BulkOpnameInput } from "@/components/opname/BulkOpnameInput";
+import { BulkOpnameInput, type BulkOpnameInputHandle } from "@/components/opname/BulkOpnameInput";
+import { OcrUpload } from "@/components/OcrUpload";
 import type { ParsedOpnameItem } from "@/lib/opnameParser";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { OpnameSkeleton } from "@/components/LoadingSkeletons";
@@ -44,6 +45,7 @@ const Opname = () => {
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const isMobile = useIsMobile();
+  const bulkRef = useRef<BulkOpnameInputHandle>(null);
 
   const { data: history } = useQuery({
     queryKey: ["opname_history"],
@@ -105,14 +107,17 @@ const Opname = () => {
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*]:[animation-fill-mode:both]">
       {/* ── Premium Header ── */}
-      <div className="flex items-center gap-3.5">
-        <div className="p-3 rounded-2xl bg-gradient-to-br from-amber-500/20 to-yellow-500/10 shadow-sm">
-          <ClipboardCheck className="h-6 w-6 text-warning" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 rounded-2xl bg-gradient-to-br from-amber-500/20 to-yellow-500/10 shadow-sm">
+            <ClipboardCheck className="h-6 w-6 text-warning" />
+          </div>
+          <div className="space-y-0.5">
+            <h1 className="text-xl font-extrabold tracking-tight leading-tight">Stock Opname</h1>
+            <p className="text-muted-foreground text-xs font-medium">Rekonsiliasi stok sistem vs fisik</p>
+          </div>
         </div>
-        <div className="space-y-0.5">
-          <h1 className="text-xl font-extrabold tracking-tight leading-tight">Stock Opname</h1>
-          <p className="text-muted-foreground text-xs font-medium">Rekonsiliasi stok sistem vs fisik</p>
-        </div>
+        <OcrUpload mode="opname" onResult={(items) => bulkRef.current?.handleOcrResult(items)} />
       </div>
 
       {/* ── KPI Strip ── */}
@@ -133,6 +138,7 @@ const Opname = () => {
 
       {/* ── Bulk Input ── */}
       <BulkOpnameInput
+        ref={bulkRef}
         products={products ?? []}
         onSubmit={handleBulkSubmit}
         submitting={submitting}

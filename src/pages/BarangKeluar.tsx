@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -18,7 +18,7 @@ import { formatDate, formatNumber, formatRupiah } from "@/lib/formatters";
 import { OcrUpload } from "@/components/OcrUpload";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { deductFromStacks } from "@/lib/tumpukanUtils";
-import { BulkKeluarInput, type BulkKeluarItem } from "@/components/keluar/BulkKeluarInput";
+import { BulkKeluarInput, type BulkKeluarItem, type BulkKeluarInputHandle } from "@/components/keluar/BulkKeluarInput";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TransactionSkeleton } from "@/components/LoadingSkeletons";
 
@@ -49,6 +49,8 @@ const BarangKeluar = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const bulkRef = useRef<BulkKeluarInputHandle>(null);
+  const [activeTab, setActiveTab] = useState("bulk");
 
   // Single mode state
   const [kode, setKode] = useState("");
@@ -194,14 +196,23 @@ const BarangKeluar = () => {
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*:nth-child(5)]:![animation-delay:200ms] [&>*]:[animation-fill-mode:both]">
       {/* ── Premium Header ── */}
-      <div className="flex items-center gap-3.5">
-        <div className="p-3 rounded-2xl bg-gradient-to-br from-red-500/20 to-rose-500/10 shadow-sm">
-          <PackageMinus className="h-6 w-6 text-destructive" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 rounded-2xl bg-gradient-to-br from-red-500/20 to-rose-500/10 shadow-sm">
+            <PackageMinus className="h-6 w-6 text-destructive" />
+          </div>
+          <div className="space-y-0.5">
+            <h1 className="text-xl font-extrabold tracking-tight leading-tight">Barang Keluar</h1>
+            <p className="text-muted-foreground text-xs font-medium">Catat penjualan / pengiriman</p>
+          </div>
         </div>
-        <div className="space-y-0.5">
-          <h1 className="text-xl font-extrabold tracking-tight leading-tight">Barang Keluar</h1>
-          <p className="text-muted-foreground text-xs font-medium">Catat penjualan / pengiriman</p>
-        </div>
+        <OcrUpload
+          mode="keluar"
+          onResult={(items) => {
+            setActiveTab("bulk");
+            setTimeout(() => bulkRef.current?.handleOcrResult(items), 100);
+          }}
+        />
       </div>
 
       {/* ── Quick KPI Strip ── */}
@@ -221,7 +232,7 @@ const BarangKeluar = () => {
       </div>
 
       {/* ── Tab Input ── */}
-      <Tabs defaultValue="bulk" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-2 rounded-xl h-12 p-1 bg-muted/60">
           <TabsTrigger value="single" className="rounded-lg font-semibold text-sm data-[state=active]:shadow-sm min-h-[40px]">
             <FileText className="h-4 w-4 mr-1.5" /> Satuan
@@ -327,6 +338,7 @@ const BarangKeluar = () => {
 
         <TabsContent value="bulk">
           <BulkKeluarInput
+            ref={bulkRef}
             products={products ?? []}
             onSubmit={handleBulkSubmit}
             submitting={bulkSubmitting}

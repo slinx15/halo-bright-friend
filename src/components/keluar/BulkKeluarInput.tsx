@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef, useImperativeHandle, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,6 @@ import { Send, PackageMinus, AlertTriangle, CheckCircle2, Trash2, Plus } from "l
 import { formatNumber, formatRupiah } from "@/lib/formatters";
 import { deductFromStacks } from "@/lib/tumpukanUtils";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
-import { OcrUpload } from "@/components/OcrUpload";
 import type { ProductWithDetails } from "@/hooks/useProducts";
 
 export interface BulkKeluarItem {
@@ -32,7 +31,11 @@ interface BulkKeluarInputProps {
   setCatatan: (v: string) => void;
 }
 
-export function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko, catatan, setCatatan }: BulkKeluarInputProps) {
+export interface BulkKeluarInputHandle {
+  handleOcrResult: (items: any[]) => void;
+}
+
+export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInputProps>(function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko, catatan, setCatatan }, ref) {
   const [items, setItems] = useState<BulkKeluarItem[]>([]);
 
   const findProduct = (kode: string) =>
@@ -51,7 +54,7 @@ export function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko,
   };
 
   // OCR result handler
-  const handleOcrResult = (ocrItems: any[]) => {
+  const handleOcrResult = useCallback((ocrItems: any[]) => {
     const newItems = ocrItems.map((item) =>
       resolveItem(item.kode || "", {
         qtyPesan: item.qty_pesan || 0,
@@ -60,7 +63,9 @@ export function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko,
       })
     );
     setItems((prev) => [...prev, ...newItems]);
-  };
+  }, [products]);
+
+  useImperativeHandle(ref, () => ({ handleOcrResult }), [handleOcrResult]);
 
   const addEmptyRow = () => {
     setItems((prev) => [...prev, resolveItem("")]);
@@ -104,13 +109,10 @@ export function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko,
   return (
     <Card className="rounded-2xl shadow-md border-0 overflow-hidden">
       <CardHeader className="pb-3 bg-gradient-to-r from-destructive/5 to-transparent">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-bold flex items-center gap-2">
-            <PackageMinus className="h-4 w-4 text-destructive" />
-            Input Cepat Barang Keluar
-          </CardTitle>
-          <OcrUpload mode="keluar" onResult={handleOcrResult} />
-        </div>
+        <CardTitle className="text-base font-bold flex items-center gap-2">
+          <PackageMinus className="h-4 w-4 text-destructive" />
+          Input Cepat Barang Keluar
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 pt-4">
         {/* Toko & catatan */}
@@ -275,4 +277,4 @@ export function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko,
       </CardContent>
     </Card>
   );
-}
+});
