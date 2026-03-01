@@ -112,6 +112,16 @@ function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementTyp
 const BUDGET_PRESETS = [1000000, 2000000, 3000000, 5000000, 10000000];
 const DAYS_PRESETS = [3, 5, 7, 14];
 
+function formatRupiahInput(value: number): string {
+  if (value === 0) return "";
+  return value.toLocaleString("id-ID");
+}
+
+function parseRupiahInput(raw: string): number {
+  const cleaned = raw.replace(/[^0-9]/g, "");
+  return cleaned === "" ? 0 : Number(cleaned);
+}
+
 function BudgetPlanner({
   analyses,
   budgetAmount,
@@ -293,13 +303,10 @@ function BudgetPlanner({
               <Input
                 type="text"
                 inputMode="numeric"
-                value={budgetAmount === 0 ? "" : budgetAmount}
-                onChange={(e) => {
-                  const raw = e.target.value.replace(/[^0-9]/g, "");
-                  setBudgetAmount(raw === "" ? 0 : Number(raw));
-                }}
+                value={formatRupiahInput(budgetAmount)}
+                onChange={(e) => setBudgetAmount(parseRupiahInput(e.target.value))}
                 className="pl-10 text-lg font-bold h-12"
-                placeholder="2000000"
+                placeholder="2,000,000"
               />
             </div>
             <div className="flex gap-2 flex-wrap">
@@ -322,12 +329,12 @@ function BudgetPlanner({
           {/* Days Input */}
           <div className="space-y-2">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Target Stok (Hari)</label>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {DAYS_PRESETS.map(d => (
                 <button
                   key={d}
                   onClick={() => setBudgetDays(d)}
-                  className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                  className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                     budgetDays === d
                       ? "bg-primary text-primary-foreground shadow-sm"
                       : "bg-muted/60 text-muted-foreground hover:bg-muted"
@@ -336,6 +343,23 @@ function BudgetPlanner({
                   {d} hari
                 </button>
               ))}
+              <div className="relative">
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={!DAYS_PRESETS.includes(budgetDays) && budgetDays > 0 ? budgetDays : ""}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^0-9]/g, "");
+                    if (raw !== "") setBudgetDays(Math.min(Number(raw), 90));
+                  }}
+                  placeholder="Custom"
+                  className={`w-20 h-10 text-sm font-semibold text-center rounded-xl ${
+                    !DAYS_PRESETS.includes(budgetDays) && budgetDays > 0
+                      ? "border-primary ring-1 ring-primary"
+                      : ""
+                  }`}
+                />
+              </div>
             </div>
           </div>
         </CardContent>
