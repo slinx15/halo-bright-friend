@@ -725,7 +725,7 @@ const Analisa = () => {
         </div>
 
         {/* ══════════ RESTOCK ══════════ */}
-        <TabsContent value="restock" className="space-y-4 mt-4">
+        <TabsContent value="restock" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           {/* Inline filter bar */}
           <div className="flex flex-wrap items-center gap-1.5">
             {FILTER_CHIPS.map((chip) => {
@@ -1048,7 +1048,7 @@ const Analisa = () => {
         </TabsContent>
 
         {/* ══════════ PENJUALAN ══════════ */}
-        <TabsContent value="penjualan" className="space-y-5 mt-5 animate-fade-in" style={{ animationFillMode: "both" }}>
+        <TabsContent value="penjualan" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           {/* Visual Charts */}
           <SalesTrendCharts
             stockOutData={stockOutData}
@@ -1179,7 +1179,7 @@ const Analisa = () => {
         </TabsContent>
 
         {/* ══════════ PROFIT ══════════ */}
-        <TabsContent value="profit" className="space-y-5 mt-5 animate-fade-in" style={{ animationFillMode: "both" }}>
+        <TabsContent value="profit" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
             <SectionHeader icon={DollarSign} title="Barang Paling Untung" subtitle="30 hari terakhir" />
             {profitItems.length === 0 ? (
@@ -1246,7 +1246,7 @@ const Analisa = () => {
         </TabsContent>
 
         {/* ══════════ TOKO ══════════ */}
-        <TabsContent value="toko" className="space-y-5 mt-5 animate-fade-in" style={{ animationFillMode: "both" }}>
+        <TabsContent value="toko" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
             <SectionHeader icon={Store} title="Top Pelanggan" subtitle="30 hari terakhir" />
             {tokoItems.length === 0 ? (
@@ -1320,7 +1320,7 @@ const Analisa = () => {
         </TabsContent>
 
         {/* ══════════ DEAD STOCK ══════════ */}
-        <TabsContent value="dead" className="space-y-5 mt-5 animate-fade-in" style={{ animationFillMode: "both" }}>
+        <TabsContent value="dead" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
             <SectionHeader icon={Skull} title={`Barang Tidak Laku (${RULES.DEAD_STOCK_DAYS}+ hari)`} />
             {deadStock.length === 0 ? (
@@ -1409,7 +1409,7 @@ const Analisa = () => {
         </TabsContent>
 
         {/* ══════════ RINGKASAN ══════════ */}
-        <TabsContent value="ringkasan" className="space-y-5 mt-5 animate-fade-in" style={{ animationFillMode: "both" }}>
+        <TabsContent value="ringkasan" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {[
               { icon: "📦", label: "Jenis Barang", value: String(stats.totalSKU), color: "" },
