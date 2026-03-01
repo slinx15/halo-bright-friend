@@ -243,7 +243,7 @@ const BarangKeluar = () => {
         </TabsList>
 
         <TabsContent value="single">
-          <Card className="rounded-2xl shadow-md border-0 overflow-hidden">
+          <Card className="card-premium overflow-hidden">
             <CardHeader className="pb-3 bg-gradient-to-r from-destructive/5 to-transparent">
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <PackageMinus className="h-4 w-4 text-destructive" />
@@ -351,7 +351,7 @@ const BarangKeluar = () => {
       </Tabs>
 
       {/* ── Riwayat ── */}
-      <Card className="rounded-2xl shadow-md border-0">
+      <Card className="card-premium">
         <Collapsible>
           <CardHeader className="pb-2">
             <CollapsibleTrigger asChild>
