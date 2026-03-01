@@ -254,16 +254,22 @@ const Dashboard = () => {
   const pcsHariIni = todaySales?.reduce((s, r) => s + r.qty_kirim, 0) ?? 0;
 
   const chartData = (() => {
+    // Helper: convert UTC timestamp to local YYYY-MM-DD string
+    const toLocalDateStr = (isoStr: string) => {
+      const d = new Date(isoStr);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    };
+
     const days: { label: string; date: string; omzet: number; pcs: number }[] = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().slice(0, 10);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       const label = d.toLocaleDateString("id-ID", { weekday: "short", day: "numeric" });
       days.push({ label, date: dateStr, omzet: 0, pcs: 0 });
     }
     weekSales?.forEach(sale => {
-      const saleDate = sale.created_at.slice(0, 10);
+      const saleDate = toLocalDateStr(sale.created_at);
       const day = days.find(d => d.date === saleDate);
       if (day) {
         day.omzet += sale.total_harga;
