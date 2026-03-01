@@ -537,6 +537,7 @@ function MobileRankedCard({ rank, kode, isBestSeller, children, borderClass }: {
 const Analisa = () => {
   const { products, stockOutData, isLoading } = useSalesAnalysis();
   const [filter, setFilter] = useState<FilterChip>("ALL");
+  const [filterKey, setFilterKey] = useState(0);
   const [budgetAmount, setBudgetAmount] = useState<number>(2000000);
   const [budgetDays, setBudgetDays] = useState<number>(3);
   const isMobile = useIsMobile();
@@ -726,7 +727,7 @@ const Analisa = () => {
               return (
                 <button
                   key={chip.key}
-                  onClick={() => setFilter(chip.key)}
+                  onClick={() => { setFilter(chip.key); setFilterKey(k => k + 1); }}
                   className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all duration-200 ${
                     isActive
                       ? `${chip.activeClass} shadow-sm`
@@ -741,14 +742,13 @@ const Analisa = () => {
             })}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <div key={`s-${filterKey}`} className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground animate-fade-in">
             <span>Ditampilkan: <strong className="text-foreground">{filtered.length}</strong></span>
             <span className="text-border">·</span>
             <span>Perlu reorder: <strong className="text-foreground">{needsReorder}</strong></span>
           </div>
 
-          {/* Restock Table — Desktop Only */}
-          <div className="hidden md:block">
+          <div key={filterKey} className="hidden md:block animate-fade-in">
             <Card className="border-0 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <Table>
@@ -844,7 +844,7 @@ const Analisa = () => {
           </div>
 
           {/* Mobile Boss Cards */}
-          <div className="md:hidden space-y-2.5">
+          <div key={`m-${filterKey}`} className="md:hidden space-y-2.5 animate-fade-in">
             {filtered.length === 0 ? (
               <div className="text-center py-16">
                 <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
