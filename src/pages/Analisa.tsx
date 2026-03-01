@@ -708,31 +708,33 @@ const Analisa = () => {
 
       {/* MAIN CONTENT — TABS */}
       <Tabs defaultValue="restock" className="w-full">
-        <TabsList className="flex w-full justify-start bg-transparent border-b border-border/50 rounded-none h-auto p-0 gap-0 flex-nowrap overflow-x-auto overflow-y-hidden scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-          {[
-            { value: "restock", icon: ShoppingCart, label: "Restock", badge: needsReorder > 0 ? needsReorder : null },
-            { value: "penjualan", icon: Trophy, label: "Penjualan", badge: null },
-            { value: "profit", icon: DollarSign, label: "Profit", badge: null },
-            { value: "toko", icon: Store, label: "Toko", badge: null },
-            { value: "dead", icon: Skull, label: "Dead", badge: null },
-            { value: "budget", icon: Calculator, label: "Budget", badge: null },
-            { value: "ringkasan", icon: BarChart3, label: "Ringkasan", badge: null },
-          ].map(tab => (
-            <TabsTrigger
-              key={tab.value}
-              value={tab.value}
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-[11px] md:text-xs px-3 md:px-4 py-2.5 font-semibold shrink-0 gap-1"
-            >
-              <tab.icon className="h-3.5 w-3.5" />
-              {tab.label}
-              {tab.badge && (
-                <Badge variant="destructive" className="ml-0.5 h-4 min-w-[16px] px-1 text-[9px] rounded-full">
-                  {tab.badge}
-                </Badge>
-              )}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        <div className="rounded-2xl bg-card border border-border/50 shadow-sm p-1.5">
+          <TabsList className="grid grid-cols-4 md:grid-cols-7 w-full bg-transparent h-auto p-0 gap-1">
+            {[
+              { value: "restock", icon: ShoppingCart, label: "Restock", badge: needsReorder > 0 ? needsReorder : null },
+              { value: "penjualan", icon: Trophy, label: "Penjualan", badge: null },
+              { value: "profit", icon: DollarSign, label: "Profit", badge: null },
+              { value: "toko", icon: Store, label: "Toko", badge: null },
+              { value: "dead", icon: Skull, label: "Dead", badge: null },
+              { value: "budget", icon: Calculator, label: "Budget", badge: null },
+              { value: "ringkasan", icon: BarChart3, label: "Ringkasan", badge: null },
+            ].map(tab => (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm text-[10px] md:text-xs px-1.5 md:px-3 py-2 font-semibold gap-1 transition-all duration-200"
+              >
+                <tab.icon className="h-3 w-3 md:h-3.5 md:w-3.5 shrink-0" />
+                <span className="truncate">{tab.label}</span>
+                {tab.badge && (
+                  <Badge variant="destructive" className="ml-0.5 h-4 min-w-[16px] px-1 text-[9px] rounded-full shrink-0">
+                    {tab.badge}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
 
         {/* ══════════ RESTOCK ══════════ */}
         <TabsContent value="restock" className="space-y-4 mt-4">
@@ -750,13 +752,12 @@ const Analisa = () => {
             )}
           </div>
 
-          {/* Priority Legend */}
-          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-            {PRIORITY_LEGEND.map((l) => (
-              <span key={l.label} className="inline-flex items-center gap-1.5">
-                <span className={`inline-block w-2.5 h-2.5 rounded-full ${l.color}`} />
+          {/* Priority Legend — compact */}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
+            {PRIORITY_LEGEND.map(l => (
+              <span key={l.label} className="inline-flex items-center gap-1.5 text-muted-foreground">
+                <span className={`inline-block w-2 h-2 rounded-full ${l.color}`} />
                 <span className="font-medium text-foreground">{l.label}</span>
-                <span>— {l.desc}</span>
               </span>
             ))}
           </div>
