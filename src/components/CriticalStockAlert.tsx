@@ -45,7 +45,7 @@ export function CriticalStockAlert() {
   if (criticalItems.length === 0) return null;
 
   return (
-    <Card className="rounded-2xl shadow-md border-0 overflow-hidden transition-all duration-150 hover:shadow-lg">
+    <Card className="rounded-2xl shadow-md border-0 overflow-hidden transition-all duration-150 hover:shadow-lg animate-fade-in">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-bold flex items-center gap-2">
@@ -64,8 +64,10 @@ export function CriticalStockAlert() {
       </CardHeader>
       <CardContent className="pt-1 pb-4">
         <div className="grid grid-cols-2 gap-2">
-          {criticalItems.map((item) => (
-            <CriticalItemCard key={item.productId} item={item} />
+          {criticalItems.map((item, i) => (
+            <div key={item.productId} className="animate-fade-in" style={{ animationDelay: `${i * 80}ms`, animationFillMode: "backwards" }}>
+              <CriticalItemCard item={item} />
+            </div>
           ))}
         </div>
         <Button
