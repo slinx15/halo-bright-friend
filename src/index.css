@@ -6,31 +6,31 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 220 25% 10%;
+    --background: 220 20% 97%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 10%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 10%;
+    --popover-foreground: 222 47% 11%;
 
     --primary: 217 91% 50%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 210 40% 96%;
-    --secondary-foreground: 220 25% 10%;
+    --secondary-foreground: 222 47% 11%;
 
     --muted: 210 30% 95%;
-    --muted-foreground: 220 10% 46%;
+    --muted-foreground: 215 16% 47%;
 
     --accent: 43 96% 56%;
-    --accent-foreground: 220 25% 10%;
+    --accent-foreground: 222 47% 11%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 71% 45%;
+    --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
@@ -45,7 +45,7 @@
 
     --radius: 0.75rem;
 
-    --sidebar-background: 220 25% 10%;
+    --sidebar-background: 222 47% 11%;
     --sidebar-foreground: 210 20% 85%;
     --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
@@ -56,31 +56,31 @@
   }
 
   .dark {
-    --background: 220 25% 6%;
-    --foreground: 210 20% 95%;
+    --background: 222 47% 6%;
+    --foreground: 210 40% 96%;
 
-    --card: 220 25% 10%;
-    --card-foreground: 210 20% 95%;
+    --card: 222 44% 9%;
+    --card-foreground: 210 40% 96%;
 
-    --popover: 220 25% 10%;
-    --popover-foreground: 210 20% 95%;
+    --popover: 222 44% 9%;
+    --popover-foreground: 210 40% 96%;
 
-    --primary: 217 91% 60%;
+    --primary: 217 91% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 20% 16%;
-    --secondary-foreground: 210 20% 95%;
+    --secondary: 222 40% 14%;
+    --secondary-foreground: 210 40% 96%;
 
-    --muted: 220 20% 16%;
-    --muted-foreground: 210 15% 55%;
+    --muted: 222 40% 14%;
+    --muted-foreground: 215 20% 50%;
 
     --accent: 43 96% 56%;
-    --accent-foreground: 220 25% 10%;
+    --accent-foreground: 222 47% 6%;
 
-    --destructive: 0 62% 30%;
+    --destructive: 0 72% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 71% 45%;
+    --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
@@ -89,18 +89,18 @@
     --critical: 0 84% 60%;
     --critical-foreground: 0 0% 100%;
 
-    --border: 220 20% 18%;
-    --input: 220 20% 18%;
-    --ring: 217 91% 60%;
+    --border: 222 30% 14%;
+    --input: 222 30% 14%;
+    --ring: 217 91% 55%;
 
-    --sidebar-background: 220 30% 6%;
+    --sidebar-background: 222 50% 5%;
     --sidebar-foreground: 210 20% 85%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary: 217 91% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 25% 12%;
+    --sidebar-accent: 222 40% 10%;
     --sidebar-accent-foreground: 210 20% 90%;
-    --sidebar-border: 220 25% 12%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-border: 222 40% 10%;
+    --sidebar-ring: 217 91% 55%;
   }
 }
 
@@ -118,6 +118,11 @@
     -moz-osx-font-smoothing: grayscale;
     touch-action: manipulation;
   }
+
+  /* Force dark mode by default */
+  html {
+    color-scheme: dark;
+  }
 }
 
 @layer utilities {
@@ -129,25 +134,25 @@
     display: none;
   }
 
-  /* Boss Mode: tabular numbers for financial/stock data */
   .tabular-nums {
     font-variant-numeric: tabular-nums;
   }
 
-  /* Boss Mode: premium card style */
+  /* Premium card with subtle glow */
   .boss-card {
-    @apply rounded-2xl border-0 shadow-md transition-all duration-200 ease-out;
+    @apply rounded-2xl border shadow-md transition-all duration-300 ease-out;
+    background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--card) / 0.8) 100%);
   }
   @media (hover: hover) and (pointer: fine) {
     .boss-card:hover {
-      @apply shadow-lg;
+      @apply shadow-xl;
       transform: translateY(-2px);
     }
   }
 
-  /* Boss Mode: press feedback — desktop only */
+  /* Press feedback — desktop only */
   .press-scale {
-    @apply transition-transform duration-200 ease-out;
+    @apply transition-transform duration-150 ease-out;
   }
   @media (hover: hover) and (pointer: fine) {
     .press-scale:active {
@@ -155,19 +160,74 @@
     }
   }
 
-  /* Boss Mode: hover lift */
+  /* Hover lift */
   .hover-lift {
-    @apply transition-all duration-200 ease-out;
+    @apply transition-all duration-300 ease-out;
   }
   .hover-lift:hover {
     transform: translateY(-2px);
-    @apply shadow-lg;
+    @apply shadow-xl;
   }
 
   /* Thumb-friendly: minimum touch target */
   .touch-target {
     @apply min-h-[44px] min-w-[44px];
   }
+
+  /* Premium gradient text */
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+  }
+
+  /* Subtle card shimmer border */
+  .card-premium {
+    @apply rounded-2xl border border-border/50 shadow-lg;
+    background: hsl(var(--card));
+    position: relative;
+    overflow: hidden;
+  }
+  .card-premium::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.3), transparent);
+  }
+
+  /* Glass effect */
+  .glass {
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background: hsl(var(--background) / 0.75);
+  }
+
+  /* Native-feel active state */
+  .native-press {
+    @apply transition-all duration-100;
+  }
+  .native-press:active {
+    transform: scale(0.96);
+    opacity: 0.8;
+  }
+}
+
+/* Page transition */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: page-enter 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* Safe area bottom padding for pages with bottom nav */
