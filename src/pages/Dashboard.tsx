@@ -418,7 +418,7 @@ const Dashboard = () => {
                       name === "omzet" ? formatRupiah(value) : formatNumber(value),
                       name === "omzet" ? "Omzet" : "Pcs",
                     ]}
-                    contentStyle={{ borderRadius: 12, fontSize: 11, border: "none", boxShadow: "0 8px 32px rgba(0,0,0,0.25)", background: "hsl(222 44% 9%)", color: "hsl(210 40% 96%)" }}
+                    contentStyle={{ borderRadius: 12, fontSize: 11, border: "1px solid hsl(213 25% 90%)", boxShadow: "0 8px 32px rgba(0,0,0,0.08)", background: "hsl(210 40% 99%)", color: "hsl(222 47% 11%)" }}
                   />
                   <Bar dataKey="omzet" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
                 </BarChart>
