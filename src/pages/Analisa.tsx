@@ -775,7 +775,8 @@ const Analisa = () => {
                       return (
                         <TableRow
                           key={a.productId}
-                          className={`relative ${PRIORITY_ROW_BG[priority]}`}
+                          className={`relative ${PRIORITY_ROW_BG[priority]} animate-fade-in`}
+                          style={{ animationDelay: `${Math.min(i * 20, 200)}ms`, animationFillMode: "both" }}
                         >
                           {/* Priority Bar */}
                           <td className="w-0 p-0 relative">
@@ -851,7 +852,7 @@ const Analisa = () => {
                 <p className="text-sm text-muted-foreground">Tidak ada produk dalam kategori ini</p>
               </div>
             ) : (
-              filtered.map((a) => {
+              filtered.map((a, idx) => {
                 const badge = STATUS_BADGE[a.dosStatus];
                 const priority = getPriorityLevel(a.dosStatus);
                 const isZeroStock = a.currentStock === 0;
@@ -863,7 +864,8 @@ const Analisa = () => {
                 return (
                   <div
                     key={a.productId}
-                    className={`rounded-xl border bg-card p-3.5 transition-all active:scale-[0.99] w-full ${ringClass} ${PRIORITY_ROW_BG[priority]}`}
+                    className={`rounded-xl border bg-card p-3.5 transition-all active:scale-[0.99] w-full ${ringClass} ${PRIORITY_ROW_BG[priority]} animate-fade-in`}
+                    style={{ animationDelay: `${Math.min(idx * 30, 300)}ms`, animationFillMode: "both" }}
                   >
                     <div className="flex items-center justify-between mb-2.5">
                       <div className="flex items-center gap-2 min-w-0">
