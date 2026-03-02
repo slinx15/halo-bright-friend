@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import ReactMarkdown from "react-markdown";
 import { MessageCircle, Send, Loader2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReviewResult } from "./ReviewResultCards";
@@ -284,7 +285,13 @@ ${result.missed.map(m => `${m.kode} (${m.nama}): stok ${m.stok}, DOS ${m.dos} ha
                   ? "bg-primary text-primary-foreground rounded-br-md"
                   : "bg-muted rounded-bl-md"
               }`}>
-                {msg.content}
+                {msg.role === "assistant" ? (
+                  <div className="prose prose-xs prose-neutral dark:prose-invert max-w-none [&_p]:m-0 [&_p]:mb-1.5 [&_ol]:m-0 [&_ol]:pl-4 [&_ul]:m-0 [&_ul]:pl-4 [&_li]:m-0 [&_li]:mb-1 [&_strong]:text-foreground [&_h1]:text-sm [&_h2]:text-xs [&_h3]:text-xs [&_p:last-child]:mb-0">
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  </div>
+                ) : (
+                  msg.content
+                )}
               </div>
             </div>
           ))}
