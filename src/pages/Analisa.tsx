@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +11,7 @@ import {
   BarChart3, DollarSign, Store, ArrowDown,
   ShoppingCart, Clock, Trophy, Activity,
   AlertCircle, PackageX, Wallet, Flame, TrendingUp, TrendingDown,
-  Calculator, CheckCircle2
+  Calculator, CheckCircle2, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { useSalesAnalysis } from "@/hooks/useSalesAnalysis";
 import { analyzeAllProducts, getStatusCounts, RULES, type DosStatus, type ProductAnalysis, isBlackWhiteCode } from "@/lib/stockAnalyticsEngine";
@@ -541,9 +542,11 @@ const Analisa = () => {
   const { products, stockOutData, isLoading } = useSalesAnalysis();
   const [filter, setFilter] = useState<FilterChip>("ALL");
   const [filterKey, setFilterKey] = useState(0);
+  const [restockPage, setRestockPage] = useState(1);
   const [budgetAmount, setBudgetAmount] = useState<number>(2000000);
   const [budgetDays, setBudgetDays] = useState<number>(3);
   const isMobile = useIsMobile();
+  const RESTOCK_PAGE_SIZE = 30;
 
   const analyses = useMemo(() => {
     if (!products.length) return [];
@@ -556,6 +559,13 @@ const Analisa = () => {
     const base = filter === "ALL" ? analyses : analyses.filter((a) => a.dosStatus === filter);
     return [...base].sort((a, b) => PRIORITY_ORDER[getPriorityLevel(a.dosStatus)] - PRIORITY_ORDER[getPriorityLevel(b.dosStatus)]);
   }, [analyses, filter]);
+
+  const restockTotalPages = Math.max(1, Math.ceil(filtered.length / RESTOCK_PAGE_SIZE));
+  const restockCurrentPage = Math.min(restockPage, restockTotalPages);
+  const paginatedFiltered = useMemo(() =>
+    filtered.slice((restockCurrentPage - 1) * RESTOCK_PAGE_SIZE, restockCurrentPage * RESTOCK_PAGE_SIZE),
+    [filtered, restockCurrentPage, RESTOCK_PAGE_SIZE]
+  );
 
   // Action Summary computed values
   const criticalCount = counts.critical;
@@ -736,7 +746,7 @@ const Analisa = () => {
               return (
                 <button
                   key={chip.key}
-                  onClick={() => { setFilter(chip.key); setFilterKey(k => k + 1); }}
+                  onClick={() => { setFilter(chip.key); setFilterKey(k => k + 1); setRestockPage(1); }}
                   className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all duration-200 ${
                     isActive
                       ? `${chip.activeClass} shadow-sm`
@@ -776,7 +786,8 @@ const Analisa = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filtered.map((a, i) => {
+                    {paginatedFiltered.map((a, i) => {
+                      const globalIdx = (restockCurrentPage - 1) * RESTOCK_PAGE_SIZE + i;
                       const badge = STATUS_BADGE[a.dosStatus];
                       const velPerCycle = a.velocity * RULES.DISPLAY_CYCLE_DAYS;
                       const priority = getPriorityLevel(a.dosStatus);
@@ -791,7 +802,7 @@ const Analisa = () => {
                           <td className="w-0 p-0 relative">
                             <div className={`absolute left-0 top-0 bottom-0 w-1 sm:w-1.5 rounded-r ${PRIORITY_BAR_COLOR[priority]}`} />
                           </td>
-                          <TableCell className="text-muted-foreground text-xs font-mono">{i + 1}</TableCell>
+                          <TableCell className="text-muted-foreground text-xs font-mono">{globalIdx + 1}</TableCell>
                           <TableCell>
                             <Badge variant="outline" className={`text-[10px] font-semibold ${badge.className}`}>
                               {a.dosStatus === "CRITICAL" && <AlertTriangle className="h-3 w-3 mr-0.5" />}
@@ -839,7 +850,7 @@ const Analisa = () => {
                         </TableRow>
                       );
                     })}
-                    {filtered.length === 0 && (
+                    {paginatedFiltered.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={10} className="text-center text-muted-foreground py-16">
                           <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
@@ -855,13 +866,14 @@ const Analisa = () => {
 
           {/* Mobile Boss Cards */}
           <div key={`m-${filterKey}`} className="md:hidden space-y-2.5 animate-fade-in">
-            {filtered.length === 0 ? (
+            {paginatedFiltered.length === 0 ? (
               <div className="text-center py-16">
                 <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
                 <p className="text-sm text-muted-foreground">Tidak ada produk dalam kategori ini</p>
               </div>
             ) : (
-              filtered.map((a, idx) => {
+              paginatedFiltered.map((a, idx) => {
+                const globalIdx = (restockCurrentPage - 1) * RESTOCK_PAGE_SIZE + idx;
                 const badge = STATUS_BADGE[a.dosStatus];
                 const priority = getPriorityLevel(a.dosStatus);
                 const isZeroStock = a.currentStock === 0;
@@ -929,7 +941,38 @@ const Analisa = () => {
             )}
           </div>
 
-          {/* Prediksi */}
+          {/* Restock Pagination Controls */}
+          {restockTotalPages > 1 && (
+            <div className="flex items-center justify-between py-3 border-t">
+              <p className="text-xs text-muted-foreground">
+                {(restockCurrentPage - 1) * RESTOCK_PAGE_SIZE + 1}–{Math.min(restockCurrentPage * RESTOCK_PAGE_SIZE, filtered.length)} dari {filtered.length}
+              </p>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg"
+                  disabled={restockCurrentPage <= 1}
+                  onClick={() => setRestockPage(p => p - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-xs font-semibold px-2 tabular-nums">
+                  {restockCurrentPage}/{restockTotalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg"
+                  disabled={restockCurrentPage >= restockTotalPages}
+                  onClick={() => setRestockPage(p => p + 1)}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
           <Card className="border-0 shadow-sm p-5 space-y-4 animate-fade-in" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
             <SectionHeader icon={Clock} title="Prediksi Kehabisan Stok" subtitle="Berdasarkan velocity saat ini" />
             {[

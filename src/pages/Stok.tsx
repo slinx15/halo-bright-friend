@@ -1,37 +1,57 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Package, Search, AlertTriangle, TrendingUp, BoxIcon, ShieldAlert } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Package, Search, AlertTriangle, TrendingUp, BoxIcon, ShieldAlert, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatNumber, formatRupiah, getStockStatus, getStockStatusColor } from "@/lib/formatters";
 import { StokSkeleton } from "@/components/LoadingSkeletons";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Progress } from "@/components/ui/progress";
 
+const PAGE_SIZE = 30;
+
 const Stok = () => {
   const { data: products, isLoading } = useProducts();
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const isMobile = useIsMobile();
 
-  const filtered = products?.filter(
-    (p) =>
-      p.kode.toLowerCase().includes(search.toLowerCase()) ||
-      p.nama.toLowerCase().includes(search.toLowerCase())
+  const filtered = useMemo(() =>
+    products?.filter(
+      (p) =>
+        p.kode.toLowerCase().includes(search.toLowerCase()) ||
+        p.nama.toLowerCase().includes(search.toLowerCase())
+    ) ?? [],
+    [products, search]
   );
 
-  const totalItems = filtered?.length ?? 0;
-  const totalStok = filtered?.reduce((sum, p) => sum + (p.stock?.jumlah ?? 0), 0) ?? 0;
-  const kosong = filtered?.filter((p) => (p.stock?.jumlah ?? 0) === 0).length ?? 0;
-  const kritis = filtered?.filter((p) => { const j = p.stock?.jumlah ?? 0; return j > 0 && j <= 5; }).length ?? 0;
-  const warning = filtered?.filter((p) => getStockStatus(p.stock?.jumlah ?? 0) === "warning").length ?? 0;
-  const nilaiStok = filtered?.reduce((sum, p) => {
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = useMemo(() =>
+    filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [filtered, currentPage]
+  );
+
+  // Reset page when search changes
+  const handleSearch = (val: string) => {
+    setSearch(val);
+    setPage(1);
+  };
+
+  const totalItems = filtered.length;
+  const totalStok = filtered.reduce((sum, p) => sum + (p.stock?.jumlah ?? 0), 0);
+  const kosong = filtered.filter((p) => (p.stock?.jumlah ?? 0) === 0).length;
+  const kritis = filtered.filter((p) => { const j = p.stock?.jumlah ?? 0; return j > 0 && j <= 5; }).length;
+  const warning = filtered.filter((p) => getStockStatus(p.stock?.jumlah ?? 0) === "warning").length;
+  const nilaiStok = filtered.reduce((sum, p) => {
     const jumlah = p.stock?.jumlah ?? 0;
     const modal = p.prices?.harga_modal ?? 0;
     return sum + (jumlah * modal);
-  }, 0) ?? 0;
+  }, 0);
 
   if (isLoading) return <StokSkeleton />;
 
@@ -97,20 +117,20 @@ const Stok = () => {
             </CardTitle>
             <div className="relative w-full md:w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input className="pl-9 rounded-xl h-10" placeholder="Cari kode / nama..." value={search} onChange={(e) => setSearch(e.target.value)} />
+              <Input className="pl-9 rounded-xl h-10" placeholder="Cari kode / nama..." value={search} onChange={(e) => handleSearch(e.target.value)} />
             </div>
           </div>
         </CardHeader>
         <CardContent>
           {isMobile ? (
             <div className="space-y-2.5">
-              {filtered?.length === 0 && (
+              {paginated.length === 0 && (
                 <div className="py-10 text-center">
                   <Package className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
                   <p className="text-sm text-muted-foreground font-medium">Tidak ada data</p>
                 </div>
               )}
-              {filtered?.map((p) => {
+              {paginated.map((p) => {
                 const jumlah = p.stock?.jumlah ?? 0;
                 const status = getStockStatus(jumlah);
                 const stacks = (p.stock?.tumpukan_detail as number[]) ?? [];
@@ -180,7 +200,7 @@ const Stok = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered?.map((p, idx) => {
+                  {paginated.map((p, idx) => {
                     const jumlah = p.stock?.jumlah ?? 0;
                     const status = getStockStatus(jumlah);
                     const stacks = (p.stock?.tumpukan_detail as number[]) ?? [];
@@ -201,11 +221,43 @@ const Stok = () => {
                       </TableRow>
                     );
                   })}
-                  {filtered?.length === 0 && (
+                  {paginated.length === 0 && (
                     <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-10">Tidak ada data</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4 border-t mt-4">
+              <p className="text-xs text-muted-foreground">
+                {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, totalItems)} dari {totalItems}
+              </p>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg"
+                  disabled={currentPage <= 1}
+                  onClick={() => setPage(p => p - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-xs font-semibold px-2 tabular-nums">
+                  {currentPage}/{totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setPage(p => p + 1)}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
