@@ -45,12 +45,11 @@ serve(async (req) => {
     const url = new URL(req.url);
     const action = url.searchParams.get("action");
 
+    // ─── LIST USERS ───
     if (req.method === "GET" && action === "list") {
-      // List all users
       const { data: { users }, error } = await adminClient.auth.admin.listUsers({ perPage: 100 });
       if (error) throw error;
 
-      // Get roles
       const { data: roles } = await adminClient.from("user_roles").select("user_id, role");
       const roleMap: Record<string, string> = {};
       (roles || []).forEach((r: any) => { roleMap[r.user_id] = r.role; });
@@ -69,6 +68,7 @@ serve(async (req) => {
       });
     }
 
+    // ─── SET ROLE ───
     if (req.method === "POST" && action === "set-role") {
       const { userId, role } = await req.json();
       if (!userId || !["admin", "karyawan"].includes(role)) {
@@ -77,14 +77,12 @@ serve(async (req) => {
         });
       }
 
-      // Prevent removing own admin
       if (userId === user.id && role !== "admin") {
         return new Response(JSON.stringify({ error: "Tidak bisa menghapus role admin sendiri" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Upsert role
       const { data: existing } = await adminClient
         .from("user_roles")
         .select("id")
@@ -96,6 +94,66 @@ serve(async (req) => {
       } else {
         await adminClient.from("user_roles").insert({ user_id: userId, role });
       }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ─── CREATE USER ───
+    if (req.method === "POST" && action === "create-user") {
+      const { email, password, name, role: newRole } = await req.json();
+      
+      if (!email || !password || password.length < 6) {
+        return new Response(JSON.stringify({ error: "Email dan password (min 6 karakter) wajib diisi" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const validRole = ["admin", "karyawan"].includes(newRole) ? newRole : "karyawan";
+
+      // Create user via admin API (auto-confirmed)
+      const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { name: name || "" },
+      });
+
+      if (createError) {
+        throw new Error(createError.message);
+      }
+
+      // Assign role
+      if (newUser?.user) {
+        await adminClient.from("user_roles").insert({
+          user_id: newUser.user.id,
+          role: validRole,
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, user_id: newUser?.user?.id }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ─── DELETE USER ───
+    if (req.method === "POST" && action === "delete-user") {
+      const { userId } = await req.json();
+      if (!userId) {
+        return new Response(JSON.stringify({ error: "userId wajib diisi" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (userId === user.id) {
+        return new Response(JSON.stringify({ error: "Tidak bisa menghapus akun sendiri" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { error: deleteError } = await adminClient.auth.admin.deleteUser(userId);
+      if (deleteError) throw new Error(deleteError.message);
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
