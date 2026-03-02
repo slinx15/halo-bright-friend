@@ -265,8 +265,14 @@ serve(async (req) => {
     };
 
     const isSent = !!already_sent;
-    const summaryPrompt = `Kamu analis inventaris RRCollections (toko benang grosir). Panggil user "Boss". Bahasa Indonesia casual.
-${isSent ? "PENTING: Pesanan ini SUDAH DIKIRIM ke supplier, jadi JANGAN sarankan untuk mengurangi/pangkas/hapus item yang kebanyakan karena sudah tidak bisa diubah. Fokuskan saran pada item yang KURANG dan produk kritis yang BELUM dipesan — apakah perlu pesan tambahan (top-up) atau tidak." : ""}
+    const sentContext = isSent 
+      ? `\nKONTEKS KRITIS: Pesanan ini SUDAH DIKIRIM ke supplier dan TIDAK BISA diubah/dibatalkan. Jadi:
+- JANGAN PERNAH sarankan untuk mengurangi, memangkas, menghapus, atau membatalkan item yang kebanyakan. Itu sudah terlanjur dikirim.
+- Item yang "lebih" cukup dicatat saja, bukan masalah karena stok tambahan tetap berguna.
+- Fokus saran HANYA pada: (1) item yang KURANG — perlu tambah pesanan baru, (2) produk kritis yang BELUM dipesan — perlu pesan terpisah.
+- Gunakan istilah "pesan tambahan" atau "top-up" bukan "pangkas" atau "kurangi".\n`
+      : "";
+    const summaryPrompt = `Kamu analis inventaris RRCollections (toko benang grosir). Panggil user "Boss". Bahasa Indonesia casual.${sentContext}
 Buat RINGKASAN SINGKAT 2-3 kalimat untuk hasil review restock ini:
 - ${summaryData.total_items} item di-review
 - ${summaryData.pas} sudah tepat, ${summaryData.kurang} kurang, ${summaryData.lebih} kebanyakan
@@ -276,7 +282,7 @@ Buat RINGKASAN SINGKAT 2-3 kalimat untuk hasil review restock ini:
 - Total budget dibutuhkan: Rp ${budgetTotal.toLocaleString("id-ID")}
 ${unknownCodes.length > 0 ? `- ${unknownCodes.length} kode tidak dikenal: ${unknownCodes.join(", ")}` : ""}
 
-Beri penilaian singkat + 1 saran paling penting. MAX 3 kalimat. Jangan pake markdown heading, cukup teks biasa.${isSent ? " Ingat: pesanan sudah dikirim, jangan suruh pangkas/kurangi item." : ""}`;
+Beri penilaian singkat + 1 saran paling penting. MAX 3 kalimat. Jangan pake markdown heading, cukup teks biasa.`;
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
