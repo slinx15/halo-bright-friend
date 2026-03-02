@@ -70,6 +70,33 @@ function getExcess(card: ReviewCard): number {
   return Math.max(0, card.qty_boss - card.ideal_qty);
 }
 
+function getReason(card: ReviewCard, alreadySent: boolean): string {
+  const v = card.velocity;
+  const dos = card.dos;
+  
+  if (card.verdict === "kurang") {
+    if (dos <= 2) return `Stok tinggal ${dos} hari lagi, bakal habis sebelum barang datang`;
+    if (card.is_bestseller) return `Barang laris (${v}/hari), pesan ${formatNumber(card.qty_boss)} kurang buat ${dos > 999 ? "∞" : dos} hari`;
+    return `Laku ${v}/hari, pesan segini cuma cukup ${dos} hari`;
+  }
+  
+  if (card.verdict === "lebih" && !alreadySent) {
+    if (card.ideal_qty === 0) return `Stok masih banyak (${formatNumber(card.stok)} pcs), belum perlu restock`;
+    if (v < 1) return `Jarang laku (${v}/hari), bisa numpuk di gudang`;
+    return `Stok ${formatNumber(card.stok)} + pesan ${formatNumber(card.qty_boss)} = kebanyakan, cukup ${formatNumber(card.ideal_qty)} aja`;
+  }
+  
+  // OK / cukup
+  if (card.is_bestseller) return `Barang laris, qty segini pas buat ${Math.round((card.stok + card.qty_boss) / Math.max(v, 0.1))} hari`;
+  if (v > 0) return `Laku ${v}/hari, qty segini cukup`;
+  return `Stok aman`;
+}
+
+function getMissedReason(card: MissedCard): string {
+  if (card.dos <= 2) return `Tinggal ${formatNumber(card.stok)} pcs, laku ${card.velocity}/hari — bisa habis ${card.dos} hari lagi`;
+  return `Stok ${formatNumber(card.stok)} pcs tapi laku ${card.velocity}/hari, sisa ${card.dos} hari`;
+}
+
 function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boolean }) {
   const needMore = isNeedMore(card);
   const tooMuch = !alreadySent && isTooMuch(card);
@@ -117,12 +144,10 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
         </span>
       </div>
 
-      {/* Row 3: compact stats */}
-      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-        <span>Stok: {formatNumber(card.stok)}</span>
-        <span>Laku: {card.velocity}/hari</span>
-        <span>Sisa: {card.dos}hr</span>
-      </div>
+      {/* Row 3: reason */}
+      <p className="text-[11px] text-muted-foreground leading-snug italic">
+        💬 {getReason(card, alreadySent)}
+      </p>
     </div>
   );
 }
@@ -136,10 +161,10 @@ function MissedProductCard({ card }: { card: MissedCard }) {
           <Plus className="h-3 w-3" /> Pesan {formatNumber(card.ideal_qty)}
         </Badge>
       </div>
-      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-        <span className="truncate">{card.nama}</span>
-        <span className="shrink-0 ml-2">Stok {formatNumber(card.stok)} · {card.velocity}/hari · {card.dos}hr</span>
-      </div>
+      <div className="text-[11px] text-muted-foreground truncate">{card.nama}</div>
+      <p className="text-[11px] text-muted-foreground leading-snug italic">
+        💬 {getMissedReason(card)}
+      </p>
     </div>
   );
 }
