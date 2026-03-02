@@ -295,10 +295,19 @@ export default function ReviewAI() {
       {/* Input Card */}
       <Card className="card-premium overflow-hidden">
         <CardHeader className="pb-3 bg-gradient-to-r from-primary/5 to-transparent">
-          <CardTitle className="text-base font-bold flex items-center gap-2">
-            <FileText className="h-4 w-4 text-primary" />
-            Daftar Pesanan {filledRows > 0 && <span className="text-primary text-sm font-normal">({filledRows})</span>}
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <FileText className="h-4 w-4 text-primary" />
+              Daftar Pesanan {filledRows > 0 && <span className="text-primary text-sm font-normal">({filledRows})</span>}
+            </CardTitle>
+            <div>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleOcrFile(f); e.target.value = ""; }} />
+              <Button variant="outline" size="sm" className="rounded-xl font-semibold native-press h-9" onClick={() => fileRef.current?.click()} disabled={ocrLoading || isLoading}>
+                {ocrLoading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Camera className="h-3.5 w-3.5 mr-1.5" />}
+                {ocrLoading ? "Membaca..." : "Foto Catatan"}
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-5">
               <div className="rounded-xl border border-border/60 bg-muted/20 overflow-hidden">
@@ -454,11 +463,6 @@ export default function ReviewAI() {
 
             {/* Action Buttons */}
             <div className="flex gap-2">
-              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleOcrFile(f); e.target.value = ""; }} />
-              <Button variant="outline" className="flex-1 h-11 rounded-xl font-semibold native-press" onClick={() => fileRef.current?.click()} disabled={ocrLoading || isLoading}>
-                {ocrLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Camera className="h-4 w-4 mr-2" />}
-                {ocrLoading ? "Membaca..." : "Foto Catatan"}
-              </Button>
               <Button className="flex-1 h-11 rounded-xl font-bold shadow-premium native-press" onClick={handleParse} disabled={filledRows === 0 || isLoading}>
                 <FileText className="h-4 w-4 mr-2" />
                 Cek Daftar
