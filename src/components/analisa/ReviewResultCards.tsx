@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Sparkles, AlertTriangle, CheckCircle2, Plus, Flame, ArrowDown,
-  TrendingUp, ShoppingCart, PackageX
+  TrendingUp, ShoppingCart, PackageX, Wallet, CirclePlus, CircleAlert
 } from "lucide-react";
 import { formatRupiah, formatNumber } from "@/lib/formatters";
 
@@ -36,6 +36,8 @@ export interface MissedCard {
   status: Status;
   ideal_qty: number;
   is_bw: boolean;
+  harga_modal: number;
+  cost: number;
 }
 
 export interface ReviewResult {
@@ -45,6 +47,9 @@ export interface ReviewResult {
   missed: MissedCard[];
   unknown_codes: string[];
   total_cost: number;
+  budget_tambah: number;
+  budget_missed: number;
+  budget_total: number;
   stats: {
     total_items: number;
     pas: number;
@@ -257,6 +262,11 @@ function MissedProductCard({ card }: { card: MissedCard }) {
       <div className="rounded-xl px-3 py-2 text-[11px] leading-relaxed bg-red-100/80 dark:bg-red-900/30 text-red-800 dark:text-red-300">
         💬 {getMissedReason(card)}
       </div>
+      {card.cost > 0 && (
+        <div className="text-[10px] text-muted-foreground px-1">
+          Budget: <span className="font-bold text-foreground">{formatRupiah(card.cost)}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -276,13 +286,14 @@ function SectionHeader({ icon: Icon, title, count, color }: {
 }
 
 export function ReviewResultCards({ result, alreadySent }: { result: ReviewResult; alreadySent: boolean }) {
-  const { score, summary, cards, missed, unknown_codes, total_cost } = result;
+  const { score, summary, cards, missed, unknown_codes, total_cost, budget_tambah, budget_missed, budget_total } = result;
 
   const needMoreCards = cards.filter(c => isNeedMore(c)).sort((a, b) => a.dos - b.dos);
   const tooMuchCards = !alreadySent ? cards.filter(c => isTooMuch(c)) : [];
   const okCards = cards.filter(c => !isNeedMore(c) && !(isTooMuch(c) && !alreadySent));
 
   const totalTambah = needMoreCards.reduce((sum, c) => sum + getShortfall(c), 0);
+  const hasBudgetExtra = (budget_tambah || 0) > 0 || (budget_missed || 0) > 0;
 
   return (
     <div className="space-y-4 animate-fade-in" style={{ animationFillMode: "both" }}>
@@ -300,14 +311,47 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
             </div>
           </div>
           
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-1.5 mt-4">
-            <StatPill
-              icon={TrendingUp}
-              label="Budget"
-              value={formatRupiah(total_cost)}
-              className="bg-muted/50 text-foreground col-span-2"
-            />
+          {/* Budget Breakdown */}
+          <div className="mt-4 rounded-xl bg-muted/40 p-3.5 space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+              <Wallet className="h-3.5 w-3.5 text-primary" />
+              Rincian Budget
+            </div>
+            <div className="space-y-1.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Pesanan awal</span>
+                <span className="font-bold tabular-nums">{formatRupiah(total_cost)}</span>
+              </div>
+              {(budget_tambah || 0) > 0 && (
+                <div className="flex items-center justify-between text-orange-600 dark:text-orange-400">
+                  <span className="flex items-center gap-1">
+                    <CirclePlus className="h-3 w-3" /> Tambahan (kurang)
+                  </span>
+                  <span className="font-bold tabular-nums">+{formatRupiah(budget_tambah)}</span>
+                </div>
+              )}
+              {(budget_missed || 0) > 0 && (
+                <div className="flex items-center justify-between text-destructive">
+                  <span className="flex items-center gap-1">
+                    <CircleAlert className="h-3 w-3" /> Belum dipesan (kritis)
+                  </span>
+                  <span className="font-bold tabular-nums">+{formatRupiah(budget_missed)}</span>
+                </div>
+              )}
+              {hasBudgetExtra && (
+                <>
+                  <div className="border-t border-border/50 my-1" />
+                  <div className="flex items-center justify-between font-bold">
+                    <span>Total yang harus disiapkan</span>
+                    <span className="tabular-nums text-primary text-sm">{formatRupiah(budget_total || total_cost)}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 gap-1.5 mt-3">
             {needMoreCards.length > 0 && (
               <StatPill
                 icon={Plus}

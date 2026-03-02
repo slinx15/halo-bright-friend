@@ -83,6 +83,8 @@ interface MissedCard {
   status: Status;
   ideal_qty: number;
   is_bw: boolean;
+  harga_modal: number;
+  cost: number;
 }
 
 function getStatus(dos: number): Status {
@@ -223,17 +225,25 @@ serve(async (req) => {
         const missedTargetDays = customTargetDays || (RULES.CYCLE_DAYS + (isBW ? RULES.SAFETY_BW : RULES.SAFETY_STOCK) + RULES.LEAD_TIME_DAYS);
         const idealQty = Math.max(batch, Math.ceil(velocity * missedTargetDays - prod.stok));
         const idealRounded = Math.ceil(idealQty / batch) * batch;
+        const missedCost = idealRounded * (prod.hargaModal || 0);
         missed.push({
           kode: p.kode, nama: p.nama,
           stok: prod.stok, velocity,
           dos: Math.round(dos * 10) / 10,
           status: getStatus(dos),
           ideal_qty: idealRounded, is_bw: isBW,
+          harga_modal: prod.hargaModal || 0,
+          cost: missedCost,
         });
       }
     }
     // Sort missed: kritis first, then by dos ascending
     missed.sort((a, b) => a.dos - b.dos);
+
+    // ─── Budget breakdown ───
+    const budgetTambah = cards.filter(c => c.verdict === "kurang").reduce((sum, c) => sum + (c.ideal_qty - c.qty_boss) * c.harga_modal, 0);
+    const budgetMissed = missed.reduce((sum, m) => sum + m.cost, 0);
+    const budgetTotal = totalCost + budgetTambah + budgetMissed;
 
     // ─── Score calculation ───
     const totalCards = cards.length;
@@ -249,6 +259,9 @@ serve(async (req) => {
       missed_count: missed.length,
       total_cost: totalCost,
       unknown_count: unknownCodes.length,
+      budget_tambah: budgetTambah,
+      budget_missed: budgetMissed,
+      budget_total: budgetTotal,
     };
 
     const summaryPrompt = `Kamu analis inventaris RRCollections (toko benang grosir). Panggil user "Boss". Bahasa Indonesia casual.
@@ -256,7 +269,9 @@ Buat RINGKASAN SINGKAT 2-3 kalimat untuk hasil review restock ini:
 - ${summaryData.total_items} item di-review
 - ${summaryData.pas} sudah tepat, ${summaryData.kurang} kurang, ${summaryData.lebih} kebanyakan
 - ${summaryData.missed_count} produk kritis belum dipesan
-- Total biaya: Rp ${totalCost.toLocaleString("id-ID")}
+- Budget pesanan awal: Rp ${totalCost.toLocaleString("id-ID")}
+- Budget tambahan yang perlu: Rp ${budgetTambah.toLocaleString("id-ID")} (item kurang) + Rp ${budgetMissed.toLocaleString("id-ID")} (item belum pesan)
+- Total budget dibutuhkan: Rp ${budgetTotal.toLocaleString("id-ID")}
 ${unknownCodes.length > 0 ? `- ${unknownCodes.length} kode tidak dikenal: ${unknownCodes.join(", ")}` : ""}
 
 Beri penilaian singkat + 1 saran paling penting. MAX 3 kalimat. Jangan pake markdown heading, cukup teks biasa.`;
@@ -290,6 +305,9 @@ Beri penilaian singkat + 1 saran paling penting. MAX 3 kalimat. Jangan pake mark
       missed,
       unknown_codes: unknownCodes,
       total_cost: totalCost,
+      budget_tambah: budgetTambah,
+      budget_missed: budgetMissed,
+      budget_total: budgetTotal,
       stats: summaryData,
     };
 
