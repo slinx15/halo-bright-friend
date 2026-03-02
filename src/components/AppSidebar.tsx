@@ -50,7 +50,15 @@ const AppSidebar = () => {
       {/* Brand */}
       <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border">
         <div className="h-10 w-10 rounded-xl overflow-hidden ring-2 ring-sidebar-primary/20">
-          <img src={logo} alt="RRCollections" className="h-full w-full object-contain" />
+          <img
+            src={logo}
+            alt="RRCollections"
+            className="h-full w-full object-contain"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = "/pwa-icon-192.png";
+            }}
+          />
         </div>
         <div>
           <h1 className="font-extrabold text-lg text-sidebar-primary-foreground tracking-tight">RRCollections</h1>
