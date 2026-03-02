@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,7 +11,7 @@ import {
   BarChart3, DollarSign, Store, ArrowDown,
   ShoppingCart, Clock, Trophy, Activity,
   AlertCircle, PackageX, Wallet, Flame, TrendingUp, TrendingDown,
-  Calculator, CheckCircle2, ChevronLeft, ChevronRight
+  Calculator, CheckCircle2, ChevronLeft, ChevronRight, Sparkles
 } from "lucide-react";
 import { useSalesAnalysis } from "@/hooks/useSalesAnalysis";
 import { analyzeAllProducts, getStatusCounts, RULES, type DosStatus, type ProductAnalysis, isBlackWhiteCode } from "@/lib/stockAnalyticsEngine";
@@ -22,6 +22,8 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AnalisaSkeleton } from "@/components/LoadingSkeletons";
 import { SalesTrendCharts } from "@/components/analisa/SalesTrendCharts";
+
+const ReviewAI = lazy(() => import("@/components/analisa/ReviewAI"));
 
 // ─── Formatting Helpers ───────────────────────────────────
 
@@ -707,7 +709,7 @@ const Analisa = () => {
       {/* MAIN CONTENT — TABS */}
       <Tabs defaultValue="restock" className="w-full">
         <div className="rounded-2xl bg-card/80 backdrop-blur-sm border border-border/40 shadow-md p-1.5">
-          <TabsList className="grid grid-cols-4 md:grid-cols-7 w-full bg-transparent h-auto p-0 gap-1">
+          <TabsList className="grid grid-cols-4 md:grid-cols-8 w-full bg-transparent h-auto p-0 gap-1">
             {[
               { value: "restock", icon: ShoppingCart, label: "Restock", badge: needsReorder > 0 ? needsReorder : null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
               { value: "penjualan", icon: Trophy, label: "Penjualan", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
@@ -716,6 +718,7 @@ const Analisa = () => {
               { value: "dead", icon: Skull, label: "Dead", badge: null, activeColor: "data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground" },
               { value: "budget", icon: Calculator, label: "Budget", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
               { value: "ringkasan", icon: BarChart3, label: "Ringkasan", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
+              { value: "review", icon: Sparkles, label: "Review", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
             ].map(tab => (
               <TabsTrigger
                 key={tab.value}
@@ -1501,6 +1504,12 @@ const Analisa = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+        {/* ══════════ REVIEW AI ══════════ */}
+        <TabsContent value="review" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
+          <Suspense fallback={<div className="flex items-center justify-center py-16"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+            <ReviewAI />
+          </Suspense>
         </TabsContent>
       </Tabs>
     </div>

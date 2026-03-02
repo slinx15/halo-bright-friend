@@ -50,6 +50,13 @@ Kembalikan HANYA JSON array tanpa markdown. Contoh:
 [{"kode":"R533","qty":10},{"kode":"R533","qty":15},{"kode":"2115","qty":10}]
 Artinya R533 punya 2 tumpukan: 10 dan 15.
 Jika tidak bisa membaca, kembalikan [].`,
+
+      review: `Baca foto catatan/daftar pesanan restock kain/tekstil.
+Bisa berupa daftar tulisan tangan, WhatsApp screenshot, atau nota.
+Ekstrak setiap item: kode produk dan jumlah/qty yang mau dipesan.${codesHint}
+Kembalikan HANYA JSON array tanpa markdown. Contoh:
+[{"kode":"R533","qty":50},{"kode":"BLK","qty":100}]
+Jika tidak bisa membaca, kembalikan [].`,
     };
 
     const systemPrompt = prompts[mode] || prompts.masuk;
