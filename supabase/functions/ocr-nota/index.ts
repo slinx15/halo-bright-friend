@@ -54,7 +54,8 @@ Jika tidak bisa membaca, kembalikan [].`,
 
       review: `Baca foto catatan/daftar pesanan restock kain/tekstil.
 Bisa berupa daftar tulisan tangan, WhatsApp screenshot, atau nota.
-Ekstrak setiap item: kode produk dan jumlah/qty yang mau dipesan.${codesHint}
+Ekstrak setiap item: kode produk dan jumlah/qty yang mau dipesan.
+KONVERSI BAL: Untuk produk HITAM (kode mengandung "HITAM", "HTM", "BLK", "BLACK") dan PUTIH (kode mengandung "PUTIH", "PTH", "WHT", "WHITE"), 1 bal = 50. Jadi jika tertulis "2 bal" untuk hitam/putih, qty = 100. Untuk produk lain, gunakan angka langsung.${codesHint}
 Kembalikan HANYA JSON array tanpa markdown. Contoh:
 [{"kode":"R533","qty":50},{"kode":"BLK","qty":100}]
 Jika tidak bisa membaca, kembalikan [].`,
