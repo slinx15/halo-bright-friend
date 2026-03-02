@@ -70,31 +70,51 @@ function getExcess(card: ReviewCard): number {
   return Math.max(0, card.qty_boss - card.ideal_qty);
 }
 
+function describeSpeed(velocity: number): string {
+  if (velocity >= 10) return "laris banget";
+  if (velocity >= 5) return "laris";
+  if (velocity >= 2) return "lumayan laku";
+  if (velocity >= 0.5) return "agak jarang laku";
+  if (velocity > 0) return "jarang laku";
+  return "ga pernah laku";
+}
+
+function describeDays(dos: number): string {
+  if (dos > 999) return "masih lama";
+  if (dos <= 1) return "bisa habis hari ini";
+  if (dos <= 2) return "tinggal 1-2 hari lagi";
+  if (dos <= 3) return "tinggal 3 hari lagi";
+  if (dos <= 5) return "tinggal beberapa hari";
+  if (dos <= 7) return "cukup buat seminggu";
+  if (dos <= 14) return "cukup buat 2 minggu";
+  return "masih banyak";
+}
+
 function getReason(card: ReviewCard, alreadySent: boolean): string {
-  const v = card.velocity;
-  const dos = card.dos;
+  const speed = describeSpeed(card.velocity);
+  const timeLeft = describeDays(card.dos);
   
   if (card.verdict === "kurang") {
-    if (dos <= 2) return `Stok tinggal ${dos} hari lagi, bakal habis sebelum barang datang`;
-    if (card.is_bestseller) return `Barang laris (${v}/hari), pesan ${formatNumber(card.qty_boss)} kurang buat ${dos > 999 ? "∞" : dos} hari`;
-    return `Laku ${v}/hari, pesan segini cuma cukup ${dos} hari`;
+    if (card.dos <= 2) return `Barang ${speed}, stok ${timeLeft} — kurang ${formatNumber(getShortfall(card))} pcs biar aman`;
+    return `Barang ${speed}, pesan segini ${timeLeft} aja — tambahin biar ga kehabisan`;
   }
   
   if (card.verdict === "lebih" && !alreadySent) {
-    if (card.ideal_qty === 0) return `Stok masih banyak (${formatNumber(card.stok)} pcs), belum perlu restock`;
-    if (v < 1) return `Jarang laku (${v}/hari), bisa numpuk di gudang`;
-    return `Stok ${formatNumber(card.stok)} + pesan ${formatNumber(card.qty_boss)} = kebanyakan, cukup ${formatNumber(card.ideal_qty)} aja`;
+    if (card.ideal_qty === 0) return `Stok masih banyak (${formatNumber(card.stok)} pcs), belum perlu nambah`;
+    if (card.velocity < 1) return `Barang ${speed}, pesan kebanyakan nanti numpuk di gudang`;
+    return `Cukup pesan ${formatNumber(card.ideal_qty)} aja, sisanya bisa buat barang lain`;
   }
   
   // OK / cukup
-  if (card.is_bestseller) return `Barang laris, qty segini pas buat ${Math.round((card.stok + card.qty_boss) / Math.max(v, 0.1))} hari`;
-  if (v > 0) return `Laku ${v}/hari, qty segini cukup`;
-  return `Stok aman`;
+  if (card.is_bestseller) return `Barang ${speed}, qty segini udah pas 👍`;
+  if (card.velocity > 0) return `Barang ${speed}, qty segini cukup`;
+  return `Stok masih aman`;
 }
 
 function getMissedReason(card: MissedCard): string {
-  if (card.dos <= 2) return `Tinggal ${formatNumber(card.stok)} pcs, laku ${card.velocity}/hari — bisa habis ${card.dos} hari lagi`;
-  return `Stok ${formatNumber(card.stok)} pcs tapi laku ${card.velocity}/hari, sisa ${card.dos} hari`;
+  const speed = describeSpeed(card.velocity);
+  const timeLeft = describeDays(card.dos);
+  return `Barang ${speed} tapi ${timeLeft}, harus pesan sebelum kehabisan`;
 }
 
 function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boolean }) {
