@@ -279,7 +279,7 @@ export default function ReviewAI() {
   const filledRows = rows.filter(r => r.kode.trim() || r.qty.trim()).length;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5 [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*:nth-child(5)]:![animation-delay:200ms] [&>*]:[animation-fill-mode:both]">
       {/* ── Premium Header (matches other pages) ── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3.5">
@@ -303,14 +303,14 @@ export default function ReviewAI() {
             </CardTitle>
             <div>
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleOcrFile(f); e.target.value = ""; }} />
-              <Button variant="outline" size="sm" className="rounded-xl font-semibold native-press h-9" onClick={() => fileRef.current?.click()} disabled={ocrLoading || isLoading}>
+              <Button variant="outline" size="sm" className="rounded-xl font-semibold transition-all duration-150 active:scale-95 h-9 min-h-[44px]" onClick={() => fileRef.current?.click()} disabled={ocrLoading || isLoading}>
                 {ocrLoading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Camera className="h-3.5 w-3.5 mr-1.5" />}
                 {ocrLoading ? "Membaca..." : "Foto Catatan"}
               </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-5">
+        <CardContent className="space-y-4 pt-4">
               <div className="rounded-xl border border-border/60 bg-muted/20 overflow-hidden">
                 {/* Table header */}
                 <div className="grid grid-cols-[1fr_80px_36px] gap-0 px-3 py-2 bg-muted/40 border-b border-border/40">
@@ -464,12 +464,12 @@ export default function ReviewAI() {
 
             {/* Action Buttons */}
             <div className="flex gap-2">
-              <Button className="flex-1 h-11 rounded-xl font-bold shadow-premium native-press" onClick={handleParse} disabled={filledRows === 0 || isLoading}>
+              <Button className="flex-1 rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg" onClick={handleParse} disabled={filledRows === 0 || isLoading}>
                 <FileText className="h-4 w-4 mr-2" />
                 Cek Daftar
               </Button>
               {(parsedItems.length > 0 || reviewResult) && (
-                <Button variant="ghost" size="icon" className="h-11 w-11 rounded-xl shrink-0" onClick={handleReset} disabled={isLoading}>
+                <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl shrink-0 min-h-[44px]" onClick={handleReset} disabled={isLoading}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
@@ -479,11 +479,11 @@ export default function ReviewAI() {
 
       {/* Parsed Items — compact inline summary + dialog detail */}
       {showParsed && parsedItems.length > 0 && (
-        <div className="flex items-center gap-2 animate-fade-in">
+        <div className="flex items-center gap-2.5">
           <Button
             variant="outline"
             size="sm"
-            className="rounded-xl text-xs font-semibold gap-1.5"
+            className="rounded-xl text-xs font-semibold gap-1.5 min-h-[44px] transition-all duration-150 active:scale-95"
             onClick={() => setExpandParsed(true)}
           >
             <FileText className="h-3.5 w-3.5" />
@@ -491,7 +491,7 @@ export default function ReviewAI() {
             {invalidCount > 0 && <span className="text-destructive">({invalidCount} unknown)</span>}
           </Button>
           <Button
-            className="flex-1 h-10 rounded-xl font-bold shadow-premium native-press"
+            className="flex-1 rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg"
             onClick={() => setShowSentDialog(true)}
             disabled={isLoading}
           >
