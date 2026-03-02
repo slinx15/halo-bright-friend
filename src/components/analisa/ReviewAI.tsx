@@ -88,6 +88,7 @@ export default function ReviewAI() {
   const [showParsed, setShowParsed] = useState(false);
   const [orderDate, setOrderDate] = useState<Date | undefined>(undefined);
   const [targetDays, setTargetDays] = useState<string>("");
+  const [alreadySent, setAlreadySent] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const { toast } = useToast();
@@ -126,6 +127,7 @@ export default function ReviewAI() {
       if (targetDays && parseInt(targetDays) > 0) {
         body.target_days = parseInt(targetDays);
       }
+      body.already_sent = alreadySent;
       if (orderDate) {
         body.mode = "topup";
         body.ordered_at = orderDate.toISOString();
@@ -214,6 +216,7 @@ export default function ReviewAI() {
     setShowParsed(false);
     setOrderDate(undefined);
     setTargetDays("");
+    setAlreadySent(false);
   };
 
   return (
@@ -321,6 +324,39 @@ export default function ReviewAI() {
             )}
           </div>
 
+          {/* Already Sent Toggle */}
+          <div className="flex items-center gap-3">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider shrink-0">
+              Sudah dikirim ke supplier?
+            </label>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setAlreadySent(false)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  !alreadySent 
+                    ? "bg-primary text-primary-foreground shadow-sm" 
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+                disabled={isLoading}
+              >
+                Belum
+              </button>
+              <button
+                type="button"
+                onClick={() => setAlreadySent(true)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  alreadySent 
+                    ? "bg-primary text-primary-foreground shadow-sm" 
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+                disabled={isLoading}
+              >
+                Sudah
+              </button>
+            </div>
+          </div>
+
           <div className="flex gap-2 flex-wrap">
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleOcrFile(f); e.target.value = ""; }} />
             <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={ocrLoading || isLoading}>
@@ -408,7 +444,7 @@ export default function ReviewAI() {
       )}
 
       {/* AI Result Cards */}
-      {reviewResult && <ReviewResultCards result={reviewResult} />}
+      {reviewResult && <ReviewResultCards result={reviewResult} alreadySent={alreadySent} />}
     </div>
   );
 }
