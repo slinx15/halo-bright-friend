@@ -87,6 +87,7 @@ export default function ReviewAI() {
   const [isLoading, setIsLoading] = useState(false);
   const [showParsed, setShowParsed] = useState(false);
   const [orderDate, setOrderDate] = useState<Date | undefined>(undefined);
+  const [targetDays, setTargetDays] = useState<string>("");
   const fileRef = useRef<HTMLInputElement>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const { toast } = useToast();
@@ -122,6 +123,9 @@ export default function ReviewAI() {
       const { data: { session } } = await supabase.auth.getSession();
       
       const body: any = { items: validItems.map(i => ({ kode: i.kode, qty: i.qty })) };
+      if (targetDays && parseInt(targetDays) > 0) {
+        body.target_days = parseInt(targetDays);
+      }
       if (orderDate) {
         body.mode = "topup";
         body.ordered_at = orderDate.toISOString();
@@ -209,6 +213,7 @@ export default function ReviewAI() {
     setReviewResult(null);
     setShowParsed(false);
     setOrderDate(undefined);
+    setTargetDays("");
   };
 
   return (
@@ -287,6 +292,31 @@ export default function ReviewAI() {
               <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
                 <AlertTriangle className="h-3 w-3" />
                 AI akan analisa penjualan setelah {format(orderDate, "d MMM", { locale: idLocale })} & kasih saran pesanan tambahan
+              </p>
+            )}
+          </div>
+
+          {/* Target Days Input */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Target Stok untuk Berapa Hari? <span className="normal-case font-normal">(opsional, default 7 hari)</span>
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="1"
+                max="30"
+                placeholder="7"
+                value={targetDays}
+                onChange={e => setTargetDays(e.target.value)}
+                className="w-24 h-9 rounded-lg border border-input bg-background px-3 text-sm font-bold tabular-nums text-center focus:outline-none focus:ring-2 focus:ring-ring"
+                disabled={isLoading}
+              />
+              <span className="text-sm text-muted-foreground">hari</span>
+            </div>
+            {targetDays && parseInt(targetDays) > 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                AI akan hitung rekomendasi qty untuk kebutuhan <strong>{targetDays} hari</strong> ke depan
               </p>
             )}
           </div>

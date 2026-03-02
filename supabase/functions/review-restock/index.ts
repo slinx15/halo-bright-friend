@@ -125,7 +125,8 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { items, mode, ordered_at } = await req.json();
+    const { items, mode, ordered_at, target_days } = await req.json();
+    const customTargetDays = target_days && Number(target_days) > 0 ? Number(target_days) : null;
     if (!items || !Array.isArray(items) || items.length === 0) {
       return new Response(JSON.stringify({ error: "Kirim minimal 1 item untuk di-review" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -181,8 +182,8 @@ serve(async (req) => {
       const isBW = isBlackWhite(kode);
       const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
       const safety = isBW ? RULES.SAFETY_BW : RULES.SAFETY_STOCK;
-      const targetDays = RULES.CYCLE_DAYS + safety + RULES.LEAD_TIME_DAYS;
-      const targetStock = Math.ceil(velocity * targetDays);
+      const computedTargetDays = customTargetDays || (RULES.CYCLE_DAYS + safety + RULES.LEAD_TIME_DAYS);
+      const targetStock = Math.ceil(velocity * computedTargetDays);
       const dos = velocity > 0 ? product.stok / velocity : (product.stok > 0 ? 999 : 0);
       const idealQty = Math.max(0, targetStock - product.stok);
       const idealRounded = idealQty > 0 ? Math.max(isBW ? batch : RULES.MIN_ORDER_PER_CODE, Math.ceil(idealQty / batch) * batch) : 0;
@@ -219,7 +220,8 @@ serve(async (req) => {
       if (dos <= RULES.WARNING_DAYS) {
         const isBW = isBlackWhite(p.kode);
         const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
-        const idealQty = Math.max(batch, Math.ceil(velocity * (RULES.CYCLE_DAYS + (isBW ? RULES.SAFETY_BW : RULES.SAFETY_STOCK) + RULES.LEAD_TIME_DAYS) - prod.stok));
+        const missedTargetDays = customTargetDays || (RULES.CYCLE_DAYS + (isBW ? RULES.SAFETY_BW : RULES.SAFETY_STOCK) + RULES.LEAD_TIME_DAYS);
+        const idealQty = Math.max(batch, Math.ceil(velocity * missedTargetDays - prod.stok));
         const idealRounded = Math.ceil(idealQty / batch) * batch;
         missed.push({
           kode: p.kode, nama: p.nama,
