@@ -7,7 +7,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Camera, Loader2, Send, Sparkles, FileText, Trash2,
-  CheckCircle2, AlertTriangle, CalendarIcon, X
+  CheckCircle2, AlertTriangle, CalendarIcon, X, Package
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/useProducts";
@@ -222,157 +222,173 @@ export default function ReviewAI() {
   return (
     <div className="space-y-4">
       {/* Input Section */}
-      <Card className="border-0 shadow-sm overflow-hidden">
-        <CardContent className="p-5 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10">
-              <Sparkles className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-base">Review AI</h3>
-              <p className="text-xs text-muted-foreground">Kirim daftar pesanan kamu, AI akan review dan kasih masukan</p>
+      <Card className="border-0 shadow-md overflow-hidden">
+        <CardContent className="p-0">
+          {/* Header */}
+          <div className="px-5 pt-5 pb-4 bg-gradient-to-br from-primary/5 via-primary/8 to-transparent">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center h-11 w-11 rounded-2xl bg-primary/15 shadow-inner-glow">
+                <Sparkles className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base">Review AI</h3>
+                <p className="text-xs text-muted-foreground">Kirim daftar pesanan, AI kasih masukan</p>
+              </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Daftar Pesanan</label>
-            <Textarea
-              placeholder={"Tulis kode + qty per baris:\nABC-123 50\nDEF-456 25\nGHI-789 100\n\nAtau foto catatan kamu →"}
-              value={inputText}
-              onChange={e => setInputText(e.target.value)}
-              className="min-h-[140px] font-mono text-sm"
-              disabled={isLoading}
-            />
-          </div>
+          <div className="px-5 pb-5 space-y-5">
+            {/* Textarea */}
+            <div className="space-y-2">
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Daftar Pesanan</label>
+              <Textarea
+                placeholder={"Tulis kode + qty per baris:\nABC-123 50\nDEF-456 25\n\nAtau foto catatan kamu →"}
+                value={inputText}
+                onChange={e => setInputText(e.target.value)}
+                className="min-h-[130px] font-mono text-sm rounded-xl border-border/60 bg-muted/30 focus:bg-background transition-colors resize-none"
+                disabled={isLoading}
+              />
+            </div>
 
-          {/* Optional Date Picker */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Tanggal Pesan ke Supplier <span className="normal-case font-normal">(opsional)</span>
-            </label>
-            <div className="flex items-center gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                      "justify-start text-left font-normal flex-1 max-w-[260px]",
-                      !orderDate && "text-muted-foreground"
-                    )}
-                    disabled={isLoading}
-                  >
-                    <CalendarIcon className="h-4 w-4 mr-2" />
-                    {orderDate
-                      ? format(orderDate, "EEEE, d MMMM yyyy", { locale: idLocale })
-                      : "Pilih tanggal..."}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={orderDate}
-                    onSelect={setOrderDate}
-                    disabled={(date) => date > new Date()}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-              {orderDate && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 shrink-0"
-                  onClick={() => setOrderDate(undefined)}
-                  disabled={isLoading}
-                >
-                  <X className="h-4 w-4" />
+            {/* Settings Grid */}
+            <div className="grid grid-cols-1 gap-3">
+              {/* Date Picker */}
+              <div className="rounded-xl bg-muted/30 p-3.5 space-y-2">
+                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                  <CalendarIcon className="h-3 w-3" />
+                  Tanggal Pesan ke Supplier
+                  <span className="normal-case font-normal text-muted-foreground/70">(opsional)</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={cn(
+                          "justify-start text-left font-normal flex-1 rounded-lg h-9 bg-background",
+                          !orderDate && "text-muted-foreground"
+                        )}
+                        disabled={isLoading}
+                      >
+                        <CalendarIcon className="h-3.5 w-3.5 mr-2 shrink-0" />
+                        {orderDate
+                          ? format(orderDate, "EEEE, d MMMM yyyy", { locale: idLocale })
+                          : "Pilih tanggal..."}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={orderDate}
+                        onSelect={setOrderDate}
+                        disabled={(date) => date > new Date()}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {orderDate && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0 rounded-lg"
+                      onClick={() => setOrderDate(undefined)}
+                      disabled={isLoading}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                {orderDate && (
+                  <div className="flex items-start gap-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 px-2.5 py-2 text-[11px] text-amber-700 dark:text-amber-400">
+                    <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
+                    <span>AI akan analisa penjualan setelah {format(orderDate, "d MMM", { locale: idLocale })} & kasih saran tambahan</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Target Days + Already Sent row */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* Target Days */}
+                <div className="rounded-xl bg-muted/30 p-3.5 space-y-2">
+                  <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                    <Package className="h-3 w-3" />
+                    Target Hari
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      max="30"
+                      placeholder="7"
+                      value={targetDays}
+                      onChange={e => setTargetDays(e.target.value)}
+                      className="w-16 h-9 rounded-lg border border-input bg-background px-2 text-sm font-bold tabular-nums text-center focus:outline-none focus:ring-2 focus:ring-ring"
+                      disabled={isLoading}
+                    />
+                    <span className="text-xs text-muted-foreground">hari</span>
+                  </div>
+                  {targetDays && parseInt(targetDays) > 0 && (
+                    <p className="text-[10px] text-muted-foreground leading-snug">
+                      Hitung untuk <strong>{targetDays} hari</strong>
+                    </p>
+                  )}
+                </div>
+
+                {/* Already Sent */}
+                <div className="rounded-xl bg-muted/30 p-3.5 space-y-2">
+                  <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                    <Send className="h-3 w-3" />
+                    Sudah Kirim?
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setAlreadySent(false)}
+                      className={`flex-1 px-2.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                        !alreadySent 
+                          ? "bg-primary text-primary-foreground shadow-sm" 
+                          : "bg-background text-muted-foreground border border-border hover:bg-accent"
+                      }`}
+                      disabled={isLoading}
+                    >
+                      Belum
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAlreadySent(true)}
+                      className={`flex-1 px-2.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                        alreadySent 
+                          ? "bg-primary text-primary-foreground shadow-sm" 
+                          : "bg-background text-muted-foreground border border-border hover:bg-accent"
+                      }`}
+                      disabled={isLoading}
+                    >
+                      Sudah
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleOcrFile(f); e.target.value = ""; }} />
+              <Button variant="outline" className="flex-1 h-11 rounded-xl font-semibold" onClick={() => fileRef.current?.click()} disabled={ocrLoading || isLoading}>
+                {ocrLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Camera className="h-4 w-4 mr-2" />}
+                {ocrLoading ? "Membaca..." : "Foto Catatan"}
+              </Button>
+              <Button className="flex-1 h-11 rounded-xl font-bold shadow-premium" onClick={handleParse} disabled={!inputText.trim() || isLoading}>
+                <FileText className="h-4 w-4 mr-2" />
+                Cek Daftar
+              </Button>
+              {(parsedItems.length > 0 || reviewResult) && (
+                <Button variant="ghost" size="icon" className="h-11 w-11 rounded-xl shrink-0" onClick={handleReset} disabled={isLoading}>
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               )}
             </div>
-            {orderDate && (
-              <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                AI akan analisa penjualan setelah {format(orderDate, "d MMM", { locale: idLocale })} & kasih saran pesanan tambahan
-              </p>
-            )}
-          </div>
-
-          {/* Target Days Input */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Target Stok untuk Berapa Hari? <span className="normal-case font-normal">(opsional, default 7 hari)</span>
-            </label>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                min="1"
-                max="30"
-                placeholder="7"
-                value={targetDays}
-                onChange={e => setTargetDays(e.target.value)}
-                className="w-24 h-9 rounded-lg border border-input bg-background px-3 text-sm font-bold tabular-nums text-center focus:outline-none focus:ring-2 focus:ring-ring"
-                disabled={isLoading}
-              />
-              <span className="text-sm text-muted-foreground">hari</span>
-            </div>
-            {targetDays && parseInt(targetDays) > 0 && (
-              <p className="text-[11px] text-muted-foreground">
-                AI akan hitung rekomendasi qty untuk kebutuhan <strong>{targetDays} hari</strong> ke depan
-              </p>
-            )}
-          </div>
-
-          {/* Already Sent Toggle */}
-          <div className="flex items-center gap-3">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider shrink-0">
-              Sudah dikirim ke supplier?
-            </label>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setAlreadySent(false)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  !alreadySent 
-                    ? "bg-primary text-primary-foreground shadow-sm" 
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
-                }`}
-                disabled={isLoading}
-              >
-                Belum
-              </button>
-              <button
-                type="button"
-                onClick={() => setAlreadySent(true)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  alreadySent 
-                    ? "bg-primary text-primary-foreground shadow-sm" 
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
-                }`}
-                disabled={isLoading}
-              >
-                Sudah
-              </button>
-            </div>
-          </div>
-
-          <div className="flex gap-2 flex-wrap">
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleOcrFile(f); e.target.value = ""; }} />
-            <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={ocrLoading || isLoading}>
-              {ocrLoading ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Camera className="h-4 w-4 mr-1.5" />}
-              {ocrLoading ? "Membaca..." : "Foto Catatan"}
-            </Button>
-            <Button size="sm" onClick={handleParse} disabled={!inputText.trim() || isLoading}>
-              <FileText className="h-4 w-4 mr-1.5" />
-              Cek Daftar
-            </Button>
-            {(parsedItems.length > 0 || reviewResult) && (
-              <Button variant="ghost" size="sm" onClick={handleReset} disabled={isLoading}>
-                <Trash2 className="h-4 w-4 mr-1.5" />
-                Reset
-              </Button>
-            )}
           </div>
         </CardContent>
       </Card>
