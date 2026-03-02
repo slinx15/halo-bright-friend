@@ -127,7 +127,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { items, mode, ordered_at, target_days } = await req.json();
+    const { items, mode, ordered_at, target_days, already_sent } = await req.json();
     const customTargetDays = target_days && Number(target_days) > 0 ? Number(target_days) : null;
     if (!items || !Array.isArray(items) || items.length === 0) {
       return new Response(JSON.stringify({ error: "Kirim minimal 1 item untuk di-review" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -264,7 +264,9 @@ serve(async (req) => {
       budget_total: budgetTotal,
     };
 
+    const isSent = !!already_sent;
     const summaryPrompt = `Kamu analis inventaris RRCollections (toko benang grosir). Panggil user "Boss". Bahasa Indonesia casual.
+${isSent ? "PENTING: Pesanan ini SUDAH DIKIRIM ke supplier, jadi JANGAN sarankan untuk mengurangi/pangkas/hapus item yang kebanyakan karena sudah tidak bisa diubah. Fokuskan saran pada item yang KURANG dan produk kritis yang BELUM dipesan — apakah perlu pesan tambahan (top-up) atau tidak." : ""}
 Buat RINGKASAN SINGKAT 2-3 kalimat untuk hasil review restock ini:
 - ${summaryData.total_items} item di-review
 - ${summaryData.pas} sudah tepat, ${summaryData.kurang} kurang, ${summaryData.lebih} kebanyakan
@@ -274,7 +276,7 @@ Buat RINGKASAN SINGKAT 2-3 kalimat untuk hasil review restock ini:
 - Total budget dibutuhkan: Rp ${budgetTotal.toLocaleString("id-ID")}
 ${unknownCodes.length > 0 ? `- ${unknownCodes.length} kode tidak dikenal: ${unknownCodes.join(", ")}` : ""}
 
-Beri penilaian singkat + 1 saran paling penting. MAX 3 kalimat. Jangan pake markdown heading, cukup teks biasa.`;
+Beri penilaian singkat + 1 saran paling penting. MAX 3 kalimat. Jangan pake markdown heading, cukup teks biasa.${isSent ? " Ingat: pesanan sudah dikirim, jangan suruh pangkas/kurangi item." : ""}`;
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
