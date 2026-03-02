@@ -1,7 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Sparkles, AlertTriangle, CheckCircle2, Plus, Flame, Package, ArrowDown
+  Sparkles, AlertTriangle, CheckCircle2, Plus, Flame, ArrowDown,
+  TrendingUp, ShoppingCart, PackageX
 } from "lucide-react";
 import { formatRupiah, formatNumber } from "@/lib/formatters";
 
@@ -53,7 +54,6 @@ export interface ReviewResult {
   };
 }
 
-// "kurang" = need to add more. "pas"/"lebih"/"ok" = all good (already ordered, can't reduce)
 function isNeedMore(card: ReviewCard): boolean {
   return card.verdict === "kurang";
 }
@@ -108,7 +108,6 @@ function getReason(card: ReviewCard, alreadySent: boolean): string {
     return `Cukup pesan ${formatNumber(card.ideal_qty)} aja, sisanya bisa buat barang lain`;
   }
   
-  // OK / cukup
   if (card.stok === 0 && card.velocity > 0) return `Stok habis tapi pesanan Boss udah pas 👍`;
   if (card.is_bestseller) return `Barang ${speed}, qty segini udah pas 👍`;
   if (card.velocity > 0) return `Barang ${speed}, qty segini cukup`;
@@ -122,74 +121,156 @@ function getMissedReason(card: MissedCard): string {
   return `Barang ${speed} tapi ${timeLeft}, harus pesan sebelum kehabisan`;
 }
 
+// Score ring component
+function ScoreRing({ score }: { score: number }) {
+  const pct = (score / 10) * 100;
+  const color = score >= 8 ? "text-success" : score >= 5 ? "text-warning" : "text-destructive";
+  const strokeColor = score >= 8 ? "stroke-success" : score >= 5 ? "stroke-warning" : "stroke-destructive";
+  const bgStroke = "stroke-muted";
+  const r = 28;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (pct / 100) * circ;
+
+  return (
+    <div className="relative flex items-center justify-center">
+      <svg width="72" height="72" viewBox="0 0 72 72">
+        <circle cx="36" cy="36" r={r} fill="none" className={bgStroke} strokeWidth="5" />
+        <circle
+          cx="36" cy="36" r={r} fill="none"
+          className={strokeColor}
+          strokeWidth="5"
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          strokeDashoffset={offset}
+          transform="rotate(-90 36 36)"
+          style={{ transition: "stroke-dashoffset 0.8s ease-out" }}
+        />
+      </svg>
+      <div className={`absolute inset-0 flex flex-col items-center justify-center ${color}`}>
+        <span className="text-xl font-black leading-none tabular-nums">{score}</span>
+        <span className="text-[9px] font-medium text-muted-foreground">/10</span>
+      </div>
+    </div>
+  );
+}
+
+// Stat pill
+function StatPill({ icon: Icon, label, value, className = "" }: {
+  icon: any; label: string; value: string | number; className?: string;
+}) {
+  return (
+    <div className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs ${className}`}>
+      <Icon className="h-3.5 w-3.5 shrink-0" />
+      <span className="font-medium">{label}</span>
+      <span className="font-bold ml-auto tabular-nums">{value}</span>
+    </div>
+  );
+}
+
 function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boolean }) {
   const needMore = isNeedMore(card);
   const tooMuch = !alreadySent && isTooMuch(card);
   const shortfall = getShortfall(card);
   const excess = getExcess(card);
 
+  const accentClass = needMore
+    ? "bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800/50"
+    : tooMuch
+    ? "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800/50"
+    : "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50";
+
   return (
-    <div className={`rounded-xl border p-3 space-y-1.5 transition-all ${
-      needMore 
-        ? "border-l-[3px] border-l-orange-500 border-border/60 bg-orange-500/5" 
-        : tooMuch
-        ? "border-l-[3px] border-l-blue-500 border-border/60 bg-blue-500/5"
-        : "border-l-[3px] border-l-success border-border/60 bg-success/5"
-    }`}>
-      {/* Row 1: kode + status */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="font-mono font-bold text-sm">{card.kode}</span>
-          {card.is_bestseller && (
-            <Flame className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-          )}
+    <div className={`rounded-2xl border p-3.5 space-y-2 ${accentClass}`}>
+      {/* Header row */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono font-bold text-sm">{card.kode}</span>
+            {card.is_bestseller && (
+              <span className="inline-flex items-center gap-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
+                <Flame className="h-3 w-3" /> Laris
+              </span>
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground truncate mt-0.5">{card.nama}</p>
         </div>
+        
+        {/* Action badge */}
         {needMore ? (
-          <Badge className="bg-orange-500 hover:bg-orange-600 text-white text-[11px] px-2 gap-1 font-bold">
+          <span className="inline-flex items-center gap-1 bg-orange-500 text-white rounded-full px-2.5 py-1 text-[11px] font-bold shadow-sm shrink-0">
             <Plus className="h-3 w-3" /> Tambah {formatNumber(shortfall)}
-          </Badge>
+          </span>
         ) : tooMuch ? (
-          <Badge className="bg-blue-500 hover:bg-blue-600 text-white text-[11px] px-2 gap-1 font-bold">
+          <span className="inline-flex items-center gap-1 bg-blue-500 text-white rounded-full px-2.5 py-1 text-[11px] font-bold shadow-sm shrink-0">
             <ArrowDown className="h-3 w-3" /> Kurangi {formatNumber(excess)}
-          </Badge>
+          </span>
         ) : (
-          <Badge variant="secondary" className="bg-success/10 text-success text-[11px] px-2 gap-0.5">
+          <span className="inline-flex items-center gap-1 bg-emerald-500 text-white rounded-full px-2.5 py-1 text-[11px] font-bold shadow-sm shrink-0">
             <CheckCircle2 className="h-3 w-3" /> Cukup
-          </Badge>
+          </span>
         )}
       </div>
 
-      {/* Row 2: info */}
-      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-        <span className="truncate">{card.nama}</span>
-        <span className="shrink-0 ml-2 tabular-nums">
-          Pesan <strong className="text-foreground">{formatNumber(card.qty_boss)}</strong>
-          {needMore && <> → <strong className="text-orange-600 dark:text-orange-400">{formatNumber(card.ideal_qty)}</strong></>}
-          {tooMuch && <> → <strong className="text-blue-600 dark:text-blue-400">{formatNumber(card.ideal_qty)}</strong></>}
-        </span>
+      {/* Qty info */}
+      <div className="flex items-center gap-3 text-xs">
+        <div className="flex items-center gap-1 text-muted-foreground">
+          <ShoppingCart className="h-3 w-3" />
+          <span>Pesan:</span>
+          <span className="font-bold text-foreground">{formatNumber(card.qty_boss)}</span>
+        </div>
+        {(needMore || tooMuch) && (
+          <>
+            <span className="text-muted-foreground">→</span>
+            <span className={`font-bold ${needMore ? "text-orange-600 dark:text-orange-400" : "text-blue-600 dark:text-blue-400"}`}>
+              {formatNumber(card.ideal_qty)} pcs
+            </span>
+          </>
+        )}
       </div>
 
-      {/* Row 3: reason */}
-      <p className="text-[11px] text-muted-foreground leading-snug italic">
+      {/* Reason bubble */}
+      <div className={`rounded-xl px-3 py-2 text-[11px] leading-relaxed ${
+        needMore 
+          ? "bg-orange-100/80 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300" 
+          : tooMuch
+          ? "bg-blue-100/80 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
+          : "bg-emerald-100/80 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300"
+      }`}>
         💬 {getReason(card, alreadySent)}
-      </p>
+      </div>
     </div>
   );
 }
 
 function MissedProductCard({ card }: { card: MissedCard }) {
   return (
-    <div className="rounded-xl border border-l-[3px] border-l-destructive border-border/60 p-3 space-y-1 bg-destructive/5">
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-mono font-bold text-sm">{card.kode}</span>
-        <Badge className="bg-destructive hover:bg-destructive/90 text-destructive-foreground text-[11px] px-2 gap-1 font-bold">
+    <div className="rounded-2xl border p-3.5 space-y-2 bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <span className="font-mono font-bold text-sm">{card.kode}</span>
+          <p className="text-[11px] text-muted-foreground truncate mt-0.5">{card.nama}</p>
+        </div>
+        <span className="inline-flex items-center gap-1 bg-destructive text-destructive-foreground rounded-full px-2.5 py-1 text-[11px] font-bold shadow-sm shrink-0">
           <Plus className="h-3 w-3" /> Pesan {formatNumber(card.ideal_qty)}
-        </Badge>
+        </span>
       </div>
-      <div className="text-[11px] text-muted-foreground truncate">{card.nama}</div>
-      <p className="text-[11px] text-muted-foreground leading-snug italic">
+      <div className="rounded-xl px-3 py-2 text-[11px] leading-relaxed bg-red-100/80 dark:bg-red-900/30 text-red-800 dark:text-red-300">
         💬 {getMissedReason(card)}
-      </p>
+      </div>
+    </div>
+  );
+}
+
+function SectionHeader({ icon: Icon, title, count, color }: {
+  icon: any; title: string; count: number; color: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 px-1 pt-1">
+      <div className={`flex items-center justify-center h-7 w-7 rounded-lg ${color}`}>
+        <Icon className="h-4 w-4" />
+      </div>
+      <span className="text-sm font-bold">{title}</span>
+      <span className="text-xs text-muted-foreground">({count})</span>
     </div>
   );
 }
@@ -204,82 +285,94 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
   const totalTambah = needMoreCards.reduce((sum, c) => sum + getShortfall(c), 0);
 
   return (
-    <div className="space-y-3 animate-fade-in" style={{ animationFillMode: "both" }}>
-      {/* Summary */}
-      <Card className="border-0 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 bg-gradient-to-r from-primary/5 to-primary/10 border-b flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold">Hasil Review</span>
-          <span className="ml-auto text-lg font-black tabular-nums">{score}<span className="text-xs font-normal text-muted-foreground">/10</span></span>
-        </div>
-        <CardContent className="p-4 space-y-2">
-          {summary && <p className="text-sm leading-relaxed">{summary}</p>}
-          <div className="flex flex-wrap gap-4 text-xs text-muted-foreground pt-1">
-            <span>Budget: <strong className="text-foreground">{formatRupiah(total_cost)}</strong></span>
+    <div className="space-y-4 animate-fade-in" style={{ animationFillMode: "both" }}>
+      {/* Summary Card */}
+      <Card className="border-0 shadow-md overflow-hidden">
+        <CardContent className="p-5">
+          <div className="flex items-start gap-4">
+            <ScoreRing score={score} />
+            <div className="flex-1 min-w-0 space-y-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="text-sm font-bold">Hasil Review AI</span>
+              </div>
+              {summary && <p className="text-xs text-muted-foreground leading-relaxed">{summary}</p>}
+            </div>
+          </div>
+          
+          {/* Stats */}
+          <div className="grid grid-cols-2 gap-1.5 mt-4">
+            <StatPill
+              icon={TrendingUp}
+              label="Budget"
+              value={formatRupiah(total_cost)}
+              className="bg-muted/50 text-foreground col-span-2"
+            />
             {needMoreCards.length > 0 && (
-              <span className="text-orange-600 dark:text-orange-400 font-semibold">
-                ⚠ {needMoreCards.length} item perlu ditambah (+{formatNumber(totalTambah)} pcs)
-              </span>
+              <StatPill
+                icon={Plus}
+                label="Tambah"
+                value={`${needMoreCards.length} item (+${formatNumber(totalTambah)})`}
+                className="bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400"
+              />
             )}
             {tooMuchCards.length > 0 && (
-              <span className="text-blue-600 dark:text-blue-400 font-semibold">
-                💡 {tooMuchCards.length} item bisa dikurangi
-              </span>
+              <StatPill
+                icon={ArrowDown}
+                label="Kurangi"
+                value={`${tooMuchCards.length} item`}
+                className="bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400"
+              />
             )}
             {missed.length > 0 && (
-              <span className="text-destructive font-semibold">
-                🚨 {missed.length} item belum dipesan
-              </span>
+              <StatPill
+                icon={PackageX}
+                label="Belum pesan"
+                value={`${missed.length} item`}
+                className="bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400"
+              />
+            )}
+            {okCards.length > 0 && (
+              <StatPill
+                icon={CheckCircle2}
+                label="Cukup"
+                value={`${okCards.length} item`}
+                className="bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400"
+              />
             )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Items that need more */}
+      {/* Sections */}
       {needMoreCards.length > 0 && (
         <div className="space-y-2">
-          <div className="flex items-center gap-2 px-1">
-            <AlertTriangle className="h-4 w-4 text-orange-500" />
-            <span className="text-sm font-semibold">Perlu Ditambah ({needMoreCards.length})</span>
-          </div>
+          <SectionHeader icon={Plus} title="Perlu Ditambah" count={needMoreCards.length} color="bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400" />
           {needMoreCards.map(card => <ProductCard key={card.kode} card={card} alreadySent={alreadySent} />)}
         </div>
       )}
 
-      {/* Missed critical */}
       {missed.length > 0 && (
         <div className="space-y-2">
-          <div className="flex items-center gap-2 px-1">
-            <AlertTriangle className="h-4 w-4 text-destructive" />
-            <span className="text-sm font-semibold text-destructive">Belum Dipesan tapi Kritis ({missed.length})</span>
-          </div>
+          <SectionHeader icon={PackageX} title="Belum Dipesan tapi Kritis" count={missed.length} color="bg-red-100 dark:bg-red-900/40 text-destructive" />
           {missed.map(card => <MissedProductCard key={card.kode} card={card} />)}
         </div>
       )}
 
-      {/* Items that are too much (only when not sent) */}
       {tooMuchCards.length > 0 && (
         <div className="space-y-2">
-          <div className="flex items-center gap-2 px-1">
-            <ArrowDown className="h-4 w-4 text-blue-500" />
-            <span className="text-sm font-semibold">Bisa Dikurangi ({tooMuchCards.length})</span>
-          </div>
+          <SectionHeader icon={ArrowDown} title="Bisa Dikurangi" count={tooMuchCards.length} color="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400" />
           {tooMuchCards.map(card => <ProductCard key={card.kode} card={card} alreadySent={alreadySent} />)}
         </div>
       )}
 
-      {/* Items that are OK */}
       {okCards.length > 0 && (
         <div className="space-y-2">
-          <div className="flex items-center gap-2 px-1">
-            <CheckCircle2 className="h-4 w-4 text-success" />
-            <span className="text-sm font-semibold">Sudah Cukup ({okCards.length})</span>
-          </div>
+          <SectionHeader icon={CheckCircle2} title="Sudah Cukup" count={okCards.length} color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400" />
           {okCards.map(card => <ProductCard key={card.kode} card={card} alreadySent={alreadySent} />)}
         </div>
       )}
 
-      {/* Unknown codes */}
       {unknown_codes.length > 0 && (
         <div className="flex items-center gap-2 px-1 flex-wrap">
           <span className="text-xs text-destructive font-medium">Kode tidak dikenal:</span>
