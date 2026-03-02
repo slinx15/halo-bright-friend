@@ -280,7 +280,7 @@ export default function ReviewAI() {
   return (
     <div className="space-y-4">
       {/* Input Section */}
-      <Card className="border-0 shadow-md overflow-hidden">
+      <Card className="card-premium overflow-hidden">
         <CardContent className="p-0">
           {/* Header */}
           <div className="px-5 pt-5 pb-4 bg-gradient-to-br from-primary/5 via-primary/8 to-transparent">
@@ -456,11 +456,11 @@ export default function ReviewAI() {
             {/* Action Buttons */}
             <div className="flex gap-2">
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleOcrFile(f); e.target.value = ""; }} />
-              <Button variant="outline" className="flex-1 h-11 rounded-xl font-semibold" onClick={() => fileRef.current?.click()} disabled={ocrLoading || isLoading}>
+              <Button variant="outline" className="flex-1 h-11 rounded-xl font-semibold native-press" onClick={() => fileRef.current?.click()} disabled={ocrLoading || isLoading}>
                 {ocrLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Camera className="h-4 w-4 mr-2" />}
                 {ocrLoading ? "Membaca..." : "Foto Catatan"}
               </Button>
-              <Button className="flex-1 h-11 rounded-xl font-bold shadow-premium" onClick={handleParse} disabled={filledRows === 0 || isLoading}>
+              <Button className="flex-1 h-11 rounded-xl font-bold shadow-premium native-press" onClick={handleParse} disabled={filledRows === 0 || isLoading}>
                 <FileText className="h-4 w-4 mr-2" />
                 Cek Daftar
               </Button>
@@ -476,7 +476,7 @@ export default function ReviewAI() {
 
       {/* Parsed Items Preview */}
       {showParsed && parsedItems.length > 0 && (
-        <Card className="border-0 shadow-sm overflow-hidden animate-fade-in" style={{ animationFillMode: "both" }}>
+        <Card className="card-premium overflow-hidden animate-fade-in" style={{ animationFillMode: "both" }}>
           <div className="px-4 py-3 bg-muted/30 border-b flex items-center justify-between">
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-primary" />
@@ -517,7 +517,7 @@ export default function ReviewAI() {
 
             {validCount > 0 && (
               <Button
-                className="w-full mt-3 font-bold"
+                className="w-full mt-3 font-bold shadow-premium native-press"
                 onClick={() => setShowSentDialog(true)}
                 disabled={isLoading}
               >
