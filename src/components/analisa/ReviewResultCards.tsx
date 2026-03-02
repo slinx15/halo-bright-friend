@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -160,16 +160,20 @@ function ScoreRing({ score }: { score: number }) {
   );
 }
 
-// Stat pill
-function StatPill({ icon: Icon, label, value, className = "" }: {
-  icon: any; label: string; value: string | number; className?: string;
+// Stat pill - clickable
+function StatPill({ icon: Icon, label, value, className = "", onClick }: {
+  icon: any; label: string; value: string | number; className?: string; onClick?: () => void;
 }) {
   return (
-    <div className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs ${className}`}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs transition-all active:scale-95 ${onClick ? "cursor-pointer hover:ring-2 hover:ring-ring/30" : ""} ${className}`}
+    >
       <Icon className="h-3.5 w-3.5 shrink-0" />
       <span className="font-medium">{label}</span>
       <span className="font-bold ml-auto tabular-nums">{value}</span>
-    </div>
+    </button>
   );
 }
 
@@ -272,15 +276,15 @@ function MissedProductCard({ card }: { card: MissedCard }) {
   );
 }
 
-function CollapsibleSection({ icon: Icon, title, count, color, defaultOpen = true, children }: {
-  icon: any; title: string; count: number; color: string; defaultOpen?: boolean; children: React.ReactNode;
+function CollapsibleSection({ icon: Icon, title, count, color, defaultOpen = true, sectionRef, isOpen, onToggle, children }: {
+  icon: any; title: string; count: number; color: string; defaultOpen?: boolean;
+  sectionRef?: React.RefObject<HTMLDivElement>; isOpen: boolean; onToggle: () => void; children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" ref={sectionRef}>
       <button
         type="button"
-        onClick={() => setOpen(v => !v)}
+        onClick={onToggle}
         className="flex items-center gap-2 px-1 pt-1 w-full text-left group"
       >
         <div className={`flex items-center justify-center h-7 w-7 rounded-lg ${color}`}>
@@ -288,9 +292,9 @@ function CollapsibleSection({ icon: Icon, title, count, color, defaultOpen = tru
         </div>
         <span className="text-sm font-bold">{title}</span>
         <span className="text-xs text-muted-foreground">({count})</span>
-        <ChevronDown className={`h-4 w-4 ml-auto text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`h-4 w-4 ml-auto text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
-      {open && children}
+      {isOpen && children}
     </div>
   );
 }
@@ -304,6 +308,22 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
 
   const totalTambah = needMoreCards.reduce((sum, c) => sum + getShortfall(c), 0);
   const hasBudgetExtra = (budget_tambah || 0) > 0 || (budget_missed || 0) > 0;
+
+  // Section open states
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    tambah: true, missed: true, kurangi: false, cukup: false,
+  });
+  const tambahRef = useRef<HTMLDivElement>(null);
+  const missedRef = useRef<HTMLDivElement>(null);
+  const kurangiRef = useRef<HTMLDivElement>(null);
+  const cukupRef = useRef<HTMLDivElement>(null);
+
+  const toggleSection = (key: string) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
+
+  const scrollToSection = useCallback((key: string, ref: React.RefObject<HTMLDivElement>) => {
+    setOpenSections(prev => ({ ...prev, [key]: true }));
+    setTimeout(() => ref.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  }, []);
 
   return (
     <div className="space-y-4 animate-fade-in" style={{ animationFillMode: "both" }}>
@@ -368,6 +388,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
                 label="Tambah"
                 value={`${needMoreCards.length} item (+${formatNumber(totalTambah)})`}
                 className="bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400"
+                onClick={() => scrollToSection("tambah", tambahRef)}
               />
             )}
             {tooMuchCards.length > 0 && (
@@ -376,6 +397,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
                 label="Kurangi"
                 value={`${tooMuchCards.length} item`}
                 className="bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400"
+                onClick={() => scrollToSection("kurangi", kurangiRef)}
               />
             )}
             {missed.length > 0 && (
@@ -384,6 +406,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
                 label="Belum pesan"
                 value={`${missed.length} item`}
                 className="bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400"
+                onClick={() => scrollToSection("missed", missedRef)}
               />
             )}
             {okCards.length > 0 && (
@@ -392,6 +415,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
                 label="Cukup"
                 value={`${okCards.length} item`}
                 className="bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400"
+                onClick={() => scrollToSection("cukup", cukupRef)}
               />
             )}
           </div>
@@ -400,25 +424,25 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
 
       {/* Sections */}
       {needMoreCards.length > 0 && (
-        <CollapsibleSection icon={Plus} title="Perlu Ditambah" count={needMoreCards.length} color="bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400" defaultOpen={true}>
+        <CollapsibleSection icon={Plus} title="Perlu Ditambah" count={needMoreCards.length} color="bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400" sectionRef={tambahRef} isOpen={openSections.tambah} onToggle={() => toggleSection("tambah")}>
           {needMoreCards.map(card => <ProductCard key={card.kode} card={card} alreadySent={alreadySent} />)}
         </CollapsibleSection>
       )}
 
       {missed.length > 0 && (
-        <CollapsibleSection icon={PackageX} title="Belum Dipesan tapi Kritis" count={missed.length} color="bg-red-100 dark:bg-red-900/40 text-destructive" defaultOpen={true}>
+        <CollapsibleSection icon={PackageX} title="Belum Dipesan tapi Kritis" count={missed.length} color="bg-red-100 dark:bg-red-900/40 text-destructive" sectionRef={missedRef} isOpen={openSections.missed} onToggle={() => toggleSection("missed")}>
           {missed.map(card => <MissedProductCard key={card.kode} card={card} />)}
         </CollapsibleSection>
       )}
 
       {tooMuchCards.length > 0 && (
-        <CollapsibleSection icon={ArrowDown} title="Bisa Dikurangi" count={tooMuchCards.length} color="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400" defaultOpen={false}>
+        <CollapsibleSection icon={ArrowDown} title="Bisa Dikurangi" count={tooMuchCards.length} color="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400" sectionRef={kurangiRef} isOpen={openSections.kurangi} onToggle={() => toggleSection("kurangi")}>
           {tooMuchCards.map(card => <ProductCard key={card.kode} card={card} alreadySent={alreadySent} />)}
         </CollapsibleSection>
       )}
 
       {okCards.length > 0 && (
-        <CollapsibleSection icon={CheckCircle2} title="Sudah Cukup" count={okCards.length} color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400" defaultOpen={false}>
+        <CollapsibleSection icon={CheckCircle2} title="Sudah Cukup" count={okCards.length} color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400" sectionRef={cukupRef} isOpen={openSections.cukup} onToggle={() => toggleSection("cukup")}>
           {okCards.map(card => <ProductCard key={card.kode} card={card} alreadySent={alreadySent} />)}
         </CollapsibleSection>
       )}
