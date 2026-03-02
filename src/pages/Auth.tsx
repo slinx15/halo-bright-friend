@@ -5,19 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Eye, EyeOff, Package } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import { useToast } from "@/hooks/use-toast";
 
 const Auth = () => {
-  const { user, loading, signIn, signUp } = useAuth();
+  const { user, loading, signIn } = useAuth();
   const { toast } = useToast();
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  const [regName, setRegName] = useState("");
-  const [regEmail, setRegEmail] = useState("");
-  const [regPassword, setRegPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -42,18 +38,6 @@ const Auth = () => {
     const { error } = await signIn(loginEmail, loginPassword);
     if (error) {
       toast({ title: "Login gagal", description: error.message, variant: "destructive" });
-    }
-    setSubmitting(false);
-  };
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    const { error } = await signUp(regEmail, regPassword, regName);
-    if (error) {
-      toast({ title: "Registrasi gagal", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Berhasil!", description: "Cek email Anda untuk verifikasi akun." });
     }
     setSubmitting(false);
   };
@@ -89,124 +73,60 @@ const Auth = () => {
         </div>
 
         <Card className="card-premium border-border/30 shadow-premium-lg backdrop-blur-sm overflow-hidden">
-          <Tabs defaultValue="login">
-            <CardHeader className="pb-4 pt-6">
-              <TabsList className="grid w-full grid-cols-2 rounded-xl bg-muted/60 p-1 h-11">
-                <TabsTrigger value="login" className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:text-primary font-semibold text-sm transition-all">
-                  Masuk
-                </TabsTrigger>
-                <TabsTrigger value="register" className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:text-primary font-semibold text-sm transition-all">
-                  Daftar
-                </TabsTrigger>
-              </TabsList>
-            </CardHeader>
+          <CardHeader className="pb-4 pt-6 text-center">
+            <h2 className="text-lg font-bold text-foreground">Masuk</h2>
+            <p className="text-xs text-muted-foreground">Gunakan akun yang sudah didaftarkan admin</p>
+          </CardHeader>
 
-            <CardContent className="pb-6">
-              <TabsContent value="login" className="mt-0 space-y-4 animate-fade-in" style={{ animationFillMode: "both" }}>
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email</Label>
-                    <Input
-                      id="login-email"
-                      type="email"
-                      placeholder="nama@email.com"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      required
-                      className="h-11 rounded-xl border-border/50 bg-muted/30 focus:bg-card transition-colors"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Password</Label>
-                    <div className="relative">
-                      <Input
-                        id="login-password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={loginPassword}
-                        onChange={(e) => setLoginPassword(e.target.value)}
-                        required
-                        className="h-11 rounded-xl border-border/50 bg-muted/30 focus:bg-card transition-colors pr-10"
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  <Button
-                    type="submit"
-                    className="w-full h-11 rounded-xl font-bold text-sm shadow-premium native-press"
-                    disabled={submitting}
+          <CardContent className="pb-6">
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="login-email" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email</Label>
+                <Input
+                  id="login-email"
+                  type="email"
+                  placeholder="nama@email.com"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  required
+                  className="h-11 rounded-xl border-border/50 bg-muted/30 focus:bg-card transition-colors"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="login-password" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="login-password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    required
+                    className="h-11 rounded-xl border-border/50 bg-muted/30 focus:bg-card transition-colors pr-10"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => setShowPassword(!showPassword)}
                   >
-                    {submitting ? (
-                      <div className="flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full" />
-                        Memproses...
-                      </div>
-                    ) : "Masuk"}
-                  </Button>
-                </form>
-              </TabsContent>
-
-              <TabsContent value="register" className="mt-0 space-y-4 animate-fade-in" style={{ animationFillMode: "both" }}>
-                <form onSubmit={handleRegister} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="reg-name" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nama</Label>
-                    <Input
-                      id="reg-name"
-                      type="text"
-                      placeholder="Nama lengkap"
-                      value={regName}
-                      onChange={(e) => setRegName(e.target.value)}
-                      required
-                      className="h-11 rounded-xl border-border/50 bg-muted/30 focus:bg-card transition-colors"
-                    />
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              <Button
+                type="submit"
+                className="w-full h-11 rounded-xl font-bold text-sm shadow-premium native-press"
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full" />
+                    Memproses...
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="reg-email" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email</Label>
-                    <Input
-                      id="reg-email"
-                      type="email"
-                      placeholder="nama@email.com"
-                      value={regEmail}
-                      onChange={(e) => setRegEmail(e.target.value)}
-                      required
-                      className="h-11 rounded-xl border-border/50 bg-muted/30 focus:bg-card transition-colors"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="reg-password" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Password</Label>
-                    <Input
-                      id="reg-password"
-                      type="password"
-                      placeholder="Min. 6 karakter"
-                      value={regPassword}
-                      onChange={(e) => setRegPassword(e.target.value)}
-                      required
-                      minLength={6}
-                      className="h-11 rounded-xl border-border/50 bg-muted/30 focus:bg-card transition-colors"
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    className="w-full h-11 rounded-xl font-bold text-sm shadow-premium native-press"
-                    disabled={submitting}
-                  >
-                    {submitting ? (
-                      <div className="flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full" />
-                        Memproses...
-                      </div>
-                    ) : "Daftar"}
-                  </Button>
-                </form>
-              </TabsContent>
-            </CardContent>
-          </Tabs>
+                ) : "Masuk"}
+              </Button>
+            </form>
+          </CardContent>
         </Card>
 
         {/* Footer */}
