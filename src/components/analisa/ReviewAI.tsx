@@ -1,13 +1,12 @@
 import { useState, useRef, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Camera, Loader2, Send, Sparkles, FileText, Trash2,
-  CheckCircle2, AlertTriangle, CalendarIcon, X, Package
+  CheckCircle2, AlertTriangle, CalendarIcon, X, Package, Plus, Minus
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/useProducts";
@@ -23,6 +22,11 @@ interface ReviewItem {
   qty: number;
   isValid: boolean;
   productName?: string;
+}
+
+interface InputRow {
+  kode: string;
+  qty: string;
 }
 
 function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[] {
@@ -81,6 +85,7 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
 }
 
 export default function ReviewAI() {
+  const [rows, setRows] = useState<InputRow[]>([{ kode: "", qty: "" }]);
   const [inputText, setInputText] = useState("");
   const [parsedItems, setParsedItems] = useState<ReviewItem[]>([]);
   const [reviewResult, setReviewResult] = useState<ReviewResult | null>(null);
@@ -95,20 +100,35 @@ export default function ReviewAI() {
   const { data: products } = useProducts();
   const { data: aliases } = useProductAliases();
 
+  const updateRow = (index: number, field: keyof InputRow, value: string) => {
+    setRows(prev => prev.map((r, i) => i === index ? { ...r, [field]: value } : r));
+  };
+
+  const addRow = () => setRows(prev => [...prev, { kode: "", qty: "" }]);
+
+  const removeRow = (index: number) => {
+    if (rows.length <= 1) return;
+    setRows(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Build text from rows for parsing
+  const rowsToText = () => rows.filter(r => r.kode.trim() && r.qty.trim()).map(r => `${r.kode} ${r.qty}`).join("\n");
+
   const handleParse = useCallback(() => {
-    if (!inputText.trim()) {
-      toast({ title: "Kosong", description: "Tulis daftar produk dulu", variant: "destructive" });
+    const text = rowsToText();
+    if (!text.trim()) {
+      toast({ title: "Kosong", description: "Isi kode dan qty dulu", variant: "destructive" });
       return;
     }
-    const items = parseInput(inputText, products || [], aliases || []);
+    const items = parseInput(text, products || [], aliases || []);
     if (items.length === 0) {
-      toast({ title: "Format salah", description: "Tulis format: KODE QTY per baris\nContoh:\nABC-123 50\nDEF-456 25", variant: "destructive" });
+      toast({ title: "Format salah", description: "Pastikan kode dan qty sudah diisi", variant: "destructive" });
       return;
     }
     setParsedItems(items);
     setShowParsed(true);
     setReviewResult(null);
-  }, [inputText, products, aliases, toast]);
+  }, [rows, products, aliases, toast]);
 
   const handleReview = useCallback(async () => {
     const validItems = parsedItems.filter(i => i.isValid);
@@ -196,8 +216,11 @@ export default function ReviewAI() {
         return;
       }
 
-      const ocrText = ocrItems.map((i: any) => `${i.kode} ${i.qty || i.qty_pesan || 0}`).join("\n");
-      setInputText(prev => prev ? prev + "\n" + ocrText : ocrText);
+      const newRows: InputRow[] = ocrItems.map((i: any) => ({ kode: String(i.kode || ""), qty: String(i.qty || i.qty_pesan || 0) }));
+      setRows(prev => {
+        const existing = prev.filter(r => r.kode.trim() || r.qty.trim());
+        return existing.length > 0 ? [...existing, ...newRows] : newRows;
+      });
       toast({ title: "OCR Berhasil", description: `${ocrItems.length} item terbaca dari foto` });
     } catch (err: any) {
       toast({ title: "Error OCR", description: err.message, variant: "destructive" });
@@ -210,6 +233,7 @@ export default function ReviewAI() {
   const invalidCount = parsedItems.filter(i => !i.isValid).length;
 
   const handleReset = () => {
+    setRows([{ kode: "", qty: "" }]);
     setInputText("");
     setParsedItems([]);
     setReviewResult(null);
@@ -218,6 +242,8 @@ export default function ReviewAI() {
     setTargetDays("");
     setAlreadySent(false);
   };
+
+  const filledRows = rows.filter(r => r.kode.trim() || r.qty.trim()).length;
 
   return (
     <div className="space-y-4">
@@ -238,16 +264,74 @@ export default function ReviewAI() {
           </div>
 
           <div className="px-5 pb-5 space-y-5">
-            {/* Textarea */}
+            {/* Row-based input table */}
             <div className="space-y-2">
-              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Daftar Pesanan</label>
-              <Textarea
-                placeholder={"Tulis kode + qty per baris:\nABC-123 50\nDEF-456 25\n\nAtau foto catatan kamu →"}
-                value={inputText}
-                onChange={e => setInputText(e.target.value)}
-                className="min-h-[130px] font-mono text-sm rounded-xl border-border/60 bg-muted/30 focus:bg-background transition-colors resize-none"
-                disabled={isLoading}
-              />
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
+                Daftar Pesanan {filledRows > 0 && <span className="text-primary">({filledRows})</span>}
+              </label>
+              <div className="rounded-xl border border-border/60 bg-muted/20 overflow-hidden">
+                {/* Table header */}
+                <div className="grid grid-cols-[1fr_80px_36px] gap-0 px-3 py-2 bg-muted/40 border-b border-border/40">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Kode</span>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">Qty</span>
+                  <span></span>
+                </div>
+                {/* Rows */}
+                <div className="divide-y divide-border/30 max-h-[280px] overflow-y-auto">
+                  {rows.map((row, i) => {
+                    const product = row.kode.trim() ? (products || []).find(p => p.kode.toUpperCase() === row.kode.toUpperCase() || p.kode.toUpperCase().replace(/^0+/, "") === row.kode.toUpperCase().replace(/^0+/, "")) : null;
+                    const hasInput = row.kode.trim().length > 0;
+                    const isInvalid = hasInput && !product;
+                    return (
+                      <div key={i} className={`grid grid-cols-[1fr_80px_36px] gap-0 items-center ${isInvalid ? "bg-destructive/5" : ""}`}>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={row.kode}
+                            onChange={e => updateRow(i, "kode", e.target.value.toUpperCase())}
+                            placeholder="Kode produk"
+                            className="w-full h-10 px-3 bg-transparent text-sm font-mono font-bold placeholder:text-muted-foreground/40 placeholder:font-normal focus:outline-none focus:bg-primary/5 transition-colors"
+                            disabled={isLoading}
+                          />
+                          {product && (
+                            <span className="absolute bottom-0.5 left-3 text-[9px] text-muted-foreground truncate max-w-[150px]">{product.nama}</span>
+                          )}
+                          {isInvalid && (
+                            <span className="absolute bottom-0.5 left-3 text-[9px] text-destructive">Tidak dikenal</span>
+                          )}
+                        </div>
+                        <input
+                          type="number"
+                          min="1"
+                          value={row.qty}
+                          onChange={e => updateRow(i, "qty", e.target.value)}
+                          placeholder="0"
+                          className="w-full h-10 px-2 bg-transparent text-sm font-bold tabular-nums text-center placeholder:text-muted-foreground/40 focus:outline-none focus:bg-primary/5 transition-colors border-l border-border/30"
+                          disabled={isLoading}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeRow(i)}
+                          className="flex items-center justify-center h-10 text-muted-foreground/40 hover:text-destructive transition-colors disabled:opacity-30"
+                          disabled={isLoading || rows.length <= 1}
+                        >
+                          <Minus className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Add row button */}
+                <button
+                  type="button"
+                  onClick={addRow}
+                  className="w-full flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-primary hover:bg-primary/5 transition-colors border-t border-border/40"
+                  disabled={isLoading}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Tambah Baris
+                </button>
+              </div>
             </div>
 
             {/* Settings Grid */}
@@ -379,7 +463,7 @@ export default function ReviewAI() {
                 {ocrLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Camera className="h-4 w-4 mr-2" />}
                 {ocrLoading ? "Membaca..." : "Foto Catatan"}
               </Button>
-              <Button className="flex-1 h-11 rounded-xl font-bold shadow-premium" onClick={handleParse} disabled={!inputText.trim() || isLoading}>
+              <Button className="flex-1 h-11 rounded-xl font-bold shadow-premium" onClick={handleParse} disabled={filledRows === 0 || isLoading}>
                 <FileText className="h-4 w-4 mr-2" />
                 Cek Daftar
               </Button>
