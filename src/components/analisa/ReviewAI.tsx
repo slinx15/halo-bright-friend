@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
@@ -279,28 +279,28 @@ export default function ReviewAI() {
 
   return (
     <div className="space-y-4">
-      {/* Input Section */}
-      <Card className="card-premium overflow-hidden">
-        <CardContent className="p-0">
-          {/* Header */}
-          <div className="px-5 pt-5 pb-4 bg-gradient-to-br from-primary/5 via-primary/8 to-transparent">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center h-11 w-11 rounded-2xl bg-primary/15 shadow-inner-glow">
-                <Sparkles className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-bold text-base">Review AI</h3>
-                <p className="text-xs text-muted-foreground">Kirim daftar pesanan, AI kasih masukan</p>
-              </div>
-            </div>
+      {/* ── Premium Header (matches other pages) ── */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 rounded-2xl bg-gradient-to-br from-primary/20 to-blue-500/10 shadow-sm">
+            <Sparkles className="h-6 w-6 text-primary" />
           </div>
+          <div className="space-y-0.5">
+            <h3 className="text-xl font-extrabold tracking-tight leading-tight">Review AI</h3>
+            <p className="text-muted-foreground text-xs font-medium">Kirim daftar pesanan, AI kasih masukan</p>
+          </div>
+        </div>
+      </div>
 
-          <div className="px-5 pb-5 space-y-5">
-            {/* Row-based input table */}
-            <div className="space-y-2">
-              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
-                Daftar Pesanan {filledRows > 0 && <span className="text-primary">({filledRows})</span>}
-              </label>
+      {/* Input Card */}
+      <Card className="card-premium overflow-hidden">
+        <CardHeader className="pb-3 bg-gradient-to-r from-primary/5 to-transparent">
+          <CardTitle className="text-base font-bold flex items-center gap-2">
+            <FileText className="h-4 w-4 text-primary" />
+            Daftar Pesanan {filledRows > 0 && <span className="text-primary text-sm font-normal">({filledRows})</span>}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5">
               <div className="rounded-xl border border-border/60 bg-muted/20 overflow-hidden">
                 {/* Table header */}
                 <div className="grid grid-cols-[1fr_80px_36px] gap-0 px-3 py-2 bg-muted/40 border-b border-border/40">
@@ -365,7 +365,6 @@ export default function ReviewAI() {
                   Tambah Baris
                 </button>
               </div>
-            </div>
 
             {/* Settings Grid */}
             <div className="grid grid-cols-1 gap-3">
@@ -470,7 +469,6 @@ export default function ReviewAI() {
                 </Button>
               )}
             </div>
-          </div>
         </CardContent>
       </Card>
 
