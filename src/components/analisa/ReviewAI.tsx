@@ -88,6 +88,7 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
 }
 
 export default function ReviewAI() {
+  const [expandParsed, setExpandParsed] = useState(false);
   const [rows, setRows] = useState<InputRow[]>([{ kode: "", qty: "" }]);
   const [inputText, setInputText] = useState("");
   const [parsedItems, setParsedItems] = useState<ReviewItem[]>([]);
@@ -476,50 +477,60 @@ export default function ReviewAI() {
         </CardContent>
       </Card>
 
-      {/* Parsed Items Preview */}
+      {/* Parsed Items Preview — compact */}
       {showParsed && parsedItems.length > 0 && (
         <Card className="card-premium overflow-hidden animate-fade-in" style={{ animationFillMode: "both" }}>
-          <div className="px-4 py-3 bg-muted/30 border-b flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setExpandParsed(prev => !prev)}
+            className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/30 transition-colors"
+          >
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-primary" />
               <span className="text-sm font-semibold">Daftar Item</span>
             </div>
-            <div className="flex gap-1.5">
+            <div className="flex items-center gap-1.5">
               <Badge variant="secondary" className="bg-success/10 text-success text-[10px]">
-                <CheckCircle2 className="h-3 w-3 mr-0.5" /> {validCount} valid
+                <CheckCircle2 className="h-3 w-3 mr-0.5" /> {validCount}
               </Badge>
               {invalidCount > 0 && (
                 <Badge variant="secondary" className="bg-destructive/10 text-destructive text-[10px]">
-                  <AlertTriangle className="h-3 w-3 mr-0.5" /> {invalidCount} unknown
+                  <AlertTriangle className="h-3 w-3 mr-0.5" /> {invalidCount}
                 </Badge>
               )}
+              <svg className={`h-4 w-4 text-muted-foreground transition-transform ${expandParsed ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>
             </div>
-          </div>
-          <CardContent className="p-3">
-            <div className="space-y-1.5 max-h-[250px] overflow-y-auto">
-              {parsedItems.map((item, i) => (
-                <div
-                  key={i}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
-                    item.isValid ? "bg-card border border-border/60" : "bg-destructive/5 border border-destructive/20"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="font-mono font-bold">{item.kode}</span>
-                    {item.isValid ? (
-                      <span className="text-xs text-muted-foreground truncate">{item.productName}</span>
-                    ) : (
-                      <span className="text-xs text-destructive">Tidak dikenal</span>
-                    )}
-                  </div>
-                  <span className="font-bold text-sm tabular-nums ml-2">{item.qty} pcs</span>
-                </div>
-              ))}
-            </div>
+          </button>
 
-            {validCount > 0 && (
+          {expandParsed && (
+            <div className="px-3 pb-3 border-t border-border/40">
+              <div className="space-y-1.5 max-h-[250px] overflow-y-auto mt-2">
+                {parsedItems.map((item, i) => (
+                  <div
+                    key={i}
+                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
+                      item.isValid ? "bg-card border border-border/60" : "bg-destructive/5 border border-destructive/20"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-mono font-bold">{item.kode}</span>
+                      {item.isValid ? (
+                        <span className="text-xs text-muted-foreground truncate">{item.productName}</span>
+                      ) : (
+                        <span className="text-xs text-destructive">Tidak dikenal</span>
+                      )}
+                    </div>
+                    <span className="font-bold text-sm tabular-nums ml-2">{item.qty} pcs</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {validCount > 0 && (
+            <div className="px-3 pb-3">
               <Button
-                className="w-full mt-3 font-bold shadow-premium native-press"
+                className="w-full font-bold shadow-premium native-press"
                 onClick={() => setShowSentDialog(true)}
                 disabled={isLoading}
               >
@@ -537,8 +548,8 @@ export default function ReviewAI() {
                   </div>
                 )}
               </Button>
-            )}
-          </CardContent>
+            </div>
+          )}
         </Card>
       )}
 
