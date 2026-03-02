@@ -115,6 +115,34 @@ export default function ReviewAI() {
     setRows(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handlePasteRows = (e: React.ClipboardEvent, index: number) => {
+    const text = e.clipboardData.getData("text");
+    if (!text.includes("\n") && !text.includes("\t")) return; // single value, let default handle
+    e.preventDefault();
+    const lines = text.split(/[\n\r]+/).map(l => l.trim()).filter(Boolean);
+    const newRows: InputRow[] = lines.map(line => {
+      // Try tab-separated first, then space/dash/colon
+      const parts = line.split(/[\t]/).length > 1 ? line.split(/[\t]/) : line.split(/[\s=\-:]+/);
+      if (parts.length >= 2) {
+        const first = parts[0].trim();
+        const second = parts[1].trim();
+        // Detect which is kode and which is qty
+        if (/^\d+$/.test(first) && /[A-Za-z]/.test(second)) {
+          return { kode: second.toUpperCase(), qty: first };
+        }
+        return { kode: first.toUpperCase(), qty: second.replace(/[^\d]/g, "") };
+      }
+      return { kode: parts[0]?.toUpperCase() || "", qty: "" };
+    });
+    setRows(prev => {
+      const before = prev.slice(0, index).filter(r => r.kode.trim() || r.qty.trim());
+      const after = prev.slice(index + 1).filter(r => r.kode.trim() || r.qty.trim());
+      const merged = [...before, ...newRows, ...after];
+      return merged.length > 0 ? merged : [{ kode: "", qty: "" }];
+    });
+    toast({ title: "Paste berhasil", description: `${newRows.length} baris ditambahkan` });
+  };
+
   // Build text from rows for parsing
   const rowsToText = () => rows.filter(r => r.kode.trim() && r.qty.trim()).map(r => `${r.kode} ${r.qty}`).join("\n");
 
@@ -293,7 +321,8 @@ export default function ReviewAI() {
                             type="text"
                             value={row.kode}
                             onChange={e => updateRow(i, "kode", e.target.value.toUpperCase())}
-                            placeholder="Kode produk"
+                            onPaste={e => handlePasteRows(e, i)}
+                            placeholder={i === 0 ? "Kode produk (bisa paste banyak baris)" : "Kode produk"}
                             className="w-full h-10 px-3 bg-transparent text-sm font-mono font-bold placeholder:text-muted-foreground/40 placeholder:font-normal focus:outline-none focus:bg-primary/5 transition-colors"
                             disabled={isLoading}
                           />
