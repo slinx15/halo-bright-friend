@@ -218,7 +218,7 @@ export default function BudgetPlanner({ result, alreadySent, onSelectedItemsChan
                 key={item.id}
                 type="button"
                 onClick={() => toggleItem(item.id)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all ${
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all duration-150 active:scale-[0.98] ${
                   isSelected
                     ? isMissed
                       ? "bg-red-50 dark:bg-red-950/20 border-2 border-red-300 dark:border-red-800"

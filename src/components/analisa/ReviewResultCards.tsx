@@ -192,7 +192,7 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
     : "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50";
 
   return (
-    <div className={`card-premium p-3.5 space-y-2 ${accentClass}`}>
+    <div className={`card-premium p-3.5 space-y-2 transition-all duration-200 active:scale-[0.98] ${accentClass}`}>
       {/* Header row */}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
@@ -256,7 +256,7 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
 
 function MissedProductCard({ card }: { card: MissedCard }) {
   return (
-    <div className="card-premium p-3.5 space-y-2 bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50">
+    <div className="card-premium p-3.5 space-y-2 transition-all duration-200 active:scale-[0.98] bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <span className="font-mono font-bold text-sm">{card.kode}</span>
@@ -287,7 +287,7 @@ function CollapsibleSection({ icon: Icon, title, count, color, defaultOpen = tru
       <button
         type="button"
         onClick={onToggle}
-        className="flex items-center gap-2 px-1 pt-1 w-full text-left group"
+        className="flex items-center gap-2 px-1 pt-1 w-full text-left group min-h-[44px] transition-all duration-150 active:scale-[0.98]"
       >
         <div className={`flex items-center justify-center h-7 w-7 rounded-lg ${color}`}>
           <Icon className="h-4 w-4" />
@@ -332,7 +332,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
   }, []);
 
   return (
-    <div className="space-y-4 animate-fade-in" style={{ animationFillMode: "both" }}>
+    <div className="space-y-5 [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*:nth-child(5)]:![animation-delay:200ms] [&>*:nth-child(6)]:![animation-delay:250ms] [&>*]:[animation-fill-mode:both]">
       {/* Summary Card */}
       <Card className="card-premium overflow-hidden shadow-premium">
         <CardContent className="p-5">
