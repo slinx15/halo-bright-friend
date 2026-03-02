@@ -6,6 +6,8 @@ import {
   TrendingUp, ShoppingCart, PackageX, Wallet, CirclePlus, CircleAlert, ChevronDown
 } from "lucide-react";
 import { formatRupiah, formatNumber } from "@/lib/formatters";
+import BudgetPlanner, { type BudgetItem } from "./BudgetPlanner";
+import BudgetChat from "./BudgetChat";
 
 type Status = "kritis" | "segera" | "perhatian" | "aman";
 type Verdict = "kurang" | "pas" | "lebih" | "ok" | "unknown";
@@ -309,6 +311,10 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
   const totalTambah = needMoreCards.reduce((sum, c) => sum + getShortfall(c), 0);
   const hasBudgetExtra = (budget_tambah || 0) > 0 || (budget_missed || 0) > 0;
 
+  // Budget planner state
+  const [selectedBudgetItems, setSelectedBudgetItems] = useState<BudgetItem[]>([]);
+  const budgetAmount = 0; // Will be managed inside BudgetPlanner
+
   // Section open states
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     tambah: true, missed: true, kurangi: false, cukup: false,
@@ -471,6 +477,23 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
           ))}
         </div>
       )}
+
+      {/* Budget Planner */}
+      {hasBudgetExtra && (
+        <BudgetPlanner
+          result={result}
+          alreadySent={alreadySent}
+          onSelectedItemsChange={setSelectedBudgetItems}
+        />
+      )}
+
+      {/* Budget Chat */}
+      <BudgetChat
+        result={result}
+        alreadySent={alreadySent}
+        selectedItems={selectedBudgetItems}
+        budget={0}
+      />
     </div>
   );
 }
