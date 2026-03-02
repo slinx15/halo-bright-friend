@@ -477,81 +477,80 @@ export default function ReviewAI() {
         </CardContent>
       </Card>
 
-      {/* Parsed Items Preview — compact */}
+      {/* Parsed Items — compact inline summary + dialog detail */}
       {showParsed && parsedItems.length > 0 && (
-        <Card className="card-premium overflow-hidden animate-fade-in" style={{ animationFillMode: "both" }}>
-          <button
-            type="button"
-            onClick={() => setExpandParsed(prev => !prev)}
-            className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/30 transition-colors"
+        <div className="flex items-center gap-2 animate-fade-in">
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-xl text-xs font-semibold gap-1.5"
+            onClick={() => setExpandParsed(true)}
           >
-            <div className="flex items-center gap-2">
+            <FileText className="h-3.5 w-3.5" />
+            {validCount} item
+            {invalidCount > 0 && <span className="text-destructive">({invalidCount} unknown)</span>}
+          </Button>
+          <Button
+            className="flex-1 h-10 rounded-xl font-bold shadow-premium native-press"
+            onClick={() => setShowSentDialog(true)}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Menganalisa...
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Send className="h-4 w-4" />
+                {orderDate ? "Review + Top-Up" : "Review AI"}
+              </div>
+            )}
+          </Button>
+        </div>
+      )}
+
+      {/* Parsed Items Dialog */}
+      <Dialog open={expandParsed} onOpenChange={setExpandParsed}>
+        <DialogContent className="sm:max-w-md rounded-2xl max-h-[80vh] flex flex-col p-0 gap-0">
+          <DialogHeader className="px-5 pt-5 pb-3">
+            <DialogTitle className="flex items-center gap-2 text-base">
               <FileText className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold">Daftar Item</span>
-            </div>
-            <div className="flex items-center gap-1.5">
+              Daftar Item
+            </DialogTitle>
+            <DialogDescription className="flex gap-1.5 mt-1">
               <Badge variant="secondary" className="bg-success/10 text-success text-[10px]">
-                <CheckCircle2 className="h-3 w-3 mr-0.5" /> {validCount}
+                <CheckCircle2 className="h-3 w-3 mr-0.5" /> {validCount} valid
               </Badge>
               {invalidCount > 0 && (
                 <Badge variant="secondary" className="bg-destructive/10 text-destructive text-[10px]">
-                  <AlertTriangle className="h-3 w-3 mr-0.5" /> {invalidCount}
+                  <AlertTriangle className="h-3 w-3 mr-0.5" /> {invalidCount} unknown
                 </Badge>
               )}
-              <svg className={`h-4 w-4 text-muted-foreground transition-transform ${expandParsed ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>
-            </div>
-          </button>
-
-          {expandParsed && (
-            <div className="px-3 pb-3 border-t border-border/40">
-              <div className="space-y-1.5 max-h-[250px] overflow-y-auto mt-2">
-                {parsedItems.map((item, i) => (
-                  <div
-                    key={i}
-                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
-                      item.isValid ? "bg-card border border-border/60" : "bg-destructive/5 border border-destructive/20"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="font-mono font-bold">{item.kode}</span>
-                      {item.isValid ? (
-                        <span className="text-xs text-muted-foreground truncate">{item.productName}</span>
-                      ) : (
-                        <span className="text-xs text-destructive">Tidak dikenal</span>
-                      )}
-                    </div>
-                    <span className="font-bold text-sm tabular-nums ml-2">{item.qty} pcs</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {validCount > 0 && (
-            <div className="px-3 pb-3">
-              <Button
-                className="w-full font-bold shadow-premium native-press"
-                onClick={() => setShowSentDialog(true)}
-                disabled={isLoading}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-1.5">
+            {parsedItems.map((item, i) => (
+              <div
+                key={i}
+                className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
+                  item.isValid ? "bg-card border border-border/60" : "bg-destructive/5 border border-destructive/20"
+                }`}
               >
-                {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    AI sedang menganalisa...
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Send className="h-4 w-4" />
-                    {orderDate
-                      ? `Review + Analisa Tambahan (${validCount} item)`
-                      : `Review dengan AI (${validCount} item)`}
-                  </div>
-                )}
-              </Button>
-            </div>
-          )}
-        </Card>
-      )}
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-mono font-bold">{item.kode}</span>
+                  {item.isValid ? (
+                    <span className="text-xs text-muted-foreground truncate">{item.productName}</span>
+                  ) : (
+                    <span className="text-xs text-destructive">Tidak dikenal</span>
+                  )}
+                </div>
+                <span className="font-bold text-sm tabular-nums ml-2">{item.qty} pcs</span>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Sent Status Dialog */}
       <Dialog open={showSentDialog} onOpenChange={setShowSentDialog}>
