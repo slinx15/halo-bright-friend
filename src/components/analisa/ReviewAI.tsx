@@ -30,16 +30,21 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
   const items: ReviewItem[] = [];
 
   for (const line of lines) {
-    const match = line.match(/^([A-Za-z0-9\-\/\.]+)\s*[=\-:\s]+\s*(\d+)\s*(?:pcs|pc|buah)?$/i)
-      || line.match(/^(\d+)\s*(?:pcs|pc|buah)?\s+([A-Za-z0-9\-\/\.]+)$/i);
+    // Pattern 1: KODE QTY (e.g., "110 25", "ABC-123 50")
+    const matchKodeFirst = line.match(/^([A-Za-z0-9\-\/\.]+)\s*[=\-:\s]+\s*(\d+)\s*(?:pcs|pc|buah)?$/i);
+    // Pattern 2: QTY KODE (e.g., "50 ABC-123") — only when second part has letters
+    const matchQtyFirst = line.match(/^(\d+)\s*(?:pcs|pc|buah)?\s+([A-Za-z][A-Za-z0-9\-\/\.]*)\s*$/i);
 
+    const match = matchKodeFirst || matchQtyFirst;
     if (!match) continue;
 
     let kode: string, qty: number;
-    if (/^\d+$/.test(match[1])) {
+    if (matchQtyFirst && !matchKodeFirst) {
+      // Only flip when explicitly QTY first + alpha KODE
       qty = parseInt(match[1]);
       kode = match[2].toUpperCase().trim();
     } else {
+      // Default: first value is KODE, second is QTY
       kode = match[1].toUpperCase().trim();
       qty = parseInt(match[2]);
     }
