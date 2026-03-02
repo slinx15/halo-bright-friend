@@ -70,7 +70,15 @@ const Auth = () => {
         <div className="flex flex-col items-center gap-3">
           <div className="relative">
             <div className="absolute inset-0 rounded-2xl blur-xl opacity-30" style={{ background: "hsl(217 91% 50% / 0.3)" }} />
-            <img src={logo} alt="RRCollections" className="relative h-20 w-20 rounded-2xl object-contain shadow-premium ring-2 ring-primary/10" />
+            <img
+              src={logo}
+              alt="RRCollections"
+              className="relative h-20 w-20 rounded-2xl object-contain shadow-premium ring-2 ring-primary/10"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "/pwa-icon-192.png";
+              }}
+            />
           </div>
           <div className="text-center space-y-1">
             <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
