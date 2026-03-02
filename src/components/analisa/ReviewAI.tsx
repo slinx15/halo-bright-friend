@@ -3,14 +3,19 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Camera, Loader2, Send, Sparkles, FileText, Trash2,
-  CheckCircle2, AlertTriangle, X
+  CheckCircle2, AlertTriangle, CalendarIcon, X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/useProducts";
 import { useProductAliases } from "@/hooks/useProductAliases";
 import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 
 interface ReviewItem {
@@ -25,7 +30,6 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
   const items: ReviewItem[] = [];
 
   for (const line of lines) {
-    // Patterns: "KODE 50", "KODE=50", "KODE - 50", "KODE  50pcs", "50 KODE"
     const match = line.match(/^([A-Za-z0-9\-\/\.]+)\s*[=\-:\s]+\s*(\d+)\s*(?:pcs|pc|buah)?$/i)
       || line.match(/^(\d+)\s*(?:pcs|pc|buah)?\s+([A-Za-z0-9\-\/\.]+)$/i);
 
@@ -42,7 +46,6 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
 
     if (qty <= 0) continue;
 
-    // Find product
     const findProduct = (k: string) => {
       let found = products?.find(p => p.kode.toUpperCase() === k);
       if (found) return found;
@@ -78,6 +81,7 @@ export default function ReviewAI() {
   const [aiResult, setAiResult] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [showParsed, setShowParsed] = useState(false);
+  const [orderDate, setOrderDate] = useState<Date | undefined>(undefined);
   const fileRef = useRef<HTMLInputElement>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const { toast } = useToast();
@@ -111,6 +115,15 @@ export default function ReviewAI() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      
+      const body: any = { items: validItems.map(i => ({ kode: i.kode, qty: i.qty })) };
+      
+      // If date is set, use topup mode
+      if (orderDate) {
+        body.mode = "topup";
+        body.ordered_at = orderDate.toISOString();
+      }
+
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/review-restock`,
         {
@@ -119,7 +132,7 @@ export default function ReviewAI() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ items: validItems.map(i => ({ kode: i.kode, qty: i.qty })) }),
+          body: JSON.stringify(body),
         }
       );
 
@@ -181,7 +194,7 @@ export default function ReviewAI() {
     } finally {
       setIsStreaming(false);
     }
-  }, [parsedItems, toast]);
+  }, [parsedItems, orderDate, toast]);
 
   // OCR handler
   const handleOcrFile = async (file: File) => {
@@ -219,7 +232,6 @@ export default function ReviewAI() {
         return;
       }
 
-      // Convert OCR items to text format and append
       const ocrText = ocrItems.map((i: any) => `${i.kode} ${i.qty || i.qty_pesan || 0}`).join("\n");
       setInputText(prev => prev ? prev + "\n" + ocrText : ocrText);
       toast({ title: "OCR Berhasil", description: `${ocrItems.length} item terbaca dari foto` });
@@ -238,6 +250,7 @@ export default function ReviewAI() {
     setParsedItems([]);
     setAiResult("");
     setShowParsed(false);
+    setOrderDate(undefined);
   };
 
   return (
@@ -264,6 +277,60 @@ export default function ReviewAI() {
               className="min-h-[140px] font-mono text-sm"
               disabled={isStreaming}
             />
+          </div>
+
+          {/* Optional Date Picker */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Tanggal Pesan ke Supplier <span className="normal-case font-normal">(opsional)</span>
+            </label>
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "justify-start text-left font-normal flex-1 max-w-[260px]",
+                      !orderDate && "text-muted-foreground"
+                    )}
+                    disabled={isStreaming}
+                  >
+                    <CalendarIcon className="h-4 w-4 mr-2" />
+                    {orderDate
+                      ? format(orderDate, "EEEE, d MMMM yyyy", { locale: idLocale })
+                      : "Pilih tanggal..."}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={orderDate}
+                    onSelect={setOrderDate}
+                    disabled={(date) => date > new Date()}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+              {orderDate && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => setOrderDate(undefined)}
+                  disabled={isStreaming}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            {orderDate && (
+              <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                AI akan analisa penjualan setelah {format(orderDate, "d MMM", { locale: idLocale })} & kasih saran pesanan tambahan
+              </p>
+            )}
           </div>
 
           <div className="flex gap-2 flex-wrap">
@@ -341,7 +408,9 @@ export default function ReviewAI() {
                 ) : (
                   <div className="flex items-center gap-2">
                     <Send className="h-4 w-4" />
-                    Review dengan AI ({validCount} item)
+                    {orderDate
+                      ? `Review + Analisa Tambahan (${validCount} item)`
+                      : `Review dengan AI (${validCount} item)`}
                   </div>
                 )}
               </Button>
@@ -355,7 +424,9 @@ export default function ReviewAI() {
         <Card className="border-0 shadow-sm overflow-hidden animate-fade-in" style={{ animationFillMode: "both" }}>
           <div className="px-4 py-3 bg-gradient-to-r from-primary/5 to-primary/10 border-b flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold">Hasil Review AI</span>
+            <span className="text-sm font-semibold">
+              {orderDate ? "Review + Pesanan Tambahan" : "Hasil Review AI"}
+            </span>
             {isStreaming && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary ml-auto" />}
           </div>
           <CardContent className="p-4 md:p-5">
