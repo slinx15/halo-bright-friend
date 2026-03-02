@@ -95,20 +95,25 @@ function getReason(card: ReviewCard, alreadySent: boolean): string {
   const timeLeft = describeDays(card.dos);
   
   if (card.verdict === "kurang") {
+    if (card.stok === 0) return `Stok habis, barang ${speed} — harus pesan ${formatNumber(card.ideal_qty)} pcs`;
     if (card.dos <= 2) return `Barang ${speed}, stok ${timeLeft} — kurang ${formatNumber(getShortfall(card))} pcs biar aman`;
     return `Barang ${speed}, pesan segini ${timeLeft} aja — tambahin biar ga kehabisan`;
   }
   
   if (card.verdict === "lebih" && !alreadySent) {
-    if (card.ideal_qty === 0) return `Stok masih banyak (${formatNumber(card.stok)} pcs), belum perlu nambah`;
+    if (card.velocity === 0) return `Barang ga pernah laku, pesan segini bakal numpuk di gudang`;
+    if (card.stok === 0) return `Stok habis, tapi pesanan Boss lebih dari yang dibutuhkan — cukup ${formatNumber(card.ideal_qty)} aja`;
+    if (card.ideal_qty === 0) return `Stok masih ${formatNumber(card.stok)} pcs, belum perlu nambah`;
     if (card.velocity < 1) return `Barang ${speed}, pesan kebanyakan nanti numpuk di gudang`;
     return `Cukup pesan ${formatNumber(card.ideal_qty)} aja, sisanya bisa buat barang lain`;
   }
   
   // OK / cukup
+  if (card.stok === 0 && card.velocity > 0) return `Stok habis tapi pesanan Boss udah pas 👍`;
   if (card.is_bestseller) return `Barang ${speed}, qty segini udah pas 👍`;
   if (card.velocity > 0) return `Barang ${speed}, qty segini cukup`;
-  return `Stok masih aman`;
+  if (card.velocity === 0 && card.qty_boss > 0) return `Belum ada data penjualan, tapi Boss udah pesan`;
+  return `Stok aman`;
 }
 
 function getMissedReason(card: MissedCard): string {
