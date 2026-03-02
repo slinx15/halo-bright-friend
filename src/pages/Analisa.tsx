@@ -11,7 +11,7 @@ import {
   BarChart3, DollarSign, Store, ArrowDown,
   ShoppingCart, Clock, Trophy, Activity,
   AlertCircle, PackageX, Wallet, Flame, TrendingUp, TrendingDown,
-  Calculator, CheckCircle2, ChevronLeft, ChevronRight, Sparkles, Plus
+  Calculator, CheckCircle2, ChevronLeft, ChevronRight, Sparkles
 } from "lucide-react";
 import { useSalesAnalysis } from "@/hooks/useSalesAnalysis";
 import { analyzeAllProducts, getStatusCounts, RULES, type DosStatus, type ProductAnalysis, isBlackWhiteCode } from "@/lib/stockAnalyticsEngine";
@@ -24,7 +24,6 @@ import { AnalisaSkeleton } from "@/components/LoadingSkeletons";
 import { SalesTrendCharts } from "@/components/analisa/SalesTrendCharts";
 
 const ReviewAI = lazy(() => import("@/components/analisa/ReviewAI"));
-const PesananTambahan = lazy(() => import("@/components/analisa/PesananTambahan"));
 
 // ─── Formatting Helpers ───────────────────────────────────
 
@@ -720,7 +719,6 @@ const Analisa = () => {
               { value: "budget", icon: Calculator, label: "Budget", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
               { value: "ringkasan", icon: BarChart3, label: "Ringkasan", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
               { value: "review", icon: Sparkles, label: "Review", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
-              { value: "tambahan", icon: Plus, label: "Tambahan", badge: null, activeColor: "data-[state=active]:bg-amber-500 data-[state=active]:text-white" },
             ].map(tab => (
               <TabsTrigger
                 key={tab.value}
@@ -1511,12 +1509,6 @@ const Analisa = () => {
         <TabsContent value="review" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Suspense fallback={<div className="flex items-center justify-center py-16"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
             <ReviewAI />
-          </Suspense>
-        </TabsContent>
-        {/* ══════════ PESANAN TAMBAHAN ══════════ */}
-        <TabsContent value="tambahan" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
-          <Suspense fallback={<div className="flex items-center justify-center py-16"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
-            <PesananTambahan />
           </Suspense>
         </TabsContent>
       </Tabs>
