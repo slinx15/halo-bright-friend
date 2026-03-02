@@ -111,6 +111,78 @@ export type Database = {
           },
         ]
       }
+      pending_restock: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          ordered_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          ordered_at?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          ordered_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pending_restock_items: {
+        Row: {
+          created_at: string
+          id: string
+          kode: string
+          product_id: string | null
+          qty: number
+          restock_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kode: string
+          product_id?: string | null
+          qty?: number
+          restock_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kode?: string
+          product_id?: string | null
+          qty?: number
+          restock_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_restock_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_restock_items_restock_id_fkey"
+            columns: ["restock_id"]
+            isOneToOne: false
+            referencedRelation: "pending_restock"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prices: {
         Row: {
           harga_grosir: number
