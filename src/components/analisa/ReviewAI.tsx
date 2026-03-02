@@ -6,8 +6,11 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Camera, Loader2, Send, Sparkles, FileText, Trash2,
-  CheckCircle2, AlertTriangle, CalendarIcon, X, Package, Plus, Minus
+  CheckCircle2, AlertTriangle, CalendarIcon, X, Package, Plus, Minus, Truck, Clock
 } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/useProducts";
 import { useProductAliases } from "@/hooks/useProductAliases";
@@ -94,6 +97,7 @@ export default function ReviewAI() {
   const [orderDate, setOrderDate] = useState<Date | undefined>(undefined);
   const [targetDays, setTargetDays] = useState<string>("");
   const [alreadySent, setAlreadySent] = useState(false);
+  const [showSentDialog, setShowSentDialog] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const { toast } = useToast();
@@ -393,66 +397,30 @@ export default function ReviewAI() {
               </div>
 
               {/* Target Days + Already Sent row */}
-              <div className="grid grid-cols-2 gap-3">
-                {/* Target Days */}
-                <div className="rounded-xl bg-muted/30 p-3.5 space-y-2">
-                  <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-                    <Package className="h-3 w-3" />
-                    Target Hari
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min="1"
-                      max="30"
-                      placeholder="7"
-                      value={targetDays}
-                      onChange={e => setTargetDays(e.target.value)}
-                      className="w-16 h-9 rounded-lg border border-input bg-background px-2 text-sm font-bold tabular-nums text-center focus:outline-none focus:ring-2 focus:ring-ring"
-                      disabled={isLoading}
-                    />
-                    <span className="text-xs text-muted-foreground">hari</span>
-                  </div>
-                  {targetDays && parseInt(targetDays) > 0 && (
-                    <p className="text-[10px] text-muted-foreground leading-snug">
-                      Hitung untuk <strong>{targetDays} hari</strong>
-                    </p>
-                  )}
+              {/* Target Days */}
+              <div className="rounded-xl bg-muted/30 p-3.5 space-y-2">
+                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                  <Package className="h-3 w-3" />
+                  Target Hari
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    placeholder="7"
+                    value={targetDays}
+                    onChange={e => setTargetDays(e.target.value)}
+                    className="w-16 h-9 rounded-lg border border-input bg-background px-2 text-sm font-bold tabular-nums text-center focus:outline-none focus:ring-2 focus:ring-ring"
+                    disabled={isLoading}
+                  />
+                  <span className="text-xs text-muted-foreground">hari</span>
                 </div>
-
-                {/* Already Sent */}
-                <div className="rounded-xl bg-muted/30 p-3.5 space-y-2">
-                  <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-                    <Send className="h-3 w-3" />
-                    Sudah Kirim?
-                  </label>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setAlreadySent(false)}
-                      className={`flex-1 px-2.5 py-2 rounded-lg text-xs font-semibold transition-all ${
-                        !alreadySent 
-                          ? "bg-primary text-primary-foreground shadow-sm" 
-                          : "bg-background text-muted-foreground border border-border hover:bg-accent"
-                      }`}
-                      disabled={isLoading}
-                    >
-                      Belum
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAlreadySent(true)}
-                      className={`flex-1 px-2.5 py-2 rounded-lg text-xs font-semibold transition-all ${
-                        alreadySent 
-                          ? "bg-primary text-primary-foreground shadow-sm" 
-                          : "bg-background text-muted-foreground border border-border hover:bg-accent"
-                      }`}
-                      disabled={isLoading}
-                    >
-                      Sudah
-                    </button>
-                  </div>
-                </div>
+                {targetDays && parseInt(targetDays) > 0 && (
+                  <p className="text-[10px] text-muted-foreground leading-snug">
+                    Hitung untuk <strong>{targetDays} hari</strong>
+                  </p>
+                )}
               </div>
             </div>
 
@@ -521,7 +489,7 @@ export default function ReviewAI() {
             {validCount > 0 && (
               <Button
                 className="w-full mt-3 font-bold"
-                onClick={handleReview}
+                onClick={() => setShowSentDialog(true)}
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -542,6 +510,54 @@ export default function ReviewAI() {
           </CardContent>
         </Card>
       )}
+
+      {/* Sent Status Dialog */}
+      <Dialog open={showSentDialog} onOpenChange={setShowSentDialog}>
+        <DialogContent className="sm:max-w-sm rounded-2xl p-0 gap-0 overflow-hidden">
+          <DialogHeader className="px-6 pt-6 pb-2">
+            <DialogTitle className="text-center text-lg">Pesanan ini sudah dikirim?</DialogTitle>
+            <DialogDescription className="text-center text-sm text-muted-foreground">
+              AI butuh tahu status pengiriman untuk kasih saran yang tepat
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-6 pb-6 pt-3 grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setAlreadySent(false);
+                setShowSentDialog(false);
+                handleReview();
+              }}
+              className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-border bg-card hover:border-primary hover:bg-primary/5 transition-all group"
+            >
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                <Clock className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+              <div className="text-center">
+                <p className="font-bold text-sm">Belum</p>
+                <p className="text-[11px] text-muted-foreground">Masih rencana</p>
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAlreadySent(true);
+                setShowSentDialog(false);
+                handleReview();
+              }}
+              className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-border bg-card hover:border-primary hover:bg-primary/5 transition-all group"
+            >
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                <Truck className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+              <div className="text-center">
+                <p className="font-bold text-sm">Sudah</p>
+                <p className="text-[11px] text-muted-foreground">Sudah dikirim</p>
+              </div>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* AI Result Cards */}
       {reviewResult && <ReviewResultCards result={reviewResult} alreadySent={alreadySent} />}
