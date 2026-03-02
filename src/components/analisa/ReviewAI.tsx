@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import ReactMarkdown from "react-markdown";
+import { ReviewResultCards, type ReviewResult } from "./ReviewResultCards";
 
 interface ReviewItem {
   kode: string;
@@ -83,8 +83,8 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
 export default function ReviewAI() {
   const [inputText, setInputText] = useState("");
   const [parsedItems, setParsedItems] = useState<ReviewItem[]>([]);
-  const [aiResult, setAiResult] = useState("");
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [reviewResult, setReviewResult] = useState<ReviewResult | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [showParsed, setShowParsed] = useState(false);
   const [orderDate, setOrderDate] = useState<Date | undefined>(undefined);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -105,7 +105,7 @@ export default function ReviewAI() {
     }
     setParsedItems(items);
     setShowParsed(true);
-    setAiResult("");
+    setReviewResult(null);
   }, [inputText, products, aliases, toast]);
 
   const handleReview = useCallback(async () => {
@@ -115,15 +115,13 @@ export default function ReviewAI() {
       return;
     }
 
-    setIsStreaming(true);
-    setAiResult("");
+    setIsLoading(true);
+    setReviewResult(null);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
       const body: any = { items: validItems.map(i => ({ kode: i.kode, qty: i.qty })) };
-      
-      // If date is set, use topup mode
       if (orderDate) {
         body.mode = "topup";
         body.ordered_at = orderDate.toISOString();
@@ -146,58 +144,13 @@ export default function ReviewAI() {
         throw new Error(err.error || `HTTP ${resp.status}`);
       }
 
-      if (!resp.body) throw new Error("No response body");
-
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let textBuffer = "";
-      let fullText = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        textBuffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
-          let line = textBuffer.slice(0, newlineIndex);
-          textBuffer = textBuffer.slice(newlineIndex + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") continue;
-          if (!line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") break;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              fullText += content;
-              setAiResult(fullText);
-            }
-          } catch { /* partial JSON, skip */ }
-        }
-      }
-
-      // Final flush
-      if (textBuffer.trim()) {
-        for (let raw of textBuffer.split("\n")) {
-          if (!raw) continue;
-          if (raw.endsWith("\r")) raw = raw.slice(0, -1);
-          if (!raw.startsWith("data: ")) continue;
-          const jsonStr = raw.slice(6).trim();
-          if (jsonStr === "[DONE]") continue;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) { fullText += content; setAiResult(fullText); }
-          } catch { /* skip */ }
-        }
-      }
+      const data = await resp.json();
+      setReviewResult(data as ReviewResult);
     } catch (err: any) {
       console.error("Review error:", err);
       toast({ title: "Error", description: err.message || "Gagal review", variant: "destructive" });
     } finally {
-      setIsStreaming(false);
+      setIsLoading(false);
     }
   }, [parsedItems, orderDate, toast]);
 
@@ -253,7 +206,7 @@ export default function ReviewAI() {
   const handleReset = () => {
     setInputText("");
     setParsedItems([]);
-    setAiResult("");
+    setReviewResult(null);
     setShowParsed(false);
     setOrderDate(undefined);
   };
@@ -280,7 +233,7 @@ export default function ReviewAI() {
               value={inputText}
               onChange={e => setInputText(e.target.value)}
               className="min-h-[140px] font-mono text-sm"
-              disabled={isStreaming}
+              disabled={isLoading}
             />
           </div>
 
@@ -299,7 +252,7 @@ export default function ReviewAI() {
                       "justify-start text-left font-normal flex-1 max-w-[260px]",
                       !orderDate && "text-muted-foreground"
                     )}
-                    disabled={isStreaming}
+                    disabled={isLoading}
                   >
                     <CalendarIcon className="h-4 w-4 mr-2" />
                     {orderDate
@@ -324,7 +277,7 @@ export default function ReviewAI() {
                   size="icon"
                   className="h-8 w-8 shrink-0"
                   onClick={() => setOrderDate(undefined)}
-                  disabled={isStreaming}
+                  disabled={isLoading}
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -340,16 +293,16 @@ export default function ReviewAI() {
 
           <div className="flex gap-2 flex-wrap">
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleOcrFile(f); e.target.value = ""; }} />
-            <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={ocrLoading || isStreaming}>
+            <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={ocrLoading || isLoading}>
               {ocrLoading ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Camera className="h-4 w-4 mr-1.5" />}
               {ocrLoading ? "Membaca..." : "Foto Catatan"}
             </Button>
-            <Button size="sm" onClick={handleParse} disabled={!inputText.trim() || isStreaming}>
+            <Button size="sm" onClick={handleParse} disabled={!inputText.trim() || isLoading}>
               <FileText className="h-4 w-4 mr-1.5" />
               Cek Daftar
             </Button>
-            {(parsedItems.length > 0 || aiResult) && (
-              <Button variant="ghost" size="sm" onClick={handleReset} disabled={isStreaming}>
+            {(parsedItems.length > 0 || reviewResult) && (
+              <Button variant="ghost" size="sm" onClick={handleReset} disabled={isLoading}>
                 <Trash2 className="h-4 w-4 mr-1.5" />
                 Reset
               </Button>
@@ -403,9 +356,9 @@ export default function ReviewAI() {
               <Button
                 className="w-full mt-3 font-bold"
                 onClick={handleReview}
-                disabled={isStreaming}
+                disabled={isLoading}
               >
-                {isStreaming ? (
+                {isLoading ? (
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     AI sedang menganalisa...
@@ -424,23 +377,8 @@ export default function ReviewAI() {
         </Card>
       )}
 
-      {/* AI Result */}
-      {aiResult && (
-        <Card className="border-0 shadow-sm overflow-hidden animate-fade-in" style={{ animationFillMode: "both" }}>
-          <div className="px-4 py-3 bg-gradient-to-r from-primary/5 to-primary/10 border-b flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold">
-              {orderDate ? "Review + Pesanan Tambahan" : "Hasil Review AI"}
-            </span>
-            {isStreaming && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary ml-auto" />}
-          </div>
-          <CardContent className="p-4 md:p-5">
-            <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:text-foreground prose-p:text-foreground/80 prose-li:text-foreground/80 prose-strong:text-foreground">
-              <ReactMarkdown>{aiResult}</ReactMarkdown>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* AI Result Cards */}
+      {reviewResult && <ReviewResultCards result={reviewResult} />}
     </div>
   );
 }
