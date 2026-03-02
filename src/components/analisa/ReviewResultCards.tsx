@@ -479,7 +479,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
       )}
 
       {/* Budget Planner */}
-      {hasBudgetExtra && (
+      {hasBudgetExtra && alreadySent && (
         <BudgetPlanner
           result={result}
           alreadySent={alreadySent}
