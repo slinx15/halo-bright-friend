@@ -1,8 +1,9 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Sparkles, AlertTriangle, CheckCircle2, Plus, Flame, ArrowDown,
-  TrendingUp, ShoppingCart, PackageX, Wallet, CirclePlus, CircleAlert
+  TrendingUp, ShoppingCart, PackageX, Wallet, CirclePlus, CircleAlert, ChevronDown
 } from "lucide-react";
 import { formatRupiah, formatNumber } from "@/lib/formatters";
 
@@ -271,16 +272,25 @@ function MissedProductCard({ card }: { card: MissedCard }) {
   );
 }
 
-function SectionHeader({ icon: Icon, title, count, color }: {
-  icon: any; title: string; count: number; color: string;
+function CollapsibleSection({ icon: Icon, title, count, color, defaultOpen = true, children }: {
+  icon: any; title: string; count: number; color: string; defaultOpen?: boolean; children: React.ReactNode;
 }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="flex items-center gap-2 px-1 pt-1">
-      <div className={`flex items-center justify-center h-7 w-7 rounded-lg ${color}`}>
-        <Icon className="h-4 w-4" />
-      </div>
-      <span className="text-sm font-bold">{title}</span>
-      <span className="text-xs text-muted-foreground">({count})</span>
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-2 px-1 pt-1 w-full text-left group"
+      >
+        <div className={`flex items-center justify-center h-7 w-7 rounded-lg ${color}`}>
+          <Icon className="h-4 w-4" />
+        </div>
+        <span className="text-sm font-bold">{title}</span>
+        <span className="text-xs text-muted-foreground">({count})</span>
+        <ChevronDown className={`h-4 w-4 ml-auto text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && children}
     </div>
   );
 }
@@ -390,31 +400,27 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
 
       {/* Sections */}
       {needMoreCards.length > 0 && (
-        <div className="space-y-2">
-          <SectionHeader icon={Plus} title="Perlu Ditambah" count={needMoreCards.length} color="bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400" />
+        <CollapsibleSection icon={Plus} title="Perlu Ditambah" count={needMoreCards.length} color="bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400" defaultOpen={true}>
           {needMoreCards.map(card => <ProductCard key={card.kode} card={card} alreadySent={alreadySent} />)}
-        </div>
+        </CollapsibleSection>
       )}
 
       {missed.length > 0 && (
-        <div className="space-y-2">
-          <SectionHeader icon={PackageX} title="Belum Dipesan tapi Kritis" count={missed.length} color="bg-red-100 dark:bg-red-900/40 text-destructive" />
+        <CollapsibleSection icon={PackageX} title="Belum Dipesan tapi Kritis" count={missed.length} color="bg-red-100 dark:bg-red-900/40 text-destructive" defaultOpen={true}>
           {missed.map(card => <MissedProductCard key={card.kode} card={card} />)}
-        </div>
+        </CollapsibleSection>
       )}
 
       {tooMuchCards.length > 0 && (
-        <div className="space-y-2">
-          <SectionHeader icon={ArrowDown} title="Bisa Dikurangi" count={tooMuchCards.length} color="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400" />
+        <CollapsibleSection icon={ArrowDown} title="Bisa Dikurangi" count={tooMuchCards.length} color="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400" defaultOpen={false}>
           {tooMuchCards.map(card => <ProductCard key={card.kode} card={card} alreadySent={alreadySent} />)}
-        </div>
+        </CollapsibleSection>
       )}
 
       {okCards.length > 0 && (
-        <div className="space-y-2">
-          <SectionHeader icon={CheckCircle2} title="Sudah Cukup" count={okCards.length} color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400" />
+        <CollapsibleSection icon={CheckCircle2} title="Sudah Cukup" count={okCards.length} color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400" defaultOpen={false}>
           {okCards.map(card => <ProductCard key={card.kode} card={card} alreadySent={alreadySent} />)}
-        </div>
+        </CollapsibleSection>
       )}
 
       {unknown_codes.length > 0 && (
