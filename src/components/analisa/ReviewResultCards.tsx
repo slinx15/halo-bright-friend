@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Sparkles, AlertTriangle, CheckCircle2, Plus, Flame, Package
+  Sparkles, AlertTriangle, CheckCircle2, Plus, Flame, Package, ArrowDown
 } from "lucide-react";
 import { formatRupiah, formatNumber } from "@/lib/formatters";
 
@@ -58,18 +58,30 @@ function isNeedMore(card: ReviewCard): boolean {
   return card.verdict === "kurang";
 }
 
+function isTooMuch(card: ReviewCard): boolean {
+  return card.verdict === "lebih";
+}
+
 function getShortfall(card: ReviewCard): number {
   return Math.max(0, card.ideal_qty - card.qty_boss);
 }
 
-function ProductCard({ card }: { card: ReviewCard }) {
+function getExcess(card: ReviewCard): number {
+  return Math.max(0, card.qty_boss - card.ideal_qty);
+}
+
+function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boolean }) {
   const needMore = isNeedMore(card);
+  const tooMuch = !alreadySent && isTooMuch(card);
   const shortfall = getShortfall(card);
+  const excess = getExcess(card);
 
   return (
     <div className={`rounded-xl border p-3 space-y-1.5 transition-all ${
       needMore 
         ? "border-l-[3px] border-l-orange-500 border-border/60 bg-orange-500/5" 
+        : tooMuch
+        ? "border-l-[3px] border-l-blue-500 border-border/60 bg-blue-500/5"
         : "border-l-[3px] border-l-success border-border/60 bg-success/5"
     }`}>
       {/* Row 1: kode + status */}
@@ -84,6 +96,10 @@ function ProductCard({ card }: { card: ReviewCard }) {
           <Badge className="bg-orange-500 hover:bg-orange-600 text-white text-[11px] px-2 gap-1 font-bold">
             <Plus className="h-3 w-3" /> Tambah {formatNumber(shortfall)}
           </Badge>
+        ) : tooMuch ? (
+          <Badge className="bg-blue-500 hover:bg-blue-600 text-white text-[11px] px-2 gap-1 font-bold">
+            <ArrowDown className="h-3 w-3" /> Kurangi {formatNumber(excess)}
+          </Badge>
         ) : (
           <Badge variant="secondary" className="bg-success/10 text-success text-[11px] px-2 gap-0.5">
             <CheckCircle2 className="h-3 w-3" /> Cukup
@@ -97,6 +113,7 @@ function ProductCard({ card }: { card: ReviewCard }) {
         <span className="shrink-0 ml-2 tabular-nums">
           Pesan <strong className="text-foreground">{formatNumber(card.qty_boss)}</strong>
           {needMore && <> → <strong className="text-orange-600 dark:text-orange-400">{formatNumber(card.ideal_qty)}</strong></>}
+          {tooMuch && <> → <strong className="text-blue-600 dark:text-blue-400">{formatNumber(card.ideal_qty)}</strong></>}
         </span>
       </div>
 
@@ -127,11 +144,12 @@ function MissedProductCard({ card }: { card: MissedCard }) {
   );
 }
 
-export function ReviewResultCards({ result }: { result: ReviewResult }) {
+export function ReviewResultCards({ result, alreadySent }: { result: ReviewResult; alreadySent: boolean }) {
   const { score, summary, cards, missed, unknown_codes, total_cost } = result;
 
   const needMoreCards = cards.filter(c => isNeedMore(c)).sort((a, b) => a.dos - b.dos);
-  const okCards = cards.filter(c => !isNeedMore(c));
+  const tooMuchCards = !alreadySent ? cards.filter(c => isTooMuch(c)) : [];
+  const okCards = cards.filter(c => !isNeedMore(c) && !(isTooMuch(c) && !alreadySent));
 
   const totalTambah = needMoreCards.reduce((sum, c) => sum + getShortfall(c), 0);
 
@@ -153,6 +171,11 @@ export function ReviewResultCards({ result }: { result: ReviewResult }) {
                 ⚠ {needMoreCards.length} item perlu ditambah (+{formatNumber(totalTambah)} pcs)
               </span>
             )}
+            {tooMuchCards.length > 0 && (
+              <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                💡 {tooMuchCards.length} item bisa dikurangi
+              </span>
+            )}
             {missed.length > 0 && (
               <span className="text-destructive font-semibold">
                 🚨 {missed.length} item belum dipesan
@@ -169,7 +192,7 @@ export function ReviewResultCards({ result }: { result: ReviewResult }) {
             <AlertTriangle className="h-4 w-4 text-orange-500" />
             <span className="text-sm font-semibold">Perlu Ditambah ({needMoreCards.length})</span>
           </div>
-          {needMoreCards.map(card => <ProductCard key={card.kode} card={card} />)}
+          {needMoreCards.map(card => <ProductCard key={card.kode} card={card} alreadySent={alreadySent} />)}
         </div>
       )}
 
@@ -184,6 +207,17 @@ export function ReviewResultCards({ result }: { result: ReviewResult }) {
         </div>
       )}
 
+      {/* Items that are too much (only when not sent) */}
+      {tooMuchCards.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 px-1">
+            <ArrowDown className="h-4 w-4 text-blue-500" />
+            <span className="text-sm font-semibold">Bisa Dikurangi ({tooMuchCards.length})</span>
+          </div>
+          {tooMuchCards.map(card => <ProductCard key={card.kode} card={card} alreadySent={alreadySent} />)}
+        </div>
+      )}
+
       {/* Items that are OK */}
       {okCards.length > 0 && (
         <div className="space-y-2">
@@ -191,7 +225,7 @@ export function ReviewResultCards({ result }: { result: ReviewResult }) {
             <CheckCircle2 className="h-4 w-4 text-success" />
             <span className="text-sm font-semibold">Sudah Cukup ({okCards.length})</span>
           </div>
-          {okCards.map(card => <ProductCard key={card.kode} card={card} />)}
+          {okCards.map(card => <ProductCard key={card.kode} card={card} alreadySent={alreadySent} />)}
         </div>
       )}
 
