@@ -190,7 +190,7 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
     : "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50";
 
   return (
-    <div className={`rounded-2xl border p-3.5 space-y-2 ${accentClass}`}>
+    <div className={`card-premium p-3.5 space-y-2 ${accentClass}`}>
       {/* Header row */}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
@@ -254,7 +254,7 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
 
 function MissedProductCard({ card }: { card: MissedCard }) {
   return (
-    <div className="rounded-2xl border p-3.5 space-y-2 bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50">
+    <div className="card-premium p-3.5 space-y-2 bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <span className="font-mono font-bold text-sm">{card.kode}</span>
@@ -328,7 +328,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
   return (
     <div className="space-y-4 animate-fade-in" style={{ animationFillMode: "both" }}>
       {/* Summary Card */}
-      <Card className="border-0 shadow-md overflow-hidden">
+      <Card className="card-premium overflow-hidden shadow-premium">
         <CardContent className="p-5">
           <div className="flex items-start gap-4">
             <ScoreRing score={score} />
@@ -425,25 +425,41 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
       {/* Sections */}
       {needMoreCards.length > 0 && (
         <CollapsibleSection icon={Plus} title="Perlu Ditambah" count={needMoreCards.length} color="bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400" sectionRef={tambahRef} isOpen={openSections.tambah} onToggle={() => toggleSection("tambah")}>
-          {needMoreCards.map(card => <ProductCard key={card.kode} card={card} alreadySent={alreadySent} />)}
+          {needMoreCards.map((card, i) => (
+            <div key={card.kode} className="animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
+              <ProductCard card={card} alreadySent={alreadySent} />
+            </div>
+          ))}
         </CollapsibleSection>
       )}
 
       {missed.length > 0 && (
         <CollapsibleSection icon={PackageX} title="Belum Dipesan tapi Kritis" count={missed.length} color="bg-red-100 dark:bg-red-900/40 text-destructive" sectionRef={missedRef} isOpen={openSections.missed} onToggle={() => toggleSection("missed")}>
-          {missed.map(card => <MissedProductCard key={card.kode} card={card} />)}
+          {missed.map((card, i) => (
+            <div key={card.kode} className="animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
+              <MissedProductCard card={card} />
+            </div>
+          ))}
         </CollapsibleSection>
       )}
 
       {tooMuchCards.length > 0 && (
         <CollapsibleSection icon={ArrowDown} title="Bisa Dikurangi" count={tooMuchCards.length} color="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400" sectionRef={kurangiRef} isOpen={openSections.kurangi} onToggle={() => toggleSection("kurangi")}>
-          {tooMuchCards.map(card => <ProductCard key={card.kode} card={card} alreadySent={alreadySent} />)}
+          {tooMuchCards.map((card, i) => (
+            <div key={card.kode} className="animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
+              <ProductCard card={card} alreadySent={alreadySent} />
+            </div>
+          ))}
         </CollapsibleSection>
       )}
 
       {okCards.length > 0 && (
         <CollapsibleSection icon={CheckCircle2} title="Sudah Cukup" count={okCards.length} color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400" sectionRef={cukupRef} isOpen={openSections.cukup} onToggle={() => toggleSection("cukup")}>
-          {okCards.map(card => <ProductCard key={card.kode} card={card} alreadySent={alreadySent} />)}
+          {okCards.map((card, i) => (
+            <div key={card.kode} className="animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
+              <ProductCard card={card} alreadySent={alreadySent} />
+            </div>
+          ))}
         </CollapsibleSection>
       )}
 
