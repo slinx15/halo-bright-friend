@@ -1,11 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Package, Search, AlertTriangle, TrendingUp, BoxIcon, ShieldAlert, ChevronLeft, ChevronRight } from "lucide-react";
+import { Package, Search, AlertTriangle, TrendingUp, BoxIcon, ShieldAlert, Loader2 } from "lucide-react";
 import { formatNumber, formatRupiah, getStockStatus, getStockStatusColor } from "@/lib/formatters";
 import { StokSkeleton } from "@/components/LoadingSkeletons";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
@@ -17,8 +16,9 @@ const PAGE_SIZE = 30;
 const Stok = () => {
   const { data: products, isLoading } = useProducts();
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const isMobile = useIsMobile();
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const filtered = useMemo(() =>
     products?.filter(
@@ -29,18 +29,40 @@ const Stok = () => {
     [products, search]
   );
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages);
-  const paginated = useMemo(() =>
-    filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
-    [filtered, currentPage]
+  const visibleItems = useMemo(() =>
+    filtered.slice(0, visibleCount),
+    [filtered, visibleCount]
   );
 
-  // Reset page when search changes
+  const hasMore = visibleCount < filtered.length;
+
+  // Reset visible count when search changes
   const handleSearch = (val: string) => {
     setSearch(val);
-    setPage(1);
+    setVisibleCount(PAGE_SIZE);
   };
+
+  // Infinite scroll with IntersectionObserver
+  const loadMore = useCallback(() => {
+    setVisibleCount(prev => Math.min(prev + PAGE_SIZE, filtered.length));
+  }, [filtered.length]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          loadMore();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loadMore]);
 
   const totalItems = filtered.length;
   const totalStok = filtered.reduce((sum, p) => sum + (p.stock?.jumlah ?? 0), 0);
@@ -124,13 +146,13 @@ const Stok = () => {
         <CardContent>
           {isMobile ? (
             <div className="space-y-2.5">
-              {paginated.length === 0 && (
+              {visibleItems.length === 0 && (
                 <div className="py-10 text-center">
                   <Package className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
                   <p className="text-sm text-muted-foreground font-medium">Tidak ada data</p>
                 </div>
               )}
-              {paginated.map((p) => {
+              {visibleItems.map((p) => {
                 const jumlah = p.stock?.jumlah ?? 0;
                 const status = getStockStatus(jumlah);
                 const stacks = (p.stock?.tumpukan_detail as number[]) ?? [];
@@ -200,7 +222,7 @@ const Stok = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginated.map((p, idx) => {
+                  {visibleItems.map((p, idx) => {
                     const jumlah = p.stock?.jumlah ?? 0;
                     const status = getStockStatus(jumlah);
                     const stacks = (p.stock?.tumpukan_detail as number[]) ?? [];
@@ -221,7 +243,7 @@ const Stok = () => {
                       </TableRow>
                     );
                   })}
-                  {paginated.length === 0 && (
+                  {visibleItems.length === 0 && (
                     <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-10">Tidak ada data</TableCell></TableRow>
                   )}
                 </TableBody>
@@ -229,37 +251,20 @@ const Stok = () => {
             </div>
           )}
 
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4 border-t mt-4">
-              <p className="text-xs text-muted-foreground">
-                {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, totalItems)} dari {totalItems}
-              </p>
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 rounded-lg"
-                  disabled={currentPage <= 1}
-                  onClick={() => setPage(p => p - 1)}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-xs font-semibold px-2 tabular-nums">
-                  {currentPage}/{totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 rounded-lg"
-                  disabled={currentPage >= totalPages}
-                  onClick={() => setPage(p => p + 1)}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+          {/* Infinite Scroll Sentinel */}
+          <div ref={sentinelRef} className="py-4 flex justify-center">
+            {hasMore && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Memuat {formatNumber(visibleCount)} dari {formatNumber(totalItems)}...</span>
               </div>
-            </div>
-          )}
+            )}
+            {!hasMore && visibleItems.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Menampilkan semua {formatNumber(totalItems)} produk
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
