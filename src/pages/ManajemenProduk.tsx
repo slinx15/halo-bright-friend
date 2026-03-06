@@ -342,6 +342,21 @@ const ManajemenProduk = () => {
               </Table>
             </div>
           )}
+
+          {/* Infinite Scroll Sentinel */}
+          <div ref={sentinelRef} className="py-4 flex justify-center">
+            {hasMore && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Memuat {formatNumber(visibleCount)} dari {formatNumber(totalProducts)}...</span>
+              </div>
+            )}
+            {!hasMore && visibleItems.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Menampilkan semua {formatNumber(totalProducts)} produk
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
