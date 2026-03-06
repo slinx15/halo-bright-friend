@@ -829,7 +829,7 @@ const Analisa = () => {
                             <span className={`font-mono font-bold text-base ${
                               a.daysOfStock <= 2 ? "text-destructive" :
                               a.daysOfStock <= 4 ? "text-warning" :
-                              a.daysOfStock <= 7 ? "text-amber-500" :
+                              a.daysOfStock <= 7 ? "text-accent" :
                               "text-success"
                             }`}>
                               {formatDaysLeft(a.daysOfStock)}
@@ -881,9 +881,9 @@ const Analisa = () => {
                 const priority = getPriorityLevel(a.dosStatus);
                 const isZeroStock = a.currentStock === 0;
                 const ringClass =
-                  a.dosStatus === "CRITICAL" ? "border-l-[3px] border-l-red-500 border-border/60" :
-                  a.dosStatus === "WARNING" ? "border-l-[3px] border-l-amber-500 border-border/60" :
-                  a.dosStatus === "ATTENTION" ? "border-l-[3px] border-l-yellow-500 border-border/60" : "border-l-[3px] border-l-emerald-500 border-border/60";
+                  a.dosStatus === "CRITICAL" ? "border-l-[3px] border-l-destructive border-border/60" :
+                  a.dosStatus === "WARNING" ? "border-l-[3px] border-l-warning border-border/60" :
+                  a.dosStatus === "ATTENTION" ? "border-l-[3px] border-l-accent border-border/60" : "border-l-[3px] border-l-success border-border/60";
 
                 return (
                   <div
