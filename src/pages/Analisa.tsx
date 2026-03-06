@@ -1378,6 +1378,20 @@ const Analisa = () => {
           </Suspense>
         </TabsContent>
 
+        {/* ══════════ HARI RAMAI ══════════ */}
+        <TabsContent value="hari" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
+          <Suspense fallback={<div className="flex items-center justify-center py-16"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+            <HariRamaiAnalysis stockOutData={stockOutData} />
+          </Suspense>
+        </TabsContent>
+
+        {/* ══════════ REPEAT CUSTOMER ══════════ */}
+        <TabsContent value="pelanggan" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
+          <Suspense fallback={<div className="flex items-center justify-center py-16"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+            <RepeatCustomerAnalysis stockOutData={stockOutData} products={products} />
+          </Suspense>
+        </TabsContent>
+
         {/* ══════════ DEAD STOCK ══════════ */}
         <TabsContent value="dead" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
