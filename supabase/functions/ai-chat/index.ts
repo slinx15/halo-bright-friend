@@ -484,6 +484,12 @@ Top pelanggan: ${topCustomers.join("; ") || "-"}
 Produk darurat: ${criticalList || "Aman"}
 Total perlu order: ${needRestock.length} produk, ${totalRestockQty} pcs, ~Rp ${totalRestockCost.toLocaleString("id-ID")}
 
+═══ ${hariRamaiBlock} ═══
+
+═══ ${repeatBlock} ═══
+
+═══ ${trendBlock} ═══
+
 ═══ RULES RISET ═══
 - MINIMAL 1000-2000 kata untuk riset yang thorough & actionable
 - SELALU kasih angka spesifik (harga, persentase, timeline, biaya)
@@ -516,6 +522,12 @@ DARURAT: ${criticalList || "Aman 👍"}
 MENIPIS: ${warningList || "-"}
 BEST SELLER: ${bestSellerList || "-"}
 ORDER: ${restockSummary || "-"}
+
+${hariRamaiBlock}
+
+${repeatBlock}
+
+${trendBlock}
 
 SEMUA PRODUK:
 ${allProductsList}
