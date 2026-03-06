@@ -328,7 +328,7 @@ const BarangKeluar = () => {
               <Button
                 onClick={handleSubmit}
                 disabled={submitting || !matched}
-                className="w-full rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700"
+                className="w-full rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-destructive hover:bg-destructive/90"
               >
                 <Send className="h-5 w-5 mr-2" /> {submitting ? "Menyimpan..." : "Simpan Barang Keluar"}
               </Button>

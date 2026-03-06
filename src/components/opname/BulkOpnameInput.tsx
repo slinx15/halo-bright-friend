@@ -319,7 +319,7 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
             <Button
               onClick={handleParse}
               disabled={validRows.length === 0}
-              className="w-full rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white"
+              className="w-full rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-warning hover:bg-warning/90 text-warning-foreground"
             >
               Preview
             </Button>
@@ -397,7 +397,7 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
               <Button
                 onClick={handleSubmit}
                 disabled={submitting || validItems.length === 0}
-                className="flex-1 rounded-xl h-12 font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white"
+                className="flex-1 rounded-xl h-12 font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-warning hover:bg-warning/90 text-warning-foreground"
               >
                 <Send className="h-4 w-4 mr-2" />
                 {submitting ? "Simpan..." : `Simpan ${validItems.length}`}

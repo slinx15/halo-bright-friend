@@ -282,7 +282,7 @@ const BarangMasuk = () => {
           <Button
             onClick={handleSubmit}
             disabled={submitting || validCount === 0}
-            className="w-full rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700"
+            className="w-full rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-success hover:bg-success/90"
           >
             <Send className="h-5 w-5 mr-2" />
             {submitting ? "Menyimpan..." : `Simpan Barang Masuk${validCount > 0 ? ` (${validCount} item, ${formatNumber(totalQty)} pcs)` : ""}`}
