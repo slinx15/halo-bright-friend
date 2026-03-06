@@ -198,7 +198,7 @@ const BarangKeluar = () => {
       {/* ── Premium Header ── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3.5">
-          <div className="p-3 rounded-2xl bg-gradient-to-br from-red-500/20 to-rose-500/10 shadow-sm">
+          <div className="p-3 rounded-2xl bg-destructive/10 shadow-sm">
             <PackageMinus className="h-6 w-6 text-destructive" />
           </div>
           <div className="space-y-0.5">
@@ -217,15 +217,15 @@ const BarangKeluar = () => {
 
       {/* ── Quick KPI Strip ── */}
       <div className="grid grid-cols-3 gap-2.5">
-        <div className="rounded-2xl bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/20 border border-destructive/15 p-3 text-center">
+        <div className="card-premium bg-destructive/5 p-3 text-center">
           <p className="text-2xl font-extrabold text-destructive tabular-nums">{todayItems.length}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Transaksi</p>
         </div>
-        <div className="rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/20 border border-warning/15 p-3 text-center">
+        <div className="card-premium bg-warning/5 p-3 text-center">
           <p className="text-2xl font-extrabold text-foreground tabular-nums">{formatNumber(todayQty)}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Qty Hari Ini</p>
         </div>
-        <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/20 border border-success/15 p-3 text-center">
+        <div className="card-premium bg-success/5 p-3 text-center">
           <p className="text-lg font-extrabold text-success tabular-nums truncate">{formatRupiah(todayRevenue)}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Omzet Hari Ini</p>
         </div>
@@ -328,7 +328,7 @@ const BarangKeluar = () => {
               <Button
                 onClick={handleSubmit}
                 disabled={submitting || !matched}
-                className="w-full rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700"
+                className="w-full rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-destructive hover:bg-destructive/90"
               >
                 <Send className="h-5 w-5 mr-2" /> {submitting ? "Menyimpan..." : "Simpan Barang Keluar"}
               </Button>

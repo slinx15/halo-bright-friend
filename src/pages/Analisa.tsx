@@ -59,30 +59,30 @@ function getPriorityLevel(status: DosStatus): PriorityLevel {
 }
 
 const PRIORITY_BAR_COLOR: Record<PriorityLevel, string> = {
-  critical: "bg-red-500",
-  high: "bg-amber-500",
-  medium: "bg-yellow-500",
-  safe: "bg-emerald-500",
+  critical: "bg-destructive",
+  high: "bg-warning",
+  medium: "bg-accent",
+  safe: "bg-success",
 };
 
 const PRIORITY_ROW_BG: Record<PriorityLevel, string> = {
-  critical: "bg-red-50/40 dark:bg-red-950/20",
+  critical: "bg-destructive/5",
   high: "",
   medium: "",
   safe: "",
 };
 
 const PRIORITY_LEGEND = [
-  { color: "bg-red-500", label: "Kritis", desc: "stok hampir habis" },
-  { color: "bg-amber-500", label: "Segera Habis", desc: "perlu perhatian" },
-  { color: "bg-yellow-500", label: "Perhatian", desc: "monitor" },
-  { color: "bg-emerald-500", label: "Aman", desc: "stok cukup" },
+  { color: "bg-destructive", label: "Kritis", desc: "stok hampir habis" },
+  { color: "bg-warning", label: "Segera Habis", desc: "perlu perhatian" },
+  { color: "bg-accent", label: "Perhatian", desc: "monitor" },
+  { color: "bg-success", label: "Aman", desc: "stok cukup" },
 ];
 
 const FILTER_CHIPS: { key: FilterChip; label: string; icon: string; activeClass: string }[] = [
   { key: "CRITICAL", label: "Critical", icon: "🔴", activeClass: "bg-destructive text-destructive-foreground" },
   { key: "WARNING", label: "<4 Hari", icon: "🟠", activeClass: "bg-warning text-warning-foreground" },
-  { key: "ATTENTION", label: "Perhatian", icon: "🟡", activeClass: "bg-amber-500 text-white" },
+  { key: "ATTENTION", label: "Perhatian", icon: "🟡", activeClass: "bg-accent text-accent-foreground" },
   { key: "SAFE", label: "Aman", icon: "🟢", activeClass: "bg-success text-success-foreground" },
   { key: "ALL", label: "Semua", icon: "🔵", activeClass: "bg-primary text-primary-foreground" },
 ];
@@ -90,7 +90,7 @@ const FILTER_CHIPS: { key: FilterChip; label: string; icon: string; activeClass:
 const STATUS_BADGE: Record<DosStatus, { label: string; className: string }> = {
   CRITICAL: { label: "CRITICAL", className: "bg-destructive/15 text-destructive border-destructive/30" },
   WARNING: { label: "SEGERA", className: "bg-warning/15 text-warning border-warning/30" },
-  ATTENTION: { label: "PERHATIAN", className: "bg-amber-500/15 text-amber-600 border-amber-500/30" },
+  ATTENTION: { label: "PERHATIAN", className: "bg-accent/15 text-accent-foreground border-accent/30" },
   SAFE: { label: "AMAN", className: "bg-success/15 text-success border-success/30" },
 };
 
@@ -658,9 +658,9 @@ const Analisa = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           <button
             onClick={() => setFilter(filter === "CRITICAL" ? "ALL" : "CRITICAL")}
-            className={`relative overflow-hidden rounded-2xl p-3.5 text-left transition-all duration-200 active:scale-[0.97] animate-fade-in ${
+            className={`relative overflow-hidden card-premium bg-destructive/5 p-3.5 text-left transition-all duration-200 active:scale-[0.97] animate-fade-in ${
               filter === "CRITICAL" ? "ring-2 ring-destructive shadow-md" : ""
-            } bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/30 border border-destructive/15`}
+            }`}
             style={{ animationDelay: "0ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-destructive/8" />
@@ -671,9 +671,9 @@ const Analisa = () => {
 
           <button
             onClick={() => setFilter(filter === "WARNING" ? "ALL" : "WARNING")}
-            className={`relative overflow-hidden rounded-2xl p-3.5 text-left transition-all duration-200 active:scale-[0.97] animate-fade-in ${
+            className={`relative overflow-hidden card-premium bg-warning/5 p-3.5 text-left transition-all duration-200 active:scale-[0.97] animate-fade-in ${
               filter === "WARNING" ? "ring-2 ring-warning shadow-md" : ""
-            } bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-warning/15`}
+            }`}
             style={{ animationDelay: "60ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-warning/8" />
@@ -684,7 +684,7 @@ const Analisa = () => {
 
           <button
             onClick={() => setFilter(filter === "CRITICAL" ? "ALL" : "CRITICAL")}
-            className="relative overflow-hidden rounded-2xl p-3.5 text-left transition-all duration-200 active:scale-[0.97] animate-fade-in bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-950/30 dark:to-gray-950/30 border border-border/40"
+            className="relative overflow-hidden card-premium bg-muted/30 p-3.5 text-left transition-all duration-200 active:scale-[0.97] animate-fade-in"
             style={{ animationDelay: "120ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-muted/40" />
@@ -694,7 +694,7 @@ const Analisa = () => {
           </button>
 
           <div
-            className="relative overflow-hidden rounded-2xl p-3.5 text-left animate-fade-in bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-primary/10"
+            className="relative overflow-hidden card-premium bg-primary/5 p-3.5 text-left animate-fade-in"
             style={{ animationDelay: "180ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-primary/5" />
@@ -817,7 +817,7 @@ const Analisa = () => {
                               <span className="text-sm">{a.kode}</span>
                               {a.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
                               {a.isStockOut && <span className="text-xs">🚨</span>}
-                              {priority === "critical" && <span className="text-[10px] font-bold text-red-600">HOT</span>}
+                              {priority === "critical" && <span className="text-[10px] font-bold text-destructive">HOT</span>}
                             </div>
                             <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">{a.nama}</div>
                           </TableCell>
@@ -829,7 +829,7 @@ const Analisa = () => {
                             <span className={`font-mono font-bold text-base ${
                               a.daysOfStock <= 2 ? "text-destructive" :
                               a.daysOfStock <= 4 ? "text-warning" :
-                              a.daysOfStock <= 7 ? "text-amber-500" :
+                              a.daysOfStock <= 7 ? "text-accent" :
                               "text-success"
                             }`}>
                               {formatDaysLeft(a.daysOfStock)}
@@ -881,9 +881,9 @@ const Analisa = () => {
                 const priority = getPriorityLevel(a.dosStatus);
                 const isZeroStock = a.currentStock === 0;
                 const ringClass =
-                  a.dosStatus === "CRITICAL" ? "border-l-[3px] border-l-red-500 border-border/60" :
-                  a.dosStatus === "WARNING" ? "border-l-[3px] border-l-amber-500 border-border/60" :
-                  a.dosStatus === "ATTENTION" ? "border-l-[3px] border-l-yellow-500 border-border/60" : "border-l-[3px] border-l-emerald-500 border-border/60";
+                  a.dosStatus === "CRITICAL" ? "border-l-[3px] border-l-destructive border-border/60" :
+                  a.dosStatus === "WARNING" ? "border-l-[3px] border-l-warning border-border/60" :
+                  a.dosStatus === "ATTENTION" ? "border-l-[3px] border-l-accent border-border/60" : "border-l-[3px] border-l-success border-border/60";
 
                 return (
                   <div
@@ -894,7 +894,7 @@ const Analisa = () => {
                     <div className="flex items-center justify-between mb-2.5">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="font-bold text-sm truncate">{a.kode}</span>
-                        {priority === "critical" && <span className="text-[10px] font-bold text-red-600">HOT</span>}
+                        {priority === "critical" && <span className="text-[10px] font-bold text-destructive">HOT</span>}
                         {a.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning shrink-0" />}
                         {a.isStockOut && <span className="text-xs shrink-0">🚨</span>}
                         <Badge variant="outline" className={`text-[9px] font-semibold shrink-0 ${badge.className}`}>
@@ -905,7 +905,7 @@ const Analisa = () => {
                         <span className={`font-mono font-extrabold text-lg leading-none tabular-nums ${
                           a.daysOfStock <= 2 ? "text-destructive" :
                           a.daysOfStock <= 4 ? "text-warning" :
-                          a.daysOfStock <= 7 ? "text-amber-500" :
+                          a.daysOfStock <= 7 ? "text-accent" :
                           "text-success"
                         }`}>
                           {formatDaysLeft(a.daysOfStock)}
@@ -981,7 +981,7 @@ const Analisa = () => {
             {[
               { items: predCritical, label: `Kritis — ≤${RULES.CRITICAL_DAYS} hari`, color: "text-destructive", dot: "bg-destructive" },
               { items: predWarning, label: `Warning — ${RULES.CRITICAL_DAYS + 1}-${RULES.WARNING_DAYS} hari`, color: "text-warning", dot: "bg-warning" },
-              { items: predAttention, label: `Perhatian — ${RULES.WARNING_DAYS + 1}-${RULES.ATTENTION_DAYS} hari`, color: "text-amber-500", dot: "bg-amber-500" },
+              { items: predAttention, label: `Perhatian — ${RULES.WARNING_DAYS + 1}-${RULES.ATTENTION_DAYS} hari`, color: "text-accent", dot: "bg-accent" },
             ].map(({ items, label, color, dot }) => items.length > 0 && (
               <div key={label} className="space-y-2">
                 <div className="flex items-center gap-2">
