@@ -81,7 +81,7 @@ const Stok = () => {
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*]:[animation-fill-mode:both]">
       {/* ── Premium Header ── */}
       <div className="flex items-center gap-3.5">
-        <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/10 shadow-sm">
+        <div className="p-3 rounded-2xl bg-primary/10 shadow-sm">
           <Package className="h-6 w-6 text-primary" />
         </div>
         <div className="space-y-0.5">
@@ -94,7 +94,7 @@ const Stok = () => {
 
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-        <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/20 border border-primary/15 p-3.5 transition-all duration-150 md:hover:shadow-md md:hover:-translate-y-[1px]">
+        <div className="card-premium bg-primary/5 p-3.5 transition-all duration-150 md:hover:shadow-md md:hover:-translate-y-[1px]">
           <div className="flex items-center gap-2 mb-1.5">
             <BoxIcon className="h-4 w-4 text-primary" />
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Total Stok</span>
@@ -102,7 +102,7 @@ const Stok = () => {
           <p className="text-2xl font-extrabold tabular-nums text-foreground">{formatNumber(totalStok)}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">{formatNumber(totalItems)} SKU</p>
         </div>
-        <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/20 border border-success/15 p-3.5 transition-all duration-150 md:hover:shadow-md md:hover:-translate-y-[1px]">
+        <div className="card-premium bg-success/5 p-3.5 transition-all duration-150 md:hover:shadow-md md:hover:-translate-y-[1px]">
           <div className="flex items-center gap-2 mb-1.5">
             <TrendingUp className="h-4 w-4 text-success" />
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Nilai Stok</span>
@@ -110,7 +110,7 @@ const Stok = () => {
           <p className="text-xl font-extrabold tabular-nums text-success truncate">{formatRupiah(nilaiStok)}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">Berdasarkan harga modal</p>
         </div>
-        <div className="rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/20 border border-warning/15 p-3.5 transition-all duration-150 md:hover:shadow-md md:hover:-translate-y-[1px]">
+        <div className="card-premium bg-warning/5 p-3.5 transition-all duration-150 md:hover:shadow-md md:hover:-translate-y-[1px]">
           <div className="flex items-center gap-2 mb-1.5">
             <AlertTriangle className="h-4 w-4 text-warning" />
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Warning</span>
@@ -118,7 +118,7 @@ const Stok = () => {
           <p className="text-2xl font-extrabold tabular-nums text-foreground">{warning}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">Stok 6–15 pcs</p>
         </div>
-        <div className="rounded-2xl bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/20 border border-destructive/15 p-3.5 transition-all duration-150 md:hover:shadow-md md:hover:-translate-y-[1px]">
+        <div className="card-premium bg-destructive/5 p-3.5 transition-all duration-150 md:hover:shadow-md md:hover:-translate-y-[1px]">
           <div className="flex items-center gap-2 mb-1.5">
             <ShieldAlert className="h-4 w-4 text-destructive" />
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Kritis / Kosong</span>

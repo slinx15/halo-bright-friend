@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,11 +11,13 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Settings, Plus, Pencil, Trash2, Search, Package, Tags, DollarSign, BoxIcon } from "lucide-react";
+import { Settings, Plus, Pencil, Trash2, Search, Package, Tags, DollarSign, BoxIcon, Loader2 } from "lucide-react";
 import { formatRupiah, formatNumber } from "@/lib/formatters";
 import { ProdukSkeleton } from "@/components/LoadingSkeletons";
 import { BulkInputDialog } from "@/components/produk/BulkInputDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
+
+const PAGE_SIZE = 30;
 
 const ManajemenProduk = () => {
   const { role } = useAuth();
@@ -23,9 +25,11 @@ const ManajemenProduk = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const isMobile = useIsMobile();
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const [kode, setKode] = useState("");
   const [kategori, setKategori] = useState("");
@@ -35,15 +39,47 @@ const ManajemenProduk = () => {
   const [stokAwal, setStokAwal] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
-  const filtered = products?.filter(
-    (p) =>
-      p.kode.toLowerCase().includes(search.toLowerCase()) ||
-      (p.kategori || "").toLowerCase().includes(search.toLowerCase())
+  const filtered = useMemo(() =>
+    products?.filter(
+      (p) =>
+        p.kode.toLowerCase().includes(search.toLowerCase()) ||
+        (p.kategori || "").toLowerCase().includes(search.toLowerCase())
+    ) ?? [],
+    [products, search]
   );
 
-  const totalProducts = filtered?.length ?? 0;
-  const categories = new Set(filtered?.map(p => p.kategori).filter(Boolean));
-  const totalNilai = filtered?.reduce((s, p) => s + ((p.stock?.jumlah ?? 0) * (p.prices?.harga_modal ?? 0)), 0) ?? 0;
+  const visibleItems = useMemo(() =>
+    filtered.slice(0, visibleCount),
+    [filtered, visibleCount]
+  );
+
+  const hasMore = visibleCount < filtered.length;
+
+  const handleSearch = (val: string) => {
+    setSearch(val);
+    setVisibleCount(PAGE_SIZE);
+  };
+
+  const loadMore = useCallback(() => {
+    setVisibleCount(prev => Math.min(prev + PAGE_SIZE, filtered.length));
+  }, [filtered.length]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore) loadMore();
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loadMore]);
+
+  const totalProducts = filtered.length;
+  const categories = new Set(filtered.map(p => p.kategori).filter(Boolean));
+  const totalNilai = filtered.reduce((s, p) => s + ((p.stock?.jumlah ?? 0) * (p.prices?.harga_modal ?? 0)), 0);
 
   const resetForm = () => {
     setKode(""); setKategori("");
@@ -106,7 +142,7 @@ const ManajemenProduk = () => {
       {/* ── Premium Header ── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3.5">
-          <div className="p-3 rounded-2xl bg-gradient-to-br from-violet-500/20 to-purple-500/10 shadow-sm">
+          <div className="p-3 rounded-2xl bg-primary/10 shadow-sm">
             <Settings className="h-6 w-6 text-primary" />
           </div>
           <div className="space-y-0.5">
@@ -119,7 +155,7 @@ const ManajemenProduk = () => {
             <BulkInputDialog />
             <Dialog open={showAdd} onOpenChange={(v) => { setShowAdd(v); if (!v) resetForm(); }}>
               <DialogTrigger asChild>
-                <Button className="rounded-xl transition-all duration-150 active:scale-95 min-h-[44px] bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-md">
+                <Button className="rounded-xl transition-all duration-150 active:scale-95 min-h-[44px] bg-primary hover:bg-primary/90 shadow-md">
                   <Plus className="h-4 w-4 mr-1" /> Tambah
                 </Button>
               </DialogTrigger>
@@ -161,7 +197,7 @@ const ManajemenProduk = () => {
                       <Input type="number" value={stokAwal} onChange={(e) => setStokAwal(parseInt(e.target.value) || 0)} className="rounded-lg mt-1 tabular-nums" />
                     </div>
                   )}
-                  <Button onClick={handleSave} disabled={submitting} className="w-full rounded-xl h-12 font-bold transition-all duration-150 active:scale-[0.98] shadow-md bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700">
+                  <Button onClick={handleSave} disabled={submitting} className="w-full rounded-xl h-12 font-bold transition-all duration-150 active:scale-[0.98] shadow-md bg-primary hover:bg-primary/90">
                     {submitting ? "Menyimpan..." : editId ? "Update Produk" : "Simpan Produk"}
                   </Button>
                 </div>
@@ -173,15 +209,15 @@ const ManajemenProduk = () => {
 
       {/* ── KPI Strip ── */}
       <div className="grid grid-cols-3 gap-2.5">
-        <div className="rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/20 border border-primary/15 p-3 text-center transition-all duration-150 md:hover:shadow-md">
+        <div className="card-premium bg-primary/5 p-3 text-center">
           <p className="text-2xl font-extrabold tabular-nums text-foreground">{formatNumber(totalProducts)}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Produk</p>
         </div>
-        <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-sky-50 dark:from-blue-950/30 dark:to-sky-950/20 border border-primary/15 p-3 text-center transition-all duration-150 md:hover:shadow-md">
+        <div className="card-premium bg-primary/5 p-3 text-center">
           <p className="text-2xl font-extrabold tabular-nums text-foreground">{categories.size}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Kategori</p>
         </div>
-        <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/20 border border-success/15 p-3 text-center transition-all duration-150 md:hover:shadow-md">
+        <div className="card-premium bg-success/5 p-3 text-center">
           <p className="text-lg font-extrabold tabular-nums text-success truncate">{formatRupiah(totalNilai)}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Nilai Stok</p>
         </div>
@@ -198,7 +234,7 @@ const ManajemenProduk = () => {
             </CardTitle>
             <div className="relative w-full md:w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input className="pl-9 rounded-xl h-10" placeholder="Cari kode / kategori..." value={search} onChange={(e) => setSearch(e.target.value)} />
+              <Input className="pl-9 rounded-xl h-10" placeholder="Cari kode / kategori..." value={search} onChange={(e) => handleSearch(e.target.value)} />
             </div>
           </div>
         </CardHeader>
@@ -207,14 +243,19 @@ const ManajemenProduk = () => {
             <ProdukSkeleton />
           ) : isMobile ? (
             <div className="space-y-2.5">
-              {filtered?.length === 0 && (
-                <div className="py-10 text-center">
-                  <Package className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground font-medium">Tidak ada produk</p>
+              {visibleItems.length === 0 && (
+                <div className="py-14 text-center space-y-3">
+                  <div className="mx-auto w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center">
+                    <Package className="h-8 w-8 text-muted-foreground/30" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-muted-foreground">Tidak ada produk</p>
+                    <p className="text-xs text-muted-foreground/70 mt-0.5">{search ? "Coba kata kunci lain" : "Tambahkan produk pertama"}</p>
+                  </div>
                 </div>
               )}
-              {filtered?.map((p) => (
-                <div key={p.id} className="rounded-xl border border-border/60 p-3.5 space-y-2 transition-all duration-200 active:scale-[0.98] bg-card">
+              {visibleItems.map((p) => (
+                <div key={p.id} className="card-premium p-3.5 space-y-2 transition-all duration-200 active:scale-[0.98]">
                   <div className="flex items-center justify-between">
                     <div className="min-w-0">
                       <span className="font-mono font-bold text-sm">{p.kode}</span>
@@ -266,7 +307,7 @@ const ManajemenProduk = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered?.map((p, idx) => (
+                  {visibleItems.map((p, idx) => (
                     <TableRow key={p.id} className={idx % 2 === 0 ? "" : "bg-muted/15"}>
                       <TableCell className="font-mono font-bold text-sm">{p.kode}</TableCell>
                       <TableCell>
@@ -294,13 +335,28 @@ const ManajemenProduk = () => {
                       )}
                     </TableRow>
                   ))}
-                  {filtered?.length === 0 && (
+                  {visibleItems.length === 0 && (
                     <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-10">Tidak ada produk</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
             </div>
           )}
+
+          {/* Infinite Scroll Sentinel */}
+          <div ref={sentinelRef} className="py-4 flex justify-center">
+            {hasMore && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Memuat {formatNumber(visibleCount)} dari {formatNumber(totalProducts)}...</span>
+              </div>
+            )}
+            {!hasMore && visibleItems.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Menampilkan semua {formatNumber(totalProducts)} produk
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
