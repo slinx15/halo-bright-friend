@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,11 +11,13 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Settings, Plus, Pencil, Trash2, Search, Package, Tags, DollarSign, BoxIcon } from "lucide-react";
+import { Settings, Plus, Pencil, Trash2, Search, Package, Tags, DollarSign, BoxIcon, Loader2 } from "lucide-react";
 import { formatRupiah, formatNumber } from "@/lib/formatters";
 import { ProdukSkeleton } from "@/components/LoadingSkeletons";
 import { BulkInputDialog } from "@/components/produk/BulkInputDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
+
+const PAGE_SIZE = 30;
 
 const ManajemenProduk = () => {
   const { role } = useAuth();
@@ -23,9 +25,11 @@ const ManajemenProduk = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const isMobile = useIsMobile();
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const [kode, setKode] = useState("");
   const [kategori, setKategori] = useState("");
@@ -35,15 +39,47 @@ const ManajemenProduk = () => {
   const [stokAwal, setStokAwal] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
-  const filtered = products?.filter(
-    (p) =>
-      p.kode.toLowerCase().includes(search.toLowerCase()) ||
-      (p.kategori || "").toLowerCase().includes(search.toLowerCase())
+  const filtered = useMemo(() =>
+    products?.filter(
+      (p) =>
+        p.kode.toLowerCase().includes(search.toLowerCase()) ||
+        (p.kategori || "").toLowerCase().includes(search.toLowerCase())
+    ) ?? [],
+    [products, search]
   );
 
-  const totalProducts = filtered?.length ?? 0;
-  const categories = new Set(filtered?.map(p => p.kategori).filter(Boolean));
-  const totalNilai = filtered?.reduce((s, p) => s + ((p.stock?.jumlah ?? 0) * (p.prices?.harga_modal ?? 0)), 0) ?? 0;
+  const visibleItems = useMemo(() =>
+    filtered.slice(0, visibleCount),
+    [filtered, visibleCount]
+  );
+
+  const hasMore = visibleCount < filtered.length;
+
+  const handleSearch = (val: string) => {
+    setSearch(val);
+    setVisibleCount(PAGE_SIZE);
+  };
+
+  const loadMore = useCallback(() => {
+    setVisibleCount(prev => Math.min(prev + PAGE_SIZE, filtered.length));
+  }, [filtered.length]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore) loadMore();
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loadMore]);
+
+  const totalProducts = filtered.length;
+  const categories = new Set(filtered.map(p => p.kategori).filter(Boolean));
+  const totalNilai = filtered.reduce((s, p) => s + ((p.stock?.jumlah ?? 0) * (p.prices?.harga_modal ?? 0)), 0);
 
   const resetForm = () => {
     setKode(""); setKategori("");
