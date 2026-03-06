@@ -209,15 +209,15 @@ const ManajemenProduk = () => {
 
       {/* ── KPI Strip ── */}
       <div className="grid grid-cols-3 gap-2.5">
-        <div className="rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/20 border border-primary/15 p-3 text-center transition-all duration-150 md:hover:shadow-md">
+        <div className="card-premium bg-primary/5 p-3 text-center">
           <p className="text-2xl font-extrabold tabular-nums text-foreground">{formatNumber(totalProducts)}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Produk</p>
         </div>
-        <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-sky-50 dark:from-blue-950/30 dark:to-sky-950/20 border border-primary/15 p-3 text-center transition-all duration-150 md:hover:shadow-md">
+        <div className="card-premium bg-primary/5 p-3 text-center">
           <p className="text-2xl font-extrabold tabular-nums text-foreground">{categories.size}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Kategori</p>
         </div>
-        <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/20 border border-success/15 p-3 text-center transition-all duration-150 md:hover:shadow-md">
+        <div className="card-premium bg-success/5 p-3 text-center">
           <p className="text-lg font-extrabold tabular-nums text-success truncate">{formatRupiah(totalNilai)}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Nilai Stok</p>
         </div>
