@@ -905,7 +905,7 @@ const Analisa = () => {
                         <span className={`font-mono font-extrabold text-lg leading-none tabular-nums ${
                           a.daysOfStock <= 2 ? "text-destructive" :
                           a.daysOfStock <= 4 ? "text-warning" :
-                          a.daysOfStock <= 7 ? "text-amber-500" :
+                          a.daysOfStock <= 7 ? "text-accent" :
                           "text-success"
                         }`}>
                           {formatDaysLeft(a.daysOfStock)}
@@ -981,7 +981,7 @@ const Analisa = () => {
             {[
               { items: predCritical, label: `Kritis — ≤${RULES.CRITICAL_DAYS} hari`, color: "text-destructive", dot: "bg-destructive" },
               { items: predWarning, label: `Warning — ${RULES.CRITICAL_DAYS + 1}-${RULES.WARNING_DAYS} hari`, color: "text-warning", dot: "bg-warning" },
-              { items: predAttention, label: `Perhatian — ${RULES.WARNING_DAYS + 1}-${RULES.ATTENTION_DAYS} hari`, color: "text-amber-500", dot: "bg-amber-500" },
+              { items: predAttention, label: `Perhatian — ${RULES.WARNING_DAYS + 1}-${RULES.ATTENTION_DAYS} hari`, color: "text-accent", dot: "bg-accent" },
             ].map(({ items, label, color, dot }) => items.length > 0 && (
               <div key={label} className="space-y-2">
                 <div className="flex items-center gap-2">
