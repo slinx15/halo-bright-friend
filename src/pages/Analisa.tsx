@@ -658,9 +658,9 @@ const Analisa = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           <button
             onClick={() => setFilter(filter === "CRITICAL" ? "ALL" : "CRITICAL")}
-            className={`relative overflow-hidden rounded-2xl p-3.5 text-left transition-all duration-200 active:scale-[0.97] animate-fade-in ${
+            className={`relative overflow-hidden card-premium bg-destructive/5 p-3.5 text-left transition-all duration-200 active:scale-[0.97] animate-fade-in ${
               filter === "CRITICAL" ? "ring-2 ring-destructive shadow-md" : ""
-            } bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/30 border border-destructive/15`}
+            }`}
             style={{ animationDelay: "0ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-destructive/8" />
@@ -671,9 +671,9 @@ const Analisa = () => {
 
           <button
             onClick={() => setFilter(filter === "WARNING" ? "ALL" : "WARNING")}
-            className={`relative overflow-hidden rounded-2xl p-3.5 text-left transition-all duration-200 active:scale-[0.97] animate-fade-in ${
+            className={`relative overflow-hidden card-premium bg-warning/5 p-3.5 text-left transition-all duration-200 active:scale-[0.97] animate-fade-in ${
               filter === "WARNING" ? "ring-2 ring-warning shadow-md" : ""
-            } bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-warning/15`}
+            }`}
             style={{ animationDelay: "60ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-warning/8" />
@@ -684,7 +684,7 @@ const Analisa = () => {
 
           <button
             onClick={() => setFilter(filter === "CRITICAL" ? "ALL" : "CRITICAL")}
-            className="relative overflow-hidden rounded-2xl p-3.5 text-left transition-all duration-200 active:scale-[0.97] animate-fade-in bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-950/30 dark:to-gray-950/30 border border-border/40"
+            className="relative overflow-hidden card-premium bg-muted/30 p-3.5 text-left transition-all duration-200 active:scale-[0.97] animate-fade-in"
             style={{ animationDelay: "120ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-muted/40" />
@@ -694,7 +694,7 @@ const Analisa = () => {
           </button>
 
           <div
-            className="relative overflow-hidden rounded-2xl p-3.5 text-left animate-fade-in bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-primary/10"
+            className="relative overflow-hidden card-premium bg-primary/5 p-3.5 text-left animate-fade-in"
             style={{ animationDelay: "180ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-primary/5" />
