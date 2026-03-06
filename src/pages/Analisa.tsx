@@ -59,30 +59,30 @@ function getPriorityLevel(status: DosStatus): PriorityLevel {
 }
 
 const PRIORITY_BAR_COLOR: Record<PriorityLevel, string> = {
-  critical: "bg-red-500",
-  high: "bg-amber-500",
-  medium: "bg-yellow-500",
-  safe: "bg-emerald-500",
+  critical: "bg-destructive",
+  high: "bg-warning",
+  medium: "bg-accent",
+  safe: "bg-success",
 };
 
 const PRIORITY_ROW_BG: Record<PriorityLevel, string> = {
-  critical: "bg-red-50/40 dark:bg-red-950/20",
+  critical: "bg-destructive/5",
   high: "",
   medium: "",
   safe: "",
 };
 
 const PRIORITY_LEGEND = [
-  { color: "bg-red-500", label: "Kritis", desc: "stok hampir habis" },
-  { color: "bg-amber-500", label: "Segera Habis", desc: "perlu perhatian" },
-  { color: "bg-yellow-500", label: "Perhatian", desc: "monitor" },
-  { color: "bg-emerald-500", label: "Aman", desc: "stok cukup" },
+  { color: "bg-destructive", label: "Kritis", desc: "stok hampir habis" },
+  { color: "bg-warning", label: "Segera Habis", desc: "perlu perhatian" },
+  { color: "bg-accent", label: "Perhatian", desc: "monitor" },
+  { color: "bg-success", label: "Aman", desc: "stok cukup" },
 ];
 
 const FILTER_CHIPS: { key: FilterChip; label: string; icon: string; activeClass: string }[] = [
   { key: "CRITICAL", label: "Critical", icon: "🔴", activeClass: "bg-destructive text-destructive-foreground" },
   { key: "WARNING", label: "<4 Hari", icon: "🟠", activeClass: "bg-warning text-warning-foreground" },
-  { key: "ATTENTION", label: "Perhatian", icon: "🟡", activeClass: "bg-amber-500 text-white" },
+  { key: "ATTENTION", label: "Perhatian", icon: "🟡", activeClass: "bg-accent text-accent-foreground" },
   { key: "SAFE", label: "Aman", icon: "🟢", activeClass: "bg-success text-success-foreground" },
   { key: "ALL", label: "Semua", icon: "🔵", activeClass: "bg-primary text-primary-foreground" },
 ];
@@ -90,7 +90,7 @@ const FILTER_CHIPS: { key: FilterChip; label: string; icon: string; activeClass:
 const STATUS_BADGE: Record<DosStatus, { label: string; className: string }> = {
   CRITICAL: { label: "CRITICAL", className: "bg-destructive/15 text-destructive border-destructive/30" },
   WARNING: { label: "SEGERA", className: "bg-warning/15 text-warning border-warning/30" },
-  ATTENTION: { label: "PERHATIAN", className: "bg-amber-500/15 text-amber-600 border-amber-500/30" },
+  ATTENTION: { label: "PERHATIAN", className: "bg-accent/15 text-accent-foreground border-accent/30" },
   SAFE: { label: "AMAN", className: "bg-success/15 text-success border-success/30" },
 };
 
