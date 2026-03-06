@@ -18,6 +18,7 @@ import {
 import logo from "@/assets/logo.jpg";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/", group: "main" },
@@ -117,6 +118,7 @@ const AppSidebar = () => {
             </p>
             <p className="text-xs text-sidebar-foreground/40 capitalize font-medium">{role ?? "user"}</p>
           </div>
+          <ThemeToggle className="text-sidebar-foreground/50 hover:text-sidebar-primary-foreground hover:bg-sidebar-accent" />
         </div>
         <Button
           variant="ghost"
