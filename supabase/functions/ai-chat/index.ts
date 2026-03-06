@@ -298,6 +298,10 @@ Konten: rumus 80/20 (80% value, 20% jualan), jangan hard-selling, storytelling p
       return matched;
     }
 
+    const now = new Date();
+    const hariIni = now.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" });
+    const jamSekarang = now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
+
     const detectedTopics = detectTopics(messages);
     // Fallback: if 0-1 topics detected or ambiguous, send all modules
     const useAllModules = detectedTopics.length === 0 || detectedTopics.length > 5;
@@ -409,10 +413,6 @@ Total perlu order: ${needRestock.length} produk, ${totalRestockQty} pcs, ~Rp ${t
 - Kalau topik di luar keahlian textile/craft/bisnis, jujur bilang dan sarankan sumber lain
 - Setiap rekomendasi harus ada estimasi BIAYA dan TIMELINE
 - Akhiri SELALU dengan ACTION PLAN yang bisa dikerjakan minggu ini`;
-
-    const now = new Date();
-    const hariIni = now.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" });
-    const jamSekarang = now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
 
     const normalSystemPrompt = `Kamu PARTNER BISNIS UTAMA Boss RRCollections — toko benang craft/obras. Keahlian setara konsultan senior industri craft & textile.
 
