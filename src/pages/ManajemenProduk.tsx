@@ -142,7 +142,7 @@ const ManajemenProduk = () => {
       {/* ── Premium Header ── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3.5">
-          <div className="p-3 rounded-2xl bg-gradient-to-br from-violet-500/20 to-purple-500/10 shadow-sm">
+          <div className="p-3 rounded-2xl bg-primary/10 shadow-sm">
             <Settings className="h-6 w-6 text-primary" />
           </div>
           <div className="space-y-0.5">
@@ -155,7 +155,7 @@ const ManajemenProduk = () => {
             <BulkInputDialog />
             <Dialog open={showAdd} onOpenChange={(v) => { setShowAdd(v); if (!v) resetForm(); }}>
               <DialogTrigger asChild>
-                <Button className="rounded-xl transition-all duration-150 active:scale-95 min-h-[44px] bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-md">
+                <Button className="rounded-xl transition-all duration-150 active:scale-95 min-h-[44px] bg-primary hover:bg-primary/90 shadow-md">
                   <Plus className="h-4 w-4 mr-1" /> Tambah
                 </Button>
               </DialogTrigger>
@@ -197,7 +197,7 @@ const ManajemenProduk = () => {
                       <Input type="number" value={stokAwal} onChange={(e) => setStokAwal(parseInt(e.target.value) || 0)} className="rounded-lg mt-1 tabular-nums" />
                     </div>
                   )}
-                  <Button onClick={handleSave} disabled={submitting} className="w-full rounded-xl h-12 font-bold transition-all duration-150 active:scale-[0.98] shadow-md bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700">
+                  <Button onClick={handleSave} disabled={submitting} className="w-full rounded-xl h-12 font-bold transition-all duration-150 active:scale-[0.98] shadow-md bg-primary hover:bg-primary/90">
                     {submitting ? "Menyimpan..." : editId ? "Update Produk" : "Simpan Produk"}
                   </Button>
                 </div>
