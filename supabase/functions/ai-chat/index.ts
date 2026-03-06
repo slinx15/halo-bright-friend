@@ -221,6 +221,87 @@ atau [] jika tidak ada yang perlu diingat.`;
     const restockSummary = needRestock.slice(0, 20).map((a: any) => `${a.kode}: order ${a.rekomendasi} pcs (${a.dosStatus === "CRITICAL" ? "darurat" : a.dosStatus === "WARNING" ? "menipis" : "pantau"}, laku ${a.velocity}/hari, stok ${a.stok})`).join("\n");
     const allProductsList = products.map((p: any) => { const a = analyses.find((x: any) => x.kode === p.kode); return a ? `${p.kode}|${p.nama}|stok:${p._stok}|laku:${a.velocity}/hari|cukup:${a.dos}hari|status:${a.dosStatus}|order:${a.rekomendasi}|modal:${p._hargaModal}` : `${p.kode}|${p.nama}|stok:${p._stok}|modal:${p._hargaModal}|kat:${p.kategori || '-'}`; }).join("\n");
 
+    // ─── Hari Ramai Analysis ───
+    const HARI_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    const dayBuckets: Record<number, { pcs: number; dates: Set<string> }> = {};
+    for (let i = 0; i < 7; i++) dayBuckets[i] = { pcs: 0, dates: new Set() };
+    const hourBuckets: Record<number, number> = {};
+    for (let i = 0; i < 24; i++) hourBuckets[i] = 0;
+    for (const s of stockOut) {
+      const d = new Date(s.created_at);
+      dayBuckets[d.getDay()].pcs += s.qty_kirim;
+      dayBuckets[d.getDay()].dates.add(s.created_at.slice(0, 10));
+      hourBuckets[d.getHours()] += s.qty_kirim;
+    }
+    const hariRamaiData = Object.entries(dayBuckets).map(([i, d]) => {
+      const weeks = d.dates.size || 1;
+      return { hari: HARI_NAMES[Number(i)], avgPcs: Math.round(d.pcs / weeks) };
+    }).sort((a, b) => b.avgPcs - a.avgPcs);
+    const jamRamaiData = Object.entries(hourBuckets).filter(([, pcs]) => pcs > 0).sort(([, a], [, b]) => b - a).slice(0, 5);
+    const hariRamaiBlock = `HARI RAMAI (rata-rata pcs/hari):\n${hariRamaiData.map(h => `${h.hari}: ${h.avgPcs} pcs`).join(", ")}\nJAM RAMAI (top 5): ${jamRamaiData.map(([h, pcs]) => `${String(h).padStart(2, "0")}:00 (${pcs} pcs)`).join(", ")}`;
+
+    // ─── Repeat Customer Analysis ───
+    const tokoOrderData: Record<string, { dates: string[]; totalQty: number; totalTrx: number; favs: Record<string, number> }> = {};
+    for (const s of stockOut) {
+      const toko = (s.toko ?? "").trim().toUpperCase();
+      if (!toko) continue;
+      if (!tokoOrderData[toko]) tokoOrderData[toko] = { dates: [], totalQty: 0, totalTrx: 0, favs: {} };
+      const td = tokoOrderData[toko];
+      td.dates.push(s.created_at.slice(0, 10));
+      td.totalQty += s.qty_kirim;
+      td.totalTrx += 1;
+      const prod = products.find((p: any) => p.id === s.product_id);
+      if (prod) td.favs[prod.kode] = (td.favs[prod.kode] ?? 0) + s.qty_kirim;
+    }
+    const nowMs = Date.now();
+    const customerAnalysis: { nama: string; status: string; siklus: number; terlambat: number; lastOrder: string; totalQty: number; favs: string }[] = [];
+    for (const [nama, td] of Object.entries(tokoOrderData)) {
+      const uniqueDays = [...new Set(td.dates)].sort();
+      const lastOrderDate = new Date(uniqueDays[uniqueDays.length - 1]);
+      const daysSinceLast = Math.floor((nowMs - lastOrderDate.getTime()) / 86400000);
+      let avgCycle = 0;
+      if (uniqueDays.length >= 2) {
+        const gaps: number[] = [];
+        for (let i = 1; i < uniqueDays.length; i++) {
+          const gap = Math.round((new Date(uniqueDays[i]).getTime() - new Date(uniqueDays[i - 1]).getTime()) / 86400000);
+          if (gap > 0) gaps.push(gap);
+        }
+        if (gaps.length > 0) avgCycle = Math.round(gaps.reduce((s, g) => s + g, 0) / gaps.length);
+      }
+      const overdue = avgCycle > 0 ? daysSinceLast - avgCycle : 0;
+      let status = "reguler";
+      if (uniqueDays.length <= 1) status = "baru";
+      else if (avgCycle > 0 && overdue > avgCycle * 2) status = "hilang";
+      else if (avgCycle > 0 && overdue > avgCycle * 0.5) status = "mulai_hilang";
+      else if (uniqueDays.length >= 5 && avgCycle <= 10) status = "VIP";
+      const topFavs = Object.entries(td.favs).sort(([, a], [, b]) => b - a).slice(0, 3).map(([k]) => k).join(",");
+      customerAnalysis.push({ nama, status, siklus: avgCycle, terlambat: overdue, lastOrder: uniqueDays[uniqueDays.length - 1], totalQty: td.totalQty, favs: topFavs });
+    }
+    customerAnalysis.sort((a, b) => { const o: Record<string, number> = { mulai_hilang: 0, hilang: 1, VIP: 2, reguler: 3, baru: 4 }; return (o[a.status] ?? 5) - (o[b.status] ?? 5); });
+    const atRiskCustomers = customerAnalysis.filter(c => c.status === "mulai_hilang");
+    const lostCustomers = customerAnalysis.filter(c => c.status === "hilang");
+    const vipCustomers = customerAnalysis.filter(c => c.status === "VIP");
+    const repeatBlock = `ANALISA PELANGGAN (${customerAnalysis.length} toko):\nVIP: ${vipCustomers.length} | Mulai hilang: ${atRiskCustomers.length} | Hilang: ${lostCustomers.length}\n` +
+      (atRiskCustomers.length > 0 ? `⚠️ MULAI HILANG:\n${atRiskCustomers.map(c => `${c.nama}: siklus ${c.siklus}hr, terakhir ${c.lastOrder}, terlambat ${c.terlambat}hr, beli ${c.totalQty}pcs, favorit: ${c.favs}`).join("\n")}\n` : "") +
+      (lostCustomers.length > 0 ? `🚨 HILANG:\n${lostCustomers.map(c => `${c.nama}: siklus ${c.siklus}hr, terakhir ${c.lastOrder}, terlambat ${c.terlambat}hr, beli ${c.totalQty}pcs, favorit: ${c.favs}`).join("\n")}\n` : "") +
+      (vipCustomers.length > 0 ? `🏆 VIP:\n${vipCustomers.map(c => `${c.nama}: siklus ${c.siklus}hr, terakhir ${c.lastOrder}, beli ${c.totalQty}pcs, favorit: ${c.favs}`).join("\n")}` : "");
+
+    // ─── Color Trend Analysis ───
+    const thisWeekStart = new Date(nowMs - 7 * 86400000);
+    const lastWeekStart = new Date(nowMs - 14 * 86400000);
+    const colorSales: Record<string, { tw: number; lw: number }> = {};
+    for (const s of stockOut) {
+      const d = new Date(s.created_at);
+      const prod = products.find((p: any) => p.id === s.product_id);
+      if (!prod) continue;
+      if (!colorSales[prod.kode]) colorSales[prod.kode] = { tw: 0, lw: 0 };
+      if (d >= thisWeekStart) colorSales[prod.kode].tw += s.qty_kirim;
+      else if (d >= lastWeekStart) colorSales[prod.kode].lw += s.qty_kirim;
+    }
+    const risingColors = Object.entries(colorSales).filter(([, d]) => d.tw > d.lw && d.tw > 0).sort(([, a], [, b]) => (b.tw - b.lw) - (a.tw - a.lw)).slice(0, 10);
+    const fallingColors = Object.entries(colorSales).filter(([, d]) => d.tw < d.lw && d.lw > 0).sort(([, a], [, b]) => (a.tw - a.lw) - (b.tw - b.lw)).slice(0, 10);
+    const trendBlock = `TREN WARNA:\n🔥 Naik: ${risingColors.length > 0 ? risingColors.map(([k, d]) => `${k}(${d.lw}→${d.tw})`).join(", ") : "Tidak ada"}\n📉 Turun: ${fallingColors.length > 0 ? fallingColors.map(([k, d]) => `${k}(${d.lw}→${d.tw})`).join(", ") : "Tidak ada"}`;
+
     // ─── Knowledge Modules ───
     const KNOWLEDGE_MODULES: Record<string, { keywords: string[]; content: string }> = {
       industri: {
