@@ -109,7 +109,7 @@ const Opname = () => {
       {/* ── Premium Header ── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3.5">
-          <div className="p-3 rounded-2xl bg-gradient-to-br from-amber-500/20 to-yellow-500/10 shadow-sm">
+          <div className="p-3 rounded-2xl bg-warning/10 shadow-sm">
             <ClipboardCheck className="h-6 w-6 text-warning" />
           </div>
           <div className="space-y-0.5">
@@ -122,15 +122,15 @@ const Opname = () => {
 
       {/* ── KPI Strip ── */}
       <div className="grid grid-cols-3 gap-2.5">
-        <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/20 border border-warning/15 p-3 text-center transition-all duration-150 md:hover:shadow-md">
+        <div className="card-premium bg-warning/5 p-3 text-center">
           <p className="text-2xl font-extrabold tabular-nums text-foreground">{totalOpname}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Total Log</p>
         </div>
-        <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/20 border border-success/15 p-3 text-center transition-all duration-150 md:hover:shadow-md">
+        <div className="card-premium bg-success/5 p-3 text-center">
           <p className="text-2xl font-extrabold tabular-nums text-success">{sesuaiCount}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Sesuai ✓</p>
         </div>
-        <div className="rounded-2xl bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/20 border border-destructive/15 p-3 text-center transition-all duration-150 md:hover:shadow-md">
+        <div className="card-premium bg-destructive/5 p-3 text-center">
           <p className="text-2xl font-extrabold tabular-nums text-destructive">{selisihCount}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Selisih ✗</p>
         </div>

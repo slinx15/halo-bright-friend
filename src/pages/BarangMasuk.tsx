@@ -131,7 +131,7 @@ const BarangMasuk = () => {
       {/* ── Premium Header ── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3.5">
-          <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-green-500/10 shadow-sm">
+          <div className="p-3 rounded-2xl bg-success/10 shadow-sm">
             <PackagePlus className="h-6 w-6 text-success" />
           </div>
           <div className="space-y-0.5">
@@ -160,15 +160,15 @@ const BarangMasuk = () => {
 
       {/* ── Quick KPI Strip ── */}
       <div className="grid grid-cols-3 gap-2.5">
-        <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/20 border border-success/15 p-3 text-center">
+        <div className="card-premium bg-success/5 p-3 text-center">
           <p className="text-2xl font-extrabold text-success tabular-nums">{items.length}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Baris</p>
         </div>
-        <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-sky-50 dark:from-blue-950/30 dark:to-sky-950/20 border border-primary/15 p-3 text-center">
+        <div className="card-premium bg-primary/5 p-3 text-center">
           <p className="text-2xl font-extrabold text-primary tabular-nums">{validCount}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Valid</p>
         </div>
-        <div className="rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/20 border border-accent/15 p-3 text-center">
+        <div className="card-premium bg-accent/5 p-3 text-center">
           <p className="text-2xl font-extrabold text-foreground tabular-nums">{formatNumber(totalQty)}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Total Qty</p>
         </div>
