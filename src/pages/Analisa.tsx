@@ -817,7 +817,7 @@ const Analisa = () => {
                               <span className="text-sm">{a.kode}</span>
                               {a.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
                               {a.isStockOut && <span className="text-xs">🚨</span>}
-                              {priority === "critical" && <span className="text-[10px] font-bold text-red-600">HOT</span>}
+                              {priority === "critical" && <span className="text-[10px] font-bold text-destructive">HOT</span>}
                             </div>
                             <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">{a.nama}</div>
                           </TableCell>
@@ -894,7 +894,7 @@ const Analisa = () => {
                     <div className="flex items-center justify-between mb-2.5">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="font-bold text-sm truncate">{a.kode}</span>
-                        {priority === "critical" && <span className="text-[10px] font-bold text-red-600">HOT</span>}
+                        {priority === "critical" && <span className="text-[10px] font-bold text-destructive">HOT</span>}
                         {a.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning shrink-0" />}
                         {a.isStockOut && <span className="text-xs shrink-0">🚨</span>}
                         <Badge variant="outline" className={`text-[9px] font-semibold shrink-0 ${badge.className}`}>
