@@ -234,7 +234,7 @@ const ManajemenProduk = () => {
             </CardTitle>
             <div className="relative w-full md:w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input className="pl-9 rounded-xl h-10" placeholder="Cari kode / kategori..." value={search} onChange={(e) => setSearch(e.target.value)} />
+              <Input className="pl-9 rounded-xl h-10" placeholder="Cari kode / kategori..." value={search} onChange={(e) => handleSearch(e.target.value)} />
             </div>
           </div>
         </CardHeader>
@@ -243,14 +243,19 @@ const ManajemenProduk = () => {
             <ProdukSkeleton />
           ) : isMobile ? (
             <div className="space-y-2.5">
-              {filtered?.length === 0 && (
-                <div className="py-10 text-center">
-                  <Package className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground font-medium">Tidak ada produk</p>
+              {visibleItems.length === 0 && (
+                <div className="py-14 text-center space-y-3">
+                  <div className="mx-auto w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center">
+                    <Package className="h-8 w-8 text-muted-foreground/30" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-muted-foreground">Tidak ada produk</p>
+                    <p className="text-xs text-muted-foreground/70 mt-0.5">{search ? "Coba kata kunci lain" : "Tambahkan produk pertama"}</p>
+                  </div>
                 </div>
               )}
-              {filtered?.map((p) => (
-                <div key={p.id} className="rounded-xl border border-border/60 p-3.5 space-y-2 transition-all duration-200 active:scale-[0.98] bg-card">
+              {visibleItems.map((p) => (
+                <div key={p.id} className="card-premium p-3.5 space-y-2 transition-all duration-200 active:scale-[0.98]">
                   <div className="flex items-center justify-between">
                     <div className="min-w-0">
                       <span className="font-mono font-bold text-sm">{p.kode}</span>
@@ -302,7 +307,7 @@ const ManajemenProduk = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered?.map((p, idx) => (
+                  {visibleItems.map((p, idx) => (
                     <TableRow key={p.id} className={idx % 2 === 0 ? "" : "bg-muted/15"}>
                       <TableCell className="font-mono font-bold text-sm">{p.kode}</TableCell>
                       <TableCell>
@@ -330,7 +335,7 @@ const ManajemenProduk = () => {
                       )}
                     </TableRow>
                   ))}
-                  {filtered?.length === 0 && (
+                  {visibleItems.length === 0 && (
                     <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-10">Tidak ada produk</TableCell></TableRow>
                   )}
                 </TableBody>
