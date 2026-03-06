@@ -119,9 +119,8 @@
     touch-action: manipulation;
   }
 
-  /* Light theme — remove dark force */
   html {
-    color-scheme: light;
+    color-scheme: light dark;
   }
 }
 

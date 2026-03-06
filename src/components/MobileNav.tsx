@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { doLogout } from "./AppLayout";
+import { useTheme } from "next-themes";
 import {
   LayoutDashboard,
   PackagePlus,
@@ -16,6 +17,8 @@ import {
   MoreHorizontal,
   X,
   LogOut,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +42,7 @@ const MobileNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { role } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [moreOpen, setMoreOpen] = useState(false);
 
   const visibleSecondary = secondaryNav.filter((item) => !item.adminOnly || role === "admin");
@@ -76,6 +80,15 @@ const MobileNav = () => {
               );
             })}
             <div className="border-t border-border/30 my-1" />
+            <div className="flex items-center gap-2 px-2">
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="flex items-center gap-3 flex-1 px-4 py-3 min-h-[48px] rounded-xl text-sm font-medium text-foreground/70 active:bg-muted transition-all native-press"
+              >
+                {theme === "dark" ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
+                {theme === "dark" ? "Mode Terang" : "Mode Gelap"}
+              </button>
+            </div>
             <button
               onClick={() => {
                 setMoreOpen(false);

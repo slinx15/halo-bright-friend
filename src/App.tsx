@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import AppLayout from "@/components/AppLayout";
 import Auth from "@/pages/Auth";
@@ -36,38 +37,40 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route
-              element={
-                <ProtectedRoute>
-                  <AppLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/masuk" element={<BarangMasuk />} />
-              <Route path="/keluar" element={<BarangKeluar />} />
-              <Route path="/stok" element={<Stok />} />
-              <Route path="/opname" element={<Opname />} />
-              <Route path="/analisa" element={<Suspense fallback={<div className="flex min-h-[60vh] items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><Analisa /></Suspense>} />
-              <Route path="/produk" element={<ManajemenProduk />} />
-              <Route path="/import-histori" element={<ImportHistori />} />
-              <Route path="/ai" element={<AiChat />} />
-              <Route path="/users" element={<ManajemenUser />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route
+                element={
+                  <ProtectedRoute>
+                    <AppLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/masuk" element={<BarangMasuk />} />
+                <Route path="/keluar" element={<BarangKeluar />} />
+                <Route path="/stok" element={<Stok />} />
+                <Route path="/opname" element={<Opname />} />
+                <Route path="/analisa" element={<Suspense fallback={<div className="flex min-h-[60vh] items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><Analisa /></Suspense>} />
+                <Route path="/produk" element={<ManajemenProduk />} />
+                <Route path="/import-histori" element={<ImportHistori />} />
+                <Route path="/ai" element={<AiChat />} />
+                <Route path="/users" element={<ManajemenUser />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;
