@@ -146,7 +146,7 @@ const Opname = () => {
 
       {/* ── Riwayat ── */}
       <Card className="card-premium">
-        <Collapsible>
+        <Collapsible defaultOpen>
           <CardHeader className="pb-2">
             <CollapsibleTrigger asChild>
               <button className="flex items-center justify-between w-full text-left min-h-[44px]">
