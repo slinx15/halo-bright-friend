@@ -158,8 +158,9 @@ const BarangKeluar = () => {
     setBulkSubmitting(true);
     const headers = getAuthHeaders();
     let successCount = 0;
-    try {
-      for (const item of items) {
+    const errors: string[] = [];
+    for (const item of items) {
+      try {
         const product = item.product!;
         const stok = product.stock?.jumlah ?? 0;
         const stacks = (product.stock?.tumpukan_detail as number[]) ?? [];
@@ -174,21 +175,33 @@ const BarangKeluar = () => {
             catatan: bulkCatatan || null, toko: bulkToko.trim() || "", user_id: user!.id,
           }),
         });
-        if (!outRes.ok) throw new Error(await outRes.text());
+        if (!outRes.ok) {
+          errors.push(`${item.kode}: ${await outRes.text()}`);
+          continue;
+        }
         const newStacks = deductFromStacks(stacks, item.qtyKirim);
         const stockRes = await fetch(
           `${SUPABASE_URL}/rest/v1/stock?product_id=eq.${product.id}`,
           { method: "PATCH", headers, body: JSON.stringify({ jumlah: stok - item.qtyKirim, tumpukan_detail: newStacks }) }
         );
-        if (!stockRes.ok) throw new Error(await stockRes.text());
+        if (!stockRes.ok) {
+          errors.push(`${item.kode} (stok): ${await stockRes.text()}`);
+          continue;
+        }
         successCount++;
+      } catch (err: any) {
+        errors.push(`${item.kode}: ${err.message}`);
       }
+    }
+    if (errors.length > 0) {
+      toast({ title: "Sebagian Gagal", description: `${successCount} berhasil, ${errors.length} gagal: ${errors[0]}`, variant: "destructive" });
+    } else {
       toast({ title: "Berhasil", description: `${successCount} item berhasil disimpan` });
+    }
+    if (successCount > 0) {
       setBulkToko(""); setBulkCatatan("");
       queryClient.invalidateQueries({ queryKey: ["stock_out_history"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
-    } catch (err: any) {
-      toast({ title: "Error", description: `${successCount} tersimpan, gagal: ${err.message}`, variant: "destructive" });
     }
     setBulkSubmitting(false);
   };
@@ -352,7 +365,7 @@ const BarangKeluar = () => {
 
       {/* ── Riwayat ── */}
       <Card className="card-premium">
-        <Collapsible>
+        <Collapsible defaultOpen>
           <CardHeader className="pb-2">
             <CollapsibleTrigger asChild>
               <button className="flex items-center justify-between w-full text-left min-h-[44px]">
