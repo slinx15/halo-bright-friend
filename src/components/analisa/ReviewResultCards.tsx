@@ -478,8 +478,8 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
         </div>
       )}
 
-      {/* Budget Planner */}
-      {hasBudgetExtra && alreadySent && (
+      {/* Budget Planner — always show when there are items that need action */}
+      {(hasBudgetExtra || missed.length > 0 || needMoreCards.length > 0) && (
         <BudgetPlanner
           result={result}
           alreadySent={alreadySent}
