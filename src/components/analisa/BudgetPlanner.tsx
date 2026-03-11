@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, Check, AlertTriangle, Flame, Plus, PackageX } from "lucide-react";
+import { Wallet, Check, AlertTriangle, Flame, Plus, PackageX, Clock, CalendarRange, Loader2 } from "lucide-react";
 import { formatRupiah, formatNumber } from "@/lib/formatters";
+import { supabase } from "@/integrations/supabase/client";
 import type { ReviewCard, MissedCard, ReviewResult } from "./ReviewResultCards";
 
 interface BudgetItem {
@@ -16,51 +17,130 @@ interface BudgetItem {
   type: "tambah" | "missed";
   is_bestseller?: boolean;
   harga_modal: number;
-  priority: number; // lower = more urgent
+  priority: number;
+  isPending?: boolean;
+  pendingQty?: number;
 }
 
-function buildBudgetItems(result: ReviewResult, alreadySent: boolean): BudgetItem[] {
-  const items: BudgetItem[] = [];
+interface PendingItem {
+  kode: string;
+  qty: number;
+}
 
-  // "Tambah" items — cards with verdict "kurang"
-  result.cards
-    .filter(c => c.verdict === "kurang")
-    .forEach(c => {
-      const shortfall = Math.max(0, c.ideal_qty - c.qty_boss);
-      if (shortfall <= 0) return;
+// Build budget items recalculated for a specific periode (days)
+function buildBudgetItemsForPeriode(
+  result: ReviewResult,
+  periodeDays: number,
+  pendingItems: PendingItem[]
+): BudgetItem[] {
+  const items: BudgetItem[] = [];
+  const pendingMap = new Map<string, number>();
+  pendingItems.forEach(p => {
+    pendingMap.set(p.kode.toUpperCase(), (pendingMap.get(p.kode.toUpperCase()) || 0) + p.qty);
+  });
+
+  // Process "tambah" items from cards with verdict "kurang"
+  // and also recalculate ALL cards based on periode
+  const allCards = result.cards;
+  
+  allCards.forEach(c => {
+    const needed = Math.ceil(c.velocity * periodeDays);
+    const currentStock = c.stok;
+    let shortfall = Math.max(0, needed - currentStock);
+    
+    if (shortfall <= 0) return;
+
+    const pendingQty = pendingMap.get(c.kode.toUpperCase()) || 0;
+    const adjustedShortfall = Math.max(0, shortfall - pendingQty);
+    
+    if (adjustedShortfall <= 0 && pendingQty > 0) {
+      // Item is covered by pending order — show but mark as pending
       items.push({
         id: `tambah-${c.kode}`,
         kode: c.kode,
         nama: c.nama,
         dos: c.dos,
         velocity: c.velocity,
-        qty: shortfall,
-        cost: shortfall * c.harga_modal,
+        qty: 0,
+        cost: 0,
         type: "tambah",
         is_bestseller: c.is_bestseller,
         harga_modal: c.harga_modal,
-        priority: c.dos, // lower DOS = higher priority
+        priority: c.dos,
+        isPending: true,
+        pendingQty,
       });
-    });
+      return;
+    }
 
-  // "Missed" items
+    items.push({
+      id: `tambah-${c.kode}`,
+      kode: c.kode,
+      nama: c.nama,
+      dos: c.dos,
+      velocity: c.velocity,
+      qty: adjustedShortfall,
+      cost: adjustedShortfall * c.harga_modal,
+      type: "tambah",
+      is_bestseller: c.is_bestseller,
+      harga_modal: c.harga_modal,
+      priority: c.dos,
+      isPending: pendingQty > 0,
+      pendingQty: pendingQty > 0 ? pendingQty : undefined,
+    });
+  });
+
+  // Missed items — products not in the order but critically low
   result.missed.forEach(m => {
+    const needed = Math.ceil(m.velocity * periodeDays);
+    const currentStock = m.stok;
+    let shortfall = Math.max(0, needed - currentStock);
+    
+    if (shortfall <= 0) return;
+
+    const pendingQty = pendingMap.get(m.kode.toUpperCase()) || 0;
+    const adjustedShortfall = Math.max(0, shortfall - pendingQty);
+
+    if (adjustedShortfall <= 0 && pendingQty > 0) {
+      items.push({
+        id: `missed-${m.kode}`,
+        kode: m.kode,
+        nama: m.nama,
+        dos: m.dos,
+        velocity: m.velocity,
+        qty: 0,
+        cost: 0,
+        type: "missed",
+        harga_modal: m.harga_modal,
+        priority: m.dos <= 1 ? -1 : m.dos,
+        isPending: true,
+        pendingQty,
+      });
+      return;
+    }
+
     items.push({
       id: `missed-${m.kode}`,
       kode: m.kode,
       nama: m.nama,
       dos: m.dos,
       velocity: m.velocity,
-      qty: m.ideal_qty,
-      cost: m.cost,
+      qty: adjustedShortfall,
+      cost: adjustedShortfall * m.harga_modal,
       type: "missed",
       harga_modal: m.harga_modal,
-      priority: m.dos <= 1 ? -1 : m.dos, // stok habis = highest priority
+      priority: m.dos <= 1 ? -1 : m.dos,
+      isPending: pendingQty > 0,
+      pendingQty: pendingQty > 0 ? pendingQty : undefined,
     });
   });
 
-  // Sort by priority (DOS ascending — most urgent first)
-  items.sort((a, b) => a.priority - b.priority);
+  // Sort: actionable items first (not fully pending), then by priority (DOS ascending)
+  items.sort((a, b) => {
+    if (a.qty === 0 && b.qty > 0) return 1;
+    if (a.qty > 0 && b.qty === 0) return -1;
+    return a.priority - b.priority;
+  });
   return items;
 }
 
@@ -74,6 +154,13 @@ function parseBudgetInput(formatted: string): number {
   return Number(formatted.replace(/[^\d]/g, "")) || 0;
 }
 
+const PERIODE_OPTIONS = [
+  { value: 1, label: "1 Hari" },
+  { value: 2, label: "2 Hari" },
+  { value: 3, label: "3 Hari" },
+  { value: 0, label: "Lainnya" },
+];
+
 interface BudgetPlannerProps {
   result: ReviewResult;
   alreadySent: boolean;
@@ -86,7 +173,51 @@ export default function BudgetPlanner({ result, alreadySent, onSelectedItemsChan
   const [budgetInput, setBudgetInput] = useState("");
   const budget = parseBudgetInput(budgetInput);
   
-  const allItems = useMemo(() => buildBudgetItems(result, alreadySent), [result, alreadySent]);
+  // Periode state
+  const [periodePreset, setPeriodePreset] = useState(2); // default 2 hari
+  const [customPeriode, setCustomPeriode] = useState("");
+  const periodeDays = periodePreset > 0 ? periodePreset : (parseInt(customPeriode) || 2);
+
+  // Pending restock
+  const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
+  const [pendingLoading, setPendingLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchPending() {
+      setPendingLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("pending_restock")
+          .select("id, status, pending_restock_items(kode, qty)")
+          .eq("status", "pending");
+
+        if (error) throw error;
+
+        const items: PendingItem[] = [];
+        (data || []).forEach((r: any) => {
+          (r.pending_restock_items || []).forEach((item: any) => {
+            items.push({ kode: item.kode, qty: item.qty });
+          });
+        });
+        setPendingItems(items);
+      } catch (err) {
+        console.error("Failed to fetch pending restock:", err);
+        setPendingItems([]);
+      } finally {
+        setPendingLoading(false);
+      }
+    }
+    fetchPending();
+  }, []);
+
+  const allItems = useMemo(
+    () => buildBudgetItemsForPeriode(result, periodeDays, pendingItems),
+    [result, periodeDays, pendingItems]
+  );
+
+  const actionableItems = allItems.filter(i => i.qty > 0);
+  const pendingOnlyItems = allItems.filter(i => i.qty === 0 && i.isPending);
+
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Auto-select items when budget changes
@@ -99,20 +230,20 @@ export default function BudgetPlanner({ result, alreadySent, onSelectedItemsChan
     const newSelected = new Set<string>();
     let remaining = budget;
 
-    for (const item of allItems) {
+    for (const item of actionableItems) {
       if (item.cost <= remaining) {
         newSelected.add(item.id);
         remaining -= item.cost;
       }
     }
     setSelectedIds(newSelected);
-  }, [budget, allItems]);
+  }, [budget, actionableItems]);
 
   // Notify parent of selected items
   useEffect(() => {
-    const selected = allItems.filter(i => selectedIds.has(i.id));
+    const selected = actionableItems.filter(i => selectedIds.has(i.id));
     onSelectedItemsChange?.(selected);
-  }, [selectedIds, allItems, onSelectedItemsChange]);
+  }, [selectedIds, actionableItems, onSelectedItemsChange]);
 
   const toggleItem = (id: string) => {
     setSelectedIds(prev => {
@@ -123,16 +254,16 @@ export default function BudgetPlanner({ result, alreadySent, onSelectedItemsChan
     });
   };
 
-  const totalSelected = allItems
+  const totalSelected = actionableItems
     .filter(i => selectedIds.has(i.id))
     .reduce((sum, i) => sum + i.cost, 0);
 
-  const totalAll = allItems.reduce((sum, i) => sum + i.cost, 0);
+  const totalAll = actionableItems.reduce((sum, i) => sum + i.cost, 0);
   const selectedCount = selectedIds.size;
   const isOverBudget = budget > 0 && totalSelected > budget;
   const remaining = budget - totalSelected;
 
-  if (allItems.length === 0) return null;
+  if (allItems.length === 0 && !pendingLoading) return null;
 
   return (
     <Card className="card-premium overflow-hidden">
@@ -143,17 +274,61 @@ export default function BudgetPlanner({ result, alreadySent, onSelectedItemsChan
             <Wallet className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <h4 className="text-sm font-bold">Budget Planner</h4>
+            <h4 className="text-sm font-bold">Budget Restock Planner</h4>
             <p className="text-[10px] text-muted-foreground">
-              Masukin sisa budget, AI pilihkan yang paling penting
+              Pilih periode & budget, AI pilihkan yang paling urgent
             </p>
           </div>
+        </div>
+
+        {/* Periode Selector */}
+        <div className="space-y-2">
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+            <CalendarRange className="h-3 w-3" />
+            Periode Restock
+          </label>
+          <div className="flex gap-1.5">
+            {PERIODE_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  setPeriodePreset(opt.value);
+                  if (opt.value > 0) setCustomPeriode("");
+                }}
+                className={`flex-1 h-9 rounded-lg text-xs font-bold transition-all duration-150 active:scale-95 ${
+                  periodePreset === opt.value
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {periodePreset === 0 && (
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="1"
+                max="90"
+                value={customPeriode}
+                onChange={e => setCustomPeriode(e.target.value)}
+                placeholder="2"
+                className="w-16 h-9 rounded-lg border border-input bg-background px-2 text-sm font-bold tabular-nums text-center focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <span className="text-xs text-muted-foreground">hari</span>
+            </div>
+          )}
+          <p className="text-[10px] text-muted-foreground">
+            Beli stok untuk <strong>{periodeDays} hari</strong> ke depan berdasarkan kecepatan jual
+          </p>
         </div>
 
         {/* Budget Input */}
         <div className="space-y-2">
           <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
-            Sisa Budget Tersedia
+            Budget Hari Ini
           </label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">Rp</span>
@@ -169,11 +344,11 @@ export default function BudgetPlanner({ result, alreadySent, onSelectedItemsChan
           {budget > 0 && (
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">
-                Total kebutuhan: <span className="font-bold text-foreground">{formatRupiah(totalAll)}</span>
+                Total kebutuhan {periodeDays} hari: <span className="font-bold text-foreground">{formatRupiah(totalAll)}</span>
               </span>
               {totalAll <= budget ? (
                 <Badge className="bg-success/10 text-success text-[10px]">
-                  <Check className="h-3 w-3 mr-0.5" /> Budget cukup semua
+                  <Check className="h-3 w-3 mr-0.5" /> Budget cukup
                 </Badge>
               ) : (
                 <Badge className="bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-[10px]">
@@ -202,14 +377,34 @@ export default function BudgetPlanner({ result, alreadySent, onSelectedItemsChan
               />
             </div>
             <p className="text-[10px] text-muted-foreground text-center">
-              {selectedCount} dari {allItems.length} item terpilih
+              {selectedCount} dari {actionableItems.length} item terpilih
+            </p>
+          </div>
+        )}
+
+        {/* Pending info */}
+        {pendingLoading && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Mengecek pesanan pending...
+          </div>
+        )}
+
+        {pendingOnlyItems.length > 0 && (
+          <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 px-3 py-2.5">
+            <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+              <Check className="h-3.5 w-3.5" />
+              {pendingOnlyItems.length} item sudah dipesan (pending)
+            </p>
+            <p className="text-[10px] text-emerald-600/80 dark:text-emerald-500/70 mt-0.5">
+              Item ini otomatis di-skip karena sudah masuk pesanan sebelumnya
             </p>
           </div>
         )}
 
         {/* Item List with checkboxes */}
         <div className="space-y-1.5 max-h-[320px] overflow-y-auto">
-          {allItems.map((item, idx) => {
+          {actionableItems.map((item, idx) => {
             const isSelected = selectedIds.has(item.id);
             const isMissed = item.type === "missed";
 
@@ -250,6 +445,11 @@ export default function BudgetPlanner({ result, alreadySent, onSelectedItemsChan
                         <PackageX className="h-2.5 w-2.5" /> Belum pesan
                       </span>
                     )}
+                    {item.isPending && item.pendingQty && (
+                      <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        <Clock className="h-2.5 w-2.5" /> +{item.pendingQty} pending
+                      </span>
+                    )}
                   </div>
                   <p className="text-[10px] text-muted-foreground truncate">{item.nama}</p>
                 </div>
@@ -266,6 +466,25 @@ export default function BudgetPlanner({ result, alreadySent, onSelectedItemsChan
             );
           })}
         </div>
+
+        {/* Pending-only items (collapsed) */}
+        {pendingOnlyItems.length > 0 && (
+          <div className="space-y-1">
+            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest px-1">Sudah Dipesan</p>
+            {pendingOnlyItems.map(item => (
+              <div key={item.id} className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-muted/30 opacity-60">
+                <Check className="h-4 w-4 text-emerald-500 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <span className="font-mono font-bold text-xs">{item.kode}</span>
+                  <p className="text-[10px] text-muted-foreground truncate">{item.nama}</p>
+                </div>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                  +{formatNumber(item.pendingQty || 0)} pending
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
