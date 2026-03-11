@@ -473,22 +473,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
         </div>
       )}
 
-      {/* Budget Planner — always show when there are items that need action */}
-      {(hasBudgetExtra || missed.length > 0 || needMoreCards.length > 0) && (
-        <BudgetPlanner
-          result={result}
-          alreadySent={alreadySent}
-          onSelectedItemsChange={setSelectedBudgetItems}
-        />
-      )}
 
-      {/* Budget Chat */}
-      <BudgetChat
-        result={result}
-        alreadySent={alreadySent}
-        selectedItems={selectedBudgetItems}
-        budget={0}
-      />
     </div>
   );
 }
