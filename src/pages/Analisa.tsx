@@ -118,6 +118,7 @@ function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementTyp
 
 const BUDGET_PRESETS = [1000000, 2000000, 3000000, 5000000, 10000000];
 const DAYS_PRESETS = [3, 5, 7, 14];
+const PERIODE_PRESETS = [1, 2, 3];
 
 function formatRupiahInput(value: number): string {
   if (value === 0) return "";
@@ -127,6 +128,34 @@ function formatRupiahInput(value: number): string {
 function parseRupiahInput(raw: string): number {
   const cleaned = raw.replace(/[^0-9]/g, "");
   return cleaned === "" ? 0 : Number(cleaned);
+}
+
+interface PendingItem { kode: string; qty: number; }
+
+function usePendingRestock() {
+  const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    async function fetch() {
+      setLoading(true);
+      try {
+        const { data } = await supabase
+          .from("pending_restock")
+          .select("id, status, pending_restock_items(kode, qty)")
+          .eq("status", "pending");
+        const items: PendingItem[] = [];
+        (data || []).forEach((r: any) => {
+          (r.pending_restock_items || []).forEach((item: any) => {
+            items.push({ kode: item.kode, qty: item.qty });
+          });
+        });
+        setPendingItems(items);
+      } catch { setPendingItems([]); }
+      finally { setLoading(false); }
+    }
+    fetch();
+  }, []);
+  return { pendingItems, loading };
 }
 
 function BudgetPlanner({
@@ -144,21 +173,37 @@ function BudgetPlanner({
   setBudgetDays: (v: number) => void;
   isMobile: boolean;
 }) {
-  const recommendations = useMemo(() => {
+  const [mode, setMode] = useState<"budget" | "periode">("budget");
+  const [periodePreset, setPeriodePreset] = useState(2);
+  const [customPeriode, setCustomPeriode] = useState("");
+  const periodeDays = periodePreset > 0 ? periodePreset : (parseInt(customPeriode) || 2);
+  const { pendingItems, loading: pendingLoading } = usePendingRestock();
+
+  // Build pending map
+  const pendingMap = useMemo(() => {
+    const m = new Map<string, number>();
+    pendingItems.forEach(p => m.set(p.kode.toUpperCase(), (m.get(p.kode.toUpperCase()) || 0) + p.qty));
+    return m;
+  }, [pendingItems]);
+
+  // ─── Budget Mode Recommendations ───
+  const budgetRecommendations = useMemo(() => {
     const sorted = [...analyses]
       .filter(a => a.velocity > 0)
       .sort((a, b) => b.combinedScore - a.combinedScore);
 
-    type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string };
+    type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string; pendingQty?: number };
     const result: RecItem[] = [];
     let remaining = budgetAmount;
 
-    // Step 1: Calculate ideal qty for ALL products that need restock
     const candidates: { item: ProductAnalysis; idealQty: number; idealCost: number; reason: string; batch: number; minOrder: number }[] = [];
 
     for (const item of sorted) {
       const neededStock = Math.ceil(item.velocity * budgetDays);
-      const deficit = neededStock - item.currentStock;
+      let deficit = neededStock - item.currentStock;
+      // Subtract pending
+      const pq = pendingMap.get(item.kode.toUpperCase()) || 0;
+      deficit -= pq;
       if (deficit <= 0) continue;
 
       const isBW = isBlackWhiteCode(item.kode);
@@ -176,350 +221,451 @@ function BudgetPlanner({
 
     if (totalIdealCost <= budgetAmount) {
       for (const c of candidates) {
-        result.push({ item: c.item, qty: c.idealQty, cost: c.idealCost, reason: c.reason });
+        const pq = pendingMap.get(c.item.kode.toUpperCase()) || 0;
+        result.push({ item: c.item, qty: c.idealQty, cost: c.idealCost, reason: c.reason, pendingQty: pq || undefined });
         remaining -= c.idealCost;
       }
-
-      const pickedIds = new Set(result.map(r => r.item.productId));
-      if (remaining > 0) {
-        const extendedDays = budgetDays * 2;
-        for (const item of sorted) {
-          if (remaining <= 0) break;
-          if (pickedIds.has(item.productId)) continue;
-          const neededStock = Math.ceil(item.velocity * extendedDays);
-          const deficit = neededStock - item.currentStock;
-          if (deficit <= 0) continue;
-          const isBW = isBlackWhiteCode(item.kode);
-          const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
-          const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
-          let qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
-          let cost = qty * item.unitPrice;
-          if (cost > remaining) {
-            qty = Math.floor(Math.floor(remaining / item.unitPrice) / batch) * batch;
-            if (qty < minOrder) continue;
-            cost = qty * item.unitPrice;
-          }
-          result.push({ item, qty, cost, reason: "🔄 Top-up stok" });
-          remaining -= cost;
-          pickedIds.add(item.productId);
-        }
-      }
-
-      if (remaining > 0) {
-        for (const r of [...result]) {
-          if (remaining <= 0) break;
-          if (!r.item.isBestSeller) continue;
-          const isBW = isBlackWhiteCode(r.item.kode);
-          const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
-          const cost = batch * r.item.unitPrice;
-          if (cost <= remaining) {
-            r.qty += batch;
-            r.cost += cost;
-            r.reason = "🔥 Best seller + extra";
-            remaining -= cost;
-          }
-        }
-      }
     } else {
-      const tier1: typeof candidates = [];
-      const tier2: typeof candidates = [];
-      const tier3: typeof candidates = [];
+      // Tiered allocation
+      const tier1 = candidates.filter(c => c.item.isStockOut || c.item.daysOfStock <= RULES.CRITICAL_DAYS);
+      const tier2 = candidates.filter(c => !tier1.includes(c) && c.item.isBestSeller);
+      const tier3 = candidates.filter(c => !tier1.includes(c) && !tier2.includes(c));
 
-      for (const c of candidates) {
-        const isUrgent = c.item.isStockOut || c.item.daysOfStock <= RULES.CRITICAL_DAYS;
-        if (isUrgent) {
-          tier1.push(c);
-        } else if (c.item.isBestSeller) {
-          tier2.push(c);
-        } else {
-          tier3.push(c);
-        }
-      }
-
-      for (const c of tier1) {
-        if (remaining <= 0) break;
-        let qty = c.idealQty;
-        let cost = c.idealCost;
-        if (cost > remaining) {
-          qty = Math.floor(Math.floor(remaining / c.item.unitPrice) / c.batch) * c.batch;
-          if (qty < c.minOrder) continue;
-          cost = qty * c.item.unitPrice;
-        }
-        result.push({ item: c.item, qty, cost, reason: c.item.isStockOut ? "🚨 Stok kosong" : "🔴 Kritis" });
-        remaining -= cost;
-      }
-
-      for (const c of tier2) {
-        if (remaining <= 0) break;
-        let qty = c.idealQty;
-        let cost = c.idealCost;
-        if (cost > remaining) {
-          qty = Math.floor(Math.floor(remaining / c.item.unitPrice) / c.batch) * c.batch;
-          if (qty < c.minOrder) continue;
-          cost = qty * c.item.unitPrice;
-        }
-        result.push({ item: c.item, qty, cost, reason: "🔥 Best seller" });
-        remaining -= cost;
-      }
-
-      if (remaining > 0 && tier3.length > 0) {
-        const tier3TotalCost = tier3.reduce((s, c) => s + c.idealCost, 0);
-        const ratio = Math.min(1, remaining / tier3TotalCost);
-
-        for (const c of tier3) {
+      for (const tier of [tier1, tier2, tier3]) {
+        for (const c of tier) {
           if (remaining <= 0) break;
-          const scaledQty = Math.ceil(c.idealQty * ratio);
-          let qty = Math.max(c.minOrder, Math.ceil(scaledQty / c.batch) * c.batch);
-          let cost = qty * c.item.unitPrice;
+          let qty = c.idealQty;
+          let cost = c.idealCost;
           if (cost > remaining) {
             qty = Math.floor(Math.floor(remaining / c.item.unitPrice) / c.batch) * c.batch;
             if (qty < c.minOrder) continue;
             cost = qty * c.item.unitPrice;
           }
-          result.push({ item: c.item, qty, cost, reason: "📦 Restock" });
+          const pq = pendingMap.get(c.item.kode.toUpperCase()) || 0;
+          result.push({ item: c.item, qty, cost, reason: c.reason, pendingQty: pq || undefined });
           remaining -= cost;
         }
       }
     }
 
     return { items: result, totalCost: budgetAmount - remaining, remaining };
-  }, [analyses, budgetAmount, budgetDays]);
+  }, [analyses, budgetAmount, budgetDays, pendingMap]);
 
-  const usedPct = budgetAmount > 0 ? Math.round((recommendations.totalCost / budgetAmount) * 100) : 0;
+  // ─── Periode Mode Recommendations (all items that need restock for N days) ───
+  const periodeRecommendations = useMemo(() => {
+    type PeriodeItem = { item: ProductAnalysis; qty: number; cost: number; reason: string; isPending: boolean; pendingQty: number };
+    const items: PeriodeItem[] = [];
+
+    const sorted = [...analyses]
+      .filter(a => a.velocity > 0)
+      .sort((a, b) => a.daysOfStock - b.daysOfStock);
+
+    for (const item of sorted) {
+      const needed = Math.ceil(item.velocity * periodeDays);
+      const deficit = needed - item.currentStock;
+      if (deficit <= 0) continue;
+
+      const pq = pendingMap.get(item.kode.toUpperCase()) || 0;
+      const adjusted = Math.max(0, deficit - pq);
+
+      const isBW = isBlackWhiteCode(item.kode);
+      const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
+      const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
+      const qty = adjusted > 0 ? Math.max(minOrder, Math.ceil(adjusted / batch) * batch) : 0;
+      const cost = qty * item.unitPrice;
+      const reason = item.daysOfStock <= RULES.CRITICAL_DAYS ? "🔴 Kritis" :
+        item.daysOfStock <= RULES.WARNING_DAYS ? "🟠 Segera habis" :
+        item.isStockOut ? "🚨 Stok kosong" : "📦 Perlu restock";
+
+      items.push({ item, qty, cost, reason, isPending: pq > 0, pendingQty: pq });
+    }
+
+    const totalCost = items.filter(i => i.qty > 0).reduce((s, i) => s + i.cost, 0);
+    return { items, totalCost };
+  }, [analyses, periodeDays, pendingMap]);
+
+  const usedPct = mode === "budget" && budgetAmount > 0 ? Math.round((budgetRecommendations.totalCost / budgetAmount) * 100) : 0;
+
+  const pendingCount = pendingItems.length;
+  const pendingSkipped = mode === "periode"
+    ? periodeRecommendations.items.filter(i => i.isPending && i.qty === 0).length
+    : 0;
 
   return (
     <div className="space-y-4">
-      {/* Input Section */}
+      {/* Mode Selector */}
       <Card className="border-0 shadow-sm overflow-hidden">
-        <CardContent className="p-5 space-y-5">
+        <CardContent className="p-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10">
               <Calculator className="h-5 w-5 text-primary" />
             </div>
             <div>
               <h3 className="font-semibold text-base">Budget Restock Planner</h3>
-              <p className="text-xs text-muted-foreground">Masukkan budget & target hari, dapatkan saran restock optimal</p>
+              <p className="text-xs text-muted-foreground">Pilih mode sesuai kebutuhan</p>
             </div>
           </div>
 
-          {/* Budget Input */}
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Budget Tersedia</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">Rp</span>
-              <Input
-                type="text"
-                inputMode="numeric"
-                value={formatRupiahInput(budgetAmount)}
-                onChange={(e) => setBudgetAmount(parseRupiahInput(e.target.value))}
-                className="pl-10 text-lg font-bold h-12"
-                placeholder="2,000,000"
-              />
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              {BUDGET_PRESETS.map(p => (
-                <button
-                  key={p}
-                  onClick={() => setBudgetAmount(p)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                    budgetAmount === p
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted/60 text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  {(p / 1000000).toFixed(p >= 1000000 && p % 1000000 === 0 ? 0 : 1)}jt
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Days Input */}
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Target Stok (Hari)</label>
-            <div className="flex gap-2 flex-wrap">
-              {DAYS_PRESETS.map(d => (
-                <button
-                  key={d}
-                  onClick={() => setBudgetDays(d)}
-                  className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                    budgetDays === d
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "bg-muted/60 text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  {d} hari
-                </button>
-              ))}
-              <Input
-                type="text"
-                inputMode="numeric"
-                value={!DAYS_PRESETS.includes(budgetDays) && budgetDays > 0 ? budgetDays : ""}
-                onChange={(e) => {
-                  const raw = e.target.value.replace(/[^0-9]/g, "");
-                  if (raw === "") {
-                    setBudgetDays(DAYS_PRESETS[0]);
-                  } else {
-                    setBudgetDays(Math.min(Number(raw), 90));
-                  }
-                }}
-                placeholder="Lainnya"
-                className={`w-20 h-10 text-sm font-semibold text-center rounded-xl ${
-                  !DAYS_PRESETS.includes(budgetDays) && budgetDays > 0
-                    ? "border-primary ring-1 ring-primary"
-                    : ""
-                }`}
-              />
-            </div>
+          {/* Mode tabs */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setMode("budget")}
+              className={`p-3 rounded-xl text-left transition-all duration-150 active:scale-[0.97] ${
+                mode === "budget"
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "bg-muted/60 text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <Wallet className="h-4 w-4 mb-1" />
+              <p className="text-xs font-bold">Budget Mode</p>
+              <p className="text-[10px] opacity-80">Punya budget X, mau beli apa?</p>
+            </button>
+            <button
+              onClick={() => setMode("periode")}
+              className={`p-3 rounded-xl text-left transition-all duration-150 active:scale-[0.97] ${
+                mode === "periode"
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "bg-muted/60 text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <Clock className="h-4 w-4 mb-1" />
+              <p className="text-xs font-bold">Periode Mode</p>
+              <p className="text-[10px] opacity-80">Mau stok cukup N hari</p>
+            </button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Result Summary */}
-      <div className="grid grid-cols-3 gap-2.5">
-        <div className="rounded-xl bg-primary/8 border border-primary/15 p-3">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Terpakai</p>
-          <p className="text-base md:text-lg font-extrabold text-primary tabular-nums truncate">{formatRp(recommendations.totalCost)}</p>
-          <p className="text-[10px] text-muted-foreground">{usedPct}% budget</p>
-        </div>
-        <div className="rounded-xl bg-success/8 border border-success/15 p-3">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Sisa Budget</p>
-          <p className="text-base md:text-lg font-extrabold text-success tabular-nums truncate">{formatRp(recommendations.remaining)}</p>
-          <p className="text-[10px] text-muted-foreground">{100 - usedPct}%</p>
-        </div>
-        <div className="rounded-xl bg-muted/60 border border-border p-3">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Produk</p>
-          <p className="text-base md:text-lg font-extrabold">{recommendations.items.length}</p>
-          <p className="text-[10px] text-muted-foreground">item restock</p>
-        </div>
-      </div>
-
-      {/* Budget usage bar */}
-      <div className="h-2 rounded-full bg-muted overflow-hidden">
-        <div
-          className="h-full rounded-full bg-primary transition-all duration-500"
-          style={{ width: `${Math.min(usedPct, 100)}%` }}
-        />
-      </div>
-
-      {/* Recommendation List */}
-      {recommendations.items.length > 0 ? (
-        <Card className="border-0 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 bg-muted/30 border-b flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold">Saran Restock — {budgetDays} Hari</span>
-            <span className="text-xs text-muted-foreground ml-auto">Urut prioritas tertinggi</span>
-          </div>
-          {isMobile ? (
-            <div className="p-3 space-y-2.5">
-              {recommendations.items.map((r, i) => (
-                <div
-                  key={r.item.productId}
-                  className={`rounded-xl border p-3.5 space-y-2 transition-all active:scale-[0.99] ${
-                    r.item.currentStock === 0 ? "border-l-[3px] border-l-destructive border-border/60" :
-                    r.item.daysOfStock <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60 border-border/60" :
-                    "border-border/60"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-xs text-muted-foreground font-mono">#{i + 1}</span>
-                      <span className="font-bold text-sm">{r.item.kode}</span>
-                      {r.item.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
-                    </div>
-                    <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
-                      {r.qty}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-[11px]">
-                    <div>
-                      <span className="text-muted-foreground">Stok</span>
-                      <p className={`font-semibold tabular-nums ${r.item.currentStock === 0 ? "text-destructive" : ""}`}>{r.item.currentStock}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Sisa</span>
-                      <p className={`font-bold tabular-nums ${
-                        r.item.daysOfStock <= 2 ? "text-destructive" : r.item.daysOfStock <= 4 ? "text-warning" : ""
-                      }`}>{formatDaysLeft(r.item.daysOfStock)}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Biaya</span>
-                      <p className="font-semibold tabular-nums">{formatRp(r.cost)}</p>
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">{r.reason}</p>
+      {/* ═══ BUDGET MODE ═══ */}
+      {mode === "budget" && (
+        <>
+          <Card className="border-0 shadow-sm overflow-hidden">
+            <CardContent className="p-4 space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Budget Tersedia</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">Rp</span>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    value={formatRupiahInput(budgetAmount)}
+                    onChange={(e) => setBudgetAmount(parseRupiahInput(e.target.value))}
+                    className="pl-10 text-lg font-bold h-12"
+                    placeholder="2,000,000"
+                  />
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/20 hover:bg-muted/20">
-                    <TableHead className="w-8 text-[10px] font-semibold uppercase tracking-wider">#</TableHead>
-                    <TableHead className="text-[10px] font-semibold uppercase tracking-wider">Kode</TableHead>
-                    <TableHead className="text-[10px] font-semibold uppercase tracking-wider">Alasan</TableHead>
-                    <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider">Stok</TableHead>
-                    <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider">Sisa Hari</TableHead>
-                    <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider">Beli</TableHead>
-                    <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider">Biaya</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recommendations.items.map((r, i) => (
-                    <TableRow
-                      key={r.item.productId}
-                      className={`${r.item.currentStock === 0 ? "border-l-[3px] border-l-destructive" : ""}`}
+                <div className="flex gap-2 flex-wrap">
+                  {BUDGET_PRESETS.map(p => (
+                    <button
+                      key={p}
+                      onClick={() => setBudgetAmount(p)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                        budgetAmount === p
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                      }`}
                     >
-                      <TableCell className="text-xs font-mono text-muted-foreground">{i + 1}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <span className="font-semibold text-sm">{r.item.kode}</span>
-                          {r.item.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-xs">{r.reason}</span>
-                      </TableCell>
-                      <TableCell className={`text-right font-mono text-sm ${r.item.currentStock === 0 ? "text-destructive font-bold" : ""}`}>
-                        {r.item.currentStock}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <span className={`font-mono font-bold text-sm ${
-                          r.item.daysOfStock <= 2 ? "text-destructive" :
-                          r.item.daysOfStock <= 4 ? "text-warning" :
-                          "text-foreground"
-                        }`}>
-                          {formatDaysLeft(r.item.daysOfStock)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <span className="inline-flex items-center justify-center min-w-[44px] px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
-                          {r.qty}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                        {formatRp(r.cost)}
-                      </TableCell>
-                    </TableRow>
+                      {(p / 1000000).toFixed(p >= 1000000 && p % 1000000 === 0 ? 0 : 1)}jt
+                    </button>
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Target Stok (Hari)</label>
+                <div className="flex gap-2 flex-wrap">
+                  {DAYS_PRESETS.map(d => (
+                    <button
+                      key={d}
+                      onClick={() => setBudgetDays(d)}
+                      className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                        budgetDays === d
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {d} hari
+                    </button>
+                  ))}
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    value={!DAYS_PRESETS.includes(budgetDays) && budgetDays > 0 ? budgetDays : ""}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/[^0-9]/g, "");
+                      setBudgetDays(raw === "" ? DAYS_PRESETS[0] : Math.min(Number(raw), 90));
+                    }}
+                    placeholder="Lainnya"
+                    className={`w-20 h-10 text-sm font-semibold text-center rounded-xl ${
+                      !DAYS_PRESETS.includes(budgetDays) && budgetDays > 0 ? "border-primary ring-1 ring-primary" : ""
+                    }`}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Budget Summary */}
+          <div className="grid grid-cols-3 gap-2.5">
+            <div className="rounded-xl bg-primary/8 border border-primary/15 p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Terpakai</p>
+              <p className="text-base font-extrabold text-primary tabular-nums truncate">{formatRp(budgetRecommendations.totalCost)}</p>
+              <p className="text-[10px] text-muted-foreground">{usedPct}% budget</p>
+            </div>
+            <div className="rounded-xl bg-success/8 border border-success/15 p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Sisa</p>
+              <p className="text-base font-extrabold text-success tabular-nums truncate">{formatRp(budgetRecommendations.remaining)}</p>
+              <p className="text-[10px] text-muted-foreground">{100 - usedPct}%</p>
+            </div>
+            <div className="rounded-xl bg-muted/60 border border-border p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Produk</p>
+              <p className="text-base font-extrabold">{budgetRecommendations.items.length}</p>
+              <p className="text-[10px] text-muted-foreground">item restock</p>
+            </div>
+          </div>
+
+          <div className="h-2 rounded-full bg-muted overflow-hidden">
+            <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${Math.min(usedPct, 100)}%` }} />
+          </div>
+
+          {/* Pending info */}
+          {pendingCount > 0 && (
+            <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 px-3 py-2.5">
+              <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {pendingCount} item pending otomatis dikurangi dari kebutuhan
+              </p>
             </div>
           )}
-        </Card>
-      ) : (
-        <Card className="border-0 shadow-sm">
-          <CardContent className="py-16 text-center">
-            <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
-            <p className="text-sm text-muted-foreground">
-              {budgetAmount === 0 ? "Masukkan budget untuk melihat saran" : "Tidak ada produk yang perlu restock untuk periode ini"}
-            </p>
-          </CardContent>
-        </Card>
+
+          {/* Budget recommendation list */}
+          {budgetRecommendations.items.length > 0 ? (
+            <Card className="border-0 shadow-sm overflow-hidden">
+              <div className="px-4 py-3 bg-muted/30 border-b flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold">Saran Restock — {budgetDays} Hari</span>
+                <span className="text-xs text-muted-foreground ml-auto">Urut prioritas</span>
+              </div>
+              <div className="p-3 space-y-2">
+                {budgetRecommendations.items.map((r, i) => (
+                  <div
+                    key={r.item.productId}
+                    className={`rounded-xl border p-3 space-y-1.5 ${
+                      r.item.currentStock === 0 ? "border-l-[3px] border-l-destructive border-border/60" :
+                      r.item.daysOfStock <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60 border-border/60" :
+                      "border-border/60"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-xs text-muted-foreground font-mono">#{i + 1}</span>
+                        <span className="font-bold text-sm">{r.item.kode}</span>
+                        {r.item.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
+                        {r.pendingQty && (
+                          <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                            <Clock className="h-2.5 w-2.5" /> {r.pendingQty} pending
+                          </span>
+                        )}
+                      </div>
+                      <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
+                        {r.qty}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-[11px]">
+                      <div>
+                        <span className="text-muted-foreground">Stok</span>
+                        <p className={`font-semibold tabular-nums ${r.item.currentStock === 0 ? "text-destructive" : ""}`}>{r.item.currentStock}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Sisa</span>
+                        <p className={`font-bold tabular-nums ${
+                          r.item.daysOfStock <= 2 ? "text-destructive" : r.item.daysOfStock <= 4 ? "text-warning" : ""
+                        }`}>{formatDaysLeft(r.item.daysOfStock)}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Biaya</span>
+                        <p className="font-semibold tabular-nums">{formatRp(r.cost)}</p>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">{r.reason}</p>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          ) : (
+            <Card className="border-0 shadow-sm">
+              <CardContent className="py-16 text-center">
+                <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                <p className="text-sm text-muted-foreground">
+                  {budgetAmount === 0 ? "Masukkan budget untuk melihat saran" : "Tidak ada produk yang perlu restock"}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+
+      {/* ═══ PERIODE MODE ═══ */}
+      {mode === "periode" && (
+        <>
+          <Card className="border-0 shadow-sm overflow-hidden">
+            <CardContent className="p-4 space-y-4">
+              <div className="space-y-2">
+                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                  <Clock className="h-3 w-3" />
+                  Periode Restock
+                </label>
+                <div className="flex gap-1.5">
+                  {PERIODE_PRESETS.map(d => (
+                    <button
+                      key={d}
+                      onClick={() => { setPeriodePreset(d); setCustomPeriode(""); }}
+                      className={`flex-1 h-10 rounded-xl text-sm font-bold transition-all duration-150 active:scale-95 ${
+                        periodePreset === d
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {d} Hari
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setPeriodePreset(0)}
+                    className={`flex-1 h-10 rounded-xl text-sm font-bold transition-all duration-150 active:scale-95 ${
+                      periodePreset === 0
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    Lainnya
+                  </button>
+                </div>
+                {periodePreset === 0 && (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={90}
+                      value={customPeriode}
+                      onChange={e => setCustomPeriode(e.target.value)}
+                      placeholder="2"
+                      className="w-20 h-10 text-sm font-bold text-center rounded-xl"
+                    />
+                    <span className="text-xs text-muted-foreground">hari</span>
+                  </div>
+                )}
+                <p className="text-[10px] text-muted-foreground">
+                  Semua produk yang butuh restock untuk <strong>{periodeDays} hari</strong> ke depan
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Periode Summary */}
+          <div className="grid grid-cols-3 gap-2.5">
+            <div className="rounded-xl bg-primary/8 border border-primary/15 p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Biaya</p>
+              <p className="text-base font-extrabold text-primary tabular-nums truncate">{formatRp(periodeRecommendations.totalCost)}</p>
+            </div>
+            <div className="rounded-xl bg-muted/60 border border-border p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Produk</p>
+              <p className="text-base font-extrabold">{periodeRecommendations.items.filter(i => i.qty > 0).length}</p>
+              <p className="text-[10px] text-muted-foreground">perlu restock</p>
+            </div>
+            <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Pending</p>
+              <p className="text-base font-extrabold text-emerald-700 dark:text-emerald-400">{pendingSkipped}</p>
+              <p className="text-[10px] text-muted-foreground">di-skip</p>
+            </div>
+          </div>
+
+          {/* Pending info */}
+          {pendingLoading && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
+              <Activity className="h-3 w-3 animate-spin" />
+              Mengecek pesanan pending...
+            </div>
+          )}
+
+          {pendingSkipped > 0 && (
+            <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 px-3 py-2.5">
+              <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {pendingSkipped} item di-skip karena sudah dipesan (pending)
+              </p>
+            </div>
+          )}
+
+          {/* Periode item list */}
+          {periodeRecommendations.items.filter(i => i.qty > 0).length > 0 ? (
+            <Card className="border-0 shadow-sm overflow-hidden">
+              <div className="px-4 py-3 bg-muted/30 border-b flex items-center gap-2">
+                <ShoppingCart className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold">Restock {periodeDays} Hari</span>
+                <span className="text-xs text-muted-foreground ml-auto">Urut DOS terendah</span>
+              </div>
+              <div className="p-3 space-y-2 max-h-[400px] overflow-y-auto">
+                {periodeRecommendations.items.filter(i => i.qty > 0).map((r, i) => (
+                  <div
+                    key={r.item.productId}
+                    className={`rounded-xl border p-3 space-y-1.5 ${
+                      r.item.currentStock === 0 ? "border-l-[3px] border-l-destructive border-border/60" :
+                      r.item.daysOfStock <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60 border-border/60" :
+                      "border-border/60"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-xs text-muted-foreground font-mono">#{i + 1}</span>
+                        <span className="font-bold text-sm">{r.item.kode}</span>
+                        {r.item.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
+                        {r.isPending && r.pendingQty > 0 && (
+                          <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                            <Clock className="h-2.5 w-2.5" /> {r.pendingQty} pending
+                          </span>
+                        )}
+                      </div>
+                      <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
+                        +{r.qty}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-[11px]">
+                      <div>
+                        <span className="text-muted-foreground">Stok</span>
+                        <p className={`font-semibold tabular-nums ${r.item.currentStock === 0 ? "text-destructive" : ""}`}>{r.item.currentStock}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Sisa</span>
+                        <p className={`font-bold tabular-nums ${
+                          r.item.daysOfStock <= 2 ? "text-destructive" : r.item.daysOfStock <= 4 ? "text-warning" : ""
+                        }`}>{formatDaysLeft(r.item.daysOfStock)}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Biaya</span>
+                        <p className="font-semibold tabular-nums">{formatRp(r.cost)}</p>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">{r.reason}</p>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          ) : (
+            <Card className="border-0 shadow-sm">
+              <CardContent className="py-16 text-center">
+                <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-success opacity-50" />
+                <p className="text-sm text-muted-foreground">
+                  Semua stok cukup untuk {periodeDays} hari ke depan 🎉
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
     </div>
   );
 }
+
 
 // ─── Mobile Card Helper for simple ranked lists ───────────
 function MobileRankedCard({ rank, kode, isBestSeller, children, borderClass, index = 0 }: {

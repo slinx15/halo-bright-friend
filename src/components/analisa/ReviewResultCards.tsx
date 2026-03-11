@@ -6,8 +6,6 @@ import {
   TrendingUp, ShoppingCart, PackageX, Wallet, CirclePlus, CircleAlert, ChevronDown
 } from "lucide-react";
 import { formatRupiah, formatNumber } from "@/lib/formatters";
-import BudgetPlanner, { type BudgetItem } from "./BudgetPlanner";
-import BudgetChat from "./BudgetChat";
 
 type Status = "kritis" | "segera" | "perhatian" | "aman";
 type Verdict = "kurang" | "pas" | "lebih" | "ok" | "unknown";
