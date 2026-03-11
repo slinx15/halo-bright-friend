@@ -309,9 +309,6 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
   const totalTambah = needMoreCards.reduce((sum, c) => sum + getShortfall(c), 0);
   const hasBudgetExtra = (budget_tambah || 0) > 0 || (budget_missed || 0) > 0;
 
-  // Budget planner state
-  const [selectedBudgetItems, setSelectedBudgetItems] = useState<BudgetItem[]>([]);
-  const budgetAmount = 0; // Will be managed inside BudgetPlanner
 
   // Section open states
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
