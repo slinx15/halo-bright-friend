@@ -212,6 +212,7 @@ function BudgetPlanner({
   // ─── Periode: manual order input ───
   const [periodeSection, setPeriodeSection] = useState<"saran" | "manual">("saran");
   const [manualRows, setManualRows] = useState<{ kode: string; qty: number }[]>([]);
+  const [inputForDay, setInputForDay] = useState<number | null>(null); // null = current day
   const [submittingOrder, setSubmittingOrder] = useState(false);
   const [reviewingOrder, setReviewingOrder] = useState(false);
   const [orderReviewResult, setOrderReviewResult] = useState<ReviewResult | null>(null);
@@ -301,9 +302,22 @@ function BudgetPlanner({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { toast.error("Belum login"); return; }
 
+      // Calculate ordered_at based on selected input day
+      const effectiveDay = inputForDay ?? (planInfo?.dayNumber || 1);
+      let orderedAt: string | undefined;
+      if (activePlan && inputForDay && inputForDay !== planInfo?.dayNumber) {
+        const planStart = new Date(activePlan.start_date + "T00:00:00");
+        const targetDate = new Date(planStart);
+        targetDate.setDate(targetDate.getDate() + inputForDay - 1);
+        orderedAt = format(targetDate, "yyyy-MM-dd'T'HH:mm:ss");
+      }
+
+      const insertData: any = { user_id: user.id, notes: `Periode Hari ${effectiveDay}` };
+      if (orderedAt) insertData.ordered_at = orderedAt;
+
       const { data: restock, error: e1 } = await supabase
         .from("pending_restock")
-        .insert({ user_id: user.id, notes: `Periode Hari ${planInfo?.dayNumber || 1}` })
+        .insert(insertData)
         .select().single();
       if (e1 || !restock) throw e1;
 
@@ -317,9 +331,10 @@ function BudgetPlanner({
         .insert(itemsToInsert);
       if (e2) throw e2;
 
-      toast.success(`${validRows.length} item berhasil disimpan sebagai pesanan`);
+      toast.success(`${validRows.length} item berhasil disimpan sebagai pesanan Hari ${effectiveDay}`);
       setManualRows([]);
       setOrderReviewResult(null);
+      setInputForDay(null);
       refetchPending();
     } catch (err: any) {
       console.error(err);
@@ -1031,7 +1046,7 @@ function BudgetPlanner({
                           return (
                             <button
                               key={d}
-                              onClick={() => { if (!done) setPeriodeSection("manual"); }}
+                              onClick={() => { if (!done) { setInputForDay(d); setPeriodeSection("manual"); } }}
                               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all ${
                                 done ? "bg-success/5" : "bg-muted/40 hover:bg-primary/5"
                               }`}
@@ -1245,9 +1260,21 @@ function BudgetPlanner({
                       <div className="px-4 py-3 bg-muted/30 border-b flex items-center gap-2">
                         <Edit3 className="h-4 w-4 text-primary" />
                         <span className="text-sm font-semibold">Input Pesanan</span>
-                        <Badge className="ml-auto bg-primary/10 text-primary text-[10px]">
-                          Hari {planInfo?.dayNumber || 1}
-                        </Badge>
+                        {planInfo && planInfo.dayNumber > 1 ? (
+                          <select
+                            value={inputForDay ?? planInfo.dayNumber}
+                            onChange={e => setInputForDay(Number(e.target.value))}
+                            className="ml-auto h-7 rounded-md border border-input bg-background px-2 text-[11px] font-bold text-primary focus:outline-none focus:ring-2 focus:ring-ring"
+                          >
+                            {Array.from({ length: planInfo.dayNumber }, (_, i) => i + 1).map(d => (
+                              <option key={d} value={d}>Hari {d}{d === planInfo.dayNumber ? " (hari ini)" : ""}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <Badge className="ml-auto bg-primary/10 text-primary text-[10px]">
+                            Hari {planInfo?.dayNumber || 1}
+                          </Badge>
+                        )}
                       </div>
 
                       <div className="p-4 space-y-3">
