@@ -377,6 +377,7 @@ function BudgetPlanner({
         total_budget: totalBudget,
         total_days: planDays,
         start_date: format(planStartDate, 'yyyy-MM-dd'),
+        coverage_days: coverageDays,
       }).select().single();
       if (!error && data) setActivePlan(data);
     } catch (e) { console.error(e); }
