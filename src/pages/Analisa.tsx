@@ -258,7 +258,7 @@ function BudgetPlanner({
       }
       return [...prev, { kode, qty }];
     });
-    setPeriodeSection("manual");
+    // Stay on Saran AI view, don't switch to manual
     toast.success(`${kode} ditambahkan ke pesanan`);
   }, []);
 
