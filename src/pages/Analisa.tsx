@@ -988,98 +988,107 @@ function BudgetPlanner({
                     </button>
                   </div>
 
-                  {/* ═══ SARAN AI SECTION (read-only) ═══ */}
+                  {/* ═══ SARAN AI SECTION — per-day breakdown ═══ */}
                   {periodeSection === "saran" && (
-                    <Card className="border-0 shadow-sm overflow-hidden">
-                      <div className="px-4 py-3 bg-muted/30 border-b flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-semibold">
-                          Saran Restock Hari {planInfo?.dayNumber || 1}
-                        </span>
-                        <Badge className="ml-auto bg-primary/10 text-primary text-[10px]">
-                          Budget: {formatRp(planInfo?.todayBudget || 0)}
-                        </Badge>
-                      </div>
-
-                      {periodeRecommendations.items.length > 0 ? (
-                        <>
-                          {/* Pakai semua button */}
-                          <div className="px-4 py-2 bg-muted/10 border-b flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">
-                              {periodeRecommendations.items.length} item disarankan
-                            </span>
-                            <button
-                              onClick={() => addAllFromSaran(periodeRecommendations.items.map(r => ({ kode: r.item.kode, qty: r.qty })))}
-                              className="text-xs font-semibold text-primary flex items-center gap-1 hover:underline"
-                            >
-                              <Plus className="h-3 w-3" /> Pakai Semua
-                            </button>
-                          </div>
-
-                          <div className="p-3 space-y-2 max-h-[400px] overflow-y-auto">
-                            {periodeRecommendations.items.map((r, i) => (
-                              <div
-                                key={r.item.productId}
-                                className={`rounded-xl border p-3 space-y-1.5 ${
-                                  r.item.currentStock === 0 ? "border-l-[3px] border-l-destructive border-border/60" :
-                                  r.item.daysOfStock <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60 border-border/60" :
-                                  "border-border/60"
-                                }`}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <span className="text-xs text-muted-foreground font-mono">#{i + 1}</span>
-                                    <span className="font-bold text-sm">{r.item.kode}</span>
-                                    {r.item.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
-                                    {r.pendingQty && (
-                                      <span className="text-[9px] font-semibold text-success flex items-center gap-0.5">
-                                        <Clock className="h-2.5 w-2.5" /> {r.pendingQty} pending
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
-                                      {r.qty}
-                                    </span>
-                                    <button
-                                      onClick={() => addFromSaran(r.item.kode, r.qty)}
-                                      className="p-1.5 rounded-lg bg-muted/60 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
-                                      title="Tambahkan ke pesanan"
-                                    >
-                                      <Plus className="h-3.5 w-3.5" />
-                                    </button>
-                                  </div>
-                                </div>
-                                <div className="grid grid-cols-3 gap-2 text-[11px]">
-                                  <div>
-                                    <span className="text-muted-foreground">Stok</span>
-                                    <p className={`font-semibold tabular-nums ${r.item.currentStock === 0 ? "text-destructive" : ""}`}>{r.item.currentStock}</p>
-                                  </div>
-                                  <div>
-                                    <span className="text-muted-foreground">Sisa</span>
-                                    <p className={`font-bold tabular-nums ${
-                                      r.item.daysOfStock <= 2 ? "text-destructive" : r.item.daysOfStock <= 4 ? "text-warning" : ""
-                                    }`}>{formatDaysLeft(r.item.daysOfStock)}</p>
-                                  </div>
-                                  <div>
-                                    <span className="text-muted-foreground">Biaya</span>
-                                    <p className="font-semibold tabular-nums">{formatRp(r.cost)}</p>
-                                  </div>
-                                </div>
-                                <p className="text-[10px] text-muted-foreground">{r.reason}</p>
+                    <div className="space-y-3">
+                      {periodePerDay.length > 0 ? (
+                        periodePerDay.map((dayPlan, dayIdx) => (
+                          <Card key={dayPlan.day} className="border-0 shadow-sm overflow-hidden">
+                            <div className={`px-4 py-3 border-b flex items-center gap-2 ${
+                              dayIdx === 0 ? "bg-primary/10" : "bg-muted/30"
+                            }`}>
+                              <div className={`flex items-center justify-center h-6 w-6 rounded-full text-[10px] font-bold ${
+                                dayIdx === 0 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                              }`}>
+                                {dayPlan.day}
                               </div>
-                            ))}
-                          </div>
-                        </>
+                              <span className="text-sm font-semibold">
+                                Hari {dayPlan.day}
+                                {dayIdx === 0 && <span className="text-primary ml-1">(Hari ini)</span>}
+                              </span>
+                              <div className="ml-auto flex items-center gap-2">
+                                <Badge className="bg-primary/10 text-primary text-[10px]">
+                                  {formatRp(dayPlan.totalCost)}
+                                </Badge>
+                                {dayPlan.items.length > 0 && (
+                                  <button
+                                    onClick={() => addAllFromSaran(dayPlan.items.map(r => ({ kode: r.item.kode, qty: r.qty })))}
+                                    className="text-[10px] font-semibold text-primary flex items-center gap-0.5 hover:underline"
+                                  >
+                                    <Plus className="h-3 w-3" /> Pakai
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            {dayPlan.items.length > 0 ? (
+                              <div className="p-3 space-y-2">
+                                {dayPlan.items.map((r, i) => (
+                                  <div
+                                    key={r.item.productId}
+                                    className={`rounded-xl border p-3 space-y-1.5 ${
+                                      r.item.currentStock === 0 ? "border-l-[3px] border-l-destructive border-border/60" :
+                                      r.item.daysOfStock <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60 border-border/60" :
+                                      "border-border/60"
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <span className="text-xs text-muted-foreground font-mono">#{i + 1}</span>
+                                        <span className="font-bold text-sm">{r.item.kode}</span>
+                                        {r.item.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
+                                          {r.qty}
+                                        </span>
+                                        <button
+                                          onClick={() => addFromSaran(r.item.kode, r.qty)}
+                                          className="p-1.5 rounded-lg bg-muted/60 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
+                                          title="Tambahkan ke pesanan"
+                                        >
+                                          <Plus className="h-3.5 w-3.5" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 text-[11px]">
+                                      <div>
+                                        <span className="text-muted-foreground">Stok</span>
+                                        <p className={`font-semibold tabular-nums ${r.item.currentStock === 0 ? "text-destructive" : ""}`}>{r.item.currentStock}</p>
+                                      </div>
+                                      <div>
+                                        <span className="text-muted-foreground">Sisa</span>
+                                        <p className={`font-bold tabular-nums ${
+                                          r.item.daysOfStock <= 2 ? "text-destructive" : r.item.daysOfStock <= 4 ? "text-warning" : ""
+                                        }`}>{formatDaysLeft(r.item.daysOfStock)}</p>
+                                      </div>
+                                      <div>
+                                        <span className="text-muted-foreground">Biaya</span>
+                                        <p className="font-semibold tabular-nums">{formatRp(r.cost)}</p>
+                                      </div>
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground">{r.reason}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <CardContent className="py-4 text-center">
+                                <p className="text-xs text-muted-foreground">Tidak ada item urgent di hari ini</p>
+                              </CardContent>
+                            )}
+                          </Card>
+                        ))
                       ) : (
-                        <CardContent className="py-8 text-center">
-                          <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-success opacity-50" />
-                          <p className="text-sm text-muted-foreground">
-                            Semua stok tercukupi 🎉
-                          </p>
-                        </CardContent>
+                        <Card className="border-0 shadow-sm">
+                          <CardContent className="py-8 text-center">
+                            <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-success opacity-50" />
+                            <p className="text-sm text-muted-foreground">
+                              Semua stok tercukupi 🎉
+                            </p>
+                          </CardContent>
+                        </Card>
                       )}
-                    </Card>
+                    </div>
                   )}
 
                   {/* ═══ INPUT PESANAN MANUAL SECTION ═══ */}
