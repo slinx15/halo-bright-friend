@@ -202,18 +202,12 @@ function BudgetPlanner({
   const [planDays, setPlanDays] = useState(3);
   const [creatingPlan, setCreatingPlan] = useState(false);
 
-  // ─── Periode: item selection + manual add ───
-  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set()); // productId set
-  const [manualQtyOverrides, setManualQtyOverrides] = useState<Map<string, number>>(new Map());
+  // ─── Periode: manual order input ───
+  const [periodeSection, setPeriodeSection] = useState<"saran" | "manual">("saran");
   const [manualRows, setManualRows] = useState<{ kode: string; qty: number }[]>([]);
   const [submittingOrder, setSubmittingOrder] = useState(false);
-
-  // Auto-select all recommendations when they change
-  const prevRecRef = useMemo(() => {
-    const ids = new Set<string>();
-    // Will be populated after periodeRecommendations is computed
-    return ids;
-  }, []);
+  const [reviewingOrder, setReviewingOrder] = useState(false);
+  const [orderReviewResult, setOrderReviewResult] = useState<ReviewResult | null>(null);
 
   // Build kode→analysis map for manual rows
   const kodeAnalysisMap = useMemo(() => {
@@ -221,24 +215,6 @@ function BudgetPlanner({
     analyses.forEach(a => m.set(a.kode.toUpperCase(), a));
     return m;
   }, [analyses]);
-
-  const toggleItem = useCallback((productId: string) => {
-    setSelectedItems(prev => {
-      const next = new Set(prev);
-      if (next.has(productId)) next.delete(productId);
-      else next.add(productId);
-      return next;
-    });
-  }, []);
-
-  const setQtyOverride = useCallback((productId: string, qty: number) => {
-    setManualQtyOverrides(prev => {
-      const next = new Map(prev);
-      if (qty <= 0) next.delete(productId);
-      else next.set(productId, qty);
-      return next;
-    });
-  }, []);
 
   const addManualRow = useCallback(() => {
     setManualRows(prev => [...prev, { kode: "", qty: 0 }]);
@@ -261,23 +237,57 @@ function BudgetPlanner({
     setManualRows(prev => prev.filter((_, i) => i !== idx));
   }, []);
 
-  async function submitPeriodeOrder(recItems: { item: typeof analyses[0]; qty: number; cost: number }[]) {
-    // Gather selected rec items
-    const selectedRecs = recItems.filter(r => selectedItems.has(r.item.productId)).map(r => ({
-      kode: r.item.kode,
-      qty: manualQtyOverrides.get(r.item.productId) || r.qty,
-      product_id: r.item.productId,
-    }));
-    // Gather valid manual rows
-    const validManual = manualRows
-      .filter(r => r.kode && r.qty > 0 && kodeAnalysisMap.has(r.kode.toUpperCase()))
-      .map(r => {
-        const a = kodeAnalysisMap.get(r.kode.toUpperCase())!;
-        return { kode: a.kode, qty: r.qty, product_id: a.productId };
-      });
+  // Add item from AI saran to manual rows
+  const addFromSaran = useCallback((kode: string, qty: number) => {
+    setManualRows(prev => {
+      const existing = prev.findIndex(r => r.kode.toUpperCase() === kode.toUpperCase());
+      if (existing >= 0) {
+        const updated = [...prev];
+        updated[existing] = { ...updated[existing], qty };
+        return updated;
+      }
+      return [...prev, { kode, qty }];
+    });
+    setPeriodeSection("manual");
+    toast.success(`${kode} ditambahkan ke pesanan`);
+  }, []);
 
-    const allItems = [...selectedRecs, ...validManual];
-    if (allItems.length === 0) { toast.error("Pilih minimal 1 item"); return; }
+  // Add ALL saran items to manual
+  const addAllFromSaran = useCallback((items: { kode: string; qty: number }[]) => {
+    setManualRows(prev => {
+      const existingKodes = new Set(prev.map(r => r.kode.toUpperCase()));
+      const newItems = items.filter(i => !existingKodes.has(i.kode.toUpperCase()));
+      return [...prev, ...newItems];
+    });
+    setPeriodeSection("manual");
+    toast.success(`${items.length} item ditambahkan ke pesanan`);
+  }, []);
+
+  // Review order via AI
+  async function reviewManualOrder() {
+    const validRows = manualRows.filter(r => r.kode && r.qty > 0 && kodeAnalysisMap.has(r.kode.toUpperCase()));
+    if (validRows.length === 0) { toast.error("Masukkan minimal 1 item valid"); return; }
+
+    setReviewingOrder(true);
+    try {
+      const items = validRows.map(r => ({ kode: r.kode, qty: r.qty }));
+      const { data, error } = await supabase.functions.invoke("review-restock", {
+        body: { items, mode: "normal", already_sent: false },
+      });
+      if (error) throw error;
+      setOrderReviewResult(data as ReviewResult);
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Gagal review: " + (err?.message || "Error"));
+    } finally {
+      setReviewingOrder(false);
+    }
+  }
+
+  // Submit order to pending_restock
+  async function submitManualOrder() {
+    const validRows = manualRows.filter(r => r.kode && r.qty > 0 && kodeAnalysisMap.has(r.kode.toUpperCase()));
+    if (validRows.length === 0) { toast.error("Masukkan minimal 1 item valid"); return; }
 
     setSubmittingOrder(true);
     try {
@@ -290,15 +300,19 @@ function BudgetPlanner({
         .select().single();
       if (e1 || !restock) throw e1;
 
+      const itemsToInsert = validRows.map(r => {
+        const a = kodeAnalysisMap.get(r.kode.toUpperCase())!;
+        return { restock_id: restock.id, kode: a.kode, qty: r.qty, product_id: a.productId };
+      });
+
       const { error: e2 } = await supabase
         .from("pending_restock_items")
-        .insert(allItems.map(i => ({ restock_id: restock.id, kode: i.kode, qty: i.qty, product_id: i.product_id })));
+        .insert(itemsToInsert);
       if (e2) throw e2;
 
-      toast.success(`${allItems.length} item berhasil disimpan sebagai pesanan`);
-      setSelectedItems(new Set());
+      toast.success(`${validRows.length} item berhasil disimpan sebagai pesanan`);
       setManualRows([]);
-      setManualQtyOverrides(new Map());
+      setOrderReviewResult(null);
     } catch (err: any) {
       console.error(err);
       toast.error("Gagal menyimpan: " + (err?.message || "Error"));
