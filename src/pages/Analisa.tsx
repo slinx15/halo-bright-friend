@@ -1032,7 +1032,7 @@ function BudgetPlanner({
                           return (
                             <button
                               key={d}
-                              onClick={() => { if (!done) setPeriodeSection("manual"); }}
+                              onClick={() => { if (!done) { setInputForDay(d); setPeriodeSection("manual"); } }}
                               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all ${
                                 done ? "bg-success/5" : "bg-muted/40 hover:bg-primary/5"
                               }`}
