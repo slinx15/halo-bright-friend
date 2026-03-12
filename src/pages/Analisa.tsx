@@ -1473,7 +1473,7 @@ const Analisa = () => {
               { value: "profit", icon: DollarSign, label: "Profit", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
               { value: "toko", icon: Store, label: "Toko", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
               { value: "pelanggan", icon: Users, label: "Pelanggan", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
-              { value: "hari", icon: Calendar, label: "Hari", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
+              { value: "hari", icon: CalendarIcon, label: "Hari", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
               { value: "tren", icon: Palette, label: "Tren", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
               { value: "dead", icon: Skull, label: "Dead", badge: null, activeColor: "data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground" },
               { value: "budget", icon: Calculator, label: "Budget", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
