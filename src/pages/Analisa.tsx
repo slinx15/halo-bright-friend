@@ -14,7 +14,7 @@ import {
   ShoppingCart, Clock, Trophy, Activity,
   AlertCircle, PackageX, Wallet, Flame, TrendingUp, TrendingDown,
   Calculator, CheckCircle2, ChevronLeft, ChevronRight, Sparkles, Palette, Calendar, Users,
-  Plus, Trash2, Send, Loader2, Eye, Edit3
+  Plus, Trash2, Send, Loader2, Eye, Edit3, Lock
 } from "lucide-react";
 import { useSalesAnalysis } from "@/hooks/useSalesAnalysis";
 import { analyzeAllProducts, getStatusCounts, RULES, type DosStatus, type ProductAnalysis, isBlackWhiteCode } from "@/lib/stockAnalyticsEngine";
@@ -457,104 +457,93 @@ function BudgetPlanner({
     return { items: result, totalCost: budgetAmount - remaining, remaining };
   }, [analyses, budgetAmount, budgetDays, pendingMap]);
 
-  // ─── Periode Mode: Per-day recommendations (simulate each day) ───
+  // ─── Periode Mode: Progressive — only compute TODAY with real-time stock ───
   type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string; pendingQty?: number; simStock?: number; simDaysLeft?: number };
-  type DayPlan = { day: number; items: RecItem[]; totalCost: number; dailyBudget: number; remaining: number };
+  type DayPlan = { day: number; items: RecItem[]; totalCost: number; dailyBudget: number; remaining: number; locked?: boolean };
 
   const periodePerDay = useMemo((): DayPlan[] => {
     if (!planInfo || !activePlan || planInfo.isExpired) return [];
 
-    const totalRemainingDays = planInfo.remainingDays;
     const dailyBudget = planInfo.todayBudget;
-
-    // Simulate stock: start from current stock, subtract pending
-    const simulatedStock = new Map<string, number>();
-    analyses.forEach(a => {
-      let stock = a.currentStock;
-      const pq = pendingMap.get(a.kode.toUpperCase()) || 0;
-      stock += pq; // pending will arrive, count as available
-      simulatedStock.set(a.kode.toUpperCase(), stock);
-    });
+    const totalDays = activePlan.total_days;
+    const currentDay = planInfo.dayNumber || 1;
 
     const days: DayPlan[] = [];
 
-    for (let d = 0; d < totalRemainingDays; d++) {
-      const dayNumber = (planInfo.dayNumber || 1) + d;
+    // === TODAY: compute with real-time stock ===
+    const sorted = [...analyses]
+      .filter(a => a.velocity > 0)
+      .sort((a, b) => b.combinedScore - a.combinedScore);
 
-      // After each day, stock decreases by velocity
-      if (d > 0) {
-        analyses.forEach(a => {
-          const current = simulatedStock.get(a.kode.toUpperCase()) || 0;
-          simulatedStock.set(a.kode.toUpperCase(), Math.max(0, current - a.velocity));
-        });
-      }
+    type Candidate = { item: ProductAnalysis; idealQty: number; idealCost: number; reason: string; batch: number; minOrder: number };
+    const candidates: Candidate[] = [];
 
-      // Find items that need restocking for this day
-      const sorted = [...analyses]
-        .filter(a => a.velocity > 0)
-        .sort((a, b) => b.combinedScore - a.combinedScore);
+    for (const item of sorted) {
+      const stock = item.currentStock;
+      const pq = pendingMap.get(item.kode.toUpperCase()) || 0;
+      const effectiveStock = stock + pq;
+      const daysLeft = item.velocity > 0 ? effectiveStock / item.velocity : 999;
 
-      type Candidate = { item: ProductAnalysis; idealQty: number; idealCost: number; reason: string; batch: number; minOrder: number; simStock: number };
-      const candidates: Candidate[] = [];
+      if (daysLeft > totalDays) continue;
 
-      for (const item of sorted) {
-        const simStock = simulatedStock.get(item.kode.toUpperCase()) || 0;
-        const daysLeft = item.velocity > 0 ? simStock / item.velocity : 999;
+      const neededForPeriod = Math.ceil(item.velocity * Math.min(3, planInfo.remainingDays));
+      const deficit = Math.max(0, neededForPeriod - effectiveStock);
+      if (deficit <= 0) continue;
 
-        // Only recommend if stock will run out within the plan period
-        if (daysLeft > activePlan.total_days) continue;
+      const isBW = isBlackWhiteCode(item.kode);
+      const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
+      const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
+      const qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
+      const cost = qty * item.unitPrice;
+      const reason = daysLeft <= RULES.CRITICAL_DAYS ? "🔴 Kritis" :
+        daysLeft <= RULES.WARNING_DAYS ? "🟠 Segera habis" :
+        effectiveStock === 0 ? "🚨 Stok kosong" : "📦 Perlu restock";
+      candidates.push({ item, idealQty: qty, idealCost: cost, reason, batch, minOrder });
+    }
 
-        // Need at least enough for a few days
-        const neededForPeriod = Math.ceil(item.velocity * Math.min(3, totalRemainingDays - d));
-        const deficit = Math.max(0, neededForPeriod - simStock);
-        if (deficit <= 0) continue;
+    const dayItems: RecItem[] = [];
+    let remaining = dailyBudget;
 
-        const isBW = isBlackWhiteCode(item.kode);
-        const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
-        const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
-        const qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
-        const cost = qty * item.unitPrice;
-        const reason = daysLeft <= RULES.CRITICAL_DAYS ? "🔴 Kritis" :
-          daysLeft <= RULES.WARNING_DAYS ? "🟠 Segera habis" :
-          simStock === 0 ? "🚨 Stok kosong" : "📦 Perlu restock";
-        candidates.push({ item, idealQty: qty, idealCost: cost, reason, batch, minOrder, simStock });
-      }
+    const tier1 = candidates.filter(c => {
+      const es = c.item.currentStock + (pendingMap.get(c.item.kode.toUpperCase()) || 0);
+      return es === 0 || (c.item.velocity > 0 && es / c.item.velocity <= RULES.CRITICAL_DAYS);
+    });
+    const tier2 = candidates.filter(c => !tier1.includes(c) && c.item.isBestSeller);
+    const tier3 = candidates.filter(c => !tier1.includes(c) && !tier2.includes(c));
 
-      // Allocate within daily budget
-      const dayItems: RecItem[] = [];
-      let remaining = dailyBudget;
-
-      // Tiered allocation
-      const tier1 = candidates.filter(c => c.simStock === 0 || (c.simStock / c.item.velocity) <= RULES.CRITICAL_DAYS);
-      const tier2 = candidates.filter(c => !tier1.includes(c) && c.item.isBestSeller);
-      const tier3 = candidates.filter(c => !tier1.includes(c) && !tier2.includes(c));
-
-      for (const tier of [tier1, tier2, tier3]) {
-        for (const c of tier) {
-          if (remaining <= 0) break;
-          let qty = c.idealQty;
-          let cost = c.idealCost;
-          if (cost > remaining) {
-            qty = Math.floor(Math.floor(remaining / c.item.unitPrice) / c.batch) * c.batch;
-            if (qty < c.minOrder) continue;
-            cost = qty * c.item.unitPrice;
-          }
-          const simDaysLeft = c.item.velocity > 0 ? c.simStock / c.item.velocity : 999;
-          dayItems.push({ item: c.item, qty, cost, reason: c.reason, simStock: c.simStock, simDaysLeft });
-          remaining -= cost;
-
-          // Update simulated stock (item purchased)
-          const current = simulatedStock.get(c.item.kode.toUpperCase()) || 0;
-          simulatedStock.set(c.item.kode.toUpperCase(), current + qty);
+    for (const tier of [tier1, tier2, tier3]) {
+      for (const c of tier) {
+        if (remaining <= 0) break;
+        let qty = c.idealQty;
+        let cost = c.idealCost;
+        if (cost > remaining) {
+          qty = Math.floor(Math.floor(remaining / c.item.unitPrice) / c.batch) * c.batch;
+          if (qty < c.minOrder) continue;
+          cost = qty * c.item.unitPrice;
         }
+        const pq = pendingMap.get(c.item.kode.toUpperCase()) || 0;
+        dayItems.push({ item: c.item, qty, cost, reason: c.reason, pendingQty: pq || undefined });
+        remaining -= cost;
       }
+    }
 
+    days.push({
+      day: currentDay,
+      items: dayItems,
+      totalCost: dailyBudget - remaining,
+      dailyBudget,
+      remaining,
+    });
+
+    // === FUTURE DAYS: locked placeholders ===
+    for (let d = 1; d < planInfo.remainingDays; d++) {
       days.push({
-        day: dayNumber,
-        items: dayItems,
-        totalCost: dailyBudget - remaining,
+        day: currentDay + d,
+        items: [],
+        totalCost: 0,
         dailyBudget,
-        remaining,
+        remaining: dailyBudget,
+        locked: true,
       });
     }
 
@@ -993,19 +982,46 @@ function BudgetPlanner({
                   {periodeSection === "saran" && (
                     <div className="space-y-3">
                       {periodePerDay.length > 0 ? (
-                        periodePerDay.map((dayPlan, dayIdx) => (
+                        periodePerDay.map((dayPlan, dayIdx) => {
+                          if (dayPlan.locked) {
+                            return (
+                              <Card key={dayPlan.day} className="border-0 shadow-sm overflow-hidden opacity-50">
+                                <div className="px-4 py-3 bg-muted/30 flex items-center gap-2">
+                                  <div className="flex items-center justify-center h-6 w-6 rounded-full bg-muted text-muted-foreground text-[10px] font-bold">
+                                    {dayPlan.day}
+                                  </div>
+                                  <span className="text-sm font-semibold text-muted-foreground">
+                                    Hari {dayPlan.day}
+                                  </span>
+                                  <div className="ml-auto flex items-center gap-1.5">
+                                    <Lock className="h-3 w-3 text-muted-foreground" />
+                                    <span className="text-[10px] text-muted-foreground">
+                                      Terbuka otomatis
+                                    </span>
+                                  </div>
+                                </div>
+                                <CardContent className="py-4 text-center">
+                                  <Lock className="h-5 w-5 mx-auto mb-1.5 text-muted-foreground/50" />
+                                  <p className="text-xs text-muted-foreground">
+                                    Saran akan dihitung dari <strong>stok real-time</strong> saat hari itu tiba
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground/70 mt-1">
+                                    Lebih akurat karena memperhitungkan penjualan aktual
+                                  </p>
+                                </CardContent>
+                              </Card>
+                            );
+                          }
+
+                          return (
                           <Card key={dayPlan.day} className="border-0 shadow-sm overflow-hidden">
-                            <div className={`px-4 py-3 border-b flex items-center gap-2 ${
-                              dayIdx === 0 ? "bg-primary/10" : "bg-muted/30"
-                            }`}>
-                              <div className={`flex items-center justify-center h-6 w-6 rounded-full text-[10px] font-bold ${
-                                dayIdx === 0 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                              }`}>
+                            <div className={`px-4 py-3 border-b flex items-center gap-2 bg-primary/10`}>
+                              <div className="flex items-center justify-center h-6 w-6 rounded-full text-[10px] font-bold bg-primary text-primary-foreground">
                                 {dayPlan.day}
                               </div>
                               <span className="text-sm font-semibold">
                                 Hari {dayPlan.day}
-                                {dayIdx === 0 && <span className="text-primary ml-1">(Hari ini)</span>}
+                                <span className="text-primary ml-1">(Hari ini)</span>
                               </span>
                               <div className="ml-auto flex items-center gap-2">
                                 <Badge className="bg-primary/10 text-primary text-[10px]">
@@ -1028,8 +1044,8 @@ function BudgetPlanner({
                                   <div
                                     key={r.item.productId}
                                     className={`rounded-xl border p-3 space-y-1.5 ${
-                                      (r.simStock ?? r.item.currentStock) === 0 ? "border-l-[3px] border-l-destructive border-border/60" :
-                                      (r.simDaysLeft ?? r.item.daysOfStock) <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60 border-border/60" :
+                                      r.item.currentStock === 0 ? "border-l-[3px] border-l-destructive border-border/60" :
+                                      r.item.daysOfStock <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60 border-border/60" :
                                       "border-border/60"
                                     }`}
                                   >
@@ -1054,16 +1070,16 @@ function BudgetPlanner({
                                     </div>
                                     <div className="grid grid-cols-3 gap-2 text-[11px]">
                                       <div>
-                                        <span className="text-muted-foreground">Stok {dayIdx > 0 ? "(est)" : ""}</span>
-                                        <p className={`font-semibold tabular-nums ${(r.simStock ?? r.item.currentStock) === 0 ? "text-destructive" : ""}`}>
-                                          {Math.round(r.simStock ?? r.item.currentStock)}
+                                        <span className="text-muted-foreground">Stok</span>
+                                        <p className={`font-semibold tabular-nums ${r.item.currentStock === 0 ? "text-destructive" : ""}`}>
+                                          {r.item.currentStock}
                                         </p>
                                       </div>
                                       <div>
                                         <span className="text-muted-foreground">Sisa</span>
                                         <p className={`font-bold tabular-nums ${
-                                          (r.simDaysLeft ?? r.item.daysOfStock) <= 2 ? "text-destructive" : (r.simDaysLeft ?? r.item.daysOfStock) <= 4 ? "text-warning" : ""
-                                        }`}>{formatDaysLeft(r.simDaysLeft ?? r.item.daysOfStock)}</p>
+                                          r.item.daysOfStock <= 2 ? "text-destructive" : r.item.daysOfStock <= 4 ? "text-warning" : ""
+                                        }`}>{formatDaysLeft(r.item.daysOfStock)}</p>
                                       </div>
                                       <div>
                                         <span className="text-muted-foreground">Biaya</span>
@@ -1076,11 +1092,12 @@ function BudgetPlanner({
                               </div>
                             ) : (
                               <CardContent className="py-4 text-center">
-                                <p className="text-xs text-muted-foreground">Tidak ada item urgent di hari ini</p>
+                                <p className="text-xs text-muted-foreground">Tidak ada item urgent di hari ini 🎉</p>
                               </CardContent>
                             )}
                           </Card>
-                        ))
+                          );
+                        })
                       ) : (
                         <Card className="border-0 shadow-sm">
                           <CardContent className="py-8 text-center">
