@@ -5,8 +5,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   AlertTriangle, Package, Skull,
   BarChart3, DollarSign, Store, ArrowDown,
