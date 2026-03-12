@@ -151,6 +151,8 @@ interface RestockPlan {
 function usePendingRestock() {
   const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [version, setVersion] = useState(0);
+  const refetch = useCallback(() => setVersion(v => v + 1), []);
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
@@ -170,8 +172,8 @@ function usePendingRestock() {
       finally { setLoading(false); }
     }
     fetchData();
-  }, []);
-  return { pendingItems, loading };
+  }, [version]);
+  return { pendingItems, loading, refetch };
 }
 
 function BudgetPlanner({
