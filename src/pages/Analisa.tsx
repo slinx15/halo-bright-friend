@@ -146,6 +146,7 @@ interface RestockPlan {
   total_days: number;
   start_date: string;
   status: string;
+  coverage_days: number;
 }
 
 function usePendingRestock() {
