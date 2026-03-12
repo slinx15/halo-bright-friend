@@ -14,10 +14,11 @@ import {
   ShoppingCart, Clock, Trophy, Activity,
   AlertCircle, PackageX, Wallet, Flame, TrendingUp, TrendingDown,
   Calculator, CheckCircle2, ChevronLeft, ChevronRight, Sparkles, Palette, Calendar, Users,
-  Plus, Trash2, Send, Loader2
+  Plus, Trash2, Send, Loader2, Eye, Edit3
 } from "lucide-react";
 import { useSalesAnalysis } from "@/hooks/useSalesAnalysis";
 import { analyzeAllProducts, getStatusCounts, RULES, type DosStatus, type ProductAnalysis, isBlackWhiteCode } from "@/lib/stockAnalyticsEngine";
+import { ReviewResultCards, type ReviewResult } from "@/components/analisa/ReviewResultCards";
 import {
   calcTrend, calcDeadStock, calcLowStock,
   calcPredictions, calcProfit, calcTokoAnalysis, calcBudgetEstimates, calcStats,
