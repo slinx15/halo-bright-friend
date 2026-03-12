@@ -302,9 +302,22 @@ function BudgetPlanner({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { toast.error("Belum login"); return; }
 
+      // Calculate ordered_at based on selected input day
+      const effectiveDay = inputForDay ?? (planInfo?.dayNumber || 1);
+      let orderedAt: string | undefined;
+      if (activePlan && inputForDay && inputForDay !== planInfo?.dayNumber) {
+        const planStart = new Date(activePlan.start_date + "T00:00:00");
+        const targetDate = new Date(planStart);
+        targetDate.setDate(targetDate.getDate() + inputForDay - 1);
+        orderedAt = format(targetDate, "yyyy-MM-dd'T'HH:mm:ss");
+      }
+
+      const insertData: any = { user_id: user.id, notes: `Periode Hari ${effectiveDay}` };
+      if (orderedAt) insertData.ordered_at = orderedAt;
+
       const { data: restock, error: e1 } = await supabase
         .from("pending_restock")
-        .insert({ user_id: user.id, notes: `Periode Hari ${planInfo?.dayNumber || 1}` })
+        .insert(insertData)
         .select().single();
       if (e1 || !restock) throw e1;
 
