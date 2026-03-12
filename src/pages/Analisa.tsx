@@ -914,65 +914,79 @@ function BudgetPlanner({
                 </CardContent>
               </Card>
 
-              {/* Today's recommendations — selectable */}
+              {/* Section Toggle: Saran AI vs Input Pesanan */}
               {!planInfo?.isExpired && (
                 <>
-                  <Card className="border-0 shadow-sm overflow-hidden">
-                    <div className="px-4 py-3 bg-muted/30 border-b flex items-center gap-2">
-                      <ShoppingCart className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-semibold">
-                        Pesanan Hari {planInfo?.dayNumber || 1}
-                      </span>
-                      <Badge className="ml-auto bg-primary/10 text-primary text-[10px]">
-                        Budget: {formatRp(planInfo?.todayBudget || 0)}
-                      </Badge>
-                    </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setPeriodeSection("saran")}
+                      className={`p-3 rounded-xl text-left transition-all duration-150 active:scale-[0.97] ${
+                        periodeSection === "saran"
+                          ? "bg-primary text-primary-foreground shadow-md"
+                          : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      <Eye className="h-4 w-4 mb-1" />
+                      <p className="text-xs font-bold">Saran AI</p>
+                      <p className="text-[10px] opacity-80">Lihat rekomendasi hari ini</p>
+                    </button>
+                    <button
+                      onClick={() => setPeriodeSection("manual")}
+                      className={`p-3 rounded-xl text-left transition-all duration-150 active:scale-[0.97] ${
+                        periodeSection === "manual"
+                          ? "bg-primary text-primary-foreground shadow-md"
+                          : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      <Edit3 className="h-4 w-4 mb-1" />
+                      <p className="text-xs font-bold">Input Pesanan</p>
+                      <p className="text-[10px] opacity-80">
+                        Masukkan & review pesanan
+                        {manualRows.length > 0 && ` (${manualRows.filter(r => r.kode && r.qty > 0).length})`}
+                      </p>
+                    </button>
+                  </div>
 
-                    {periodeRecommendations.items.length > 0 ? (
-                      <>
-                        {/* Select all toggle */}
-                        <div className="px-4 py-2 bg-muted/10 border-b flex items-center justify-between">
-                          <label className="flex items-center gap-2 text-xs cursor-pointer">
-                            <Checkbox
-                              checked={periodeRecommendations.items.every(r => selectedItems.has(r.item.productId))}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setSelectedItems(new Set(periodeRecommendations.items.map(r => r.item.productId)));
-                                } else {
-                                  setSelectedItems(new Set());
-                                }
-                              }}
-                            />
-                            <span className="font-medium">Pilih semua saran</span>
-                          </label>
-                          <span className="text-[10px] text-muted-foreground">
-                            {selectedItems.size} dipilih
-                          </span>
-                        </div>
+                  {/* ═══ SARAN AI SECTION (read-only) ═══ */}
+                  {periodeSection === "saran" && (
+                    <Card className="border-0 shadow-sm overflow-hidden">
+                      <div className="px-4 py-3 bg-muted/30 border-b flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-semibold">
+                          Saran Restock Hari {planInfo?.dayNumber || 1}
+                        </span>
+                        <Badge className="ml-auto bg-primary/10 text-primary text-[10px]">
+                          Budget: {formatRp(planInfo?.todayBudget || 0)}
+                        </Badge>
+                      </div>
 
-                        <div className="p-3 space-y-2 max-h-[400px] overflow-y-auto">
-                          {periodeRecommendations.items.map((r, i) => {
-                            const isSelected = selectedItems.has(r.item.productId);
-                            const overrideQty = manualQtyOverrides.get(r.item.productId);
-                            const displayQty = overrideQty || r.qty;
-                            const displayCost = displayQty * r.item.unitPrice;
+                      {periodeRecommendations.items.length > 0 ? (
+                        <>
+                          {/* Pakai semua button */}
+                          <div className="px-4 py-2 bg-muted/10 border-b flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">
+                              {periodeRecommendations.items.length} item disarankan
+                            </span>
+                            <button
+                              onClick={() => addAllFromSaran(periodeRecommendations.items.map(r => ({ kode: r.item.kode, qty: r.qty })))}
+                              className="text-xs font-semibold text-primary flex items-center gap-1 hover:underline"
+                            >
+                              <Plus className="h-3 w-3" /> Pakai Semua
+                            </button>
+                          </div>
 
-                            return (
+                          <div className="p-3 space-y-2 max-h-[400px] overflow-y-auto">
+                            {periodeRecommendations.items.map((r, i) => (
                               <div
                                 key={r.item.productId}
-                                className={`rounded-xl border p-3 space-y-1.5 transition-all cursor-pointer ${
-                                  isSelected
-                                    ? "border-primary/40 bg-primary/5 shadow-sm"
-                                    : "border-border/40 opacity-60"
-                                } ${
-                                  r.item.currentStock === 0 ? "border-l-[3px] border-l-destructive" :
-                                  r.item.daysOfStock <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60" : ""
+                                className={`rounded-xl border p-3 space-y-1.5 ${
+                                  r.item.currentStock === 0 ? "border-l-[3px] border-l-destructive border-border/60" :
+                                  r.item.daysOfStock <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60 border-border/60" :
+                                  "border-border/60"
                                 }`}
-                                onClick={() => toggleItem(r.item.productId)}
                               >
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2 min-w-0">
-                                    <Checkbox checked={isSelected} className="pointer-events-none" />
                                     <span className="text-xs text-muted-foreground font-mono">#{i + 1}</span>
                                     <span className="font-bold text-sm">{r.item.kode}</span>
                                     {r.item.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
@@ -982,17 +996,17 @@ function BudgetPlanner({
                                       </span>
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
-                                    <Input
-                                      type="text"
-                                      inputMode="numeric"
-                                      className="h-8 w-16 text-center text-sm font-bold rounded-lg"
-                                      value={overrideQty !== undefined ? overrideQty : r.qty}
-                                      onChange={e => {
-                                        const v = parseInt(e.target.value) || 0;
-                                        setQtyOverride(r.item.productId, v === r.qty ? 0 : v);
-                                      }}
-                                    />
+                                  <div className="flex items-center gap-2">
+                                    <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
+                                      {r.qty}
+                                    </span>
+                                    <button
+                                      onClick={() => addFromSaran(r.item.kode, r.qty)}
+                                      className="p-1.5 rounded-lg bg-muted/60 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
+                                      title="Tambahkan ke pesanan"
+                                    >
+                                      <Plus className="h-3.5 w-3.5" />
+                                    </button>
                                   </div>
                                 </div>
                                 <div className="grid grid-cols-3 gap-2 text-[11px]">
@@ -1008,104 +1022,152 @@ function BudgetPlanner({
                                   </div>
                                   <div>
                                     <span className="text-muted-foreground">Biaya</span>
-                                    <p className="font-semibold tabular-nums">{formatRp(displayCost)}</p>
+                                    <p className="font-semibold tabular-nums">{formatRp(r.cost)}</p>
                                   </div>
                                 </div>
                                 <p className="text-[10px] text-muted-foreground">{r.reason}</p>
                               </div>
-                            );
-                          })}
-                        </div>
-                      </>
-                    ) : (
-                      <CardContent className="py-8 text-center">
-                        <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-success opacity-50" />
-                        <p className="text-sm text-muted-foreground">
-                          Semua stok tercukupi dari saran analisa 🎉
-                        </p>
-                      </CardContent>
-                    )}
-
-                    {/* Manual add section */}
-                    <div className="px-4 py-3 border-t bg-muted/10 space-y-2">
-                      <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                        <Plus className="h-3 w-3" />
-                        Tambah item manual (di luar saran)
-                      </p>
-                      {manualRows.map((row, idx) => {
-                        const matched = kodeAnalysisMap.get(row.kode.toUpperCase());
-                        return (
-                          <div key={idx} className="flex items-center gap-2">
-                            <Input
-                              className="h-8 text-sm font-mono flex-1"
-                              value={row.kode}
-                              onChange={e => updateManualRow(idx, "kode", e.target.value)}
-                              placeholder="Kode produk..."
-                              list="periode-manual-codes"
-                            />
-                            {matched && <span className="text-[10px] text-muted-foreground truncate max-w-[60px]">{matched.kode}</span>}
-                            {!matched && row.kode && <span className="text-[10px] text-destructive">✗</span>}
-                            <Input
-                              type="text"
-                              inputMode="numeric"
-                              className="h-8 w-16 text-sm text-center"
-                              value={row.qty === 0 ? "" : row.qty}
-                              onChange={e => updateManualRow(idx, "qty", parseInt(e.target.value) || 0)}
-                              placeholder="Qty"
-                            />
-                            <button onClick={() => removeManualRow(idx)} className="text-destructive p-1">
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
+                            ))}
                           </div>
-                        );
-                      })}
-                      <button
-                        onClick={addManualRow}
-                        className="w-full h-9 rounded-lg border border-dashed border-border text-xs font-medium text-muted-foreground hover:bg-muted/40 transition-all flex items-center justify-center gap-1"
-                      >
-                        <Plus className="h-3.5 w-3.5" /> Tambah Baris
-                      </button>
-                    </div>
+                        </>
+                      ) : (
+                        <CardContent className="py-8 text-center">
+                          <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-success opacity-50" />
+                          <p className="text-sm text-muted-foreground">
+                            Semua stok tercukupi 🎉
+                          </p>
+                        </CardContent>
+                      )}
+                    </Card>
+                  )}
 
-                    <datalist id="periode-manual-codes">
-                      {analyses.map(a => <option key={a.productId} value={a.kode} />)}
-                    </datalist>
+                  {/* ═══ INPUT PESANAN MANUAL SECTION ═══ */}
+                  {periodeSection === "manual" && (
+                    <Card className="border-0 shadow-sm overflow-hidden">
+                      <div className="px-4 py-3 bg-muted/30 border-b flex items-center gap-2">
+                        <Edit3 className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-semibold">Input Pesanan</span>
+                        <Badge className="ml-auto bg-primary/10 text-primary text-[10px]">
+                          Hari {planInfo?.dayNumber || 1}
+                        </Badge>
+                      </div>
 
-                    {/* Summary + Submit */}
-                    {(() => {
-                      const selectedRecs = periodeRecommendations.items
-                        .filter(r => selectedItems.has(r.item.productId))
-                        .map(r => ({ qty: manualQtyOverrides.get(r.item.productId) || r.qty, cost: (manualQtyOverrides.get(r.item.productId) || r.qty) * r.item.unitPrice }));
-                      const validManual = manualRows.filter(r => r.kode && r.qty > 0 && kodeAnalysisMap.has(r.kode.toUpperCase()));
-                      const manualCost = validManual.reduce((s, r) => s + r.qty * (kodeAnalysisMap.get(r.kode.toUpperCase())?.unitPrice || 0), 0);
-                      const totalItems = selectedRecs.length + validManual.length;
-                      const totalCost = selectedRecs.reduce((s, r) => s + r.cost, 0) + manualCost;
-                      const totalQty = selectedRecs.reduce((s, r) => s + r.qty, 0) + validManual.reduce((s, r) => s + r.qty, 0);
+                      <div className="p-4 space-y-3">
+                        {/* Item rows */}
+                        {manualRows.map((row, idx) => {
+                          const matched = kodeAnalysisMap.get(row.kode.toUpperCase());
+                          const analysis = matched;
+                          return (
+                            <div key={idx} className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground font-mono w-5 shrink-0">{idx + 1}</span>
+                                <Input
+                                  className="h-9 text-sm font-mono flex-1"
+                                  value={row.kode}
+                                  onChange={e => updateManualRow(idx, "kode", e.target.value)}
+                                  placeholder="Kode produk..."
+                                  list="periode-manual-codes"
+                                />
+                                <Input
+                                  type="text"
+                                  inputMode="numeric"
+                                  className="h-9 w-20 text-sm text-center font-bold"
+                                  value={row.qty === 0 ? "" : row.qty}
+                                  onChange={e => updateManualRow(idx, "qty", parseInt(e.target.value) || 0)}
+                                  placeholder="Qty"
+                                />
+                                <button onClick={() => removeManualRow(idx)} className="text-destructive p-1.5 hover:bg-destructive/10 rounded-lg transition-all">
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                              {matched && (
+                                <div className="ml-7 flex items-center gap-2 text-[10px] text-muted-foreground">
+                                  <span className="truncate">{analysis?.kode}</span>
+                                  {analysis && <span>· Stok {analysis.currentStock} · {formatDaysLeft(analysis.daysOfStock)}</span>}
+                                  {analysis && row.qty > 0 && <span className="font-semibold text-foreground">= {formatRp(row.qty * analysis.unitPrice)}</span>}
+                                </div>
+                              )}
+                              {!matched && row.kode && (
+                                <p className="ml-7 text-[10px] text-destructive">✗ Kode tidak ditemukan</p>
+                              )}
+                            </div>
+                          );
+                        })}
 
-                      return (
-                        <div className="px-4 py-3 border-t space-y-2">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">{totalItems} item · {totalQty} pcs</span>
-                            <span className="font-bold text-primary">{formatRp(totalCost)}</span>
-                          </div>
-                          {planInfo && totalCost > planInfo.todayBudget && (
-                            <p className="text-[10px] text-warning flex items-center gap-1">
-                              <AlertTriangle className="h-3 w-3" />
-                              Melebihi budget hari ini ({formatRp(totalCost - planInfo.todayBudget)} lebih)
-                            </p>
-                          )}
+                        <button
+                          onClick={addManualRow}
+                          className="w-full h-10 rounded-xl border border-dashed border-border text-xs font-medium text-muted-foreground hover:bg-muted/40 transition-all flex items-center justify-center gap-1.5"
+                        >
+                          <Plus className="h-3.5 w-3.5" /> Tambah Baris
+                        </button>
+
+                        <datalist id="periode-manual-codes">
+                          {analyses.map(a => <option key={a.productId} value={a.kode} />)}
+                        </datalist>
+
+                        {/* Summary */}
+                        {(() => {
+                          const validRows = manualRows.filter(r => r.kode && r.qty > 0 && kodeAnalysisMap.has(r.kode.toUpperCase()));
+                          const totalCost = validRows.reduce((s, r) => s + r.qty * (kodeAnalysisMap.get(r.kode.toUpperCase())?.unitPrice || 0), 0);
+                          const totalQty = validRows.reduce((s, r) => s + r.qty, 0);
+
+                          return validRows.length > 0 ? (
+                            <div className="rounded-xl bg-muted/40 border border-border/50 p-3 space-y-2">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-muted-foreground">{validRows.length} item · {totalQty} pcs</span>
+                                <span className="font-bold text-primary text-sm">{formatRp(totalCost)}</span>
+                              </div>
+                              {planInfo && totalCost > planInfo.todayBudget && (
+                                <p className="text-[10px] text-warning flex items-center gap-1">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  Melebihi budget hari ini ({formatRp(totalCost - planInfo.todayBudget)} lebih)
+                                </p>
+                              )}
+                            </div>
+                          ) : null;
+                        })()}
+
+                        {/* Action buttons */}
+                        <div className="flex gap-2">
                           <button
-                            onClick={() => submitPeriodeOrder(periodeRecommendations.items)}
-                            disabled={submittingOrder || totalItems === 0}
-                            className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-md hover:opacity-90 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                            onClick={reviewManualOrder}
+                            disabled={reviewingOrder || manualRows.filter(r => r.kode && r.qty > 0).length === 0}
+                            className="flex-1 h-11 rounded-xl bg-muted text-foreground font-bold text-sm hover:bg-muted/80 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                          >
+                            {reviewingOrder ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                            {reviewingOrder ? "Menganalisa..." : "Review AI"}
+                          </button>
+                          <button
+                            onClick={submitManualOrder}
+                            disabled={submittingOrder || manualRows.filter(r => r.kode && r.qty > 0).length === 0}
+                            className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-md hover:opacity-90 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
                           >
                             {submittingOrder ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                            {submittingOrder ? "Menyimpan..." : `Pesan ${totalItems} Item`}
+                            {submittingOrder ? "Menyimpan..." : "Simpan Pesanan"}
                           </button>
                         </div>
-                      );
-                    })()}
-                  </Card>
+                      </div>
+                    </Card>
+                  )}
+
+                  {/* AI Review Result */}
+                  {orderReviewResult && periodeSection === "manual" && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between px-1">
+                        <p className="text-sm font-bold flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-primary" />
+                          Hasil Review AI
+                        </p>
+                        <button
+                          onClick={() => setOrderReviewResult(null)}
+                          className="text-[10px] text-muted-foreground hover:text-foreground"
+                        >
+                          Tutup
+                        </button>
+                      </div>
+                      <ReviewResultCards result={orderReviewResult} alreadySent={false} />
+                    </div>
+                  )}
                 </>
               )}
 
