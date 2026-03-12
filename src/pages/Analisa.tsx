@@ -878,6 +878,26 @@ function BudgetPlanner({
                   </div>
                 </div>
 
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Stok untuk Berapa Hari?</label>
+                  <p className="text-[10px] text-muted-foreground -mt-1">Dihitung dari hari terakhir cicilan. Stok harus cukup sampai bisa belanja lagi.</p>
+                  <div className="flex gap-2">
+                    {[2, 3, 4, 5].map(d => (
+                      <button
+                        key={d}
+                        onClick={() => setCoverageDays(d)}
+                        className={`flex-1 h-10 rounded-xl text-sm font-bold transition-all duration-150 active:scale-95 ${
+                          coverageDays === d
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {d} Hari
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Tanggal Mulai */}
                 <div className="space-y-2">
                   <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tanggal Mulai</label>
