@@ -458,7 +458,7 @@ function BudgetPlanner({
   }, [analyses, budgetAmount, budgetDays, pendingMap]);
 
   // ─── Periode Mode: Per-day recommendations (simulate each day) ───
-  type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string; pendingQty?: number };
+  type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string; pendingQty?: number; simStock?: number; simDaysLeft?: number };
   type DayPlan = { day: number; items: RecItem[]; totalCost: number; dailyBudget: number; remaining: number };
 
   const periodePerDay = useMemo((): DayPlan[] => {
@@ -539,7 +539,8 @@ function BudgetPlanner({
             if (qty < c.minOrder) continue;
             cost = qty * c.item.unitPrice;
           }
-          dayItems.push({ item: c.item, qty, cost, reason: c.reason });
+          const simDaysLeft = c.item.velocity > 0 ? c.simStock / c.item.velocity : 999;
+          dayItems.push({ item: c.item, qty, cost, reason: c.reason, simStock: c.simStock, simDaysLeft });
           remaining -= cost;
 
           // Update simulated stock (item purchased)
@@ -1027,8 +1028,8 @@ function BudgetPlanner({
                                   <div
                                     key={r.item.productId}
                                     className={`rounded-xl border p-3 space-y-1.5 ${
-                                      r.item.currentStock === 0 ? "border-l-[3px] border-l-destructive border-border/60" :
-                                      r.item.daysOfStock <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60 border-border/60" :
+                                      (r.simStock ?? r.item.currentStock) === 0 ? "border-l-[3px] border-l-destructive border-border/60" :
+                                      (r.simDaysLeft ?? r.item.daysOfStock) <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60 border-border/60" :
                                       "border-border/60"
                                     }`}
                                   >
@@ -1053,14 +1054,16 @@ function BudgetPlanner({
                                     </div>
                                     <div className="grid grid-cols-3 gap-2 text-[11px]">
                                       <div>
-                                        <span className="text-muted-foreground">Stok</span>
-                                        <p className={`font-semibold tabular-nums ${r.item.currentStock === 0 ? "text-destructive" : ""}`}>{r.item.currentStock}</p>
+                                        <span className="text-muted-foreground">Stok {dayIdx > 0 ? "(est)" : ""}</span>
+                                        <p className={`font-semibold tabular-nums ${(r.simStock ?? r.item.currentStock) === 0 ? "text-destructive" : ""}`}>
+                                          {Math.round(r.simStock ?? r.item.currentStock)}
+                                        </p>
                                       </div>
                                       <div>
                                         <span className="text-muted-foreground">Sisa</span>
                                         <p className={`font-bold tabular-nums ${
-                                          r.item.daysOfStock <= 2 ? "text-destructive" : r.item.daysOfStock <= 4 ? "text-warning" : ""
-                                        }`}>{formatDaysLeft(r.item.daysOfStock)}</p>
+                                          (r.simDaysLeft ?? r.item.daysOfStock) <= 2 ? "text-destructive" : (r.simDaysLeft ?? r.item.daysOfStock) <= 4 ? "text-warning" : ""
+                                        }`}>{formatDaysLeft(r.simDaysLeft ?? r.item.daysOfStock)}</p>
                                       </div>
                                       <div>
                                         <span className="text-muted-foreground">Biaya</span>
