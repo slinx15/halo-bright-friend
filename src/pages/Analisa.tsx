@@ -995,6 +995,81 @@ function BudgetPlanner({
                 </CardContent>
               </Card>
 
+              {/* Onboarding checklist for backdated plans */}
+              {planInfo && !planInfo.isExpired && planInfo.dayNumber > 1 && (() => {
+                // Count how many "Kirim & Simpan" batches exist during the plan
+                const planStart = new Date(activePlan.start_date + "T00:00:00");
+                const orderedDays = new Set<number>();
+                pendingItems.forEach(p => {
+                  if (!p.orderedAt) return;
+                  const d = new Date(p.orderedAt);
+                  d.setHours(0, 0, 0, 0);
+                  if (d >= planStart) {
+                    const dayNum = Math.floor((d.getTime() - planStart.getTime()) / 86400000) + 1;
+                    if (dayNum <= activePlan.total_days) orderedDays.add(dayNum);
+                  }
+                });
+
+                const pastDays = Array.from({ length: planInfo.dayNumber - 1 }, (_, i) => i + 1);
+                const allPastInputted = pastDays.every(d => orderedDays.has(d));
+
+                if (allPastInputted) return null;
+
+                return (
+                  <Card className="border-0 shadow-sm border-l-[3px] border-l-primary overflow-hidden">
+                    <CardContent className="p-4 space-y-2.5">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                        <p className="text-xs font-bold">Langkah untuk hasil akurat:</p>
+                      </div>
+                      <div className="space-y-1.5">
+                        {pastDays.map(d => {
+                          const done = orderedDays.has(d);
+                          return (
+                            <button
+                              key={d}
+                              onClick={() => { if (!done) setPeriodeSection("manual"); }}
+                              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all ${
+                                done ? "bg-success/5" : "bg-muted/40 hover:bg-primary/5"
+                              }`}
+                            >
+                              <div className={`h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                                done ? "bg-success text-success-foreground" : "border-2 border-muted-foreground/30"
+                              }`}>
+                                {done && <CheckCircle2 className="h-3.5 w-3.5" />}
+                              </div>
+                              <span className={`text-xs ${done ? "text-success font-medium line-through" : "font-semibold"}`}>
+                                Input pesanan Hari {d}
+                              </span>
+                              {!done && (
+                                <span className="ml-auto text-[10px] text-primary font-medium">
+                                  Klik untuk input →
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                        <div className={`flex items-center gap-2.5 px-3 py-2 rounded-lg ${
+                          allPastInputted ? "bg-primary/5" : "bg-muted/20 opacity-50"
+                        }`}>
+                          <div className={`h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                            allPastInputted ? "bg-primary text-primary-foreground" : "border-2 border-muted-foreground/20"
+                          }`}>
+                            {allPastInputted && <Sparkles className="h-3 w-3" />}
+                          </div>
+                          <span className="text-xs font-semibold">
+                            Lihat Saran AI hari ini (Hari {planInfo.dayNumber})
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        Input pesanan lama supaya AI tidak merekomendasikan barang yang sudah dipesan
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
               {/* Section Toggle: Saran AI vs Input Pesanan */}
               {!planInfo?.isExpired && (
                 <>
