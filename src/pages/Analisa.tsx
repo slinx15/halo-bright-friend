@@ -527,7 +527,7 @@ function BudgetPlanner({
       const isBW = isBlackWhiteCode(item.kode);
       const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
       const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
-      const qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
+      const qty = Math.max(minOrder, Math.ceil(todayShare / batch) * batch);
       const cost = qty * item.unitPrice;
       const reason = daysLeft <= RULES.CRITICAL_DAYS ? "🔴 Kritis" :
         daysLeft <= RULES.WARNING_DAYS ? "🟠 Segera habis" :
