@@ -12,7 +12,8 @@ import {
   BarChart3, DollarSign, Store, ArrowDown,
   ShoppingCart, Clock, Trophy, Activity,
   AlertCircle, PackageX, Wallet, Flame, TrendingUp, TrendingDown,
-  Calculator, CheckCircle2, ChevronLeft, ChevronRight, Sparkles, Palette, Calendar, Users
+  Calculator, CheckCircle2, ChevronLeft, ChevronRight, Sparkles, Palette, Calendar, Users,
+  ClipboardList
 } from "lucide-react";
 import { useSalesAnalysis } from "@/hooks/useSalesAnalysis";
 import { analyzeAllProducts, getStatusCounts, RULES, type DosStatus, type ProductAnalysis, isBlackWhiteCode } from "@/lib/stockAnalyticsEngine";
@@ -28,6 +29,7 @@ const ReviewAI = lazy(() => import("@/components/analisa/ReviewAI"));
 const ColorTrendAnalysis = lazy(() => import("@/components/analisa/ColorTrendAnalysis"));
 const HariRamaiAnalysis = lazy(() => import("@/components/analisa/HariRamaiAnalysis"));
 const RepeatCustomerAnalysis = lazy(() => import("@/components/analisa/RepeatCustomerAnalysis"));
+const ManualPesanan = lazy(() => import("@/components/analisa/ManualPesanan"));
 
 // ─── Formatting Helpers ───────────────────────────────────
 
@@ -1095,7 +1097,7 @@ const Analisa = () => {
       {/* MAIN CONTENT — TABS */}
       <Tabs defaultValue="restock" className="w-full">
         <div className="rounded-2xl bg-card/80 backdrop-blur-sm border border-border/40 shadow-md p-1.5">
-          <TabsList className="grid grid-cols-5 md:grid-cols-11 w-full bg-transparent h-auto p-0 gap-1">
+          <TabsList className="grid grid-cols-6 md:grid-cols-12 w-full bg-transparent h-auto p-0 gap-1">
             {[
               { value: "restock", icon: ShoppingCart, label: "Restock", badge: needsReorder > 0 ? needsReorder : null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
               { value: "penjualan", icon: Trophy, label: "Penjualan", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
@@ -1106,6 +1108,7 @@ const Analisa = () => {
               { value: "tren", icon: Palette, label: "Tren", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
               { value: "dead", icon: Skull, label: "Dead", badge: null, activeColor: "data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground" },
               { value: "budget", icon: Calculator, label: "Budget", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
+              { value: "pesanan", icon: ClipboardList, label: "Pesanan", badge: null, activeColor: "data-[state=active]:bg-warning data-[state=active]:text-warning-foreground" },
               { value: "ringkasan", icon: BarChart3, label: "Ringkasan", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
               { value: "review", icon: Sparkles, label: "Review", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
             ].map(tab => (
@@ -1862,6 +1865,13 @@ const Analisa = () => {
             setBudgetDays={setBudgetDays}
             isMobile={isMobile}
           />
+        </TabsContent>
+
+        {/* ══════════ PESANAN MANUAL ══════════ */}
+        <TabsContent value="pesanan" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
+          <Suspense fallback={<div className="flex items-center justify-center py-16"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+            <ManualPesanan analyses={analyses} isMobile={isMobile} />
+          </Suspense>
         </TabsContent>
 
         {/* ══════════ RINGKASAN ══════════ */}
