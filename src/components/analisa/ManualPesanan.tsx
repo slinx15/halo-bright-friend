@@ -46,9 +46,9 @@ export default function ManualPesanan({ analyses, isMobile }: ManualPesananProps
   }, [analyses]);
 
   // Fetch pending orders on mount
-  useState(() => {
+  useEffect(() => {
     fetchPending();
-  });
+  }, []);
 
   async function fetchPending() {
     setLoadingPending(true);
