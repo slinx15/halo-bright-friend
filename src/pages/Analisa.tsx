@@ -910,7 +910,7 @@ function BudgetPlanner({
 
                 <button
                   onClick={createPlan}
-                  disabled={creatingPlan || parseRupiahInput(planBudgetInput) <= 0}
+                  disabled={creatingPlan || parseRupiahInput(planBudgetInput) <= 0 || (Math.floor((new Date().setHours(0,0,0,0) - new Date(planStartDate).setHours(0,0,0,0)) / 86400000) + 1 > planDays)}
                   className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-md hover:opacity-90 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
                 >
                   {creatingPlan ? (
