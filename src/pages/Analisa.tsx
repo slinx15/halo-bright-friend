@@ -850,7 +850,35 @@ function BudgetPlanner({
                   </div>
                 </div>
 
-                {/* Preview */}
+                {/* Tanggal Mulai */}
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tanggal Mulai</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="w-full h-10 rounded-xl border border-input bg-background px-3 text-sm font-medium text-left flex items-center gap-2 hover:bg-muted/50 transition-colors">
+                        <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                        {format(planStartDate, "EEEE, d MMM yyyy", { locale: idLocale })}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={planStartDate}
+                        onSelect={(d) => d && setPlanStartDate(d)}
+                        disabled={(date) => date > new Date() || date < subDays(new Date(), 14)}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {planStartDate.toDateString() !== new Date().toDateString() && (
+                    <p className="text-[10px] text-primary flex items-center gap-1">
+                      <CalendarIcon className="h-3 w-3" />
+                      Rencana dimulai dari {format(planStartDate, "d MMM")} — hari ini = Hari {Math.floor((new Date().setHours(0,0,0,0) - new Date(planStartDate).setHours(0,0,0,0)) / 86400000) + 1}
+                    </p>
+                  )}
+                </div>
+
                 {parseRupiahInput(planBudgetInput) > 0 && planDays > 0 && (
                   <div className="rounded-xl bg-muted/40 border border-border/50 p-3 space-y-1">
                     <p className="text-xs text-muted-foreground">Preview rencana:</p>
