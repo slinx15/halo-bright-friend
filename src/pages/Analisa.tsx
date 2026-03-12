@@ -982,19 +982,46 @@ function BudgetPlanner({
                   {periodeSection === "saran" && (
                     <div className="space-y-3">
                       {periodePerDay.length > 0 ? (
-                        periodePerDay.map((dayPlan, dayIdx) => (
+                        periodePerDay.map((dayPlan, dayIdx) => {
+                          if (dayPlan.locked) {
+                            return (
+                              <Card key={dayPlan.day} className="border-0 shadow-sm overflow-hidden opacity-50">
+                                <div className="px-4 py-3 bg-muted/30 flex items-center gap-2">
+                                  <div className="flex items-center justify-center h-6 w-6 rounded-full bg-muted text-muted-foreground text-[10px] font-bold">
+                                    {dayPlan.day}
+                                  </div>
+                                  <span className="text-sm font-semibold text-muted-foreground">
+                                    Hari {dayPlan.day}
+                                  </span>
+                                  <div className="ml-auto flex items-center gap-1.5">
+                                    <Lock className="h-3 w-3 text-muted-foreground" />
+                                    <span className="text-[10px] text-muted-foreground">
+                                      Terbuka otomatis
+                                    </span>
+                                  </div>
+                                </div>
+                                <CardContent className="py-4 text-center">
+                                  <Lock className="h-5 w-5 mx-auto mb-1.5 text-muted-foreground/50" />
+                                  <p className="text-xs text-muted-foreground">
+                                    Saran akan dihitung dari <strong>stok real-time</strong> saat hari itu tiba
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground/70 mt-1">
+                                    Lebih akurat karena memperhitungkan penjualan aktual
+                                  </p>
+                                </CardContent>
+                              </Card>
+                            );
+                          }
+
+                          return (
                           <Card key={dayPlan.day} className="border-0 shadow-sm overflow-hidden">
-                            <div className={`px-4 py-3 border-b flex items-center gap-2 ${
-                              dayIdx === 0 ? "bg-primary/10" : "bg-muted/30"
-                            }`}>
-                              <div className={`flex items-center justify-center h-6 w-6 rounded-full text-[10px] font-bold ${
-                                dayIdx === 0 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                              }`}>
+                            <div className={`px-4 py-3 border-b flex items-center gap-2 bg-primary/10`}>
+                              <div className="flex items-center justify-center h-6 w-6 rounded-full text-[10px] font-bold bg-primary text-primary-foreground">
                                 {dayPlan.day}
                               </div>
                               <span className="text-sm font-semibold">
                                 Hari {dayPlan.day}
-                                {dayIdx === 0 && <span className="text-primary ml-1">(Hari ini)</span>}
+                                <span className="text-primary ml-1">(Hari ini)</span>
                               </span>
                               <div className="ml-auto flex items-center gap-2">
                                 <Badge className="bg-primary/10 text-primary text-[10px]">
@@ -1017,8 +1044,8 @@ function BudgetPlanner({
                                   <div
                                     key={r.item.productId}
                                     className={`rounded-xl border p-3 space-y-1.5 ${
-                                      (r.simStock ?? r.item.currentStock) === 0 ? "border-l-[3px] border-l-destructive border-border/60" :
-                                      (r.simDaysLeft ?? r.item.daysOfStock) <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60 border-border/60" :
+                                      r.item.currentStock === 0 ? "border-l-[3px] border-l-destructive border-border/60" :
+                                      r.item.daysOfStock <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60 border-border/60" :
                                       "border-border/60"
                                     }`}
                                   >
@@ -1043,16 +1070,16 @@ function BudgetPlanner({
                                     </div>
                                     <div className="grid grid-cols-3 gap-2 text-[11px]">
                                       <div>
-                                        <span className="text-muted-foreground">Stok {dayIdx > 0 ? "(est)" : ""}</span>
-                                        <p className={`font-semibold tabular-nums ${(r.simStock ?? r.item.currentStock) === 0 ? "text-destructive" : ""}`}>
-                                          {Math.round(r.simStock ?? r.item.currentStock)}
+                                        <span className="text-muted-foreground">Stok</span>
+                                        <p className={`font-semibold tabular-nums ${r.item.currentStock === 0 ? "text-destructive" : ""}`}>
+                                          {r.item.currentStock}
                                         </p>
                                       </div>
                                       <div>
                                         <span className="text-muted-foreground">Sisa</span>
                                         <p className={`font-bold tabular-nums ${
-                                          (r.simDaysLeft ?? r.item.daysOfStock) <= 2 ? "text-destructive" : (r.simDaysLeft ?? r.item.daysOfStock) <= 4 ? "text-warning" : ""
-                                        }`}>{formatDaysLeft(r.simDaysLeft ?? r.item.daysOfStock)}</p>
+                                          r.item.daysOfStock <= 2 ? "text-destructive" : r.item.daysOfStock <= 4 ? "text-warning" : ""
+                                        }`}>{formatDaysLeft(r.item.daysOfStock)}</p>
                                       </div>
                                       <div>
                                         <span className="text-muted-foreground">Biaya</span>
@@ -1065,11 +1092,12 @@ function BudgetPlanner({
                               </div>
                             ) : (
                               <CardContent className="py-4 text-center">
-                                <p className="text-xs text-muted-foreground">Tidak ada item urgent di hari ini</p>
+                                <p className="text-xs text-muted-foreground">Tidak ada item urgent di hari ini 🎉</p>
                               </CardContent>
                             )}
                           </Card>
-                        ))
+                          );
+                        })
                       ) : (
                         <Card className="border-0 shadow-sm">
                           <CardContent className="py-8 text-center">
