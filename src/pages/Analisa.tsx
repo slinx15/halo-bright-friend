@@ -30,7 +30,7 @@ const ReviewAI = lazy(() => import("@/components/analisa/ReviewAI"));
 const ColorTrendAnalysis = lazy(() => import("@/components/analisa/ColorTrendAnalysis"));
 const HariRamaiAnalysis = lazy(() => import("@/components/analisa/HariRamaiAnalysis"));
 const RepeatCustomerAnalysis = lazy(() => import("@/components/analisa/RepeatCustomerAnalysis"));
-const ManualPesanan = lazy(() => import("@/components/analisa/ManualPesanan"));
+
 
 // ─── Formatting Helpers ───────────────────────────────────
 
