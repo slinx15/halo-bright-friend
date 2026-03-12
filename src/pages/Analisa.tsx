@@ -13,7 +13,7 @@ import {
   ShoppingCart, Clock, Trophy, Activity,
   AlertCircle, PackageX, Wallet, Flame, TrendingUp, TrendingDown,
   Calculator, CheckCircle2, ChevronLeft, ChevronRight, Sparkles, Palette, Calendar, Users,
-  ClipboardList
+  ClipboardList, Plus, Trash2, Send, Loader2
 } from "lucide-react";
 import { useSalesAnalysis } from "@/hooks/useSalesAnalysis";
 import { analyzeAllProducts, getStatusCounts, RULES, type DosStatus, type ProductAnalysis, isBlackWhiteCode } from "@/lib/stockAnalyticsEngine";
