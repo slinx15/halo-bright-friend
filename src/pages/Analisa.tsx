@@ -1325,7 +1325,7 @@ const Analisa = () => {
               { value: "tren", icon: Palette, label: "Tren", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
               { value: "dead", icon: Skull, label: "Dead", badge: null, activeColor: "data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground" },
               { value: "budget", icon: Calculator, label: "Budget", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
-              { value: "pesanan", icon: ClipboardList, label: "Pesanan", badge: null, activeColor: "data-[state=active]:bg-warning data-[state=active]:text-warning-foreground" },
+              
               { value: "ringkasan", icon: BarChart3, label: "Ringkasan", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
               { value: "review", icon: Sparkles, label: "Review", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
             ].map(tab => (
