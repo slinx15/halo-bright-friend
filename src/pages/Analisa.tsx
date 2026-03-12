@@ -7,13 +7,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
+import { format, subDays } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import {
   AlertTriangle, Package, Skull,
   BarChart3, DollarSign, Store, ArrowDown,
   ShoppingCart, Clock, Trophy, Activity,
   AlertCircle, PackageX, Wallet, Flame, TrendingUp, TrendingDown,
-  Calculator, CheckCircle2, ChevronLeft, ChevronRight, Sparkles, Palette, Calendar, Users,
+  Calculator, CheckCircle2, ChevronLeft, ChevronRight, Sparkles, Palette, Calendar as CalendarIcon, Users,
   Plus, Trash2, Send, Loader2, Eye, Edit3, Lock
 } from "lucide-react";
 import { useSalesAnalysis } from "@/hooks/useSalesAnalysis";
@@ -200,6 +204,7 @@ function BudgetPlanner({
   const [planLoading, setPlanLoading] = useState(false);
   const [planBudgetInput, setPlanBudgetInput] = useState("");
   const [planDays, setPlanDays] = useState(3);
+  const [planStartDate, setPlanStartDate] = useState<Date>(new Date());
   const [creatingPlan, setCreatingPlan] = useState(false);
 
   // ─── Periode: manual order input ───
@@ -351,7 +356,7 @@ function BudgetPlanner({
         user_id: user.id,
         total_budget: totalBudget,
         total_days: planDays,
-        start_date: new Date().toISOString().slice(0, 10),
+        start_date: planStartDate.toISOString().slice(0, 10),
       }).select().single();
       if (!error && data) setActivePlan(data);
     } catch (e) { console.error(e); }
@@ -845,22 +850,67 @@ function BudgetPlanner({
                   </div>
                 </div>
 
-                {/* Preview */}
-                {parseRupiahInput(planBudgetInput) > 0 && planDays > 0 && (
-                  <div className="rounded-xl bg-muted/40 border border-border/50 p-3 space-y-1">
-                    <p className="text-xs text-muted-foreground">Preview rencana:</p>
-                    <p className="text-sm font-bold">
-                      {formatRp(Math.round(parseRupiahInput(planBudgetInput) / planDays))}/hari × {planDays} hari
+                {/* Tanggal Mulai */}
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tanggal Mulai</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="w-full h-10 rounded-xl border border-input bg-background px-3 text-sm font-medium text-left flex items-center gap-2 hover:bg-muted/50 transition-colors">
+                        <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                        {format(planStartDate, "EEEE, d MMM yyyy", { locale: idLocale })}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={planStartDate}
+                        onSelect={(d) => d && setPlanStartDate(d)}
+                        disabled={(date) => date > new Date() || date < subDays(new Date(), 14)}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {planStartDate.toDateString() !== new Date().toDateString() && (
+                    <p className="text-[10px] text-primary flex items-center gap-1">
+                      <CalendarIcon className="h-3 w-3" />
+                      Rencana dimulai dari {format(planStartDate, "d MMM")} — hari ini = Hari {Math.floor((new Date().setHours(0,0,0,0) - new Date(planStartDate).setHours(0,0,0,0)) / 86400000) + 1}
                     </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      Setiap hari buka, sistem recalculate berdasarkan stok terkini
-                    </p>
-                  </div>
-                )}
+                  )}
+                </div>
+
+                {parseRupiahInput(planBudgetInput) > 0 && planDays > 0 && (() => {
+                  const todayMs = new Date().setHours(0,0,0,0);
+                  const startMs = new Date(planStartDate).setHours(0,0,0,0);
+                  const currentDay = Math.floor((todayMs - startMs) / 86400000) + 1;
+                  const isBackdated = startMs < todayMs;
+                  const isPlanExpired = currentDay > planDays;
+                  return (
+                    <div className={`rounded-xl border p-3 space-y-1 ${isPlanExpired ? "bg-destructive/5 border-destructive/30" : "bg-muted/40 border-border/50"}`}>
+                      <p className="text-xs text-muted-foreground">Preview rencana:</p>
+                      <p className="text-sm font-bold">
+                        {formatRp(Math.round(parseRupiahInput(planBudgetInput) / planDays))}/hari × {planDays} hari
+                      </p>
+                      {isBackdated && !isPlanExpired && (
+                        <p className="text-[10px] text-primary font-medium">
+                          📍 Hari ini = Hari {currentDay} dari {planDays} — sisa {planDays - currentDay + 1} hari
+                        </p>
+                      )}
+                      {isPlanExpired && (
+                        <p className="text-[10px] text-destructive font-medium">
+                          ⚠️ Rencana sudah lewat! Hari {currentDay} &gt; {planDays} hari. Ubah tanggal mulai atau jumlah hari.
+                        </p>
+                      )}
+                      <p className="text-[10px] text-muted-foreground">
+                        Setiap hari buka, sistem recalculate berdasarkan stok terkini
+                      </p>
+                    </div>
+                  );
+                })()}
 
                 <button
                   onClick={createPlan}
-                  disabled={creatingPlan || parseRupiahInput(planBudgetInput) <= 0}
+                  disabled={creatingPlan || parseRupiahInput(planBudgetInput) <= 0 || (Math.floor((new Date().setHours(0,0,0,0) - new Date(planStartDate).setHours(0,0,0,0)) / 86400000) + 1 > planDays)}
                   className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-md hover:opacity-90 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
                 >
                   {creatingPlan ? (
@@ -1468,7 +1518,7 @@ const Analisa = () => {
               { value: "profit", icon: DollarSign, label: "Profit", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
               { value: "toko", icon: Store, label: "Toko", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
               { value: "pelanggan", icon: Users, label: "Pelanggan", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
-              { value: "hari", icon: Calendar, label: "Hari", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
+              { value: "hari", icon: CalendarIcon, label: "Hari", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
               { value: "tren", icon: Palette, label: "Tren", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
               { value: "dead", icon: Skull, label: "Dead", badge: null, activeColor: "data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground" },
               { value: "budget", icon: Calculator, label: "Budget", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
