@@ -331,9 +331,10 @@ function BudgetPlanner({
         .insert(itemsToInsert);
       if (e2) throw e2;
 
-      toast.success(`${validRows.length} item berhasil disimpan sebagai pesanan`);
+      toast.success(`${validRows.length} item berhasil disimpan sebagai pesanan Hari ${effectiveDay}`);
       setManualRows([]);
       setOrderReviewResult(null);
+      setInputForDay(null);
       refetchPending();
     } catch (err: any) {
       console.error(err);
