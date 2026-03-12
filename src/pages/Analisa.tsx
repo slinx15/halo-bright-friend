@@ -510,23 +510,24 @@ function BudgetPlanner({
       const effectiveStock = stock + pq;
       const daysLeft = item.velocity > 0 ? effectiveStock / item.velocity : 999;
 
-      // Coverage target: coverage_days counted from last day of plan
+      // Coverage target: stock must last coverage_days after last plan day
       const coverageTarget = activePlan.coverage_days || 4;
-      const totalCoverageNeeded = coverageTarget; // days of stock needed after plan ends
       
-      if (daysLeft > totalCoverageNeeded + planInfo.remainingDays) continue;
+      if (daysLeft > coverageTarget + planInfo.remainingDays) continue;
 
-      // Calculate total needed: enough stock to last coverage_days from last plan day
-      // Remaining plan days still have buying opportunities, so spread the need
-      const totalNeeded = Math.ceil(item.velocity * totalCoverageNeeded);
-      const neededForToday = Math.ceil(totalNeeded / planInfo.remainingDays);
-      const deficit = Math.max(0, neededForToday - effectiveStock);
-      if (deficit <= 0) continue;
+      // Total stock needed = velocity × coverage_days (from last day of plan)
+      const totalNeeded = Math.ceil(item.velocity * coverageTarget);
+      // Total deficit = what we still need to buy across remaining plan days
+      const totalDeficit = Math.max(0, totalNeeded - effectiveStock);
+      if (totalDeficit <= 0) continue;
+      
+      // Spread deficit across remaining plan days (today's share)
+      const todayShare = Math.ceil(totalDeficit / planInfo.remainingDays);
 
       const isBW = isBlackWhiteCode(item.kode);
       const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
       const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
-      const qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
+      const qty = Math.max(minOrder, Math.ceil(todayShare / batch) * batch);
       const cost = qty * item.unitPrice;
       const reason = daysLeft <= RULES.CRITICAL_DAYS ? "🔴 Kritis" :
         daysLeft <= RULES.WARNING_DAYS ? "🟠 Segera habis" :
