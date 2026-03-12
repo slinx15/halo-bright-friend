@@ -457,52 +457,75 @@ function BudgetPlanner({
     return { items: result, totalCost: budgetAmount - remaining, remaining };
   }, [analyses, budgetAmount, budgetDays, pendingMap]);
 
-  // ─── Periode Mode: Today's recommendations (dynamic recalculate) ───
-  const periodeRecommendations = useMemo(() => {
-    if (!planInfo || !activePlan || planInfo.isExpired) return { items: [], totalCost: 0, remaining: 0 };
+  // ─── Periode Mode: Per-day recommendations (simulate each day) ───
+  type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string; pendingQty?: number };
+  type DayPlan = { day: number; items: RecItem[]; totalCost: number; dailyBudget: number; remaining: number };
 
-    const todayBudget = planInfo.todayBudget;
-    const targetDays = activePlan.total_days;
+  const periodePerDay = useMemo((): DayPlan[] => {
+    if (!planInfo || !activePlan || planInfo.isExpired) return [];
 
-    const sorted = [...analyses]
-      .filter(a => a.velocity > 0)
-      .sort((a, b) => b.combinedScore - a.combinedScore);
+    const totalRemainingDays = planInfo.remainingDays;
+    const dailyBudget = planInfo.todayBudget;
 
-    type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string; pendingQty?: number };
-    const candidates: { item: ProductAnalysis; idealQty: number; idealCost: number; reason: string; batch: number; minOrder: number }[] = [];
+    // Simulate stock: start from current stock, subtract pending
+    const simulatedStock = new Map<string, number>();
+    analyses.forEach(a => {
+      let stock = a.currentStock;
+      const pq = pendingMap.get(a.kode.toUpperCase()) || 0;
+      stock += pq; // pending will arrive, count as available
+      simulatedStock.set(a.kode.toUpperCase(), stock);
+    });
 
-    for (const item of sorted) {
-      const neededStock = Math.ceil(item.velocity * targetDays);
-      let deficit = neededStock - item.currentStock;
-      const pq = pendingMap.get(item.kode.toUpperCase()) || 0;
-      deficit -= pq;
-      if (deficit <= 0) continue;
+    const days: DayPlan[] = [];
 
-      const isBW = isBlackWhiteCode(item.kode);
-      const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
-      const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
-      const qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
-      const cost = qty * item.unitPrice;
-      const reason = item.daysOfStock <= RULES.CRITICAL_DAYS ? "🔴 Kritis" :
-        item.daysOfStock <= RULES.WARNING_DAYS ? "🟠 Segera habis" :
-        item.isStockOut ? "🚨 Stok kosong" : "📦 Perlu restock";
-      candidates.push({ item, idealQty: qty, idealCost: cost, reason, batch, minOrder });
-    }
+    for (let d = 0; d < totalRemainingDays; d++) {
+      const dayNumber = (planInfo.dayNumber || 1) + d;
 
-    // Allocate within today's budget using tiered priority
-    const result: RecItem[] = [];
-    let remaining = todayBudget;
-
-    const totalIdealCost = candidates.reduce((s, c) => s + c.idealCost, 0);
-
-    if (totalIdealCost <= todayBudget) {
-      for (const c of candidates) {
-        const pq = pendingMap.get(c.item.kode.toUpperCase()) || 0;
-        result.push({ item: c.item, qty: c.idealQty, cost: c.idealCost, reason: c.reason, pendingQty: pq || undefined });
-        remaining -= c.idealCost;
+      // After each day, stock decreases by velocity
+      if (d > 0) {
+        analyses.forEach(a => {
+          const current = simulatedStock.get(a.kode.toUpperCase()) || 0;
+          simulatedStock.set(a.kode.toUpperCase(), Math.max(0, current - a.velocity));
+        });
       }
-    } else {
-      const tier1 = candidates.filter(c => c.item.isStockOut || c.item.daysOfStock <= RULES.CRITICAL_DAYS);
+
+      // Find items that need restocking for this day
+      const sorted = [...analyses]
+        .filter(a => a.velocity > 0)
+        .sort((a, b) => b.combinedScore - a.combinedScore);
+
+      type Candidate = { item: ProductAnalysis; idealQty: number; idealCost: number; reason: string; batch: number; minOrder: number; simStock: number };
+      const candidates: Candidate[] = [];
+
+      for (const item of sorted) {
+        const simStock = simulatedStock.get(item.kode.toUpperCase()) || 0;
+        const daysLeft = item.velocity > 0 ? simStock / item.velocity : 999;
+
+        // Only recommend if stock will run out within the plan period
+        if (daysLeft > activePlan.total_days) continue;
+
+        // Need at least enough for a few days
+        const neededForPeriod = Math.ceil(item.velocity * Math.min(3, totalRemainingDays - d));
+        const deficit = Math.max(0, neededForPeriod - simStock);
+        if (deficit <= 0) continue;
+
+        const isBW = isBlackWhiteCode(item.kode);
+        const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
+        const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
+        const qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
+        const cost = qty * item.unitPrice;
+        const reason = daysLeft <= RULES.CRITICAL_DAYS ? "🔴 Kritis" :
+          daysLeft <= RULES.WARNING_DAYS ? "🟠 Segera habis" :
+          simStock === 0 ? "🚨 Stok kosong" : "📦 Perlu restock";
+        candidates.push({ item, idealQty: qty, idealCost: cost, reason, batch, minOrder, simStock });
+      }
+
+      // Allocate within daily budget
+      const dayItems: RecItem[] = [];
+      let remaining = dailyBudget;
+
+      // Tiered allocation
+      const tier1 = candidates.filter(c => c.simStock === 0 || (c.simStock / c.item.velocity) <= RULES.CRITICAL_DAYS);
       const tier2 = candidates.filter(c => !tier1.includes(c) && c.item.isBestSeller);
       const tier3 = candidates.filter(c => !tier1.includes(c) && !tier2.includes(c));
 
@@ -516,15 +539,33 @@ function BudgetPlanner({
             if (qty < c.minOrder) continue;
             cost = qty * c.item.unitPrice;
           }
-          const pq = pendingMap.get(c.item.kode.toUpperCase()) || 0;
-          result.push({ item: c.item, qty, cost, reason: c.reason, pendingQty: pq || undefined });
+          dayItems.push({ item: c.item, qty, cost, reason: c.reason });
           remaining -= cost;
+
+          // Update simulated stock (item purchased)
+          const current = simulatedStock.get(c.item.kode.toUpperCase()) || 0;
+          simulatedStock.set(c.item.kode.toUpperCase(), current + qty);
         }
       }
+
+      days.push({
+        day: dayNumber,
+        items: dayItems,
+        totalCost: dailyBudget - remaining,
+        dailyBudget,
+        remaining,
+      });
     }
 
-    return { items: result, totalCost: todayBudget - remaining, remaining };
+    return days;
   }, [analyses, planInfo, activePlan, pendingMap]);
+
+  // For backward compat — today's recommendations
+  const periodeRecommendations = useMemo(() => {
+    if (periodePerDay.length === 0) return { items: [], totalCost: 0, remaining: 0 };
+    const today = periodePerDay[0];
+    return { items: today.items, totalCost: today.totalCost, remaining: today.remaining };
+  }, [periodePerDay]);
 
   const usedPct = mode === "budget" && budgetAmount > 0 ? Math.round((budgetRecommendations.totalCost / budgetAmount) * 100) : 0;
   const pendingCount = pendingItems.length;
