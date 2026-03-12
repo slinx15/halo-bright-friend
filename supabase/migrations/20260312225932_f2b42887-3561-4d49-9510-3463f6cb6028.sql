@@ -1,0 +1,1 @@
+ALTER TABLE public.restock_plans ADD COLUMN coverage_days integer NOT NULL DEFAULT 4;

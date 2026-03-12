@@ -146,6 +146,7 @@ interface RestockPlan {
   total_days: number;
   start_date: string;
   status: string;
+  coverage_days: number;
 }
 
 function usePendingRestock() {
@@ -207,6 +208,7 @@ function BudgetPlanner({
   const [planBudgetInput, setPlanBudgetInput] = useState("");
   const [planDays, setPlanDays] = useState(3);
   const [planStartDate, setPlanStartDate] = useState<Date>(new Date());
+  const [coverageDays, setCoverageDays] = useState(4);
   const [creatingPlan, setCreatingPlan] = useState(false);
 
   // ─── Periode: manual order input ───
@@ -375,6 +377,7 @@ function BudgetPlanner({
         total_budget: totalBudget,
         total_days: planDays,
         start_date: format(planStartDate, 'yyyy-MM-dd'),
+        coverage_days: coverageDays,
       }).select().single();
       if (!error && data) setActivePlan(data);
     } catch (e) { console.error(e); }
@@ -507,10 +510,17 @@ function BudgetPlanner({
       const effectiveStock = stock + pq;
       const daysLeft = item.velocity > 0 ? effectiveStock / item.velocity : 999;
 
-      if (daysLeft > totalDays) continue;
+      // Coverage target: coverage_days counted from last day of plan
+      const coverageTarget = activePlan.coverage_days || 4;
+      const totalCoverageNeeded = coverageTarget; // days of stock needed after plan ends
+      
+      if (daysLeft > totalCoverageNeeded + planInfo.remainingDays) continue;
 
-      const neededForPeriod = Math.ceil(item.velocity * Math.min(3, planInfo.remainingDays));
-      const deficit = Math.max(0, neededForPeriod - effectiveStock);
+      // Calculate total needed: enough stock to last coverage_days from last plan day
+      // Remaining plan days still have buying opportunities, so spread the need
+      const totalNeeded = Math.ceil(item.velocity * totalCoverageNeeded);
+      const neededForToday = Math.ceil(totalNeeded / planInfo.remainingDays);
+      const deficit = Math.max(0, neededForToday - effectiveStock);
       if (deficit <= 0) continue;
 
       const isBW = isBlackWhiteCode(item.kode);
@@ -868,6 +878,26 @@ function BudgetPlanner({
                   </div>
                 </div>
 
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Stok untuk Berapa Hari?</label>
+                  <p className="text-[10px] text-muted-foreground -mt-1">Dihitung dari hari terakhir cicilan. Stok harus cukup sampai bisa belanja lagi.</p>
+                  <div className="flex gap-2">
+                    {[2, 3, 4, 5].map(d => (
+                      <button
+                        key={d}
+                        onClick={() => setCoverageDays(d)}
+                        className={`flex-1 h-10 rounded-xl text-sm font-bold transition-all duration-150 active:scale-95 ${
+                          coverageDays === d
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {d} Hari
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Tanggal Mulai */}
                 <div className="space-y-2">
                   <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tanggal Mulai</label>
@@ -908,6 +938,9 @@ function BudgetPlanner({
                       <p className="text-xs text-muted-foreground">Preview rencana:</p>
                       <p className="text-sm font-bold">
                         {formatRp(Math.round(parseRupiahInput(planBudgetInput) / planDays))}/hari × {planDays} hari
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        📦 Target: stok cukup {coverageDays} hari setelah cicilan selesai
                       </p>
                       {isBackdated && !isPlanExpired && (
                         <p className="text-[10px] text-primary font-medium">
@@ -959,7 +992,7 @@ function BudgetPlanner({
                           }
                         </p>
                         <p className="text-[10px] text-muted-foreground">
-                          Mulai {new Date(activePlan.start_date + "T00:00:00").toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" })}
+                          Mulai {new Date(activePlan.start_date + "T00:00:00").toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" })} · Target {activePlan.coverage_days || 4} hari stok
                         </p>
                       </div>
                     </div>

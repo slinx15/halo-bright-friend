@@ -303,6 +303,7 @@ export type Database = {
       }
       restock_plans: {
         Row: {
+          coverage_days: number
           created_at: string
           id: string
           start_date: string
@@ -313,6 +314,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          coverage_days?: number
           created_at?: string
           id?: string
           start_date?: string
@@ -323,6 +325,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          coverage_days?: number
           created_at?: string
           id?: string
           start_date?: string
