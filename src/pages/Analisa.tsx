@@ -539,7 +539,8 @@ function BudgetPlanner({
             if (qty < c.minOrder) continue;
             cost = qty * c.item.unitPrice;
           }
-          dayItems.push({ item: c.item, qty, cost, reason: c.reason });
+          const simDaysLeft = c.item.velocity > 0 ? c.simStock / c.item.velocity : 999;
+          dayItems.push({ item: c.item, qty, cost, reason: c.reason, simStock: c.simStock, simDaysLeft });
           remaining -= cost;
 
           // Update simulated stock (item purchased)
