@@ -201,6 +201,111 @@ function BudgetPlanner({
   const [planDays, setPlanDays] = useState(3);
   const [creatingPlan, setCreatingPlan] = useState(false);
 
+  // ─── Periode: item selection + manual add ───
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set()); // productId set
+  const [manualQtyOverrides, setManualQtyOverrides] = useState<Map<string, number>>(new Map());
+  const [manualRows, setManualRows] = useState<{ kode: string; qty: number }[]>([]);
+  const [submittingOrder, setSubmittingOrder] = useState(false);
+
+  // Auto-select all recommendations when they change
+  const prevRecRef = useMemo(() => {
+    const ids = new Set<string>();
+    // Will be populated after periodeRecommendations is computed
+    return ids;
+  }, []);
+
+  // Build kode→analysis map for manual rows
+  const kodeAnalysisMap = useMemo(() => {
+    const m = new Map<string, typeof analyses[0]>();
+    analyses.forEach(a => m.set(a.kode.toUpperCase(), a));
+    return m;
+  }, [analyses]);
+
+  const toggleItem = useCallback((productId: string) => {
+    setSelectedItems(prev => {
+      const next = new Set(prev);
+      if (next.has(productId)) next.delete(productId);
+      else next.add(productId);
+      return next;
+    });
+  }, []);
+
+  const setQtyOverride = useCallback((productId: string, qty: number) => {
+    setManualQtyOverrides(prev => {
+      const next = new Map(prev);
+      if (qty <= 0) next.delete(productId);
+      else next.set(productId, qty);
+      return next;
+    });
+  }, []);
+
+  const addManualRow = useCallback(() => {
+    setManualRows(prev => [...prev, { kode: "", qty: 0 }]);
+  }, []);
+
+  const updateManualRow = useCallback((idx: number, field: "kode" | "qty", value: string | number) => {
+    setManualRows(prev => {
+      const updated = [...prev];
+      if (field === "kode") {
+        const matched = kodeAnalysisMap.get((value as string).toUpperCase());
+        updated[idx] = { kode: matched ? matched.kode : (value as string).toUpperCase(), qty: updated[idx].qty };
+      } else {
+        updated[idx] = { ...updated[idx], qty: value as number };
+      }
+      return updated;
+    });
+  }, [kodeAnalysisMap]);
+
+  const removeManualRow = useCallback((idx: number) => {
+    setManualRows(prev => prev.filter((_, i) => i !== idx));
+  }, []);
+
+  async function submitPeriodeOrder(recItems: { item: typeof analyses[0]; qty: number; cost: number }[]) {
+    // Gather selected rec items
+    const selectedRecs = recItems.filter(r => selectedItems.has(r.item.productId)).map(r => ({
+      kode: r.item.kode,
+      qty: manualQtyOverrides.get(r.item.productId) || r.qty,
+      product_id: r.item.productId,
+    }));
+    // Gather valid manual rows
+    const validManual = manualRows
+      .filter(r => r.kode && r.qty > 0 && kodeAnalysisMap.has(r.kode.toUpperCase()))
+      .map(r => {
+        const a = kodeAnalysisMap.get(r.kode.toUpperCase())!;
+        return { kode: a.kode, qty: r.qty, product_id: a.productId };
+      });
+
+    const allItems = [...selectedRecs, ...validManual];
+    if (allItems.length === 0) { toast.error("Pilih minimal 1 item"); return; }
+
+    setSubmittingOrder(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("Belum login"); return; }
+
+      const { data: restock, error: e1 } = await supabase
+        .from("pending_restock")
+        .insert({ user_id: user.id, notes: `Periode Hari ${planInfo?.dayNumber || 1}` })
+        .select().single();
+      if (e1 || !restock) throw e1;
+
+      const { error: e2 } = await supabase
+        .from("pending_restock_items")
+        .insert(allItems.map(i => ({ restock_id: restock.id, kode: i.kode, qty: i.qty, product_id: i.product_id })));
+      if (e2) throw e2;
+
+      toast.success(`${allItems.length} item berhasil disimpan sebagai pesanan`);
+      setSelectedItems(new Set());
+      setManualRows([]);
+      setManualQtyOverrides(new Map());
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Gagal menyimpan: " + (err?.message || "Error"));
+    } finally {
+      setSubmittingOrder(false);
+    }
+  }
+
   // Fetch active plan when switching to periode mode
   useEffect(() => {
     if (mode !== "periode") return;
