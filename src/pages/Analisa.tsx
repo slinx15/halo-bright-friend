@@ -1046,6 +1046,68 @@ function BudgetPlanner({
                 </CardContent>
               </Card>
 
+              {/* Riwayat Pesanan per Hari */}
+              {activePlan && pendingItems.length > 0 && (() => {
+                const planStart = new Date(activePlan.start_date + "T00:00:00");
+                // Group pending items by day
+                const dayGroups = new Map<number, { kode: string; qty: number }[]>();
+                pendingItems.forEach(p => {
+                  if (!p.orderedAt) return;
+                  const d = new Date(p.orderedAt);
+                  d.setHours(0, 0, 0, 0);
+                  if (d >= planStart) {
+                    const dayNum = Math.floor((d.getTime() - planStart.getTime()) / 86400000) + 1;
+                    if (dayNum <= activePlan.total_days) {
+                      if (!dayGroups.has(dayNum)) dayGroups.set(dayNum, []);
+                      dayGroups.get(dayNum)!.push({ kode: p.kode, qty: p.qty });
+                    }
+                  }
+                });
+
+                if (dayGroups.size === 0) return null;
+
+                const sortedDays = [...dayGroups.keys()].sort((a, b) => a - b);
+
+                return (
+                  <Card className="border-0 shadow-sm overflow-hidden">
+                    <div className="px-4 py-2.5 bg-muted/30 border-b">
+                      <p className="text-xs font-bold flex items-center gap-1.5">
+                        <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                        Pesanan Tercatat
+                      </p>
+                    </div>
+                    <CardContent className="p-3 space-y-2">
+                      {sortedDays.map(dayNum => {
+                        const items = dayGroups.get(dayNum)!;
+                        const dayDate = new Date(planStart.getTime() + (dayNum - 1) * 86400000);
+                        const dayCost = items.reduce((sum, it) => {
+                          const analysis = analyses.find(a => a.kode.toUpperCase() === it.kode.toUpperCase());
+                          return sum + it.qty * (analysis?.unitPrice || 0);
+                        }, 0);
+                        return (
+                          <div key={dayNum} className="rounded-lg border bg-muted/20 overflow-hidden">
+                            <div className="px-3 py-1.5 bg-muted/40 flex items-center justify-between">
+                              <p className="text-[10px] font-bold">
+                                Hari {dayNum} — {format(dayDate, "d MMM", { locale: idLocale })}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground font-medium">{formatRp(dayCost)}</p>
+                            </div>
+                            <div className="px-3 py-1.5 space-y-0.5">
+                              {items.map((it, idx) => (
+                                <div key={idx} className="flex items-center justify-between text-[11px]">
+                                  <span className="font-mono text-muted-foreground">{it.kode}</span>
+                                  <span className="font-bold tabular-nums">{it.qty} pcs</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
               {/* Onboarding checklist for backdated plans */}
               {planInfo && !planInfo.isExpired && planInfo.dayNumber > 1 && (() => {
                 // Count how many "Kirim & Simpan" batches exist during the plan
