@@ -992,7 +992,7 @@ function BudgetPlanner({
                           }
                         </p>
                         <p className="text-[10px] text-muted-foreground">
-                          Mulai {new Date(activePlan.start_date + "T00:00:00").toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" })}
+                          Mulai {new Date(activePlan.start_date + "T00:00:00").toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" })} · Target {activePlan.coverage_days || 4} hari stok
                         </p>
                       </div>
                     </div>
