@@ -1246,9 +1246,21 @@ function BudgetPlanner({
                       <div className="px-4 py-3 bg-muted/30 border-b flex items-center gap-2">
                         <Edit3 className="h-4 w-4 text-primary" />
                         <span className="text-sm font-semibold">Input Pesanan</span>
-                        <Badge className="ml-auto bg-primary/10 text-primary text-[10px]">
-                          Hari {planInfo?.dayNumber || 1}
-                        </Badge>
+                        {planInfo && planInfo.dayNumber > 1 ? (
+                          <select
+                            value={inputForDay ?? planInfo.dayNumber}
+                            onChange={e => setInputForDay(Number(e.target.value))}
+                            className="ml-auto h-7 rounded-md border border-input bg-background px-2 text-[11px] font-bold text-primary focus:outline-none focus:ring-2 focus:ring-ring"
+                          >
+                            {Array.from({ length: planInfo.dayNumber }, (_, i) => i + 1).map(d => (
+                              <option key={d} value={d}>Hari {d}{d === planInfo.dayNumber ? " (hari ini)" : ""}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <Badge className="ml-auto bg-primary/10 text-primary text-[10px]">
+                            Hari {planInfo?.dayNumber || 1}
+                          </Badge>
+                        )}
                       </div>
 
                       <div className="p-4 space-y-3">
