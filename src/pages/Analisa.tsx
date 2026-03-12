@@ -192,7 +192,7 @@ function BudgetPlanner({
   isMobile: boolean;
 }) {
   const [mode, setMode] = useState<"budget" | "periode">("budget");
-  const { pendingItems, loading: pendingLoading } = usePendingRestock();
+  const { pendingItems, loading: pendingLoading, refetch: refetchPending } = usePendingRestock();
 
   // Build pending map
   const pendingMap = useMemo(() => {
