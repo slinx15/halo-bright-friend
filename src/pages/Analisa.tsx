@@ -458,7 +458,7 @@ function BudgetPlanner({
   }, [analyses, budgetAmount, budgetDays, pendingMap]);
 
   // ─── Periode Mode: Per-day recommendations (simulate each day) ───
-  type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string; pendingQty?: number };
+  type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string; pendingQty?: number; simStock?: number; simDaysLeft?: number };
   type DayPlan = { day: number; items: RecItem[]; totalCost: number; dailyBudget: number; remaining: number };
 
   const periodePerDay = useMemo((): DayPlan[] => {
