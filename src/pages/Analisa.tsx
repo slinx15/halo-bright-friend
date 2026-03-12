@@ -899,87 +899,198 @@ function BudgetPlanner({
                 </CardContent>
               </Card>
 
-              {/* Today's recommendations */}
+              {/* Today's recommendations — selectable */}
               {!planInfo?.isExpired && (
                 <>
-                  {periodeRecommendations.items.length > 0 ? (
-                    <Card className="border-0 shadow-sm overflow-hidden">
-                      <div className="px-4 py-3 bg-muted/30 border-b flex items-center gap-2">
-                        <ShoppingCart className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-semibold">
-                          Pesanan Hari {planInfo?.dayNumber || 1}
-                        </span>
-                        <Badge className="ml-auto bg-primary/10 text-primary text-[10px]">
-                          {formatRp(planInfo?.todayBudget || 0)}
-                        </Badge>
-                      </div>
-                      <div className="p-3 space-y-2 max-h-[400px] overflow-y-auto">
-                        {periodeRecommendations.items.map((r, i) => (
-                          <div
-                            key={r.item.productId}
-                            className={`rounded-xl border p-3 space-y-1.5 ${
-                              r.item.currentStock === 0 ? "border-l-[3px] border-l-destructive border-border/60" :
-                              r.item.daysOfStock <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60 border-border/60" :
-                              "border-border/60"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <span className="text-xs text-muted-foreground font-mono">#{i + 1}</span>
-                                <span className="font-bold text-sm">{r.item.kode}</span>
-                                {r.item.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
-                                {r.pendingQty && (
-                                  <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
-                                    <Clock className="h-2.5 w-2.5" /> {r.pendingQty} pending
-                                  </span>
-                                )}
-                              </div>
-                              <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
-                                +{r.qty}
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2 text-[11px]">
-                              <div>
-                                <span className="text-muted-foreground">Stok</span>
-                                <p className={`font-semibold tabular-nums ${r.item.currentStock === 0 ? "text-destructive" : ""}`}>{r.item.currentStock}</p>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Sisa</span>
-                                <p className={`font-bold tabular-nums ${
-                                  r.item.daysOfStock <= 2 ? "text-destructive" : r.item.daysOfStock <= 4 ? "text-warning" : ""
-                                }`}>{formatDaysLeft(r.item.daysOfStock)}</p>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Biaya</span>
-                                <p className="font-semibold tabular-nums">{formatRp(r.cost)}</p>
-                              </div>
-                            </div>
-                            <p className="text-[10px] text-muted-foreground">{r.reason}</p>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="px-4 py-3 bg-muted/20 border-t">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">Total hari ini</span>
-                          <span className="font-bold">{formatRp(periodeRecommendations.totalCost)}</span>
+                  <Card className="border-0 shadow-sm overflow-hidden">
+                    <div className="px-4 py-3 bg-muted/30 border-b flex items-center gap-2">
+                      <ShoppingCart className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-semibold">
+                        Pesanan Hari {planInfo?.dayNumber || 1}
+                      </span>
+                      <Badge className="ml-auto bg-primary/10 text-primary text-[10px]">
+                        Budget: {formatRp(planInfo?.todayBudget || 0)}
+                      </Badge>
+                    </div>
+
+                    {periodeRecommendations.items.length > 0 ? (
+                      <>
+                        {/* Select all toggle */}
+                        <div className="px-4 py-2 bg-muted/10 border-b flex items-center justify-between">
+                          <label className="flex items-center gap-2 text-xs cursor-pointer">
+                            <Checkbox
+                              checked={periodeRecommendations.items.every(r => selectedItems.has(r.item.productId))}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedItems(new Set(periodeRecommendations.items.map(r => r.item.productId)));
+                                } else {
+                                  setSelectedItems(new Set());
+                                }
+                              }}
+                            />
+                            <span className="font-medium">Pilih semua saran</span>
+                          </label>
+                          <span className="text-[10px] text-muted-foreground">
+                            {selectedItems.size} dipilih
+                          </span>
                         </div>
-                        {periodeRecommendations.remaining > 0 && (
-                          <p className="text-[10px] text-success mt-0.5">
-                            Sisa budget hari ini: {formatRp(periodeRecommendations.remaining)} → masuk hari berikutnya
-                          </p>
-                        )}
-                      </div>
-                    </Card>
-                  ) : (
-                    <Card className="border-0 shadow-sm">
-                      <CardContent className="py-12 text-center">
+
+                        <div className="p-3 space-y-2 max-h-[400px] overflow-y-auto">
+                          {periodeRecommendations.items.map((r, i) => {
+                            const isSelected = selectedItems.has(r.item.productId);
+                            const overrideQty = manualQtyOverrides.get(r.item.productId);
+                            const displayQty = overrideQty || r.qty;
+                            const displayCost = displayQty * r.item.unitPrice;
+
+                            return (
+                              <div
+                                key={r.item.productId}
+                                className={`rounded-xl border p-3 space-y-1.5 transition-all cursor-pointer ${
+                                  isSelected
+                                    ? "border-primary/40 bg-primary/5 shadow-sm"
+                                    : "border-border/40 opacity-60"
+                                } ${
+                                  r.item.currentStock === 0 ? "border-l-[3px] border-l-destructive" :
+                                  r.item.daysOfStock <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60" : ""
+                                }`}
+                                onClick={() => toggleItem(r.item.productId)}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <Checkbox checked={isSelected} className="pointer-events-none" />
+                                    <span className="text-xs text-muted-foreground font-mono">#{i + 1}</span>
+                                    <span className="font-bold text-sm">{r.item.kode}</span>
+                                    {r.item.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
+                                    {r.pendingQty && (
+                                      <span className="text-[9px] font-semibold text-success flex items-center gap-0.5">
+                                        <Clock className="h-2.5 w-2.5" /> {r.pendingQty} pending
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                                    <Input
+                                      type="text"
+                                      inputMode="numeric"
+                                      className="h-8 w-16 text-center text-sm font-bold rounded-lg"
+                                      value={overrideQty !== undefined ? overrideQty : r.qty}
+                                      onChange={e => {
+                                        const v = parseInt(e.target.value) || 0;
+                                        setQtyOverride(r.item.productId, v === r.qty ? 0 : v);
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 text-[11px]">
+                                  <div>
+                                    <span className="text-muted-foreground">Stok</span>
+                                    <p className={`font-semibold tabular-nums ${r.item.currentStock === 0 ? "text-destructive" : ""}`}>{r.item.currentStock}</p>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">Sisa</span>
+                                    <p className={`font-bold tabular-nums ${
+                                      r.item.daysOfStock <= 2 ? "text-destructive" : r.item.daysOfStock <= 4 ? "text-warning" : ""
+                                    }`}>{formatDaysLeft(r.item.daysOfStock)}</p>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">Biaya</span>
+                                    <p className="font-semibold tabular-nums">{formatRp(displayCost)}</p>
+                                  </div>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground">{r.reason}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    ) : (
+                      <CardContent className="py-8 text-center">
                         <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-success opacity-50" />
                         <p className="text-sm text-muted-foreground">
-                          Semua stok tercukupi untuk hari ini 🎉
+                          Semua stok tercukupi dari saran analisa 🎉
                         </p>
                       </CardContent>
-                    </Card>
-                  )}
+                    )}
+
+                    {/* Manual add section */}
+                    <div className="px-4 py-3 border-t bg-muted/10 space-y-2">
+                      <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                        <Plus className="h-3 w-3" />
+                        Tambah item manual (di luar saran)
+                      </p>
+                      {manualRows.map((row, idx) => {
+                        const matched = kodeAnalysisMap.get(row.kode.toUpperCase());
+                        return (
+                          <div key={idx} className="flex items-center gap-2">
+                            <Input
+                              className="h-8 text-sm font-mono flex-1"
+                              value={row.kode}
+                              onChange={e => updateManualRow(idx, "kode", e.target.value)}
+                              placeholder="Kode produk..."
+                              list="periode-manual-codes"
+                            />
+                            {matched && <span className="text-[10px] text-muted-foreground truncate max-w-[60px]">{matched.kode}</span>}
+                            {!matched && row.kode && <span className="text-[10px] text-destructive">✗</span>}
+                            <Input
+                              type="text"
+                              inputMode="numeric"
+                              className="h-8 w-16 text-sm text-center"
+                              value={row.qty === 0 ? "" : row.qty}
+                              onChange={e => updateManualRow(idx, "qty", parseInt(e.target.value) || 0)}
+                              placeholder="Qty"
+                            />
+                            <button onClick={() => removeManualRow(idx)} className="text-destructive p-1">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                      <button
+                        onClick={addManualRow}
+                        className="w-full h-9 rounded-lg border border-dashed border-border text-xs font-medium text-muted-foreground hover:bg-muted/40 transition-all flex items-center justify-center gap-1"
+                      >
+                        <Plus className="h-3.5 w-3.5" /> Tambah Baris
+                      </button>
+                    </div>
+
+                    <datalist id="periode-manual-codes">
+                      {analyses.map(a => <option key={a.productId} value={a.kode} />)}
+                    </datalist>
+
+                    {/* Summary + Submit */}
+                    {(() => {
+                      const selectedRecs = periodeRecommendations.items
+                        .filter(r => selectedItems.has(r.item.productId))
+                        .map(r => ({ qty: manualQtyOverrides.get(r.item.productId) || r.qty, cost: (manualQtyOverrides.get(r.item.productId) || r.qty) * r.item.unitPrice }));
+                      const validManual = manualRows.filter(r => r.kode && r.qty > 0 && kodeAnalysisMap.has(r.kode.toUpperCase()));
+                      const manualCost = validManual.reduce((s, r) => s + r.qty * (kodeAnalysisMap.get(r.kode.toUpperCase())?.unitPrice || 0), 0);
+                      const totalItems = selectedRecs.length + validManual.length;
+                      const totalCost = selectedRecs.reduce((s, r) => s + r.cost, 0) + manualCost;
+                      const totalQty = selectedRecs.reduce((s, r) => s + r.qty, 0) + validManual.reduce((s, r) => s + r.qty, 0);
+
+                      return (
+                        <div className="px-4 py-3 border-t space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">{totalItems} item · {totalQty} pcs</span>
+                            <span className="font-bold text-primary">{formatRp(totalCost)}</span>
+                          </div>
+                          {planInfo && totalCost > planInfo.todayBudget && (
+                            <p className="text-[10px] text-warning flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" />
+                              Melebihi budget hari ini ({formatRp(totalCost - planInfo.todayBudget)} lebih)
+                            </p>
+                          )}
+                          <button
+                            onClick={() => submitPeriodeOrder(periodeRecommendations.items)}
+                            disabled={submittingOrder || totalItems === 0}
+                            className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-md hover:opacity-90 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                          >
+                            {submittingOrder ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                            {submittingOrder ? "Menyimpan..." : `Pesan ${totalItems} Item`}
+                          </button>
+                        </div>
+                      );
+                    })()}
+                  </Card>
                 </>
               )}
 
