@@ -1314,7 +1314,7 @@ const Analisa = () => {
       {/* MAIN CONTENT — TABS */}
       <Tabs defaultValue="restock" className="w-full">
         <div className="rounded-2xl bg-card/80 backdrop-blur-sm border border-border/40 shadow-md p-1.5">
-          <TabsList className="grid grid-cols-6 md:grid-cols-12 w-full bg-transparent h-auto p-0 gap-1">
+          <TabsList className="grid grid-cols-5 md:grid-cols-11 w-full bg-transparent h-auto p-0 gap-1">
             {[
               { value: "restock", icon: ShoppingCart, label: "Restock", badge: needsReorder > 0 ? needsReorder : null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
               { value: "penjualan", icon: Trophy, label: "Penjualan", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
