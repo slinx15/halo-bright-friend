@@ -359,7 +359,7 @@ function BudgetPlanner({
         user_id: user.id,
         total_budget: totalBudget,
         total_days: planDays,
-        start_date: planStartDate.toISOString().slice(0, 10),
+        start_date: format(planStartDate, 'yyyy-MM-dd'),
       }).select().single();
       if (!error && data) setActivePlan(data);
     } catch (e) { console.error(e); }
