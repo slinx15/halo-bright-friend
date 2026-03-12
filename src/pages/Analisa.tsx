@@ -258,7 +258,7 @@ function BudgetPlanner({
       }
       return [...prev, { kode, qty }];
     });
-    setPeriodeSection("manual");
+    // Stay on Saran AI view, don't switch to manual
     toast.success(`${kode} ditambahkan ke pesanan`);
   }, []);
 
@@ -269,7 +269,7 @@ function BudgetPlanner({
       const newItems = items.filter(i => !existingKodes.has(i.kode.toUpperCase()));
       return [...prev, ...newItems];
     });
-    setPeriodeSection("manual");
+    // Stay on Saran AI view, don't switch to manual
     toast.success(`${items.length} item ditambahkan ke pesanan`);
   }, []);
 
