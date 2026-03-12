@@ -879,17 +879,34 @@ function BudgetPlanner({
                   )}
                 </div>
 
-                {parseRupiahInput(planBudgetInput) > 0 && planDays > 0 && (
-                  <div className="rounded-xl bg-muted/40 border border-border/50 p-3 space-y-1">
-                    <p className="text-xs text-muted-foreground">Preview rencana:</p>
-                    <p className="text-sm font-bold">
-                      {formatRp(Math.round(parseRupiahInput(planBudgetInput) / planDays))}/hari × {planDays} hari
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      Setiap hari buka, sistem recalculate berdasarkan stok terkini
-                    </p>
-                  </div>
-                )}
+                {parseRupiahInput(planBudgetInput) > 0 && planDays > 0 && (() => {
+                  const todayMs = new Date().setHours(0,0,0,0);
+                  const startMs = new Date(planStartDate).setHours(0,0,0,0);
+                  const currentDay = Math.floor((todayMs - startMs) / 86400000) + 1;
+                  const isBackdated = startMs < todayMs;
+                  const isPlanExpired = currentDay > planDays;
+                  return (
+                    <div className={`rounded-xl border p-3 space-y-1 ${isPlanExpired ? "bg-destructive/5 border-destructive/30" : "bg-muted/40 border-border/50"}`}>
+                      <p className="text-xs text-muted-foreground">Preview rencana:</p>
+                      <p className="text-sm font-bold">
+                        {formatRp(Math.round(parseRupiahInput(planBudgetInput) / planDays))}/hari × {planDays} hari
+                      </p>
+                      {isBackdated && !isPlanExpired && (
+                        <p className="text-[10px] text-primary font-medium">
+                          📍 Hari ini = Hari {currentDay} dari {planDays} — sisa {planDays - currentDay + 1} hari
+                        </p>
+                      )}
+                      {isPlanExpired && (
+                        <p className="text-[10px] text-destructive font-medium">
+                          ⚠️ Rencana sudah lewat! Hari {currentDay} &gt; {planDays} hari. Ubah tanggal mulai atau jumlah hari.
+                        </p>
+                      )}
+                      <p className="text-[10px] text-muted-foreground">
+                        Setiap hari buka, sistem recalculate berdasarkan stok terkini
+                      </p>
+                    </div>
+                  );
+                })()}
 
                 <button
                   onClick={createPlan}
