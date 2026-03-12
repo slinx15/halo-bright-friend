@@ -457,52 +457,75 @@ function BudgetPlanner({
     return { items: result, totalCost: budgetAmount - remaining, remaining };
   }, [analyses, budgetAmount, budgetDays, pendingMap]);
 
-  // ─── Periode Mode: Today's recommendations (dynamic recalculate) ───
-  const periodeRecommendations = useMemo(() => {
-    if (!planInfo || !activePlan || planInfo.isExpired) return { items: [], totalCost: 0, remaining: 0 };
+  // ─── Periode Mode: Per-day recommendations (simulate each day) ───
+  type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string; pendingQty?: number };
+  type DayPlan = { day: number; items: RecItem[]; totalCost: number; dailyBudget: number; remaining: number };
 
-    const todayBudget = planInfo.todayBudget;
-    const targetDays = activePlan.total_days;
+  const periodePerDay = useMemo((): DayPlan[] => {
+    if (!planInfo || !activePlan || planInfo.isExpired) return [];
 
-    const sorted = [...analyses]
-      .filter(a => a.velocity > 0)
-      .sort((a, b) => b.combinedScore - a.combinedScore);
+    const totalRemainingDays = planInfo.remainingDays;
+    const dailyBudget = planInfo.todayBudget;
 
-    type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string; pendingQty?: number };
-    const candidates: { item: ProductAnalysis; idealQty: number; idealCost: number; reason: string; batch: number; minOrder: number }[] = [];
+    // Simulate stock: start from current stock, subtract pending
+    const simulatedStock = new Map<string, number>();
+    analyses.forEach(a => {
+      let stock = a.currentStock;
+      const pq = pendingMap.get(a.kode.toUpperCase()) || 0;
+      stock += pq; // pending will arrive, count as available
+      simulatedStock.set(a.kode.toUpperCase(), stock);
+    });
 
-    for (const item of sorted) {
-      const neededStock = Math.ceil(item.velocity * targetDays);
-      let deficit = neededStock - item.currentStock;
-      const pq = pendingMap.get(item.kode.toUpperCase()) || 0;
-      deficit -= pq;
-      if (deficit <= 0) continue;
+    const days: DayPlan[] = [];
 
-      const isBW = isBlackWhiteCode(item.kode);
-      const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
-      const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
-      const qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
-      const cost = qty * item.unitPrice;
-      const reason = item.daysOfStock <= RULES.CRITICAL_DAYS ? "🔴 Kritis" :
-        item.daysOfStock <= RULES.WARNING_DAYS ? "🟠 Segera habis" :
-        item.isStockOut ? "🚨 Stok kosong" : "📦 Perlu restock";
-      candidates.push({ item, idealQty: qty, idealCost: cost, reason, batch, minOrder });
-    }
+    for (let d = 0; d < totalRemainingDays; d++) {
+      const dayNumber = (planInfo.dayNumber || 1) + d;
 
-    // Allocate within today's budget using tiered priority
-    const result: RecItem[] = [];
-    let remaining = todayBudget;
-
-    const totalIdealCost = candidates.reduce((s, c) => s + c.idealCost, 0);
-
-    if (totalIdealCost <= todayBudget) {
-      for (const c of candidates) {
-        const pq = pendingMap.get(c.item.kode.toUpperCase()) || 0;
-        result.push({ item: c.item, qty: c.idealQty, cost: c.idealCost, reason: c.reason, pendingQty: pq || undefined });
-        remaining -= c.idealCost;
+      // After each day, stock decreases by velocity
+      if (d > 0) {
+        analyses.forEach(a => {
+          const current = simulatedStock.get(a.kode.toUpperCase()) || 0;
+          simulatedStock.set(a.kode.toUpperCase(), Math.max(0, current - a.velocity));
+        });
       }
-    } else {
-      const tier1 = candidates.filter(c => c.item.isStockOut || c.item.daysOfStock <= RULES.CRITICAL_DAYS);
+
+      // Find items that need restocking for this day
+      const sorted = [...analyses]
+        .filter(a => a.velocity > 0)
+        .sort((a, b) => b.combinedScore - a.combinedScore);
+
+      type Candidate = { item: ProductAnalysis; idealQty: number; idealCost: number; reason: string; batch: number; minOrder: number; simStock: number };
+      const candidates: Candidate[] = [];
+
+      for (const item of sorted) {
+        const simStock = simulatedStock.get(item.kode.toUpperCase()) || 0;
+        const daysLeft = item.velocity > 0 ? simStock / item.velocity : 999;
+
+        // Only recommend if stock will run out within the plan period
+        if (daysLeft > activePlan.total_days) continue;
+
+        // Need at least enough for a few days
+        const neededForPeriod = Math.ceil(item.velocity * Math.min(3, totalRemainingDays - d));
+        const deficit = Math.max(0, neededForPeriod - simStock);
+        if (deficit <= 0) continue;
+
+        const isBW = isBlackWhiteCode(item.kode);
+        const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
+        const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
+        const qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
+        const cost = qty * item.unitPrice;
+        const reason = daysLeft <= RULES.CRITICAL_DAYS ? "🔴 Kritis" :
+          daysLeft <= RULES.WARNING_DAYS ? "🟠 Segera habis" :
+          simStock === 0 ? "🚨 Stok kosong" : "📦 Perlu restock";
+        candidates.push({ item, idealQty: qty, idealCost: cost, reason, batch, minOrder, simStock });
+      }
+
+      // Allocate within daily budget
+      const dayItems: RecItem[] = [];
+      let remaining = dailyBudget;
+
+      // Tiered allocation
+      const tier1 = candidates.filter(c => c.simStock === 0 || (c.simStock / c.item.velocity) <= RULES.CRITICAL_DAYS);
       const tier2 = candidates.filter(c => !tier1.includes(c) && c.item.isBestSeller);
       const tier3 = candidates.filter(c => !tier1.includes(c) && !tier2.includes(c));
 
@@ -516,15 +539,33 @@ function BudgetPlanner({
             if (qty < c.minOrder) continue;
             cost = qty * c.item.unitPrice;
           }
-          const pq = pendingMap.get(c.item.kode.toUpperCase()) || 0;
-          result.push({ item: c.item, qty, cost, reason: c.reason, pendingQty: pq || undefined });
+          dayItems.push({ item: c.item, qty, cost, reason: c.reason });
           remaining -= cost;
+
+          // Update simulated stock (item purchased)
+          const current = simulatedStock.get(c.item.kode.toUpperCase()) || 0;
+          simulatedStock.set(c.item.kode.toUpperCase(), current + qty);
         }
       }
+
+      days.push({
+        day: dayNumber,
+        items: dayItems,
+        totalCost: dailyBudget - remaining,
+        dailyBudget,
+        remaining,
+      });
     }
 
-    return { items: result, totalCost: todayBudget - remaining, remaining };
+    return days;
   }, [analyses, planInfo, activePlan, pendingMap]);
+
+  // For backward compat — today's recommendations
+  const periodeRecommendations = useMemo(() => {
+    if (periodePerDay.length === 0) return { items: [], totalCost: 0, remaining: 0 };
+    const today = periodePerDay[0];
+    return { items: today.items, totalCost: today.totalCost, remaining: today.remaining };
+  }, [periodePerDay]);
 
   const usedPct = mode === "budget" && budgetAmount > 0 ? Math.round((budgetRecommendations.totalCost / budgetAmount) * 100) : 0;
   const pendingCount = pendingItems.length;
@@ -947,98 +988,107 @@ function BudgetPlanner({
                     </button>
                   </div>
 
-                  {/* ═══ SARAN AI SECTION (read-only) ═══ */}
+                  {/* ═══ SARAN AI SECTION — per-day breakdown ═══ */}
                   {periodeSection === "saran" && (
-                    <Card className="border-0 shadow-sm overflow-hidden">
-                      <div className="px-4 py-3 bg-muted/30 border-b flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-semibold">
-                          Saran Restock Hari {planInfo?.dayNumber || 1}
-                        </span>
-                        <Badge className="ml-auto bg-primary/10 text-primary text-[10px]">
-                          Budget: {formatRp(planInfo?.todayBudget || 0)}
-                        </Badge>
-                      </div>
-
-                      {periodeRecommendations.items.length > 0 ? (
-                        <>
-                          {/* Pakai semua button */}
-                          <div className="px-4 py-2 bg-muted/10 border-b flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">
-                              {periodeRecommendations.items.length} item disarankan
-                            </span>
-                            <button
-                              onClick={() => addAllFromSaran(periodeRecommendations.items.map(r => ({ kode: r.item.kode, qty: r.qty })))}
-                              className="text-xs font-semibold text-primary flex items-center gap-1 hover:underline"
-                            >
-                              <Plus className="h-3 w-3" /> Pakai Semua
-                            </button>
-                          </div>
-
-                          <div className="p-3 space-y-2 max-h-[400px] overflow-y-auto">
-                            {periodeRecommendations.items.map((r, i) => (
-                              <div
-                                key={r.item.productId}
-                                className={`rounded-xl border p-3 space-y-1.5 ${
-                                  r.item.currentStock === 0 ? "border-l-[3px] border-l-destructive border-border/60" :
-                                  r.item.daysOfStock <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60 border-border/60" :
-                                  "border-border/60"
-                                }`}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <span className="text-xs text-muted-foreground font-mono">#{i + 1}</span>
-                                    <span className="font-bold text-sm">{r.item.kode}</span>
-                                    {r.item.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
-                                    {r.pendingQty && (
-                                      <span className="text-[9px] font-semibold text-success flex items-center gap-0.5">
-                                        <Clock className="h-2.5 w-2.5" /> {r.pendingQty} pending
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
-                                      {r.qty}
-                                    </span>
-                                    <button
-                                      onClick={() => addFromSaran(r.item.kode, r.qty)}
-                                      className="p-1.5 rounded-lg bg-muted/60 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
-                                      title="Tambahkan ke pesanan"
-                                    >
-                                      <Plus className="h-3.5 w-3.5" />
-                                    </button>
-                                  </div>
-                                </div>
-                                <div className="grid grid-cols-3 gap-2 text-[11px]">
-                                  <div>
-                                    <span className="text-muted-foreground">Stok</span>
-                                    <p className={`font-semibold tabular-nums ${r.item.currentStock === 0 ? "text-destructive" : ""}`}>{r.item.currentStock}</p>
-                                  </div>
-                                  <div>
-                                    <span className="text-muted-foreground">Sisa</span>
-                                    <p className={`font-bold tabular-nums ${
-                                      r.item.daysOfStock <= 2 ? "text-destructive" : r.item.daysOfStock <= 4 ? "text-warning" : ""
-                                    }`}>{formatDaysLeft(r.item.daysOfStock)}</p>
-                                  </div>
-                                  <div>
-                                    <span className="text-muted-foreground">Biaya</span>
-                                    <p className="font-semibold tabular-nums">{formatRp(r.cost)}</p>
-                                  </div>
-                                </div>
-                                <p className="text-[10px] text-muted-foreground">{r.reason}</p>
+                    <div className="space-y-3">
+                      {periodePerDay.length > 0 ? (
+                        periodePerDay.map((dayPlan, dayIdx) => (
+                          <Card key={dayPlan.day} className="border-0 shadow-sm overflow-hidden">
+                            <div className={`px-4 py-3 border-b flex items-center gap-2 ${
+                              dayIdx === 0 ? "bg-primary/10" : "bg-muted/30"
+                            }`}>
+                              <div className={`flex items-center justify-center h-6 w-6 rounded-full text-[10px] font-bold ${
+                                dayIdx === 0 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                              }`}>
+                                {dayPlan.day}
                               </div>
-                            ))}
-                          </div>
-                        </>
+                              <span className="text-sm font-semibold">
+                                Hari {dayPlan.day}
+                                {dayIdx === 0 && <span className="text-primary ml-1">(Hari ini)</span>}
+                              </span>
+                              <div className="ml-auto flex items-center gap-2">
+                                <Badge className="bg-primary/10 text-primary text-[10px]">
+                                  {formatRp(dayPlan.totalCost)}
+                                </Badge>
+                                {dayPlan.items.length > 0 && (
+                                  <button
+                                    onClick={() => addAllFromSaran(dayPlan.items.map(r => ({ kode: r.item.kode, qty: r.qty })))}
+                                    className="text-[10px] font-semibold text-primary flex items-center gap-0.5 hover:underline"
+                                  >
+                                    <Plus className="h-3 w-3" /> Pakai
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            {dayPlan.items.length > 0 ? (
+                              <div className="p-3 space-y-2">
+                                {dayPlan.items.map((r, i) => (
+                                  <div
+                                    key={r.item.productId}
+                                    className={`rounded-xl border p-3 space-y-1.5 ${
+                                      r.item.currentStock === 0 ? "border-l-[3px] border-l-destructive border-border/60" :
+                                      r.item.daysOfStock <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60 border-border/60" :
+                                      "border-border/60"
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <span className="text-xs text-muted-foreground font-mono">#{i + 1}</span>
+                                        <span className="font-bold text-sm">{r.item.kode}</span>
+                                        {r.item.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
+                                          {r.qty}
+                                        </span>
+                                        <button
+                                          onClick={() => addFromSaran(r.item.kode, r.qty)}
+                                          className="p-1.5 rounded-lg bg-muted/60 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
+                                          title="Tambahkan ke pesanan"
+                                        >
+                                          <Plus className="h-3.5 w-3.5" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 text-[11px]">
+                                      <div>
+                                        <span className="text-muted-foreground">Stok</span>
+                                        <p className={`font-semibold tabular-nums ${r.item.currentStock === 0 ? "text-destructive" : ""}`}>{r.item.currentStock}</p>
+                                      </div>
+                                      <div>
+                                        <span className="text-muted-foreground">Sisa</span>
+                                        <p className={`font-bold tabular-nums ${
+                                          r.item.daysOfStock <= 2 ? "text-destructive" : r.item.daysOfStock <= 4 ? "text-warning" : ""
+                                        }`}>{formatDaysLeft(r.item.daysOfStock)}</p>
+                                      </div>
+                                      <div>
+                                        <span className="text-muted-foreground">Biaya</span>
+                                        <p className="font-semibold tabular-nums">{formatRp(r.cost)}</p>
+                                      </div>
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground">{r.reason}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <CardContent className="py-4 text-center">
+                                <p className="text-xs text-muted-foreground">Tidak ada item urgent di hari ini</p>
+                              </CardContent>
+                            )}
+                          </Card>
+                        ))
                       ) : (
-                        <CardContent className="py-8 text-center">
-                          <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-success opacity-50" />
-                          <p className="text-sm text-muted-foreground">
-                            Semua stok tercukupi 🎉
-                          </p>
-                        </CardContent>
+                        <Card className="border-0 shadow-sm">
+                          <CardContent className="py-8 text-center">
+                            <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-success opacity-50" />
+                            <p className="text-sm text-muted-foreground">
+                              Semua stok tercukupi 🎉
+                            </p>
+                          </CardContent>
+                        </Card>
                       )}
-                    </Card>
+                    </div>
                   )}
 
                   {/* ═══ INPUT PESANAN MANUAL SECTION ═══ */}
