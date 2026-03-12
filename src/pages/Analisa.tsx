@@ -212,6 +212,7 @@ function BudgetPlanner({
   // ─── Periode: manual order input ───
   const [periodeSection, setPeriodeSection] = useState<"saran" | "manual">("saran");
   const [manualRows, setManualRows] = useState<{ kode: string; qty: number }[]>([]);
+  const [inputForDay, setInputForDay] = useState<number | null>(null); // null = current day
   const [submittingOrder, setSubmittingOrder] = useState(false);
   const [reviewingOrder, setReviewingOrder] = useState(false);
   const [orderReviewResult, setOrderReviewResult] = useState<ReviewResult | null>(null);
