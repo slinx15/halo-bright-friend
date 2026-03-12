@@ -510,13 +510,14 @@ function BudgetPlanner({
       const effectiveStock = stock + pq;
       const daysLeft = item.velocity > 0 ? effectiveStock / item.velocity : 999;
 
-      // Coverage target: stock must last coverage_days after last plan day
+      // Coverage target: stock must last through remaining plan days + coverage_days after
       const coverageTarget = activePlan.coverage_days || 4;
+      const totalHorizon = planInfo.remainingDays + coverageTarget;
       
-      if (daysLeft > coverageTarget + planInfo.remainingDays) continue;
+      if (daysLeft > totalHorizon) continue;
 
-      // Total stock needed = velocity × coverage_days (from last day of plan)
-      const totalNeeded = Math.ceil(item.velocity * coverageTarget);
+      // Total stock needed = velocity × (remaining days + coverage buffer)
+      const totalNeeded = Math.ceil(item.velocity * totalHorizon);
       // Total deficit = what we still need to buy across remaining plan days
       const totalDeficit = Math.max(0, totalNeeded - effectiveStock);
       if (totalDeficit <= 0) continue;
