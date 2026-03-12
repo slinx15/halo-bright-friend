@@ -1867,6 +1867,13 @@ const Analisa = () => {
           />
         </TabsContent>
 
+        {/* ══════════ PESANAN MANUAL ══════════ */}
+        <TabsContent value="pesanan" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
+          <Suspense fallback={<div className="flex items-center justify-center py-16"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+            <ManualPesanan analyses={analyses} isMobile={isMobile} />
+          </Suspense>
+        </TabsContent>
+
         {/* ══════════ RINGKASAN ══════════ */}
         <TabsContent value="ringkasan" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
