@@ -939,6 +939,9 @@ function BudgetPlanner({
                       <p className="text-sm font-bold">
                         {formatRp(Math.round(parseRupiahInput(planBudgetInput) / planDays))}/hari × {planDays} hari
                       </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        📦 Target: stok cukup {coverageDays} hari setelah cicilan selesai
+                      </p>
                       {isBackdated && !isPlanExpired && (
                         <p className="text-[10px] text-primary font-medium">
                           📍 Hari ini = Hari {currentDay} dari {planDays} — sisa {planDays - currentDay + 1} hari
