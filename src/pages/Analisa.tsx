@@ -320,6 +320,7 @@ function BudgetPlanner({
       toast.success(`${validRows.length} item berhasil disimpan sebagai pesanan`);
       setManualRows([]);
       setOrderReviewResult(null);
+      refetchPending();
     } catch (err: any) {
       console.error(err);
       toast.error("Gagal menyimpan: " + (err?.message || "Error"));
