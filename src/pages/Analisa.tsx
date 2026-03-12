@@ -208,6 +208,7 @@ function BudgetPlanner({
   const [planBudgetInput, setPlanBudgetInput] = useState("");
   const [planDays, setPlanDays] = useState(3);
   const [planStartDate, setPlanStartDate] = useState<Date>(new Date());
+  const [coverageDays, setCoverageDays] = useState(4);
   const [creatingPlan, setCreatingPlan] = useState(false);
 
   // ─── Periode: manual order input ───
