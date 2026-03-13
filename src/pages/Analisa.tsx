@@ -13,12 +13,12 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import {
-  AlertTriangle, Package, Skull,
+  AlertTriangle, Package,
   BarChart3, DollarSign, Store, ArrowDown,
   ShoppingCart, Clock, Trophy, Activity,
-  AlertCircle, PackageX, Wallet, Flame, TrendingUp, TrendingDown,
+  Wallet, Flame, TrendingUp,
   Calculator, CheckCircle2, ChevronLeft, ChevronRight, Sparkles, Palette, Calendar as CalendarIcon, Users,
-  Plus, Trash2, Send, Loader2, Eye, Edit3, Lock
+  Plus, Send, Loader2, Lock
 } from "lucide-react";
 import { useSalesAnalysis } from "@/hooks/useSalesAnalysis";
 import { analyzeAllProducts, getStatusCounts, RULES, type DosStatus, type ProductAnalysis, isBlackWhiteCode } from "@/lib/stockAnalyticsEngine";
