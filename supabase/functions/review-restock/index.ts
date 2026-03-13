@@ -205,8 +205,10 @@ serve(async (req) => {
       const safety = isBW ? RULES.SAFETY_BW : RULES.SAFETY_STOCK;
       const computedTargetDays = customTargetDays || (RULES.CYCLE_DAYS + safety + RULES.LEAD_TIME_DAYS);
       const targetStock = Math.ceil(velocity * computedTargetDays);
-      const dos = velocity > 0 ? product.stok / velocity : (product.stok > 0 ? 999 : 0);
-      const idealQty = Math.max(0, targetStock - product.stok);
+      const pendingQty = pendingMap[kode] || 0;
+      const effectiveStock = product.stok + pendingQty;
+      const dos = velocity > 0 ? effectiveStock / velocity : (effectiveStock > 0 ? 999 : 0);
+      const idealQty = Math.max(0, targetStock - effectiveStock);
       const idealRounded = idealQty > 0 ? Math.max(isBW ? batch : RULES.MIN_ORDER_PER_CODE, Math.ceil(idealQty / batch) * batch) : 0;
       const cost = qty * product.hargaModal;
       totalCost += cost;
@@ -223,7 +225,7 @@ serve(async (req) => {
         verdict, verdict_note: note,
         cost, harga_modal: product.hargaModal,
         is_bestseller: isBestSeller, is_bw: isBW,
-        batch,
+        batch, pending_qty: pendingQty,
       });
     }
 
