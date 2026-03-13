@@ -70,6 +70,7 @@ const BarangKeluar = () => {
   // Bulk mode state
   const [bulkToko, setBulkToko] = useState("");
   const [bulkCatatan, setBulkCatatan] = useState("");
+  const [bulkTanggal, setBulkTanggal] = useState<Date | undefined>(undefined);
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
 
   const matched = products?.find((p) => p.kode.toUpperCase() === kode.toUpperCase());
