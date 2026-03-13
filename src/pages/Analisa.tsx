@@ -357,12 +357,13 @@ function BudgetPlanner({
   }, [activePlan, pendingItems, analyses]);
 
   // ─── Budget Mode Recommendations ───
+  // ─── Budget Mode: NO pending deduction, pure calculation ───
   const budgetRecommendations = useMemo(() => {
     const sorted = [...analyses]
       .filter(a => a.velocity > 0)
       .sort((a, b) => b.combinedScore - a.combinedScore);
 
-    type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string; pendingQty?: number };
+    type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string };
     const result: RecItem[] = [];
     let remaining = budgetAmount;
 
@@ -370,9 +371,7 @@ function BudgetPlanner({
 
     for (const item of sorted) {
       const neededStock = Math.ceil(item.velocity * budgetDays);
-      let deficit = neededStock - item.currentStock;
-      const pq = pendingMap.get(item.kode.toUpperCase()) || 0;
-      deficit -= pq;
+      const deficit = neededStock - item.currentStock;
       if (deficit <= 0) continue;
 
       const isBW = isBlackWhiteCode(item.kode);
@@ -390,8 +389,7 @@ function BudgetPlanner({
 
     if (totalIdealCost <= budgetAmount) {
       for (const c of candidates) {
-        const pq = pendingMap.get(c.item.kode.toUpperCase()) || 0;
-        result.push({ item: c.item, qty: c.idealQty, cost: c.idealCost, reason: c.reason, pendingQty: pq || undefined });
+        result.push({ item: c.item, qty: c.idealQty, cost: c.idealCost, reason: c.reason });
         remaining -= c.idealCost;
       }
     } else {
@@ -409,15 +407,14 @@ function BudgetPlanner({
             if (qty < c.minOrder) continue;
             cost = qty * c.item.unitPrice;
           }
-          const pq = pendingMap.get(c.item.kode.toUpperCase()) || 0;
-          result.push({ item: c.item, qty, cost, reason: c.reason, pendingQty: pq || undefined });
+          result.push({ item: c.item, qty, cost, reason: c.reason });
           remaining -= cost;
         }
       }
     }
 
     return { items: result, totalCost: budgetAmount - remaining, remaining };
-  }, [analyses, budgetAmount, budgetDays, pendingMap]);
+  }, [analyses, budgetAmount, budgetDays]);
 
   // ─── Periode Mode: Same logic as Budget Mode, split across plan days ───
   type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string; pendingQty?: number; simStock?: number; simDaysLeft?: number };
