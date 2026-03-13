@@ -140,6 +140,8 @@ serve(async (req) => {
     const queries: Promise<any>[] = [
       supabase.from("products").select("id, kode, nama, kategori, stock(jumlah), prices(harga_modal, harga_normal, harga_grosir)").eq("is_active", true),
       supabase.from("stock_out").select("product_id, qty_pesan, created_at").gte("created_at", cutoff.toISOString()).order("created_at", { ascending: false }).limit(5000),
+      // Fetch pending restock items (orders placed but not yet arrived)
+      supabase.from("pending_restock").select("id, status").in("status", ["pending", "active"]),
     ];
     if (isTopup && ordered_at) {
       queries.push(
@@ -148,10 +150,25 @@ serve(async (req) => {
     }
 
     const queryResults = await Promise.all(queries);
-    const [productsRes, stockOutRes] = queryResults;
-    const stockOutAfterOrder = isTopup && queryResults[2] ? queryResults[2].data || [] : [];
+    const [productsRes, stockOutRes, pendingRestockRes] = queryResults;
+    const stockOutAfterOrder = isTopup && queryResults[3] ? queryResults[3].data || [] : [];
     const rawProducts = productsRes.data || [];
     const stockOut = stockOutRes.data || [];
+
+    // Build pending qty map from pending_restock_items
+    const pendingMap: Record<string, number> = {};
+    const pendingRestocks = pendingRestockRes.data || [];
+    if (pendingRestocks.length > 0) {
+      const restockIds = pendingRestocks.map((r: any) => r.id);
+      const { data: pendingItems } = await supabase
+        .from("pending_restock_items")
+        .select("kode, qty")
+        .in("restock_id", restockIds);
+      for (const pi of (pendingItems || [])) {
+        const k = pi.kode.toUpperCase().trim();
+        pendingMap[k] = (pendingMap[k] || 0) + pi.qty;
+      }
+    }
 
     // Build product lookup
     const productMap: Record<string, any> = {};
