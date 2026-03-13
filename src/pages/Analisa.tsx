@@ -278,7 +278,25 @@ function BudgetPlanner({
         .eq("status", "active")
         .order("created_at", { ascending: false })
         .limit(1);
-      setActivePlan(data && data.length > 0 ? data[0] : null);
+
+      if (data && data.length > 0) {
+        const plan = data[0];
+        const start = new Date(plan.start_date + "T00:00:00");
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const dayNumber = Math.floor((today.getTime() - start.getTime()) / 86400000) + 1;
+
+        if (dayNumber > plan.total_days) {
+          // Auto-close expired plan
+          await (supabase as any).from("restock_plans").update({ status: "completed" }).eq("id", plan.id);
+          toast.success("Rencana sebelumnya selesai otomatis ✅");
+          setActivePlan(null);
+        } else {
+          setActivePlan(plan);
+        }
+      } else {
+        setActivePlan(null);
+      }
     } catch { setActivePlan(null); }
     finally { setPlanLoading(false); }
   }
