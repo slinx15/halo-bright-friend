@@ -211,20 +211,9 @@ function BudgetPlanner({
   const [coverageDays, setCoverageDays] = useState(4);
   const [creatingPlan, setCreatingPlan] = useState(false);
 
-  // ─── Periode: manual order input ───
-  const [periodeSection, setPeriodeSection] = useState<"saran" | "manual">("saran");
-  const [manualRows, setManualRows] = useState<{ kode: string; qty: number }[]>([]);
-  const [inputForDay, setInputForDay] = useState<number | null>(null); // null = current day
+  // ─── Periode: item selection ───
+  const [selectedPeriodeIds, setSelectedPeriodeIds] = useState<Set<string>>(new Set());
   const [submittingOrder, setSubmittingOrder] = useState(false);
-  const [reviewingOrder, setReviewingOrder] = useState(false);
-  const [orderReviewResult, setOrderReviewResult] = useState<ReviewResult | null>(null);
-  const [deviationWarning, setDeviationWarning] = useState<{
-    skippedCritical: { kode: string; nama: string; qty: number; reason: string }[];
-    qtyDeviations: { kode: string; nama: string; saranQty: number; bossQty: number; diff: number }[];
-    extraItems: { kode: string; qty: number }[];
-    totalSaranCost: number;
-    totalBossCost: number;
-  } | null>(null);
 
   // Build kode→analysis map for manual rows
   const kodeAnalysisMap = useMemo(() => {
