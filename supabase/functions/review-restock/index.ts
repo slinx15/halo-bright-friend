@@ -72,6 +72,7 @@ interface ReviewCard {
   is_bestseller: boolean;
   is_bw: boolean;
   batch: number;
+  pending_qty: number;
 }
 
 interface MissedCard {
