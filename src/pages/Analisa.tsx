@@ -215,172 +215,46 @@ function BudgetPlanner({
   const [selectedPeriodeIds, setSelectedPeriodeIds] = useState<Set<string>>(new Set());
   const [submittingOrder, setSubmittingOrder] = useState(false);
 
-  // Build kode→analysis map for manual rows
-  const kodeAnalysisMap = useMemo(() => {
-    const m = new Map<string, typeof analyses[0]>();
-    analyses.forEach(a => m.set(a.kode.toUpperCase(), a));
-    return m;
-  }, [analyses]);
-
-  const addManualRow = useCallback(() => {
-    setManualRows(prev => [...prev, { kode: "", qty: 0 }]);
-  }, []);
-
-  const updateManualRow = useCallback((idx: number, field: "kode" | "qty", value: string | number) => {
-    setManualRows(prev => {
-      const updated = [...prev];
-      if (field === "kode") {
-        const matched = kodeAnalysisMap.get((value as string).toUpperCase());
-        updated[idx] = { kode: matched ? matched.kode : (value as string).toUpperCase(), qty: updated[idx].qty };
-      } else {
-        updated[idx] = { ...updated[idx], qty: value as number };
-      }
-      return updated;
+  const togglePeriodeItem = useCallback((kode: string) => {
+    setSelectedPeriodeIds(prev => {
+      const next = new Set(prev);
+      if (next.has(kode)) next.delete(kode);
+      else next.add(kode);
+      return next;
     });
-  }, [kodeAnalysisMap]);
-
-  const removeManualRow = useCallback((idx: number) => {
-    setManualRows(prev => prev.filter((_, i) => i !== idx));
   }, []);
 
-  // Add item from AI saran to manual rows
-  const addFromSaran = useCallback((kode: string, qty: number) => {
-    setManualRows(prev => {
-      const existing = prev.findIndex(r => r.kode.toUpperCase() === kode.toUpperCase());
-      if (existing >= 0) {
-        const updated = [...prev];
-        updated[existing] = { ...updated[existing], qty };
-        return updated;
-      }
-      return [...prev, { kode, qty }];
-    });
-    // Stay on Saran AI view, don't switch to manual
-    toast.success(`${kode} ditambahkan ke pesanan`);
-  }, []);
-
-  // Add ALL saran items to manual
-  const addAllFromSaran = useCallback((items: { kode: string; qty: number }[]) => {
-    setManualRows(prev => {
-      const existingKodes = new Set(prev.map(r => r.kode.toUpperCase()));
-      const newItems = items.filter(i => !existingKodes.has(i.kode.toUpperCase()));
-      return [...prev, ...newItems];
-    });
-    // Stay on Saran AI view, don't switch to manual
-    toast.success(`${items.length} item ditambahkan ke pesanan`);
-  }, []);
-
-  // Review order via AI
-  async function reviewManualOrder() {
-    const validRows = manualRows.filter(r => r.kode && r.qty > 0 && kodeAnalysisMap.has(r.kode.toUpperCase()));
-    if (validRows.length === 0) { toast.error("Masukkan minimal 1 item valid"); return; }
-
-    setReviewingOrder(true);
-    try {
-      const items = validRows.map(r => ({ kode: r.kode, qty: r.qty }));
-      const { data, error } = await supabase.functions.invoke("review-restock", {
-        body: { items, mode: "normal", already_sent: false },
-      });
-      if (error) throw error;
-      setOrderReviewResult(data as ReviewResult);
-    } catch (err: any) {
-      console.error(err);
-      toast.error("Gagal review: " + (err?.message || "Error"));
-    } finally {
-      setReviewingOrder(false);
-    }
-  }
-
-  // Check deviation before saving
-  function checkDeviationAndSave() {
-    if (mode !== "periode" || periodeRecommendations.items.length === 0) {
-      submitManualOrder();
-      return;
-    }
-
-    const validRows = manualRows.filter(r => r.kode && r.qty > 0 && kodeAnalysisMap.has(r.kode.toUpperCase()));
-    const bossKodes = new Set(validRows.map(r => r.kode.toUpperCase()));
-    const bossQtyMap = new Map(validRows.map(r => [r.kode.toUpperCase(), r.qty]));
-
-    // Find skipped critical items from AI suggestions
-    const skippedCritical = periodeRecommendations.items
-      .filter(r => !bossKodes.has(r.item.kode.toUpperCase()) && (r.item.isStockOut || r.item.daysOfStock <= RULES.CRITICAL_DAYS))
-      .map(r => ({ kode: r.item.kode, nama: r.item.nama, qty: r.qty, reason: r.reason }));
-
-    // Find qty deviations (>30% difference)
-    const qtyDeviations = periodeRecommendations.items
-      .filter(r => {
-        const bossQty = bossQtyMap.get(r.item.kode.toUpperCase());
-        if (!bossQty) return false;
-        const diff = bossQty - r.qty;
-        return Math.abs(diff) > r.qty * 0.3;
-      })
-      .map(r => {
-        const bossQty = bossQtyMap.get(r.item.kode.toUpperCase())!;
-        return { kode: r.item.kode, nama: r.item.nama, saranQty: r.qty, bossQty, diff: bossQty - r.qty };
-      });
-
-    // Extra items not in AI suggestions
-    const saranKodes = new Set(periodeRecommendations.items.map(r => r.item.kode.toUpperCase()));
-    const extraItems = validRows
-      .filter(r => !saranKodes.has(r.kode.toUpperCase()))
-      .map(r => ({ kode: r.kode, qty: r.qty }));
-
-    const totalSaranCost = periodeRecommendations.totalCost;
-    const totalBossCost = validRows.reduce((s, r) => s + r.qty * (kodeAnalysisMap.get(r.kode.toUpperCase())?.unitPrice || 0), 0);
-
-    // Show warning if significant deviations found
-    if (skippedCritical.length > 0 || qtyDeviations.length > 0) {
-      setDeviationWarning({ skippedCritical, qtyDeviations, extraItems, totalSaranCost, totalBossCost });
-      return;
-    }
-
-    submitManualOrder();
-  }
-
-  // Submit order to pending_restock
-  async function submitManualOrder() {
-    setDeviationWarning(null);
-    const validRows = manualRows.filter(r => r.kode && r.qty > 0 && kodeAnalysisMap.has(r.kode.toUpperCase()));
-    if (validRows.length === 0) { toast.error("Masukkan minimal 1 item valid"); return; }
+  async function submitSelectedItems() {
+    const selectedItems = periodeRecommendations.items.filter(r => selectedPeriodeIds.has(r.item.kode));
+    if (selectedItems.length === 0) { toast.error("Pilih minimal 1 item"); return; }
 
     setSubmittingOrder(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { toast.error("Belum login"); return; }
 
-      // Calculate ordered_at based on selected input day
-      const effectiveDay = inputForDay ?? (planInfo?.dayNumber || 1);
-      let orderedAt: string | undefined;
-      if (activePlan && inputForDay && inputForDay !== planInfo?.dayNumber) {
-        const planStart = new Date(activePlan.start_date + "T00:00:00");
-        const targetDate = new Date(planStart);
-        targetDate.setDate(targetDate.getDate() + inputForDay - 1);
-        orderedAt = format(targetDate, "yyyy-MM-dd'T'HH:mm:ss");
-      }
-
-      const insertData: any = { user_id: user.id, notes: `Periode Hari ${effectiveDay}` };
-      if (orderedAt) insertData.ordered_at = orderedAt;
+      const dayNum = planInfo?.dayNumber || 1;
 
       const { data: restock, error: e1 } = await supabase
         .from("pending_restock")
-        .insert(insertData)
+        .insert({ user_id: user.id, notes: `Periode Hari ${dayNum}` })
         .select().single();
       if (e1 || !restock) throw e1;
 
-      const itemsToInsert = validRows.map(r => {
-        const a = kodeAnalysisMap.get(r.kode.toUpperCase())!;
-        return { restock_id: restock.id, kode: a.kode, qty: r.qty, product_id: a.productId };
-      });
+      const itemsToInsert = selectedItems.map(r => ({
+        restock_id: restock.id,
+        kode: r.item.kode,
+        qty: r.qty,
+        product_id: r.item.productId,
+      }));
 
       const { error: e2 } = await supabase
         .from("pending_restock_items")
         .insert(itemsToInsert);
       if (e2) throw e2;
 
-      toast.success(`${validRows.length} item berhasil disimpan sebagai pesanan Hari ${effectiveDay}`);
-      setManualRows([]);
-      setOrderReviewResult(null);
-      setInputForDay(null);
+      toast.success(`${selectedItems.length} item berhasil dipesan untuk Hari ${dayNum}`);
+      setSelectedPeriodeIds(new Set());
       refetchPending();
     } catch (err: any) {
       console.error(err);
