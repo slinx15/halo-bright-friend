@@ -275,11 +275,14 @@ function MissedProductCard({ card }: { card: MissedCard }) {
       <div className="rounded-xl px-3 py-2 text-[11px] leading-relaxed bg-red-100/80 dark:bg-red-900/30 text-red-800 dark:text-red-300">
         💬 {getMissedReason(card)}
       </div>
-      {card.cost > 0 && (
-        <div className="text-[10px] text-muted-foreground px-1">
-          Budget: <span className="font-bold text-foreground">{formatRupiah(card.cost)}</span>
-        </div>
-      )}
+      <div className="flex items-center gap-3 text-[10px] text-muted-foreground px-1 flex-wrap">
+        {(card.pending_qty ?? 0) > 0 && (
+          <span>📦 Pending: <span className="font-bold text-purple-600 dark:text-purple-400">{formatNumber(card.pending_qty!)}</span></span>
+        )}
+        {card.cost > 0 && (
+          <span>Budget: <span className="font-bold text-foreground">{formatRupiah(card.cost)}</span></span>
+        )}
+      </div>
     </div>
   );
 }
