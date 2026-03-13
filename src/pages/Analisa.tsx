@@ -689,11 +689,6 @@ function BudgetPlanner({
                         <span className="text-xs text-muted-foreground font-mono">#{i + 1}</span>
                         <span className="font-bold text-sm">{r.item.kode}</span>
                         {r.item.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
-                        {r.pendingQty && (
-                          <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
-                            <Clock className="h-2.5 w-2.5" /> {r.pendingQty} pending
-                          </span>
-                        )}
                       </div>
                       <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
                         {r.qty}
