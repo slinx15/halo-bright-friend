@@ -665,14 +665,6 @@ function BudgetPlanner({
             <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${Math.min(usedPct, 100)}%` }} />
           </div>
 
-          {pendingCount > 0 && (
-            <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 px-3 py-2.5">
-              <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                {pendingCount} item pending otomatis dikurangi dari kebutuhan
-              </p>
-            </div>
-          )}
 
           {/* Budget recommendation list */}
           {budgetRecommendations.items.length > 0 ? (
