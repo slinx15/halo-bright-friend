@@ -357,12 +357,13 @@ function BudgetPlanner({
   }, [activePlan, pendingItems, analyses]);
 
   // ─── Budget Mode Recommendations ───
+  // ─── Budget Mode: NO pending deduction, pure calculation ───
   const budgetRecommendations = useMemo(() => {
     const sorted = [...analyses]
       .filter(a => a.velocity > 0)
       .sort((a, b) => b.combinedScore - a.combinedScore);
 
-    type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string; pendingQty?: number };
+    type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string };
     const result: RecItem[] = [];
     let remaining = budgetAmount;
 
@@ -370,9 +371,7 @@ function BudgetPlanner({
 
     for (const item of sorted) {
       const neededStock = Math.ceil(item.velocity * budgetDays);
-      let deficit = neededStock - item.currentStock;
-      const pq = pendingMap.get(item.kode.toUpperCase()) || 0;
-      deficit -= pq;
+      const deficit = neededStock - item.currentStock;
       if (deficit <= 0) continue;
 
       const isBW = isBlackWhiteCode(item.kode);
@@ -390,8 +389,7 @@ function BudgetPlanner({
 
     if (totalIdealCost <= budgetAmount) {
       for (const c of candidates) {
-        const pq = pendingMap.get(c.item.kode.toUpperCase()) || 0;
-        result.push({ item: c.item, qty: c.idealQty, cost: c.idealCost, reason: c.reason, pendingQty: pq || undefined });
+        result.push({ item: c.item, qty: c.idealQty, cost: c.idealCost, reason: c.reason });
         remaining -= c.idealCost;
       }
     } else {
@@ -409,15 +407,14 @@ function BudgetPlanner({
             if (qty < c.minOrder) continue;
             cost = qty * c.item.unitPrice;
           }
-          const pq = pendingMap.get(c.item.kode.toUpperCase()) || 0;
-          result.push({ item: c.item, qty, cost, reason: c.reason, pendingQty: pq || undefined });
+          result.push({ item: c.item, qty, cost, reason: c.reason });
           remaining -= cost;
         }
       }
     }
 
     return { items: result, totalCost: budgetAmount - remaining, remaining };
-  }, [analyses, budgetAmount, budgetDays, pendingMap]);
+  }, [analyses, budgetAmount, budgetDays]);
 
   // ─── Periode Mode: Same logic as Budget Mode, split across plan days ───
   type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string; pendingQty?: number; simStock?: number; simDaysLeft?: number };
@@ -668,14 +665,6 @@ function BudgetPlanner({
             <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${Math.min(usedPct, 100)}%` }} />
           </div>
 
-          {pendingCount > 0 && (
-            <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 px-3 py-2.5">
-              <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                {pendingCount} item pending otomatis dikurangi dari kebutuhan
-              </p>
-            </div>
-          )}
 
           {/* Budget recommendation list */}
           {budgetRecommendations.items.length > 0 ? (
@@ -700,11 +689,6 @@ function BudgetPlanner({
                         <span className="text-xs text-muted-foreground font-mono">#{i + 1}</span>
                         <span className="font-bold text-sm">{r.item.kode}</span>
                         {r.item.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
-                        {r.pendingQty && (
-                          <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
-                            <Clock className="h-2.5 w-2.5" /> {r.pendingQty} pending
-                          </span>
-                        )}
                       </div>
                       <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
                         {r.qty}
