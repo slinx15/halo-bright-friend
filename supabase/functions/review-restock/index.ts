@@ -239,14 +239,18 @@ serve(async (req) => {
       if (!prod) continue;
       const { velocity } = computeWMAVelocity(stockOut, prod.id);
       if (velocity <= 0) continue;
-      const dos = prod.stok / velocity;
+      const kodeUpper = p.kode.toUpperCase();
+      const pendingQty = pendingMap[kodeUpper] || 0;
+      const effectiveStock = prod.stok + pendingQty;
+      const dos = effectiveStock / velocity;
       if (dos <= RULES.WARNING_DAYS) {
         const isBW = isBlackWhite(p.kode);
         const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
         const missedTargetDays = customTargetDays || (RULES.CYCLE_DAYS + (isBW ? RULES.SAFETY_BW : RULES.SAFETY_STOCK) + RULES.LEAD_TIME_DAYS);
-        const idealQty = Math.max(batch, Math.ceil(velocity * missedTargetDays - prod.stok));
-        const idealRounded = Math.ceil(idealQty / batch) * batch;
+        const idealQty = Math.max(batch, Math.ceil(velocity * missedTargetDays - effectiveStock));
+        const idealRounded = idealQty > 0 ? Math.ceil(idealQty / batch) * batch : 0;
         const missedCost = idealRounded * (prod.hargaModal || 0);
+        if (idealRounded <= 0) continue; // skip if pending already covers it
         missed.push({
           kode: p.kode, nama: p.nama,
           stok: prod.stok, velocity,
@@ -254,7 +258,7 @@ serve(async (req) => {
           status: getStatus(dos),
           ideal_qty: idealRounded, is_bw: isBW,
           harga_modal: prod.hargaModal || 0,
-          cost: missedCost,
+          cost: missedCost, pending_qty: pendingQty,
         });
       }
     }
