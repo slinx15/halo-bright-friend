@@ -64,6 +64,7 @@ const BarangKeluar = () => {
   const [hargaType, setHargaType] = useState("normal");
   const [catatan, setCatatan] = useState("");
   const [toko, setToko] = useState("");
+  const [tanggal, setTanggal] = useState<Date | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
 
   // Bulk mode state
