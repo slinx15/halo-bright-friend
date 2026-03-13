@@ -16,9 +16,9 @@ import {
   AlertTriangle, Package, Skull,
   BarChart3, DollarSign, Store, ArrowDown,
   ShoppingCart, Clock, Trophy, Activity,
-  AlertCircle, PackageX, Wallet, Flame, TrendingUp, TrendingDown,
+  Wallet, Flame, TrendingUp,
   Calculator, CheckCircle2, ChevronLeft, ChevronRight, Sparkles, Palette, Calendar as CalendarIcon, Users,
-  Plus, Trash2, Send, Loader2, Eye, Edit3, Lock
+  Plus, Send, Loader2, Lock
 } from "lucide-react";
 import { useSalesAnalysis } from "@/hooks/useSalesAnalysis";
 import { analyzeAllProducts, getStatusCounts, RULES, type DosStatus, type ProductAnalysis, isBlackWhiteCode } from "@/lib/stockAnalyticsEngine";
@@ -211,187 +211,50 @@ function BudgetPlanner({
   const [coverageDays, setCoverageDays] = useState(4);
   const [creatingPlan, setCreatingPlan] = useState(false);
 
-  // ─── Periode: manual order input ───
-  const [periodeSection, setPeriodeSection] = useState<"saran" | "manual">("saran");
-  const [manualRows, setManualRows] = useState<{ kode: string; qty: number }[]>([]);
-  const [inputForDay, setInputForDay] = useState<number | null>(null); // null = current day
+  // ─── Periode: item selection ───
+  const [selectedPeriodeIds, setSelectedPeriodeIds] = useState<Set<string>>(new Set());
   const [submittingOrder, setSubmittingOrder] = useState(false);
-  const [reviewingOrder, setReviewingOrder] = useState(false);
-  const [orderReviewResult, setOrderReviewResult] = useState<ReviewResult | null>(null);
-  const [deviationWarning, setDeviationWarning] = useState<{
-    skippedCritical: { kode: string; nama: string; qty: number; reason: string }[];
-    qtyDeviations: { kode: string; nama: string; saranQty: number; bossQty: number; diff: number }[];
-    extraItems: { kode: string; qty: number }[];
-    totalSaranCost: number;
-    totalBossCost: number;
-  } | null>(null);
 
-  // Build kode→analysis map for manual rows
-  const kodeAnalysisMap = useMemo(() => {
-    const m = new Map<string, typeof analyses[0]>();
-    analyses.forEach(a => m.set(a.kode.toUpperCase(), a));
-    return m;
-  }, [analyses]);
-
-  const addManualRow = useCallback(() => {
-    setManualRows(prev => [...prev, { kode: "", qty: 0 }]);
-  }, []);
-
-  const updateManualRow = useCallback((idx: number, field: "kode" | "qty", value: string | number) => {
-    setManualRows(prev => {
-      const updated = [...prev];
-      if (field === "kode") {
-        const matched = kodeAnalysisMap.get((value as string).toUpperCase());
-        updated[idx] = { kode: matched ? matched.kode : (value as string).toUpperCase(), qty: updated[idx].qty };
-      } else {
-        updated[idx] = { ...updated[idx], qty: value as number };
-      }
-      return updated;
+  const togglePeriodeItem = useCallback((kode: string) => {
+    setSelectedPeriodeIds(prev => {
+      const next = new Set(prev);
+      if (next.has(kode)) next.delete(kode);
+      else next.add(kode);
+      return next;
     });
-  }, [kodeAnalysisMap]);
-
-  const removeManualRow = useCallback((idx: number) => {
-    setManualRows(prev => prev.filter((_, i) => i !== idx));
   }, []);
 
-  // Add item from AI saran to manual rows
-  const addFromSaran = useCallback((kode: string, qty: number) => {
-    setManualRows(prev => {
-      const existing = prev.findIndex(r => r.kode.toUpperCase() === kode.toUpperCase());
-      if (existing >= 0) {
-        const updated = [...prev];
-        updated[existing] = { ...updated[existing], qty };
-        return updated;
-      }
-      return [...prev, { kode, qty }];
-    });
-    // Stay on Saran AI view, don't switch to manual
-    toast.success(`${kode} ditambahkan ke pesanan`);
-  }, []);
-
-  // Add ALL saran items to manual
-  const addAllFromSaran = useCallback((items: { kode: string; qty: number }[]) => {
-    setManualRows(prev => {
-      const existingKodes = new Set(prev.map(r => r.kode.toUpperCase()));
-      const newItems = items.filter(i => !existingKodes.has(i.kode.toUpperCase()));
-      return [...prev, ...newItems];
-    });
-    // Stay on Saran AI view, don't switch to manual
-    toast.success(`${items.length} item ditambahkan ke pesanan`);
-  }, []);
-
-  // Review order via AI
-  async function reviewManualOrder() {
-    const validRows = manualRows.filter(r => r.kode && r.qty > 0 && kodeAnalysisMap.has(r.kode.toUpperCase()));
-    if (validRows.length === 0) { toast.error("Masukkan minimal 1 item valid"); return; }
-
-    setReviewingOrder(true);
-    try {
-      const items = validRows.map(r => ({ kode: r.kode, qty: r.qty }));
-      const { data, error } = await supabase.functions.invoke("review-restock", {
-        body: { items, mode: "normal", already_sent: false },
-      });
-      if (error) throw error;
-      setOrderReviewResult(data as ReviewResult);
-    } catch (err: any) {
-      console.error(err);
-      toast.error("Gagal review: " + (err?.message || "Error"));
-    } finally {
-      setReviewingOrder(false);
-    }
-  }
-
-  // Check deviation before saving
-  function checkDeviationAndSave() {
-    if (mode !== "periode" || periodeRecommendations.items.length === 0) {
-      submitManualOrder();
-      return;
-    }
-
-    const validRows = manualRows.filter(r => r.kode && r.qty > 0 && kodeAnalysisMap.has(r.kode.toUpperCase()));
-    const bossKodes = new Set(validRows.map(r => r.kode.toUpperCase()));
-    const bossQtyMap = new Map(validRows.map(r => [r.kode.toUpperCase(), r.qty]));
-
-    // Find skipped critical items from AI suggestions
-    const skippedCritical = periodeRecommendations.items
-      .filter(r => !bossKodes.has(r.item.kode.toUpperCase()) && (r.item.isStockOut || r.item.daysOfStock <= RULES.CRITICAL_DAYS))
-      .map(r => ({ kode: r.item.kode, nama: r.item.nama, qty: r.qty, reason: r.reason }));
-
-    // Find qty deviations (>30% difference)
-    const qtyDeviations = periodeRecommendations.items
-      .filter(r => {
-        const bossQty = bossQtyMap.get(r.item.kode.toUpperCase());
-        if (!bossQty) return false;
-        const diff = bossQty - r.qty;
-        return Math.abs(diff) > r.qty * 0.3;
-      })
-      .map(r => {
-        const bossQty = bossQtyMap.get(r.item.kode.toUpperCase())!;
-        return { kode: r.item.kode, nama: r.item.nama, saranQty: r.qty, bossQty, diff: bossQty - r.qty };
-      });
-
-    // Extra items not in AI suggestions
-    const saranKodes = new Set(periodeRecommendations.items.map(r => r.item.kode.toUpperCase()));
-    const extraItems = validRows
-      .filter(r => !saranKodes.has(r.kode.toUpperCase()))
-      .map(r => ({ kode: r.kode, qty: r.qty }));
-
-    const totalSaranCost = periodeRecommendations.totalCost;
-    const totalBossCost = validRows.reduce((s, r) => s + r.qty * (kodeAnalysisMap.get(r.kode.toUpperCase())?.unitPrice || 0), 0);
-
-    // Show warning if significant deviations found
-    if (skippedCritical.length > 0 || qtyDeviations.length > 0) {
-      setDeviationWarning({ skippedCritical, qtyDeviations, extraItems, totalSaranCost, totalBossCost });
-      return;
-    }
-
-    submitManualOrder();
-  }
-
-  // Submit order to pending_restock
-  async function submitManualOrder() {
-    setDeviationWarning(null);
-    const validRows = manualRows.filter(r => r.kode && r.qty > 0 && kodeAnalysisMap.has(r.kode.toUpperCase()));
-    if (validRows.length === 0) { toast.error("Masukkan minimal 1 item valid"); return; }
+  async function submitSelectedItems() {
+    const selectedItems = periodeRecommendations.items.filter(r => selectedPeriodeIds.has(r.item.kode));
+    if (selectedItems.length === 0) { toast.error("Pilih minimal 1 item"); return; }
 
     setSubmittingOrder(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { toast.error("Belum login"); return; }
 
-      // Calculate ordered_at based on selected input day
-      const effectiveDay = inputForDay ?? (planInfo?.dayNumber || 1);
-      let orderedAt: string | undefined;
-      if (activePlan && inputForDay && inputForDay !== planInfo?.dayNumber) {
-        const planStart = new Date(activePlan.start_date + "T00:00:00");
-        const targetDate = new Date(planStart);
-        targetDate.setDate(targetDate.getDate() + inputForDay - 1);
-        orderedAt = format(targetDate, "yyyy-MM-dd'T'HH:mm:ss");
-      }
-
-      const insertData: any = { user_id: user.id, notes: `Periode Hari ${effectiveDay}` };
-      if (orderedAt) insertData.ordered_at = orderedAt;
+      const dayNum = planInfo?.dayNumber || 1;
 
       const { data: restock, error: e1 } = await supabase
         .from("pending_restock")
-        .insert(insertData)
+        .insert({ user_id: user.id, notes: `Periode Hari ${dayNum}` })
         .select().single();
       if (e1 || !restock) throw e1;
 
-      const itemsToInsert = validRows.map(r => {
-        const a = kodeAnalysisMap.get(r.kode.toUpperCase())!;
-        return { restock_id: restock.id, kode: a.kode, qty: r.qty, product_id: a.productId };
-      });
+      const itemsToInsert = selectedItems.map(r => ({
+        restock_id: restock.id,
+        kode: r.item.kode,
+        qty: r.qty,
+        product_id: r.item.productId,
+      }));
 
       const { error: e2 } = await supabase
         .from("pending_restock_items")
         .insert(itemsToInsert);
       if (e2) throw e2;
 
-      toast.success(`${validRows.length} item berhasil disimpan sebagai pesanan Hari ${effectiveDay}`);
-      setManualRows([]);
-      setOrderReviewResult(null);
-      setInputForDay(null);
+      toast.success(`${selectedItems.length} item berhasil dipesan untuk Hari ${dayNum}`);
+      setSelectedPeriodeIds(new Set());
       refetchPending();
     } catch (err: any) {
       console.error(err);
@@ -415,7 +278,25 @@ function BudgetPlanner({
         .eq("status", "active")
         .order("created_at", { ascending: false })
         .limit(1);
-      setActivePlan(data && data.length > 0 ? data[0] : null);
+
+      if (data && data.length > 0) {
+        const plan = data[0];
+        const start = new Date(plan.start_date + "T00:00:00");
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const dayNumber = Math.floor((today.getTime() - start.getTime()) / 86400000) + 1;
+
+        if (dayNumber > plan.total_days) {
+          // Auto-close expired plan
+          await (supabase as any).from("restock_plans").update({ status: "completed" }).eq("id", plan.id);
+          toast.success("Rencana sebelumnya selesai otomatis ✅");
+          setActivePlan(null);
+        } else {
+          setActivePlan(plan);
+        }
+      } else {
+        setActivePlan(null);
+      }
     } catch { setActivePlan(null); }
     finally { setPlanLoading(false); }
   }
@@ -1166,406 +1047,130 @@ function BudgetPlanner({
                 );
               })()}
 
-              {/* Onboarding checklist for backdated plans */}
-              {planInfo && !planInfo.isExpired && planInfo.dayNumber > 1 && (() => {
-                // Count how many "Kirim & Simpan" batches exist during the plan
-                const planStart = new Date(activePlan.start_date + "T00:00:00");
-                const orderedDays = new Set<number>();
-                pendingItems.forEach(p => {
-                  if (!p.orderedAt) return;
-                  const d = new Date(p.orderedAt);
-                  d.setHours(0, 0, 0, 0);
-                  if (d >= planStart) {
-                    const dayNum = Math.floor((d.getTime() - planStart.getTime()) / 86400000) + 1;
-                    if (dayNum <= activePlan.total_days) orderedDays.add(dayNum);
-                  }
-                });
-
-                const pastDays = Array.from({ length: planInfo.dayNumber - 1 }, (_, i) => i + 1);
-                const allPastInputted = pastDays.every(d => orderedDays.has(d));
-
-                if (allPastInputted) return null;
-
-                return (
-                  <Card className="border-0 shadow-sm border-l-[3px] border-l-primary overflow-hidden">
-                    <CardContent className="p-4 space-y-2.5">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-primary" />
-                        <p className="text-xs font-bold">Langkah untuk hasil akurat:</p>
-                      </div>
-                      <div className="space-y-1.5">
-                        {pastDays.map(d => {
-                          const done = orderedDays.has(d);
-                          return (
-                            <button
-                              key={d}
-                              onClick={() => { if (!done) { setInputForDay(d); setPeriodeSection("manual"); } }}
-                              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all ${
-                                done ? "bg-success/5" : "bg-muted/40 hover:bg-primary/5"
-                              }`}
-                            >
-                              <div className={`h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                                done ? "bg-success text-success-foreground" : "border-2 border-muted-foreground/30"
-                              }`}>
-                                {done && <CheckCircle2 className="h-3.5 w-3.5" />}
-                              </div>
-                              <span className={`text-xs ${done ? "text-success font-medium line-through" : "font-semibold"}`}>
-                                Input pesanan Hari {d}
-                              </span>
-                              {!done && (
-                                <span className="ml-auto text-[10px] text-primary font-medium">
-                                  Klik untuk input →
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
-                        <div className={`flex items-center gap-2.5 px-3 py-2 rounded-lg ${
-                          allPastInputted ? "bg-primary/5" : "bg-muted/20 opacity-50"
-                        }`}>
-                          <div className={`h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                            allPastInputted ? "bg-primary text-primary-foreground" : "border-2 border-muted-foreground/20"
-                          }`}>
-                            {allPastInputted && <Sparkles className="h-3 w-3" />}
-                          </div>
-                          <span className="text-xs font-semibold">
-                            Lihat Saran AI hari ini (Hari {planInfo.dayNumber})
-                          </span>
-                        </div>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground">
-                        Input pesanan lama supaya AI tidak merekomendasikan barang yang sudah dipesan
-                      </p>
-                    </CardContent>
-                  </Card>
-                );
-              })()}
-
-              {/* Section Toggle: Saran AI vs Input Pesanan */}
+              {/* ═══ TODAY'S CHECKLIST ═══ */}
               {!planInfo?.isExpired && (
-                <>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => setPeriodeSection("saran")}
-                      className={`p-3 rounded-xl text-left transition-all duration-150 active:scale-[0.97] ${
-                        periodeSection === "saran"
-                          ? "bg-primary text-primary-foreground shadow-md"
-                          : "bg-muted/60 text-muted-foreground hover:bg-muted"
-                      }`}
-                    >
-                      <Eye className="h-4 w-4 mb-1" />
-                      <p className="text-xs font-bold">Saran AI</p>
-                      <p className="text-[10px] opacity-80">Lihat rekomendasi hari ini</p>
-                    </button>
-                    <button
-                      onClick={() => setPeriodeSection("manual")}
-                      className={`p-3 rounded-xl text-left transition-all duration-150 active:scale-[0.97] ${
-                        periodeSection === "manual"
-                          ? "bg-primary text-primary-foreground shadow-md"
-                          : "bg-muted/60 text-muted-foreground hover:bg-muted"
-                      }`}
-                    >
-                      <Edit3 className="h-4 w-4 mb-1" />
-                      <p className="text-xs font-bold">Input Pesanan</p>
-                      <p className="text-[10px] opacity-80">
-                        Masukkan & review pesanan
-                        {manualRows.length > 0 && ` (${manualRows.filter(r => r.kode && r.qty > 0).length})`}
-                      </p>
-                    </button>
+                <Card className="border-0 shadow-sm overflow-hidden">
+                  <div className="px-4 py-3 bg-primary/5 border-b flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ShoppingCart className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-bold">Belanja Hari {planInfo?.dayNumber}</span>
+                      <Badge className="bg-primary/10 text-primary text-[10px]">
+                        {periodeRecommendations.items.length} item
+                      </Badge>
+                    </div>
+                    {periodeRecommendations.items.length > 0 && (
+                      <button
+                        onClick={() => {
+                          if (selectedPeriodeIds.size === periodeRecommendations.items.length) {
+                            setSelectedPeriodeIds(new Set());
+                          } else {
+                            setSelectedPeriodeIds(new Set(periodeRecommendations.items.map(r => r.item.kode)));
+                          }
+                        }}
+                        className="text-[10px] font-semibold text-primary hover:underline"
+                      >
+                        {selectedPeriodeIds.size === periodeRecommendations.items.length ? "Batal Semua" : "Pilih Semua"}
+                      </button>
+                    )}
                   </div>
 
-                  {/* ═══ SARAN AI SECTION — per-day breakdown ═══ */}
-                  {periodeSection === "saran" && (
-                    <div className="space-y-3">
-                      {periodePerDay.length > 0 ? (
-                        periodePerDay.map((dayPlan, dayIdx) => {
-                          if (dayPlan.locked) {
-                            return (
-                              <Card key={dayPlan.day} className="border-0 shadow-sm overflow-hidden opacity-50">
-                                <div className="px-4 py-3 bg-muted/30 flex items-center gap-2">
-                                  <div className="flex items-center justify-center h-6 w-6 rounded-full bg-muted text-muted-foreground text-[10px] font-bold">
-                                    {dayPlan.day}
-                                  </div>
-                                  <span className="text-sm font-semibold text-muted-foreground">
-                                    Hari {dayPlan.day}
-                                  </span>
-                                  <div className="ml-auto flex items-center gap-1.5">
-                                    <Lock className="h-3 w-3 text-muted-foreground" />
-                                    <span className="text-[10px] text-muted-foreground">
-                                      Terbuka otomatis
-                                    </span>
-                                  </div>
-                                </div>
-                                <CardContent className="py-4 text-center">
-                                  <Lock className="h-5 w-5 mx-auto mb-1.5 text-muted-foreground/50" />
-                                  <p className="text-xs text-muted-foreground">
-                                    Saran akan dihitung dari <strong>stok real-time</strong> saat hari itu tiba
-                                  </p>
-                                  <p className="text-[10px] text-muted-foreground/70 mt-1">
-                                    Lebih akurat karena memperhitungkan penjualan aktual
-                                  </p>
-                                </CardContent>
-                              </Card>
-                            );
-                          }
+                  {periodeRecommendations.items.length > 0 ? (
+                    <div className="p-3 space-y-1.5 max-h-[400px] overflow-y-auto">
+                      {periodeRecommendations.items.map((r, i) => {
+                        const isSelected = selectedPeriodeIds.has(r.item.kode);
+                        const isCritical = r.item.isStockOut || r.item.daysOfStock <= RULES.CRITICAL_DAYS;
+                        return (
+                          <button
+                            key={r.item.productId}
+                            type="button"
+                            onClick={() => togglePeriodeItem(r.item.kode)}
+                            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all duration-150 active:scale-[0.98] ${
+                              isSelected
+                                ? isCritical
+                                  ? "bg-destructive/5 border-2 border-destructive/30"
+                                  : "bg-primary/5 border-2 border-primary/40"
+                                : "bg-card border-2 border-transparent hover:border-border"
+                            }`}
+                          >
+                            {/* Checkbox */}
+                            <div className={`h-5 w-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
+                              isSelected ? "bg-primary border-primary" : "border-muted-foreground/30"
+                            }`}>
+                              {isSelected && <CheckCircle2 className="h-3 w-3 text-primary-foreground" />}
+                            </div>
 
-                          return (
-                          <Card key={dayPlan.day} className="border-0 shadow-sm overflow-hidden">
-                            <div className={`px-4 py-3 border-b flex items-center gap-2 bg-primary/10`}>
-                              <div className="flex items-center justify-center h-6 w-6 rounded-full text-[10px] font-bold bg-primary text-primary-foreground">
-                                {dayPlan.day}
-                              </div>
-                              <span className="text-sm font-semibold">
-                                Hari {dayPlan.day}
-                                <span className="text-primary ml-1">(Hari ini)</span>
-                              </span>
-                              <div className="ml-auto flex items-center gap-2">
-                                <Badge className="bg-primary/10 text-primary text-[10px]">
-                                  {formatRp(dayPlan.totalCost)}
-                                </Badge>
-                                {dayPlan.items.length > 0 && (
-                                  <button
-                                    onClick={() => addAllFromSaran(dayPlan.items.map(r => ({ kode: r.item.kode, qty: r.qty })))}
-                                    className="text-[10px] font-semibold text-primary flex items-center gap-0.5 hover:underline"
-                                  >
-                                    <Plus className="h-3 w-3" /> Pakai
-                                  </button>
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono font-bold text-xs">{r.item.kode}</span>
+                                {r.item.isBestSeller && <Flame className="h-3 w-3 text-warning" />}
+                                {r.pendingQty && (
+                                  <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                                    <Clock className="h-2.5 w-2.5" /> +{r.pendingQty} pending
+                                  </span>
                                 )}
                               </div>
+                              <div className="flex gap-3 text-[10px] text-muted-foreground mt-0.5">
+                                <span>Stok: <strong className={r.item.currentStock === 0 ? "text-destructive" : "text-foreground"}>{r.item.currentStock}</strong></span>
+                                <span>Sisa: <strong className={`${
+                                  r.item.daysOfStock <= 2 ? "text-destructive" : r.item.daysOfStock <= 4 ? "text-warning" : "text-foreground"
+                                }`}>{formatDaysLeft(r.item.daysOfStock)}</strong></span>
+                              </div>
                             </div>
 
-                            {dayPlan.items.length > 0 ? (
-                              <div className="p-3 space-y-2">
-                                {dayPlan.items.map((r, i) => (
-                                  <div
-                                    key={r.item.productId}
-                                    className={`rounded-xl border p-3 space-y-1.5 ${
-                                      r.item.currentStock === 0 ? "border-l-[3px] border-l-destructive border-border/60" :
-                                      r.item.daysOfStock <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60 border-border/60" :
-                                      "border-border/60"
-                                    }`}
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-2 min-w-0">
-                                        <span className="text-xs text-muted-foreground font-mono">#{i + 1}</span>
-                                        <span className="font-bold text-sm">{r.item.kode}</span>
-                                        {r.item.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
-                                          {r.qty}
-                                        </span>
-                                        <button
-                                          onClick={() => addFromSaran(r.item.kode, r.qty)}
-                                          className="p-1.5 rounded-lg bg-muted/60 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
-                                          title="Tambahkan ke pesanan"
-                                        >
-                                          <Plus className="h-3.5 w-3.5" />
-                                        </button>
-                                      </div>
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-2 text-[11px]">
-                                      <div>
-                                        <span className="text-muted-foreground">Stok</span>
-                                        <p className={`font-semibold tabular-nums ${r.item.currentStock === 0 ? "text-destructive" : ""}`}>
-                                          {r.item.currentStock}
-                                        </p>
-                                      </div>
-                                      <div>
-                                        <span className="text-muted-foreground">Sisa</span>
-                                        <p className={`font-bold tabular-nums ${
-                                          r.item.daysOfStock <= 2 ? "text-destructive" : r.item.daysOfStock <= 4 ? "text-warning" : ""
-                                        }`}>{formatDaysLeft(r.item.daysOfStock)}</p>
-                                      </div>
-                                      <div>
-                                        <span className="text-muted-foreground">Biaya</span>
-                                        <p className="font-semibold tabular-nums">{formatRp(r.cost)}</p>
-                                      </div>
-                                    </div>
-                                    <p className="text-[10px] text-muted-foreground">{r.reason}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <CardContent className="py-4 text-center">
-                                <p className="text-xs text-muted-foreground">Tidak ada item urgent di hari ini 🎉</p>
-                              </CardContent>
-                            )}
-                          </Card>
-                          );
-                        })
-                      ) : (
-                        <Card className="border-0 shadow-sm">
-                          <CardContent className="py-8 text-center">
-                            <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-success opacity-50" />
-                            <p className="text-sm text-muted-foreground">
-                              Semua stok tercukupi 🎉
+                            {/* Qty + Cost */}
+                            <div className="text-right shrink-0">
+                              <p className="text-xs font-bold tabular-nums">{r.qty}</p>
+                              <p className="text-[10px] text-muted-foreground tabular-nums">{formatRp(r.cost)}</p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <CardContent className="py-8 text-center">
+                      <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-success opacity-50" />
+                      <p className="text-sm text-muted-foreground">Semua stok tercukupi hari ini 🎉</p>
+                    </CardContent>
+                  )}
+
+                  {/* Selected summary + submit */}
+                  {(() => {
+                    const selectedItems = periodeRecommendations.items.filter(r => selectedPeriodeIds.has(r.item.kode));
+                    const selectedCost = selectedItems.reduce((s, r) => s + r.cost, 0);
+                    const selectedCount = selectedItems.length;
+
+                    return selectedCount > 0 ? (
+                      <div className="p-3 pt-0 space-y-3">
+                        <div className="rounded-xl bg-muted/40 border border-border/50 p-3">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">{selectedCount} dari {periodeRecommendations.items.length} item</span>
+                            <span className="font-bold text-primary text-sm tabular-nums">{formatRp(selectedCost)}</span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-muted mt-2 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-primary transition-all duration-500"
+                              style={{ width: `${Math.min(100, (selectedCost / (planInfo?.todayBudget || 1)) * 100)}%` }}
+                            />
+                          </div>
+                          {planInfo && selectedCost > planInfo.todayBudget && (
+                            <p className="text-[10px] text-warning flex items-center gap-1 mt-1.5">
+                              <AlertTriangle className="h-3 w-3" />
+                              Over budget hari ini ({formatRp(selectedCost - planInfo.todayBudget)} lebih)
                             </p>
-                          </CardContent>
-                        </Card>
-                      )}
-                    </div>
-                  )}
-
-                  {/* ═══ INPUT PESANAN MANUAL SECTION ═══ */}
-                  {periodeSection === "manual" && (
-                    <Card className="border-0 shadow-sm overflow-hidden">
-                      <div className="px-4 py-3 bg-muted/30 border-b flex items-center gap-2">
-                        <Edit3 className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-semibold">Input Pesanan</span>
-                        {planInfo && planInfo.dayNumber > 1 ? (
-                          <select
-                            value={inputForDay ?? planInfo.dayNumber}
-                            onChange={e => setInputForDay(Number(e.target.value))}
-                            className="ml-auto h-7 rounded-md border border-input bg-background px-2 text-[11px] font-bold text-primary focus:outline-none focus:ring-2 focus:ring-ring"
-                          >
-                            {Array.from({ length: planInfo.dayNumber }, (_, i) => i + 1).map(d => (
-                              <option key={d} value={d}>Hari {d}{d === planInfo.dayNumber ? " (hari ini)" : ""}</option>
-                            ))}
-                          </select>
-                        ) : (
-                          <Badge className="ml-auto bg-primary/10 text-primary text-[10px]">
-                            Hari {planInfo?.dayNumber || 1}
-                          </Badge>
-                        )}
-                      </div>
-
-                      <div className="p-4 space-y-3">
-                        {/* Item rows */}
-                        {manualRows.map((row, idx) => {
-                          const matched = kodeAnalysisMap.get(row.kode.toUpperCase());
-                          const analysis = matched;
-                          return (
-                            <div key={idx} className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-muted-foreground font-mono w-5 shrink-0">{idx + 1}</span>
-                                <Input
-                                  className="h-9 text-sm font-mono flex-1"
-                                  value={row.kode}
-                                  onChange={e => updateManualRow(idx, "kode", e.target.value)}
-                                  placeholder="Kode produk..."
-                                  list="periode-manual-codes"
-                                />
-                                <Input
-                                  type="text"
-                                  inputMode="numeric"
-                                  className="h-9 w-20 text-sm text-center font-bold"
-                                  value={row.qty === 0 ? "" : row.qty}
-                                  onChange={e => updateManualRow(idx, "qty", parseInt(e.target.value) || 0)}
-                                  placeholder="Qty"
-                                />
-                                <button onClick={() => removeManualRow(idx)} className="text-destructive p-1.5 hover:bg-destructive/10 rounded-lg transition-all">
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                              {matched && (
-                                <div className="ml-7 flex items-center gap-2 text-[10px] text-muted-foreground">
-                                  <span className="truncate">{analysis?.kode}</span>
-                                  {analysis && <span>· Stok {analysis.currentStock} · {formatDaysLeft(analysis.daysOfStock)}</span>}
-                                  {analysis && row.qty > 0 && <span className="font-semibold text-foreground">= {formatRp(row.qty * analysis.unitPrice)}</span>}
-                                </div>
-                              )}
-                              {!matched && row.kode && (
-                                <p className="ml-7 text-[10px] text-destructive">✗ Kode tidak ditemukan</p>
-                              )}
-                            </div>
-                          );
-                        })}
-
-                        <button
-                          onClick={addManualRow}
-                          className="w-full h-10 rounded-xl border border-dashed border-border text-xs font-medium text-muted-foreground hover:bg-muted/40 transition-all flex items-center justify-center gap-1.5"
-                        >
-                          <Plus className="h-3.5 w-3.5" /> Tambah Baris
-                        </button>
-
-                        <datalist id="periode-manual-codes">
-                          {analyses.map(a => <option key={a.productId} value={a.kode} />)}
-                        </datalist>
-
-                        {/* Summary */}
-                        {(() => {
-                          const validRows = manualRows.filter(r => r.kode && r.qty > 0 && kodeAnalysisMap.has(r.kode.toUpperCase()));
-                          const totalCost = validRows.reduce((s, r) => s + r.qty * (kodeAnalysisMap.get(r.kode.toUpperCase())?.unitPrice || 0), 0);
-                          const totalQty = validRows.reduce((s, r) => s + r.qty, 0);
-
-                          return validRows.length > 0 ? (
-                            <div className="rounded-xl bg-muted/40 border border-border/50 p-3 space-y-2">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-muted-foreground">{validRows.length} item · {totalQty} pcs</span>
-                                <span className="font-bold text-primary text-sm">{formatRp(totalCost)}</span>
-                              </div>
-                              {planInfo && totalCost > planInfo.todayBudget && (
-                                <p className="text-[10px] text-warning flex items-center gap-1">
-                                  <AlertTriangle className="h-3 w-3" />
-                                  Melebihi budget hari ini ({formatRp(totalCost - planInfo.todayBudget)} lebih)
-                                </p>
-                              )}
-                            </div>
-                          ) : null;
-                        })()}
-
-                        {/* Action buttons */}
-                        <div className="flex gap-2">
-                          <button
-                            onClick={reviewManualOrder}
-                            disabled={reviewingOrder || manualRows.filter(r => r.kode && r.qty > 0).length === 0}
-                            className="flex-1 h-11 rounded-xl bg-muted text-foreground font-bold text-sm hover:bg-muted/80 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-                          >
-                            {reviewingOrder ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                            {reviewingOrder ? "Menganalisa..." : "Review AI"}
-                          </button>
-                          <button
-                            onClick={checkDeviationAndSave}
-                            disabled={submittingOrder || manualRows.filter(r => r.kode && r.qty > 0).length === 0}
-                            className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-md hover:opacity-90 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-                          >
-                            {submittingOrder ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                            {submittingOrder ? "Menyimpan..." : "Simpan Pesanan"}
-                          </button>
+                          )}
                         </div>
-                      </div>
-                    </Card>
-                  )}
-
-                  {/* AI Review Result */}
-                  {orderReviewResult && periodeSection === "manual" && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between px-1">
-                        <p className="text-sm font-bold flex items-center gap-2">
-                          <Sparkles className="h-4 w-4 text-primary" />
-                          Hasil Review AI
-                        </p>
                         <button
-                          onClick={() => setOrderReviewResult(null)}
-                          className="text-[10px] text-muted-foreground hover:text-foreground"
+                          onClick={submitSelectedItems}
+                          disabled={submittingOrder}
+                          className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-md hover:opacity-90 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
                         >
-                          Tutup
+                          {submittingOrder ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                          {submittingOrder ? "Menyimpan..." : `Pesan ${selectedCount} Item`}
                         </button>
                       </div>
-                      <ReviewResultCards result={orderReviewResult} alreadySent={false} />
-                    </div>
-                  )}
-                </>
-              )}
-
-              {planInfo?.isExpired && (
-                <Card className="border-0 shadow-sm">
-                  <CardContent className="py-8 text-center space-y-3">
-                    <CheckCircle2 className="h-10 w-10 mx-auto text-success" />
-                    <div>
-                      <p className="text-sm font-bold">Rencana {activePlan.total_days} hari selesai!</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Total terpakai: {formatRp(planInfo.spentSoFar)} dari {formatRp(activePlan.total_budget)}
-                      </p>
-                    </div>
-                    <button
-                      onClick={completePlan}
-                      className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm shadow-md hover:opacity-90 transition-all"
-                    >
-                      Buat Rencana Baru
-                    </button>
-                  </CardContent>
+                    ) : null;
+                  })()}
                 </Card>
               )}
             </>
@@ -1573,109 +1178,6 @@ function BudgetPlanner({
         </>
       )}
 
-      {/* Deviation Warning Dialog */}
-      {deviationWarning && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-4 bg-black/50 animate-fade-in" onClick={() => setDeviationWarning(null)}>
-          <div className="w-full max-w-md max-h-[80vh] overflow-y-auto rounded-2xl bg-background border shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
-            <div className="p-5 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-warning/20 flex items-center justify-center">
-                  <AlertTriangle className="h-5 w-5 text-warning" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-base">Pesanan Berbeda dari Saran AI</h3>
-                  <p className="text-xs text-muted-foreground">Cek dulu sebelum simpan, Boss</p>
-                </div>
-              </div>
-
-              {deviationWarning.skippedCritical.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-destructive">
-                    <AlertCircle className="h-3.5 w-3.5" />
-                    {deviationWarning.skippedCritical.length} Item Kritis Belum Dipesan
-                  </div>
-                  <div className="space-y-1.5">
-                    {deviationWarning.skippedCritical.map(item => (
-                      <div key={item.kode} className="flex items-center justify-between rounded-lg bg-destructive/8 border border-destructive/20 px-3 py-2">
-                        <div>
-                          <span className="font-mono font-bold text-xs">{item.kode}</span>
-                          <span className="text-[10px] text-muted-foreground ml-2">{item.reason}</span>
-                        </div>
-                        <span className="text-xs font-bold text-destructive">Saran: {item.qty}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {deviationWarning.qtyDeviations.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-warning">
-                    <TrendingUp className="h-3.5 w-3.5" />
-                    {deviationWarning.qtyDeviations.length} Item Qty Terlalu Beda
-                  </div>
-                  <div className="space-y-1.5">
-                    {deviationWarning.qtyDeviations.slice(0, 5).map(item => (
-                      <div key={item.kode} className="flex items-center justify-between rounded-lg bg-warning/8 border border-warning/20 px-3 py-2">
-                        <span className="font-mono font-bold text-xs">{item.kode}</span>
-                        <div className="text-xs text-right">
-                          <span className="text-muted-foreground">Saran {item.saranQty}</span>
-                          <span className="mx-1">→</span>
-                          <span className={`font-bold ${item.diff > 0 ? "text-blue-600 dark:text-blue-400" : "text-orange-600 dark:text-orange-400"}`}>
-                            Boss {item.bossQty} ({item.diff > 0 ? "+" : ""}{item.diff})
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                    {deviationWarning.qtyDeviations.length > 5 && (
-                      <p className="text-[10px] text-muted-foreground text-center">+{deviationWarning.qtyDeviations.length - 5} lainnya</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="rounded-xl bg-muted/40 p-3 space-y-1.5 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Budget saran AI</span>
-                  <span className="font-bold tabular-nums">{formatRp(deviationWarning.totalSaranCost)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Budget pesanan Boss</span>
-                  <span className="font-bold tabular-nums">{formatRp(deviationWarning.totalBossCost)}</span>
-                </div>
-                {Math.abs(deviationWarning.totalBossCost - deviationWarning.totalSaranCost) > 0 && (
-                  <>
-                    <div className="border-t border-border/50 my-1" />
-                    <div className="flex justify-between font-bold">
-                      <span>Selisih</span>
-                      <span className={`tabular-nums ${deviationWarning.totalBossCost > deviationWarning.totalSaranCost ? "text-blue-600 dark:text-blue-400" : "text-orange-600 dark:text-orange-400"}`}>
-                        {deviationWarning.totalBossCost > deviationWarning.totalSaranCost ? "+" : ""}{formatRp(deviationWarning.totalBossCost - deviationWarning.totalSaranCost)}
-                      </span>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={() => setDeviationWarning(null)}
-                  className="flex-1 h-11 rounded-xl bg-muted text-foreground font-bold text-sm hover:bg-muted/80 transition-all flex items-center justify-center gap-2"
-                >
-                  <Edit3 className="h-4 w-4" />
-                  Perbaiki Dulu
-                </button>
-                <button
-                  onClick={submitManualOrder}
-                  className="flex-1 h-11 rounded-xl bg-warning text-warning-foreground font-bold text-sm shadow-md hover:opacity-90 transition-all flex items-center justify-center gap-2"
-                >
-                  <Send className="h-4 w-4" />
-                  Tetap Simpan
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
