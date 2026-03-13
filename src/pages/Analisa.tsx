@@ -301,8 +301,56 @@ function BudgetPlanner({
     }
   }
 
+  // Check deviation before saving
+  function checkDeviationAndSave() {
+    if (mode !== "periode" || periodeRecommendations.items.length === 0) {
+      submitManualOrder();
+      return;
+    }
+
+    const validRows = manualRows.filter(r => r.kode && r.qty > 0 && kodeAnalysisMap.has(r.kode.toUpperCase()));
+    const bossKodes = new Set(validRows.map(r => r.kode.toUpperCase()));
+    const bossQtyMap = new Map(validRows.map(r => [r.kode.toUpperCase(), r.qty]));
+
+    // Find skipped critical items from AI suggestions
+    const skippedCritical = periodeRecommendations.items
+      .filter(r => !bossKodes.has(r.item.kode.toUpperCase()) && (r.item.isStockOut || r.item.daysOfStock <= RULES.CRITICAL_DAYS))
+      .map(r => ({ kode: r.item.kode, nama: r.item.nama, qty: r.qty, reason: r.reason }));
+
+    // Find qty deviations (>30% difference)
+    const qtyDeviations = periodeRecommendations.items
+      .filter(r => {
+        const bossQty = bossQtyMap.get(r.item.kode.toUpperCase());
+        if (!bossQty) return false;
+        const diff = bossQty - r.qty;
+        return Math.abs(diff) > r.qty * 0.3;
+      })
+      .map(r => {
+        const bossQty = bossQtyMap.get(r.item.kode.toUpperCase())!;
+        return { kode: r.item.kode, nama: r.item.nama, saranQty: r.qty, bossQty, diff: bossQty - r.qty };
+      });
+
+    // Extra items not in AI suggestions
+    const saranKodes = new Set(periodeRecommendations.items.map(r => r.item.kode.toUpperCase()));
+    const extraItems = validRows
+      .filter(r => !saranKodes.has(r.kode.toUpperCase()))
+      .map(r => ({ kode: r.kode, qty: r.qty }));
+
+    const totalSaranCost = periodeRecommendations.totalCost;
+    const totalBossCost = validRows.reduce((s, r) => s + r.qty * (kodeAnalysisMap.get(r.kode.toUpperCase())?.unitPrice || 0), 0);
+
+    // Show warning if significant deviations found
+    if (skippedCritical.length > 0 || qtyDeviations.length > 0) {
+      setDeviationWarning({ skippedCritical, qtyDeviations, extraItems, totalSaranCost, totalBossCost });
+      return;
+    }
+
+    submitManualOrder();
+  }
+
   // Submit order to pending_restock
   async function submitManualOrder() {
+    setDeviationWarning(null);
     const validRows = manualRows.filter(r => r.kode && r.qty > 0 && kodeAnalysisMap.has(r.kode.toUpperCase()));
     if (validRows.length === 0) { toast.error("Masukkan minimal 1 item valid"); return; }
 
