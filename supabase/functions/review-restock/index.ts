@@ -86,6 +86,7 @@ interface MissedCard {
   is_bw: boolean;
   harga_modal: number;
   cost: number;
+  pending_qty: number;
 }
 
 function getStatus(dos: number): Status {
