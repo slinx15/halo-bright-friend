@@ -509,9 +509,11 @@ function BudgetPlanner({
     for (const item of sorted) {
       const stock = item.currentStock;
       const pq = pendingMap.get(item.kode.toUpperCase()) || 0;
+      const isBW = isBlackWhiteCode(item.kode);
       
-      // Review AI formula: needed for targetDays - what we have - what's ordered
-      const needed = Math.ceil(item.velocity * coverageDays);
+      // Review AI formula: coverage = cycle + safety (BW=2, other=1) + lead_time
+      const itemCoverage = RULES.CYCLE_DAYS + (isBW ? RULES.SAFETY_BW : RULES.SAFETY_STOCK) + RULES.LEAD_TIME_DAYS;
+      const needed = Math.ceil(item.velocity * itemCoverage);
       const shortfall = Math.max(0, needed - stock - pq);
       if (shortfall <= 0) continue;
 
