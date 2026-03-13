@@ -383,6 +383,8 @@ const BarangKeluar = () => {
             setToko={setBulkToko}
             catatan={bulkCatatan}
             setCatatan={setBulkCatatan}
+            tanggal={bulkTanggal}
+            setTanggal={setBulkTanggal}
           />
         </TabsContent>
       </Tabs>
