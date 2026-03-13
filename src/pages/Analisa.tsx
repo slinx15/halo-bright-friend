@@ -492,9 +492,7 @@ function BudgetPlanner({
 
     const dailyBudget = planInfo.todayBudget;
     const currentDay = planInfo.dayNumber || 1;
-    // Use same coverage target as Review AI: cycle + safety + lead_time (default ~7 days)
-    // NOT the plan duration (total_days), which is just how many days to spread orders
-    const coverageDays = activePlan.coverage_days || (RULES.CYCLE_DAYS + RULES.SAFETY_STOCK + RULES.LEAD_TIME_DAYS);
+    // Plan duration is for splitting orders across days, NOT for coverage target
 
     const days: DayPlan[] = [];
 
