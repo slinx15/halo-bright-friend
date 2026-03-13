@@ -523,6 +523,11 @@ function BudgetPlanner({
       const totalDeficit = Math.max(0, totalNeeded - effectiveStock);
       if (totalDeficit <= 0) continue;
       
+      // Skip items with tiny deficit not worth ordering yet
+      const isBWCheck = isBlackWhiteCode(item.kode);
+      const minBatch = isBWCheck ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
+      if (totalDeficit < minBatch && daysLeft > RULES.WARNING_DAYS) continue;
+      
       // Spread remaining deficit across remaining plan days
       const todayShare = Math.ceil(totalDeficit / planInfo.remainingDays);
 
