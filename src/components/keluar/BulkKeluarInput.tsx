@@ -42,7 +42,7 @@ export interface BulkKeluarInputHandle {
   handleOcrResult: (items: any[]) => void;
 }
 
-export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInputProps>(function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko, catatan, setCatatan }, ref) {
+export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInputProps>(function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko, catatan, setCatatan, tanggal, setTanggal }, ref) {
   const [items, setItems] = useState<BulkKeluarItem[]>([]);
 
   const findProduct = (kode: string) =>
