@@ -224,12 +224,18 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
       </div>
 
       {/* Qty info */}
-      <div className="flex items-center gap-3 text-xs">
+      <div className="flex items-center gap-3 text-xs flex-wrap">
         <div className="flex items-center gap-1 text-muted-foreground">
           <ShoppingCart className="h-3 w-3" />
           <span>Pesan:</span>
           <span className="font-bold text-foreground">{formatNumber(card.qty_boss)}</span>
         </div>
+        {(card.pending_qty ?? 0) > 0 && (
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <span>📦 Pending:</span>
+            <span className="font-bold text-purple-600 dark:text-purple-400">{formatNumber(card.pending_qty!)}</span>
+          </div>
+        )}
         {(needMore || tooMuch) && (
           <>
             <span className="text-muted-foreground">→</span>
