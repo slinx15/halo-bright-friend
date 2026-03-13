@@ -1873,27 +1873,19 @@ const Analisa = () => {
       {/* MAIN CONTENT — TABS */}
       <Tabs defaultValue="restock" className="w-full">
         <div className="rounded-2xl bg-card/80 backdrop-blur-sm border border-border/40 shadow-md p-1.5">
-          <TabsList className="grid grid-cols-5 md:grid-cols-11 w-full bg-transparent h-auto p-0 gap-1">
+          <TabsList className="grid grid-cols-4 w-full bg-transparent h-auto p-0 gap-1">
             {[
               { value: "restock", icon: ShoppingCart, label: "Restock", badge: needsReorder > 0 ? needsReorder : null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
               { value: "penjualan", icon: Trophy, label: "Penjualan", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
-              { value: "profit", icon: DollarSign, label: "Profit", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
               { value: "toko", icon: Store, label: "Toko", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
-              { value: "pelanggan", icon: Users, label: "Pelanggan", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
-              { value: "hari", icon: CalendarIcon, label: "Hari", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
-              { value: "tren", icon: Palette, label: "Tren", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
-              { value: "dead", icon: Skull, label: "Dead", badge: null, activeColor: "data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground" },
-              { value: "budget", icon: Calculator, label: "Budget", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
-              
-              { value: "ringkasan", icon: BarChart3, label: "Ringkasan", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
-              { value: "review", icon: Sparkles, label: "Review", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
+              { value: "insight", icon: BarChart3, label: "Insight", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
             ].map(tab => (
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className={`relative rounded-xl ${tab.activeColor} data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] data-[state=inactive]:hover:bg-muted/60 text-[10px] md:text-xs px-1.5 md:px-3 py-2.5 font-semibold gap-1.5 transition-all duration-200 ease-out`}
+                className={`relative rounded-xl ${tab.activeColor} data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] data-[state=inactive]:hover:bg-muted/60 text-[11px] md:text-xs px-2 md:px-3 py-2.5 font-semibold gap-1.5 transition-all duration-200 ease-out`}
               >
-                <tab.icon className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
+                <tab.icon className="h-4 w-4 shrink-0" />
                 <span className="truncate">{tab.label}</span>
                 {tab.badge && (
                   <Badge variant="destructive" className="ml-0.5 h-4 min-w-[16px] px-1 text-[9px] rounded-full shrink-0 animate-pulse">
@@ -2261,164 +2253,33 @@ const Analisa = () => {
           </Card>
         </TabsContent>
 
-        {/* ══════════ PENJUALAN ══════════ */}
+        {/* ══════════ PENJUALAN (grouped: Penjualan + Profit) ══════════ */}
         <TabsContent value="penjualan" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
-          {/* Visual Charts */}
-          <SalesTrendCharts
-            stockOutData={stockOutData}
-            topSellers={topSellers}
-            trendItems={trendItems}
-            isMobile={isMobile}
-          />
+          <Tabs defaultValue="laris" className="w-full">
+            <TabsList className="w-full grid grid-cols-2 h-9 rounded-xl bg-muted/50">
+              <TabsTrigger value="laris" className="text-xs rounded-lg data-[state=active]:shadow-sm"><Trophy className="h-3.5 w-3.5 mr-1" />Laris</TabsTrigger>
+              <TabsTrigger value="profit" className="text-xs rounded-lg data-[state=active]:shadow-sm"><DollarSign className="h-3.5 w-3.5 mr-1" />Profit</TabsTrigger>
+            </TabsList>
 
-          <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
-            <SectionHeader icon={Trophy} title={`${RULES.DISPLAY_TOP_ITEMS} Barang Paling Laris`} subtitle="30 hari terakhir" />
-            {isMobile ? (
-              <div className="space-y-2.5">
-                {topSellers.map((t, i) => (
-                  <MobileRankedCard key={t.productId} rank={i + 1} kode={t.kode} isBestSeller={t.isBestSeller} index={i}>
-                    <div className="grid grid-cols-2 gap-2 text-[11px] mt-1.5">
-                      <div><span className="text-muted-foreground">Terjual</span><p className="font-bold tabular-nums">{t.totalQty} pcs</p></div>
-                      <div><span className="text-muted-foreground">Hari Data</span><p className="font-semibold tabular-nums">{t.days}{t.days < 7 ? " ⚠️" : ""}</p></div>
-                      <div><span className="text-muted-foreground">Laku/{RULES.DISPLAY_CYCLE_DAYS}hr</span><p className="font-semibold tabular-nums">{(t.velocity * RULES.DISPLAY_CYCLE_DAYS).toFixed(0)}</p></div>
-                      <div><span className="text-muted-foreground">Sisa</span><p className={`font-bold tabular-nums ${t.daysLeft <= 2 ? "text-destructive" : t.daysLeft <= 4 ? "text-warning" : ""}`}>{urgencyIcon(t.daysLeft)} {formatDaysLeft(t.daysLeft)}</p></div>
-                    </div>
-                  </MobileRankedCard>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-lg border overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/20 hover:bg-muted/20">
-                      <TableHead className="w-10 text-xs">#</TableHead>
-                      <TableHead className="text-xs">Kode</TableHead>
-                      <TableHead className="text-right text-xs">Terjual</TableHead>
-                      <TableHead className="text-right text-xs">Hari Data</TableHead>
-                      <TableHead className="text-right text-xs">Laku/{RULES.DISPLAY_CYCLE_DAYS}hr</TableHead>
-                      <TableHead className="text-right text-xs">Stok</TableHead>
-                      <TableHead className="text-right text-xs">Sisa Hari</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {topSellers.map((t, i) => {
-                      const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
-                      return (
-                        <TableRow key={t.productId}>
-                          <TableCell className="font-medium">{medal}</TableCell>
-                          <TableCell className="font-semibold text-sm">
-                            {t.kode}{t.isBestSeller ? " 🔥" : ""}{t.days < 7 ? " ⚠️" : ""}
-                          </TableCell>
-                          <TableCell className="text-right font-mono text-sm">{t.totalQty}</TableCell>
-                          <TableCell className="text-right font-mono text-sm">{t.days}</TableCell>
-                          <TableCell className="text-right font-mono text-sm">{(t.velocity * RULES.DISPLAY_CYCLE_DAYS).toFixed(0)}</TableCell>
-                          <TableCell className="text-right font-mono text-sm">{t.stok}</TableCell>
-                          <TableCell className="text-right text-sm">{urgencyIcon(t.daysLeft)} {formatDaysLeft(t.daysLeft)}</TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-            <p className="text-[11px] text-muted-foreground">⚠️ = data &lt; 7 hari (mungkin belum akurat)</p>
-          </Card>
+            <TabsContent value="laris" className="space-y-4 mt-3">
+              <SalesTrendCharts
+                stockOutData={stockOutData}
+                topSellers={topSellers}
+                trendItems={trendItems}
+                isMobile={isMobile}
+              />
 
-          <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
-            <SectionHeader icon={Activity} title="Trend Penjualan 7 Hari" />
-            <div className="flex flex-wrap gap-3">
-              {[
-                { label: "Minggu ini", value: `${totalTW} pcs`, color: "" },
-                { label: "Minggu lalu", value: `${totalLW} pcs`, color: "" },
-                { label: "Perubahan", value: `${overallChange >= 0 ? "+" : ""}${overallChange.toFixed(1)}%`, color: overallChange >= 0 ? "text-success" : "text-destructive" },
-              ].map(s => (
-                <div key={s.label} className="px-3 py-2 rounded-lg bg-muted/40 text-xs">
-                  <span className="text-muted-foreground">{s.label}: </span>
-                  <span className={`font-semibold ${s.color}`}>{s.value}</span>
-                </div>
-              ))}
-            </div>
-            {isMobile ? (
-              <div className="space-y-2">
-                {trendItems.map((t, i) => {
-                  const icon = t.changePct > 10 ? "📈" : t.changePct < -10 ? "📉" : "➡️";
-                  return (
-                    <div key={t.productId} className="rounded-xl border border-border/60 p-3 space-y-1 animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-sm">{icon} {t.kode}{t.isBestSeller ? " 🔥" : ""}</span>
-                        <span className={`font-mono font-bold text-sm tabular-nums ${t.changePct > 0 ? "text-success" : t.changePct < 0 ? "text-destructive" : ""}`}>
-                          {t.changePct > 0 ? "+" : ""}{t.changePct.toFixed(0)}%
-                        </span>
-                      </div>
-                      <div className="flex gap-4 text-[11px] text-muted-foreground">
-                        <span>Minggu ini: <strong className="text-foreground tabular-nums">{t.thisWeek}</strong></span>
-                        <span>Lalu: <strong className="text-foreground tabular-nums">{t.lastWeek}</strong></span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="rounded-lg border overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/20 hover:bg-muted/20">
-                      <TableHead className="w-10 text-xs">#</TableHead>
-                      <TableHead className="text-xs">Kode</TableHead>
-                      <TableHead className="text-right text-xs">Minggu Ini</TableHead>
-                      <TableHead className="text-right text-xs">Minggu Lalu</TableHead>
-                      <TableHead className="text-right text-xs">Perubahan</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {trendItems.map((t, i) => {
-                      const icon = t.changePct > 10 ? "📈" : t.changePct < -10 ? "📉" : "➡️";
-                      return (
-                        <TableRow key={t.productId}>
-                          <TableCell className="text-xs">{i + 1}</TableCell>
-                          <TableCell className="font-semibold text-sm">{icon} {t.kode}{t.isBestSeller ? " 🔥" : ""}</TableCell>
-                          <TableCell className="text-right font-mono text-sm">{t.thisWeek}</TableCell>
-                          <TableCell className="text-right font-mono text-sm">{t.lastWeek}</TableCell>
-                          <TableCell className={`text-right font-mono text-sm ${t.changePct > 0 ? "text-success" : t.changePct < 0 ? "text-destructive" : ""}`}>
-                            {t.changePct > 0 ? "+" : ""}{t.changePct.toFixed(0)}%
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </Card>
-        </TabsContent>
-
-        {/* ══════════ PROFIT ══════════ */}
-        <TabsContent value="profit" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
-          <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
-            <SectionHeader icon={DollarSign} title="Barang Paling Untung" subtitle="30 hari terakhir" />
-            {profitItems.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-8 text-center">Belum ada data profit. Pastikan data harga sudah diisi.</p>
-            ) : (
-              <>
-                <div className="flex flex-wrap gap-3">
-                  <div className="px-3 py-2 rounded-lg bg-success/10 text-xs">
-                    <span className="text-muted-foreground">Total Untung: </span>
-                    <span className="font-semibold text-success tabular-nums">{formatRp(profitItems.reduce((s, p) => s + p.totalProfit, 0))}</span>
-                  </div>
-                  <div className="px-3 py-2 rounded-lg bg-muted/40 text-xs">
-                    <span className="text-muted-foreground">Produk: </span>
-                    <span className="font-semibold">{profitItems.length}</span>
-                  </div>
-                </div>
+              <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
+                <SectionHeader icon={Trophy} title={`${RULES.DISPLAY_TOP_ITEMS} Barang Paling Laris`} subtitle="30 hari terakhir" />
                 {isMobile ? (
                   <div className="space-y-2.5">
-                    {profitItems.slice(0, 20).map((p, i) => (
-                      <MobileRankedCard key={p.productId} rank={i + 1} kode={p.kode} isBestSeller={p.isBestSeller} index={i}>
+                    {topSellers.map((t, i) => (
+                      <MobileRankedCard key={t.productId} rank={i + 1} kode={t.kode} isBestSeller={t.isBestSeller} index={i}>
                         <div className="grid grid-cols-2 gap-2 text-[11px] mt-1.5">
-                          <div><span className="text-muted-foreground">Total Untung</span><p className="font-bold text-success tabular-nums">{formatRp(p.totalProfit)}</p></div>
-                          <div><span className="text-muted-foreground">Terjual</span><p className="font-semibold tabular-nums">{p.totalQty} pcs</p></div>
-                          <div><span className="text-muted-foreground">Margin/pcs</span><p className="font-semibold tabular-nums">{formatRp(p.margin)}</p></div>
-                          <div><span className="text-muted-foreground">Margin %</span><p className="font-semibold tabular-nums">{p.marginPersen.toFixed(0)}%</p></div>
+                          <div><span className="text-muted-foreground">Terjual</span><p className="font-bold tabular-nums">{t.totalQty} pcs</p></div>
+                          <div><span className="text-muted-foreground">Hari Data</span><p className="font-semibold tabular-nums">{t.days}{t.days < 7 ? " ⚠️" : ""}</p></div>
+                          <div><span className="text-muted-foreground">Laku/{RULES.DISPLAY_CYCLE_DAYS}hr</span><p className="font-semibold tabular-nums">{(t.velocity * RULES.DISPLAY_CYCLE_DAYS).toFixed(0)}</p></div>
+                          <div><span className="text-muted-foreground">Sisa</span><p className={`font-bold tabular-nums ${t.daysLeft <= 2 ? "text-destructive" : t.daysLeft <= 4 ? "text-warning" : ""}`}>{urgencyIcon(t.daysLeft)} {formatDaysLeft(t.daysLeft)}</p></div>
                         </div>
                       </MobileRankedCard>
                     ))}
@@ -2430,23 +2291,27 @@ const Analisa = () => {
                         <TableRow className="bg-muted/20 hover:bg-muted/20">
                           <TableHead className="w-10 text-xs">#</TableHead>
                           <TableHead className="text-xs">Kode</TableHead>
-                          <TableHead className="text-right text-xs">Total Untung</TableHead>
                           <TableHead className="text-right text-xs">Terjual</TableHead>
-                          <TableHead className="text-right text-xs">Margin/pcs</TableHead>
-                          <TableHead className="text-right text-xs">Margin %</TableHead>
+                          <TableHead className="text-right text-xs">Hari Data</TableHead>
+                          <TableHead className="text-right text-xs">Laku/{RULES.DISPLAY_CYCLE_DAYS}hr</TableHead>
+                          <TableHead className="text-right text-xs">Stok</TableHead>
+                          <TableHead className="text-right text-xs">Sisa Hari</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {profitItems.slice(0, 20).map((p, i) => {
+                        {topSellers.map((t, i) => {
                           const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
                           return (
-                            <TableRow key={p.productId}>
-                              <TableCell>{medal}</TableCell>
-                              <TableCell className="font-semibold text-sm">{p.kode}{p.isBestSeller ? " 🔥" : ""}</TableCell>
-                              <TableCell className="text-right font-mono text-sm font-bold text-success">{formatRp(p.totalProfit)}</TableCell>
-                              <TableCell className="text-right font-mono text-sm">{p.totalQty}</TableCell>
-                              <TableCell className="text-right font-mono text-sm">{formatRp(p.margin)}</TableCell>
-                              <TableCell className="text-right font-mono text-sm">{p.marginPersen.toFixed(0)}%</TableCell>
+                            <TableRow key={t.productId}>
+                              <TableCell className="font-medium">{medal}</TableCell>
+                              <TableCell className="font-semibold text-sm">
+                                {t.kode}{t.isBestSeller ? " 🔥" : ""}{t.days < 7 ? " ⚠️" : ""}
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-sm">{t.totalQty}</TableCell>
+                              <TableCell className="text-right font-mono text-sm">{t.days}</TableCell>
+                              <TableCell className="text-right font-mono text-sm">{(t.velocity * RULES.DISPLAY_CYCLE_DAYS).toFixed(0)}</TableCell>
+                              <TableCell className="text-right font-mono text-sm">{t.stok}</TableCell>
+                              <TableCell className="text-right text-sm">{urgencyIcon(t.daysLeft)} {formatDaysLeft(t.daysLeft)}</TableCell>
                             </TableRow>
                           );
                         })}
@@ -2454,148 +2319,42 @@ const Analisa = () => {
                     </Table>
                   </div>
                 )}
-              </>
-            )}
-          </Card>
-        </TabsContent>
+                <p className="text-[11px] text-muted-foreground">⚠️ = data &lt; 7 hari (mungkin belum akurat)</p>
+              </Card>
 
-        {/* ══════════ TOKO ══════════ */}
-        <TabsContent value="toko" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
-          <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
-            <SectionHeader icon={Store} title="Top Pelanggan" subtitle="30 hari terakhir" />
-            {tokoItems.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-8 text-center">Belum ada data transaksi per toko.</p>
-            ) : (
-              <>
+              <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
+                <SectionHeader icon={Activity} title="Trend Penjualan 7 Hari" />
                 <div className="flex flex-wrap gap-3">
                   {[
-                    { label: "Pelanggan", value: String(tokoItems.length) },
-                    { label: "Total Penjualan", value: `${tokoItems.reduce((s, t) => s + t.totalQty, 0)} pcs` },
-                    { label: "Total Nilai", value: formatRp(tokoItems.reduce((s, t) => s + t.totalNilai, 0)) },
+                    { label: "Minggu ini", value: `${totalTW} pcs`, color: "" },
+                    { label: "Minggu lalu", value: `${totalLW} pcs`, color: "" },
+                    { label: "Perubahan", value: `${overallChange >= 0 ? "+" : ""}${overallChange.toFixed(1)}%`, color: overallChange >= 0 ? "text-success" : "text-destructive" },
                   ].map(s => (
                     <div key={s.label} className="px-3 py-2 rounded-lg bg-muted/40 text-xs">
                       <span className="text-muted-foreground">{s.label}: </span>
-                      <span className="font-semibold">{s.value}</span>
+                      <span className={`font-semibold ${s.color}`}>{s.value}</span>
                     </div>
                   ))}
                 </div>
                 {isMobile ? (
-                  <div className="space-y-2.5">
-                    {tokoItems.slice(0, 15).map((t, i) => (
-                      <MobileRankedCard key={t.nama} rank={i + 1} kode={t.nama} index={i}>
-                        <div className="grid grid-cols-2 gap-2 text-[11px] mt-1.5">
-                          <div><span className="text-muted-foreground">Qty</span><p className="font-bold tabular-nums">{t.totalQty} pcs</p></div>
-                          <div><span className="text-muted-foreground">Nilai</span><p className="font-semibold tabular-nums">{formatRp(t.totalNilai)}</p></div>
-                          <div><span className="text-muted-foreground">Transaksi</span><p className="font-semibold tabular-nums">{t.transaksiCount}x</p></div>
-                          <div><span className="text-muted-foreground">Hari Aktif</span><p className="font-semibold tabular-nums">{t.hariAktif}</p></div>
-                        </div>
-                        {t.favorit.length > 0 && (
-                          <p className="text-[10px] text-muted-foreground mt-1 truncate">Favorit: {t.favorit.join(", ")}</p>
-                        )}
-                      </MobileRankedCard>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="rounded-lg border overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/20 hover:bg-muted/20">
-                          <TableHead className="w-10 text-xs">#</TableHead>
-                          <TableHead className="text-xs">Toko</TableHead>
-                          <TableHead className="text-right text-xs">Qty</TableHead>
-                          <TableHead className="text-right text-xs">Nilai</TableHead>
-                          <TableHead className="text-right text-xs">Transaksi</TableHead>
-                          <TableHead className="text-right text-xs">Hari Aktif</TableHead>
-                          <TableHead className="text-xs">Favorit</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {tokoItems.slice(0, 15).map((t, i) => {
-                          const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
-                          return (
-                            <TableRow key={t.nama}>
-                              <TableCell>{medal}</TableCell>
-                              <TableCell className="font-semibold text-sm">{t.nama}</TableCell>
-                              <TableCell className="text-right font-mono text-sm">{t.totalQty}</TableCell>
-                              <TableCell className="text-right font-mono text-xs">{formatRp(t.totalNilai)}</TableCell>
-                              <TableCell className="text-right font-mono text-sm">{t.transaksiCount}</TableCell>
-                              <TableCell className="text-right font-mono text-sm">{t.hariAktif}</TableCell>
-                              <TableCell className="text-xs text-muted-foreground">{t.favorit.join(", ")}</TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </>
-            )}
-          </Card>
-        </TabsContent>
-
-        {/* ══════════ TREN WARNA ══════════ */}
-        <TabsContent value="tren" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
-          <Suspense fallback={<div className="flex items-center justify-center py-16"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
-            <ColorTrendAnalysis products={products} stockOutData={stockOutData} />
-          </Suspense>
-        </TabsContent>
-
-        {/* ══════════ HARI RAMAI ══════════ */}
-        <TabsContent value="hari" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
-          <Suspense fallback={<div className="flex items-center justify-center py-16"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
-            <HariRamaiAnalysis stockOutData={stockOutData} />
-          </Suspense>
-        </TabsContent>
-
-        {/* ══════════ REPEAT CUSTOMER ══════════ */}
-        <TabsContent value="pelanggan" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
-          <Suspense fallback={<div className="flex items-center justify-center py-16"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
-            <RepeatCustomerAnalysis stockOutData={stockOutData} products={products} />
-          </Suspense>
-        </TabsContent>
-
-        {/* ══════════ DEAD STOCK ══════════ */}
-        <TabsContent value="dead" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
-          <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
-            <SectionHeader icon={Skull} title={`Barang Tidak Laku (${RULES.DEAD_STOCK_DAYS}+ hari)`} />
-            {deadStock.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-success text-lg">✅</p>
-                <p className="text-sm font-medium mt-1">Semua barang laku!</p>
-                <p className="text-xs text-muted-foreground">Tidak ada yang macet</p>
-              </div>
-            ) : (
-              <>
-                <div className="flex flex-wrap gap-3">
-                  {[
-                    { label: "Jumlah", value: `${deadStock.length} barang` },
-                    { label: "Stok macet", value: `${deadStock.reduce((s, d) => s + d.stok, 0)} pcs` },
-                    { label: "Uang nyangkut", value: formatRp(deadStock.reduce((s, d) => s + d.nilai, 0)) },
-                  ].map(s => (
-                    <div key={s.label} className="px-3 py-2 rounded-lg bg-destructive/10 text-xs">
-                      <span className="text-muted-foreground">{s.label}: </span>
-                      <span className="font-semibold">{s.value}</span>
-                    </div>
-                  ))}
-                </div>
-                {isMobile ? (
-                  <div className="space-y-2.5">
-                    {deadStock.map((d, i) => (
-                      <div key={d.productId} className="rounded-xl border border-l-[3px] border-l-destructive border-border/60 p-3.5 space-y-1.5 transition-all active:scale-[0.99] animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">#{i + 1}</span>
-                            <span className="font-bold text-sm">{d.kode}</span>
+                  <div className="space-y-2">
+                    {trendItems.map((t, i) => {
+                      const icon = t.changePct > 10 ? "📈" : t.changePct < -10 ? "📉" : "➡️";
+                      return (
+                        <div key={t.productId} className="rounded-xl border border-border/60 p-3 space-y-1 animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-sm">{icon} {t.kode}{t.isBestSeller ? " 🔥" : ""}</span>
+                            <span className={`font-mono font-bold text-sm tabular-nums ${t.changePct > 0 ? "text-success" : t.changePct < 0 ? "text-destructive" : ""}`}>
+                              {t.changePct > 0 ? "+" : ""}{t.changePct.toFixed(0)}%
+                            </span>
                           </div>
-                          <span className="font-mono font-bold text-destructive tabular-nums">{d.daysSinceLastSale} hari</span>
+                          <div className="flex gap-4 text-[11px] text-muted-foreground">
+                            <span>Minggu ini: <strong className="text-foreground tabular-nums">{t.thisWeek}</strong></span>
+                            <span>Lalu: <strong className="text-foreground tabular-nums">{t.lastWeek}</strong></span>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-2 text-[11px]">
-                          <div><span className="text-muted-foreground">Stok</span><p className="font-semibold tabular-nums">{d.stok}</p></div>
-                          <div><span className="text-muted-foreground">Nilai</span><p className="font-semibold tabular-nums">{formatRp(d.nilai)}</p></div>
-                          <div><span className="text-muted-foreground">Terakhir</span><p className="font-semibold text-[10px]">{d.lastSaleDate ? d.lastSaleDate.toLocaleDateString("id-ID") : "Tidak pernah"}</p></div>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="rounded-lg border overflow-x-auto">
@@ -2604,104 +2363,358 @@ const Analisa = () => {
                         <TableRow className="bg-muted/20 hover:bg-muted/20">
                           <TableHead className="w-10 text-xs">#</TableHead>
                           <TableHead className="text-xs">Kode</TableHead>
-                          <TableHead className="text-right text-xs">Stok</TableHead>
-                          <TableHead className="text-right text-xs">Nilai</TableHead>
-                          <TableHead className="text-right text-xs">Tidak Laku</TableHead>
-                          <TableHead className="text-xs">Terakhir Laku</TableHead>
+                          <TableHead className="text-right text-xs">Minggu Ini</TableHead>
+                          <TableHead className="text-right text-xs">Minggu Lalu</TableHead>
+                          <TableHead className="text-right text-xs">Perubahan</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {deadStock.map((d, i) => (
-                          <TableRow key={d.productId}>
-                            <TableCell className="text-xs">{i + 1}</TableCell>
-                            <TableCell className="font-semibold text-sm">{d.kode}</TableCell>
-                            <TableCell className="text-right font-mono text-sm">{d.stok}</TableCell>
-                            <TableCell className="text-right font-mono text-xs">{formatRp(d.nilai)}</TableCell>
-                            <TableCell className="text-right font-mono text-sm text-destructive">{d.daysSinceLastSale} hari</TableCell>
-                            <TableCell className="text-xs text-muted-foreground">{d.lastSaleDate ? d.lastSaleDate.toLocaleDateString("id-ID") : "Tidak pernah"}</TableCell>
-                          </TableRow>
-                        ))}
+                        {trendItems.map((t, i) => {
+                          const icon = t.changePct > 10 ? "📈" : t.changePct < -10 ? "📉" : "➡️";
+                          return (
+                            <TableRow key={t.productId}>
+                              <TableCell className="text-xs">{i + 1}</TableCell>
+                              <TableCell className="font-semibold text-sm">{icon} {t.kode}{t.isBestSeller ? " 🔥" : ""}</TableCell>
+                              <TableCell className="text-right font-mono text-sm">{t.thisWeek}</TableCell>
+                              <TableCell className="text-right font-mono text-sm">{t.lastWeek}</TableCell>
+                              <TableCell className={`text-right font-mono text-sm ${t.changePct > 0 ? "text-success" : t.changePct < 0 ? "text-destructive" : ""}`}>
+                                {t.changePct > 0 ? "+" : ""}{t.changePct.toFixed(0)}%
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
                 )}
-                <p className="text-xs text-muted-foreground">💡 Saran: jual obral atau kasih promo untuk barang-barang ini</p>
-              </>
-            )}
-          </Card>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="profit" className="space-y-4 mt-3">
+              <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
+                <SectionHeader icon={DollarSign} title="Barang Paling Untung" subtitle="30 hari terakhir" />
+                {profitItems.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-8 text-center">Belum ada data profit. Pastikan data harga sudah diisi.</p>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-3">
+                      <div className="px-3 py-2 rounded-lg bg-success/10 text-xs">
+                        <span className="text-muted-foreground">Total Untung: </span>
+                        <span className="font-semibold text-success tabular-nums">{formatRp(profitItems.reduce((s, p) => s + p.totalProfit, 0))}</span>
+                      </div>
+                      <div className="px-3 py-2 rounded-lg bg-muted/40 text-xs">
+                        <span className="text-muted-foreground">Produk: </span>
+                        <span className="font-semibold">{profitItems.length}</span>
+                      </div>
+                    </div>
+                    {isMobile ? (
+                      <div className="space-y-2.5">
+                        {profitItems.slice(0, 20).map((p, i) => (
+                          <MobileRankedCard key={p.productId} rank={i + 1} kode={p.kode} isBestSeller={p.isBestSeller} index={i}>
+                            <div className="grid grid-cols-2 gap-2 text-[11px] mt-1.5">
+                              <div><span className="text-muted-foreground">Total Untung</span><p className="font-bold text-success tabular-nums">{formatRp(p.totalProfit)}</p></div>
+                              <div><span className="text-muted-foreground">Terjual</span><p className="font-semibold tabular-nums">{p.totalQty} pcs</p></div>
+                              <div><span className="text-muted-foreground">Margin/pcs</span><p className="font-semibold tabular-nums">{formatRp(p.margin)}</p></div>
+                              <div><span className="text-muted-foreground">Margin %</span><p className="font-semibold tabular-nums">{p.marginPersen.toFixed(0)}%</p></div>
+                            </div>
+                          </MobileRankedCard>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-muted/20 hover:bg-muted/20">
+                              <TableHead className="w-10 text-xs">#</TableHead>
+                              <TableHead className="text-xs">Kode</TableHead>
+                              <TableHead className="text-right text-xs">Total Untung</TableHead>
+                              <TableHead className="text-right text-xs">Terjual</TableHead>
+                              <TableHead className="text-right text-xs">Margin/pcs</TableHead>
+                              <TableHead className="text-right text-xs">Margin %</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {profitItems.slice(0, 20).map((p, i) => {
+                              const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
+                              return (
+                                <TableRow key={p.productId}>
+                                  <TableCell>{medal}</TableCell>
+                                  <TableCell className="font-semibold text-sm">{p.kode}{p.isBestSeller ? " 🔥" : ""}</TableCell>
+                                  <TableCell className="text-right font-mono text-sm font-bold text-success">{formatRp(p.totalProfit)}</TableCell>
+                                  <TableCell className="text-right font-mono text-sm">{p.totalQty}</TableCell>
+                                  <TableCell className="text-right font-mono text-sm">{formatRp(p.margin)}</TableCell>
+                                  <TableCell className="text-right font-mono text-sm">{p.marginPersen.toFixed(0)}%</TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </>
+                )}
+              </Card>
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
-        {/* ══════════ BUDGET PLANNER ══════════ */}
-        <TabsContent value="budget" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
-          <BudgetPlanner
-            analyses={analyses}
-            budgetAmount={budgetAmount}
-            setBudgetAmount={setBudgetAmount}
-            budgetDays={budgetDays}
-            setBudgetDays={setBudgetDays}
-            isMobile={isMobile}
-          />
+        {/* ══════════ TOKO (grouped: Toko + Pelanggan) ══════════ */}
+        <TabsContent value="toko" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
+          <Tabs defaultValue="top-toko" className="w-full">
+            <TabsList className="w-full grid grid-cols-2 h-9 rounded-xl bg-muted/50">
+              <TabsTrigger value="top-toko" className="text-xs rounded-lg data-[state=active]:shadow-sm"><Store className="h-3.5 w-3.5 mr-1" />Top Toko</TabsTrigger>
+              <TabsTrigger value="pelanggan" className="text-xs rounded-lg data-[state=active]:shadow-sm"><Users className="h-3.5 w-3.5 mr-1" />Repeat</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="top-toko" className="space-y-4 mt-3">
+              <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
+                <SectionHeader icon={Store} title="Top Pelanggan" subtitle="30 hari terakhir" />
+                {tokoItems.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-8 text-center">Belum ada data transaksi per toko.</p>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-3">
+                      {[
+                        { label: "Pelanggan", value: String(tokoItems.length) },
+                        { label: "Total Penjualan", value: `${tokoItems.reduce((s, t) => s + t.totalQty, 0)} pcs` },
+                        { label: "Total Nilai", value: formatRp(tokoItems.reduce((s, t) => s + t.totalNilai, 0)) },
+                      ].map(s => (
+                        <div key={s.label} className="px-3 py-2 rounded-lg bg-muted/40 text-xs">
+                          <span className="text-muted-foreground">{s.label}: </span>
+                          <span className="font-semibold">{s.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {isMobile ? (
+                      <div className="space-y-2.5">
+                        {tokoItems.slice(0, 15).map((t, i) => (
+                          <MobileRankedCard key={t.nama} rank={i + 1} kode={t.nama} index={i}>
+                            <div className="grid grid-cols-2 gap-2 text-[11px] mt-1.5">
+                              <div><span className="text-muted-foreground">Qty</span><p className="font-bold tabular-nums">{t.totalQty} pcs</p></div>
+                              <div><span className="text-muted-foreground">Nilai</span><p className="font-semibold tabular-nums">{formatRp(t.totalNilai)}</p></div>
+                              <div><span className="text-muted-foreground">Transaksi</span><p className="font-semibold tabular-nums">{t.transaksiCount}x</p></div>
+                              <div><span className="text-muted-foreground">Hari Aktif</span><p className="font-semibold tabular-nums">{t.hariAktif}</p></div>
+                            </div>
+                            {t.favorit.length > 0 && (
+                              <p className="text-[10px] text-muted-foreground mt-1 truncate">Favorit: {t.favorit.join(", ")}</p>
+                            )}
+                          </MobileRankedCard>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-muted/20 hover:bg-muted/20">
+                              <TableHead className="w-10 text-xs">#</TableHead>
+                              <TableHead className="text-xs">Toko</TableHead>
+                              <TableHead className="text-right text-xs">Qty</TableHead>
+                              <TableHead className="text-right text-xs">Nilai</TableHead>
+                              <TableHead className="text-right text-xs">Transaksi</TableHead>
+                              <TableHead className="text-right text-xs">Hari Aktif</TableHead>
+                              <TableHead className="text-xs">Favorit</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {tokoItems.slice(0, 15).map((t, i) => {
+                              const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
+                              return (
+                                <TableRow key={t.nama}>
+                                  <TableCell>{medal}</TableCell>
+                                  <TableCell className="font-semibold text-sm">{t.nama}</TableCell>
+                                  <TableCell className="text-right font-mono text-sm">{t.totalQty}</TableCell>
+                                  <TableCell className="text-right font-mono text-xs">{formatRp(t.totalNilai)}</TableCell>
+                                  <TableCell className="text-right font-mono text-sm">{t.transaksiCount}</TableCell>
+                                  <TableCell className="text-right font-mono text-sm">{t.hariAktif}</TableCell>
+                                  <TableCell className="text-xs text-muted-foreground">{t.favorit.join(", ")}</TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </>
+                )}
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="pelanggan" className="space-y-4 mt-3">
+              <Suspense fallback={<div className="flex items-center justify-center py-16"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+                <RepeatCustomerAnalysis stockOutData={stockOutData} products={products} />
+              </Suspense>
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
+        {/* ══════════ INSIGHT (grouped: Ringkasan + Hari + Tren + Dead + Budget + Review) ══════════ */}
+        <TabsContent value="insight" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
+          <Tabs defaultValue="ringkasan" className="w-full">
+            <TabsList className="w-full grid grid-cols-3 md:grid-cols-6 h-9 rounded-xl bg-muted/50 gap-0.5">
+              <TabsTrigger value="ringkasan" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm"><BarChart3 className="h-3.5 w-3.5 mr-1 shrink-0" />Ringkasan</TabsTrigger>
+              <TabsTrigger value="hari" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm"><CalendarIcon className="h-3.5 w-3.5 mr-1 shrink-0" />Hari</TabsTrigger>
+              <TabsTrigger value="tren" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm"><Palette className="h-3.5 w-3.5 mr-1 shrink-0" />Tren</TabsTrigger>
+              <TabsTrigger value="dead" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground"><Skull className="h-3.5 w-3.5 mr-1 shrink-0" />Dead</TabsTrigger>
+              <TabsTrigger value="budget" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm"><Calculator className="h-3.5 w-3.5 mr-1 shrink-0" />Budget</TabsTrigger>
+              <TabsTrigger value="review" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm"><Sparkles className="h-3.5 w-3.5 mr-1 shrink-0" />Review</TabsTrigger>
+            </TabsList>
 
-
-
-        {/* ══════════ RINGKASAN ══════════ */}
-        <TabsContent value="ringkasan" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {[
-              { icon: "📦", label: "Jenis Barang", value: String(stats.totalSKU), color: "" },
-              { icon: "🧵", label: "Total Stok", value: `${stats.totalStock.toLocaleString("id-ID")} pcs`, color: "" },
-              { icon: "💵", label: "Nilai Barang", value: formatRp(stats.totalValue), color: "" },
-              { icon: "🔴", label: "Habis", value: String(stats.outOfStock), color: "text-destructive" },
-              { icon: "⚠️", label: "Mau Habis", value: String(stats.criticalCount), color: "text-warning" },
-              { icon: "🔥", label: "Laris", value: String(stats.bestSellerCount), color: "text-primary" },
-            ].map((s, idx) => (
-              <div key={s.label} className="rounded-2xl bg-card border border-border/50 shadow-sm p-3.5 animate-fade-in" style={{ animationDelay: `${idx * 60}ms`, animationFillMode: "both" }}>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span className="text-base">{s.icon}</span>
-                  <span className="text-[11px] text-muted-foreground font-medium">{s.label}</span>
-                </div>
-                <p className={`text-xl font-extrabold tabular-nums ${s.color}`}>{s.value}</p>
-              </div>
-            ))}
-          </div>
-
-          <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
-            <SectionHeader icon={DollarSign} title="Estimasi Budget Restock" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {budgetEstimates.map((e) => {
-                const label = e.days === 4 ? "1 siklus" : e.days === 7 ? "1 minggu" : e.days === 14 ? "2 minggu" : e.days === 21 ? "3 minggu" : "1 bulan";
-                return (
-                  <div key={e.days} className="p-4 rounded-xl bg-muted/30 space-y-1">
-                    <p className="text-xs text-muted-foreground">{e.days} hari · {label}</p>
-                    <p className="text-lg font-bold tabular-nums">{formatRp(e.cost)}</p>
-                    <p className="text-[11px] text-muted-foreground">{e.items} item · {e.qty} pcs</p>
+            <TabsContent value="ringkasan" className="space-y-4 mt-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {[
+                  { icon: "📦", label: "Jenis Barang", value: String(stats.totalSKU), color: "" },
+                  { icon: "🧵", label: "Total Stok", value: `${stats.totalStock.toLocaleString("id-ID")} pcs`, color: "" },
+                  { icon: "💵", label: "Nilai Barang", value: formatRp(stats.totalValue), color: "" },
+                  { icon: "🔴", label: "Habis", value: String(stats.outOfStock), color: "text-destructive" },
+                  { icon: "⚠️", label: "Mau Habis", value: String(stats.criticalCount), color: "text-warning" },
+                  { icon: "🔥", label: "Laris", value: String(stats.bestSellerCount), color: "text-primary" },
+                ].map((s, idx) => (
+                  <div key={s.label} className="rounded-2xl bg-card border border-border/50 shadow-sm p-3.5 animate-fade-in" style={{ animationDelay: `${idx * 60}ms`, animationFillMode: "both" }}>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-base">{s.icon}</span>
+                      <span className="text-[11px] text-muted-foreground font-medium">{s.label}</span>
+                    </div>
+                    <p className={`text-xl font-extrabold tabular-nums ${s.color}`}>{s.value}</p>
                   </div>
-                );
-              })}
-            </div>
-          </Card>
-
-          <Card className="border-0 shadow-sm animate-fade-in" style={{ animationDelay: "300ms", animationFillMode: "both" }}>
-            <CardContent className="p-4 space-y-1.5 text-xs text-muted-foreground">
-              <p className="font-semibold text-foreground text-sm">⚙️ Pengaturan Analisa</p>
-              <div className="grid grid-cols-2 gap-1">
-                <p>Siklus belanja: {RULES.CYCLE_DAYS} hari</p>
-                <p>Laris jika laku: {RULES.BESTSELLER_VELOCITY}/hari</p>
-                <p>Dead stock setelah: {RULES.DEAD_STOCK_DAYS} hari</p>
-                <p>Beli minimal: {RULES.BATCH} pcs (BW: {RULES.BATCH_BW})</p>
-                <p>Lead time: {RULES.LEAD_TIME_DAYS} hari</p>
-                <p>WMA: {RULES.WMA_PERIOD1_DAYS}hr ({RULES.WMA_PERIOD1_WEIGHT * 100}%) + sisa ({RULES.WMA_PERIOD2_WEIGHT * 100}%)</p>
+                ))}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        {/* ══════════ REVIEW AI ══════════ */}
-        <TabsContent value="review" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
-          <Suspense fallback={<div className="flex items-center justify-center py-16"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
-            <ReviewAI />
-          </Suspense>
+
+              <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
+                <SectionHeader icon={DollarSign} title="Estimasi Budget Restock" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {budgetEstimates.map((e) => {
+                    const label = e.days === 4 ? "1 siklus" : e.days === 7 ? "1 minggu" : e.days === 14 ? "2 minggu" : e.days === 21 ? "3 minggu" : "1 bulan";
+                    return (
+                      <div key={e.days} className="p-4 rounded-xl bg-muted/30 space-y-1">
+                        <p className="text-xs text-muted-foreground">{e.days} hari · {label}</p>
+                        <p className="text-lg font-bold tabular-nums">{formatRp(e.cost)}</p>
+                        <p className="text-[11px] text-muted-foreground">{e.items} item · {e.qty} pcs</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+
+              <Card className="border-0 shadow-sm animate-fade-in" style={{ animationDelay: "300ms", animationFillMode: "both" }}>
+                <CardContent className="p-4 space-y-1.5 text-xs text-muted-foreground">
+                  <p className="font-semibold text-foreground text-sm">⚙️ Pengaturan Analisa</p>
+                  <div className="grid grid-cols-2 gap-1">
+                    <p>Siklus belanja: {RULES.CYCLE_DAYS} hari</p>
+                    <p>Laris jika laku: {RULES.BESTSELLER_VELOCITY}/hari</p>
+                    <p>Dead stock setelah: {RULES.DEAD_STOCK_DAYS} hari</p>
+                    <p>Beli minimal: {RULES.BATCH} pcs (BW: {RULES.BATCH_BW})</p>
+                    <p>Lead time: {RULES.LEAD_TIME_DAYS} hari</p>
+                    <p>WMA: {RULES.WMA_PERIOD1_DAYS}hr ({RULES.WMA_PERIOD1_WEIGHT * 100}%) + sisa ({RULES.WMA_PERIOD2_WEIGHT * 100}%)</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="hari" className="space-y-4 mt-3">
+              <Suspense fallback={<div className="flex items-center justify-center py-16"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+                <HariRamaiAnalysis stockOutData={stockOutData} />
+              </Suspense>
+            </TabsContent>
+
+            <TabsContent value="tren" className="space-y-4 mt-3">
+              <Suspense fallback={<div className="flex items-center justify-center py-16"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+                <ColorTrendAnalysis products={products} stockOutData={stockOutData} />
+              </Suspense>
+            </TabsContent>
+
+            <TabsContent value="dead" className="space-y-4 mt-3">
+              <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
+                <SectionHeader icon={Skull} title={`Barang Tidak Laku (${RULES.DEAD_STOCK_DAYS}+ hari)`} />
+                {deadStock.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-success text-lg">✅</p>
+                    <p className="text-sm font-medium mt-1">Semua barang laku!</p>
+                    <p className="text-xs text-muted-foreground">Tidak ada yang macet</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-3">
+                      {[
+                        { label: "Jumlah", value: `${deadStock.length} barang` },
+                        { label: "Stok macet", value: `${deadStock.reduce((s, d) => s + d.stok, 0)} pcs` },
+                        { label: "Uang nyangkut", value: formatRp(deadStock.reduce((s, d) => s + d.nilai, 0)) },
+                      ].map(s => (
+                        <div key={s.label} className="px-3 py-2 rounded-lg bg-destructive/10 text-xs">
+                          <span className="text-muted-foreground">{s.label}: </span>
+                          <span className="font-semibold">{s.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {isMobile ? (
+                      <div className="space-y-2.5">
+                        {deadStock.map((d, i) => (
+                          <div key={d.productId} className="rounded-xl border border-l-[3px] border-l-destructive border-border/60 p-3.5 space-y-1.5 transition-all active:scale-[0.99] animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">#{i + 1}</span>
+                                <span className="font-bold text-sm">{d.kode}</span>
+                              </div>
+                              <span className="font-mono font-bold text-destructive tabular-nums">{d.daysSinceLastSale} hari</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 text-[11px]">
+                              <div><span className="text-muted-foreground">Stok</span><p className="font-semibold tabular-nums">{d.stok}</p></div>
+                              <div><span className="text-muted-foreground">Nilai</span><p className="font-semibold tabular-nums">{formatRp(d.nilai)}</p></div>
+                              <div><span className="text-muted-foreground">Terakhir</span><p className="font-semibold text-[10px]">{d.lastSaleDate ? d.lastSaleDate.toLocaleDateString("id-ID") : "Tidak pernah"}</p></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-muted/20 hover:bg-muted/20">
+                              <TableHead className="w-10 text-xs">#</TableHead>
+                              <TableHead className="text-xs">Kode</TableHead>
+                              <TableHead className="text-right text-xs">Stok</TableHead>
+                              <TableHead className="text-right text-xs">Nilai</TableHead>
+                              <TableHead className="text-right text-xs">Tidak Laku</TableHead>
+                              <TableHead className="text-xs">Terakhir Laku</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {deadStock.map((d, i) => (
+                              <TableRow key={d.productId}>
+                                <TableCell className="text-xs">{i + 1}</TableCell>
+                                <TableCell className="font-semibold text-sm">{d.kode}</TableCell>
+                                <TableCell className="text-right font-mono text-sm">{d.stok}</TableCell>
+                                <TableCell className="text-right font-mono text-xs">{formatRp(d.nilai)}</TableCell>
+                                <TableCell className="text-right font-mono text-sm text-destructive">{d.daysSinceLastSale} hari</TableCell>
+                                <TableCell className="text-xs text-muted-foreground">{d.lastSaleDate ? d.lastSaleDate.toLocaleDateString("id-ID") : "Tidak pernah"}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground">💡 Saran: jual obral atau kasih promo untuk barang-barang ini</p>
+                  </>
+                )}
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="budget" className="space-y-4 mt-3">
+              <BudgetPlanner
+                analyses={analyses}
+                budgetAmount={budgetAmount}
+                setBudgetAmount={setBudgetAmount}
+                budgetDays={budgetDays}
+                setBudgetDays={setBudgetDays}
+                isMobile={isMobile}
+              />
+            </TabsContent>
+
+            <TabsContent value="review" className="space-y-4 mt-3">
+              <Suspense fallback={<div className="flex items-center justify-center py-16"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+                <ReviewAI />
+              </Suspense>
+            </TabsContent>
+          </Tabs>
         </TabsContent>
       </Tabs>
     </div>
