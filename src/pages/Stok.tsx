@@ -41,10 +41,34 @@ function getAuthHeaders() {
 
 const Stok = () => {
   const { data: products, isLoading } = useProducts();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const isMobile = useIsMobile();
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const handleResetStock = async () => {
+    setResetting(true);
+    try {
+      const headers = getAuthHeaders();
+      // Reset all stock to 0
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/stock?id=neq.00000000-0000-0000-0000-000000000000`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ jumlah: 0, tumpukan: "", tumpukan_detail: [] }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      toast({ title: "Berhasil", description: "Semua stok telah di-reset ke 0" });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      setShowResetDialog(false);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+    setResetting(false);
+  };
 
   const filtered = useMemo(() =>
     products?.filter(
