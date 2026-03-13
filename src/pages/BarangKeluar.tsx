@@ -153,7 +153,7 @@ const BarangKeluar = () => {
       if (!stockRes.ok) throw new Error(await stockRes.text());
 
       toast({ title: "Berhasil", description: `${matched.kode} keluar ${qtyKirim} pcs` });
-      setKode(""); setQtyPesan(0); setQtyKirim(0); setCatatan(""); setToko("");
+      setKode(""); setQtyPesan(0); setQtyKirim(0); setCatatan(""); setToko(""); setTanggal(undefined);
       queryClient.invalidateQueries({ queryKey: ["stock_out_history"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch (err: any) {
