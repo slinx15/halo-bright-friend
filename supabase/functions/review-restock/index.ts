@@ -72,6 +72,7 @@ interface ReviewCard {
   is_bestseller: boolean;
   is_bw: boolean;
   batch: number;
+  pending_qty: number;
 }
 
 interface MissedCard {
@@ -85,6 +86,7 @@ interface MissedCard {
   is_bw: boolean;
   harga_modal: number;
   cost: number;
+  pending_qty: number;
 }
 
 function getStatus(dos: number): Status {
@@ -140,6 +142,8 @@ serve(async (req) => {
     const queries: Promise<any>[] = [
       supabase.from("products").select("id, kode, nama, kategori, stock(jumlah), prices(harga_modal, harga_normal, harga_grosir)").eq("is_active", true),
       supabase.from("stock_out").select("product_id, qty_pesan, created_at").gte("created_at", cutoff.toISOString()).order("created_at", { ascending: false }).limit(5000),
+      // Fetch pending restock items (orders placed but not yet arrived)
+      supabase.from("pending_restock").select("id, status").in("status", ["pending", "active"]),
     ];
     if (isTopup && ordered_at) {
       queries.push(
@@ -148,10 +152,25 @@ serve(async (req) => {
     }
 
     const queryResults = await Promise.all(queries);
-    const [productsRes, stockOutRes] = queryResults;
-    const stockOutAfterOrder = isTopup && queryResults[2] ? queryResults[2].data || [] : [];
+    const [productsRes, stockOutRes, pendingRestockRes] = queryResults;
+    const stockOutAfterOrder = isTopup && queryResults[3] ? queryResults[3].data || [] : [];
     const rawProducts = productsRes.data || [];
     const stockOut = stockOutRes.data || [];
+
+    // Build pending qty map from pending_restock_items
+    const pendingMap: Record<string, number> = {};
+    const pendingRestocks = pendingRestockRes.data || [];
+    if (pendingRestocks.length > 0) {
+      const restockIds = pendingRestocks.map((r: any) => r.id);
+      const { data: pendingItems } = await supabase
+        .from("pending_restock_items")
+        .select("kode, qty")
+        .in("restock_id", restockIds);
+      for (const pi of (pendingItems || [])) {
+        const k = pi.kode.toUpperCase().trim();
+        pendingMap[k] = (pendingMap[k] || 0) + pi.qty;
+      }
+    }
 
     // Build product lookup
     const productMap: Record<string, any> = {};
@@ -186,8 +205,10 @@ serve(async (req) => {
       const safety = isBW ? RULES.SAFETY_BW : RULES.SAFETY_STOCK;
       const computedTargetDays = customTargetDays || (RULES.CYCLE_DAYS + safety + RULES.LEAD_TIME_DAYS);
       const targetStock = Math.ceil(velocity * computedTargetDays);
-      const dos = velocity > 0 ? product.stok / velocity : (product.stok > 0 ? 999 : 0);
-      const idealQty = Math.max(0, targetStock - product.stok);
+      const pendingQty = pendingMap[kode] || 0;
+      const effectiveStock = product.stok + pendingQty;
+      const dos = velocity > 0 ? effectiveStock / velocity : (effectiveStock > 0 ? 999 : 0);
+      const idealQty = Math.max(0, targetStock - effectiveStock);
       const idealRounded = idealQty > 0 ? Math.max(isBW ? batch : RULES.MIN_ORDER_PER_CODE, Math.ceil(idealQty / batch) * batch) : 0;
       const cost = qty * product.hargaModal;
       totalCost += cost;
@@ -204,7 +225,7 @@ serve(async (req) => {
         verdict, verdict_note: note,
         cost, harga_modal: product.hargaModal,
         is_bestseller: isBestSeller, is_bw: isBW,
-        batch,
+        batch, pending_qty: pendingQty,
       });
     }
 
@@ -218,14 +239,18 @@ serve(async (req) => {
       if (!prod) continue;
       const { velocity } = computeWMAVelocity(stockOut, prod.id);
       if (velocity <= 0) continue;
-      const dos = prod.stok / velocity;
+      const kodeUpper = p.kode.toUpperCase();
+      const pendingQty = pendingMap[kodeUpper] || 0;
+      const effectiveStock = prod.stok + pendingQty;
+      const dos = effectiveStock / velocity;
       if (dos <= RULES.WARNING_DAYS) {
         const isBW = isBlackWhite(p.kode);
         const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
         const missedTargetDays = customTargetDays || (RULES.CYCLE_DAYS + (isBW ? RULES.SAFETY_BW : RULES.SAFETY_STOCK) + RULES.LEAD_TIME_DAYS);
-        const idealQty = Math.max(batch, Math.ceil(velocity * missedTargetDays - prod.stok));
-        const idealRounded = Math.ceil(idealQty / batch) * batch;
+        const idealQty = Math.max(batch, Math.ceil(velocity * missedTargetDays - effectiveStock));
+        const idealRounded = idealQty > 0 ? Math.ceil(idealQty / batch) * batch : 0;
         const missedCost = idealRounded * (prod.hargaModal || 0);
+        if (idealRounded <= 0) continue; // skip if pending already covers it
         missed.push({
           kode: p.kode, nama: p.nama,
           stok: prod.stok, velocity,
@@ -233,7 +258,7 @@ serve(async (req) => {
           status: getStatus(dos),
           ideal_qty: idealRounded, is_bw: isBW,
           harga_modal: prod.hargaModal || 0,
-          cost: missedCost,
+          cost: missedCost, pending_qty: pendingQty,
         });
       }
     }

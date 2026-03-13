@@ -26,6 +26,7 @@ export interface ReviewCard {
   is_bestseller: boolean;
   is_bw: boolean;
   batch: number;
+  pending_qty?: number;
 }
 
 export interface MissedCard {
@@ -39,6 +40,7 @@ export interface MissedCard {
   is_bw: boolean;
   harga_modal: number;
   cost: number;
+  pending_qty?: number;
 }
 
 export interface ReviewResult {
@@ -222,12 +224,18 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
       </div>
 
       {/* Qty info */}
-      <div className="flex items-center gap-3 text-xs">
+      <div className="flex items-center gap-3 text-xs flex-wrap">
         <div className="flex items-center gap-1 text-muted-foreground">
           <ShoppingCart className="h-3 w-3" />
           <span>Pesan:</span>
           <span className="font-bold text-foreground">{formatNumber(card.qty_boss)}</span>
         </div>
+        {(card.pending_qty ?? 0) > 0 && (
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <span>📦 Pending:</span>
+            <span className="font-bold text-purple-600 dark:text-purple-400">{formatNumber(card.pending_qty!)}</span>
+          </div>
+        )}
         {(needMore || tooMuch) && (
           <>
             <span className="text-muted-foreground">→</span>
@@ -267,11 +275,14 @@ function MissedProductCard({ card }: { card: MissedCard }) {
       <div className="rounded-xl px-3 py-2 text-[11px] leading-relaxed bg-red-100/80 dark:bg-red-900/30 text-red-800 dark:text-red-300">
         💬 {getMissedReason(card)}
       </div>
-      {card.cost > 0 && (
-        <div className="text-[10px] text-muted-foreground px-1">
-          Budget: <span className="font-bold text-foreground">{formatRupiah(card.cost)}</span>
-        </div>
-      )}
+      <div className="flex items-center gap-3 text-[10px] text-muted-foreground px-1 flex-wrap">
+        {(card.pending_qty ?? 0) > 0 && (
+          <span>📦 Pending: <span className="font-bold text-purple-600 dark:text-purple-400">{formatNumber(card.pending_qty!)}</span></span>
+        )}
+        {card.cost > 0 && (
+          <span>Budget: <span className="font-bold text-foreground">{formatRupiah(card.cost)}</span></span>
+        )}
+      </div>
     </div>
   );
 }
