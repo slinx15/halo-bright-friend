@@ -1516,7 +1516,7 @@ function BudgetPlanner({
                             {reviewingOrder ? "Menganalisa..." : "Review AI"}
                           </button>
                           <button
-                            onClick={submitManualOrder}
+                            onClick={checkDeviationAndSave}
                             disabled={submittingOrder || manualRows.filter(r => r.kode && r.qty > 0).length === 0}
                             className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-md hover:opacity-90 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
                           >
