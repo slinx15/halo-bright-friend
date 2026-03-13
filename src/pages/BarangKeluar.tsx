@@ -208,7 +208,7 @@ const BarangKeluar = () => {
       toast({ title: "Berhasil", description: `${successCount} item berhasil disimpan` });
     }
     if (successCount > 0) {
-      setBulkToko(""); setBulkCatatan("");
+      setBulkToko(""); setBulkCatatan(""); setBulkTanggal(undefined);
       queryClient.invalidateQueries({ queryKey: ["stock_out_history"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     }
