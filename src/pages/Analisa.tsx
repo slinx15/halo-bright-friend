@@ -511,7 +511,7 @@ function BudgetPlanner({
       const pq = pendingMap.get(item.kode.toUpperCase()) || 0;
       
       // Review AI formula: needed for targetDays - what we have - what's ordered
-      const needed = Math.ceil(item.velocity * targetDays);
+      const needed = Math.ceil(item.velocity * coverageDays);
       const shortfall = Math.max(0, needed - stock - pq);
       if (shortfall <= 0) continue;
 
