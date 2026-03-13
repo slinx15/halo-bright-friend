@@ -1,14 +1,19 @@
 import { useState, forwardRef, useImperativeHandle, useCallback } from "react";
+import { format } from "date-fns";
+import { id as localeId } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Send, PackageMinus, AlertTriangle, CheckCircle2, Trash2, Plus } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Send, PackageMinus, AlertTriangle, CheckCircle2, Trash2, Plus, CalendarIcon } from "lucide-react";
 import { formatNumber, formatRupiah } from "@/lib/formatters";
 import { deductFromStacks } from "@/lib/tumpukanUtils";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
+import { cn } from "@/lib/utils";
 import type { ProductWithDetails } from "@/hooks/useProducts";
 
 export interface BulkKeluarItem {
@@ -29,6 +34,8 @@ interface BulkKeluarInputProps {
   setToko: (v: string) => void;
   catatan: string;
   setCatatan: (v: string) => void;
+  tanggal?: Date;
+  setTanggal?: (v: Date | undefined) => void;
 }
 
 export interface BulkKeluarInputHandle {
