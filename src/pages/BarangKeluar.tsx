@@ -337,10 +337,25 @@ const BarangKeluar = () => {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label className="text-xs font-semibold text-muted-foreground">Nama Toko / Pelanggan</Label>
                   <Input value={toko} onChange={(e) => setToko(e.target.value)} placeholder="Nama toko..." className="rounded-lg mt-1" />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold text-muted-foreground">Tanggal (opsional)</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-lg mt-1", !tanggal && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {tanggal ? format(tanggal, "dd MMM yyyy", { locale: localeId }) : "Hari ini"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={tanggal} onSelect={setTanggal} initialFocus className="p-3 pointer-events-auto" />
+                    </PopoverContent>
+                  </Popover>
+                  {tanggal && <button onClick={() => setTanggal(undefined)} className="text-[10px] text-primary mt-0.5 hover:underline">Reset ke hari ini</button>}
                 </div>
                 <div>
                   <Label className="text-xs font-semibold text-muted-foreground">Catatan (opsional)</Label>
