@@ -520,7 +520,6 @@ function BudgetPlanner({
       // Split shortfall evenly across remaining plan days
       const todayShare = Math.ceil(shortfall / planInfo.remainingDays);
 
-      const isBW = isBlackWhiteCode(item.kode);
       const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
       const qty = Math.max(batch, Math.ceil(todayShare / batch) * batch);
       const cost = qty * item.unitPrice;
