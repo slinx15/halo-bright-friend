@@ -26,6 +26,7 @@ export interface ReviewCard {
   is_bestseller: boolean;
   is_bw: boolean;
   batch: number;
+  pending_qty?: number;
 }
 
 export interface MissedCard {
@@ -39,6 +40,7 @@ export interface MissedCard {
   is_bw: boolean;
   harga_modal: number;
   cost: number;
+  pending_qty?: number;
 }
 
 export interface ReviewResult {
