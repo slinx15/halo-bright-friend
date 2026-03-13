@@ -162,6 +162,22 @@ const BarangKeluar = () => {
     setSubmitting(false);
   };
 
+  const fetchWithRetry = async (url: string, options: RequestInit, retries = 2): Promise<Response> => {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const res = await fetch(url, options);
+        return res;
+      } catch (err) {
+        if (attempt < retries) {
+          await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw new Error("Max retries reached");
+  };
+
   const handleBulkSubmit = async (items: BulkKeluarItem[]) => {
     setBulkSubmitting(true);
     const headers = getAuthHeaders();
@@ -175,7 +191,7 @@ const BarangKeluar = () => {
         const price = product.prices
           ? item.hargaType === "grosir" ? product.prices.harga_grosir : product.prices.harga_normal
           : 0;
-        const outRes = await fetch(`${SUPABASE_URL}/rest/v1/stock_out`, {
+        const outRes = await fetchWithRetry(`${SUPABASE_URL}/rest/v1/stock_out`, {
           method: "POST", headers,
           body: JSON.stringify({
             product_id: product.id, qty_pesan: item.qtyPesan, qty_kirim: item.qtyKirim,
@@ -189,7 +205,7 @@ const BarangKeluar = () => {
           continue;
         }
         const newStacks = deductFromStacks(stacks, item.qtyKirim);
-        const stockRes = await fetch(
+        const stockRes = await fetchWithRetry(
           `${SUPABASE_URL}/rest/v1/stock?product_id=eq.${product.id}`,
           { method: "PATCH", headers, body: JSON.stringify({ jumlah: stok - item.qtyKirim, tumpukan_detail: newStacks }) }
         );
