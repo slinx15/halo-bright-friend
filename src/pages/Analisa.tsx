@@ -2550,13 +2550,13 @@ const Analisa = () => {
         {/* ══════════ INSIGHT (grouped: Ringkasan + Hari + Tren + Dead + Budget + Review) ══════════ */}
         <TabsContent value="insight" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Tabs defaultValue="ringkasan" className="w-full">
-            <TabsList className="w-full grid grid-cols-3 md:grid-cols-6 h-9 rounded-xl bg-muted/50 gap-0.5">
-              <TabsTrigger value="ringkasan" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm"><BarChart3 className="h-3.5 w-3.5 mr-1 shrink-0" />Ringkasan</TabsTrigger>
-              <TabsTrigger value="hari" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm"><CalendarIcon className="h-3.5 w-3.5 mr-1 shrink-0" />Hari</TabsTrigger>
-              <TabsTrigger value="tren" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm"><Palette className="h-3.5 w-3.5 mr-1 shrink-0" />Tren</TabsTrigger>
-              <TabsTrigger value="dead" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground"><Skull className="h-3.5 w-3.5 mr-1 shrink-0" />Dead</TabsTrigger>
-              <TabsTrigger value="budget" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm"><Calculator className="h-3.5 w-3.5 mr-1 shrink-0" />Budget</TabsTrigger>
-              <TabsTrigger value="review" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm"><Sparkles className="h-3.5 w-3.5 mr-1 shrink-0" />Review</TabsTrigger>
+            <TabsList className="w-full grid grid-cols-3 md:grid-cols-6 h-auto rounded-xl bg-muted/50 gap-1 p-1">
+              <TabsTrigger value="ringkasan" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm py-2"><BarChart3 className="h-3.5 w-3.5 mr-1 shrink-0" />Ringkasan</TabsTrigger>
+              <TabsTrigger value="hari" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm py-2"><CalendarIcon className="h-3.5 w-3.5 mr-1 shrink-0" />Hari</TabsTrigger>
+              <TabsTrigger value="tren" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm py-2"><Palette className="h-3.5 w-3.5 mr-1 shrink-0" />Tren</TabsTrigger>
+              <TabsTrigger value="dead" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground py-2"><Skull className="h-3.5 w-3.5 mr-1 shrink-0" />Dead</TabsTrigger>
+              <TabsTrigger value="budget" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm py-2"><Calculator className="h-3.5 w-3.5 mr-1 shrink-0" />Budget</TabsTrigger>
+              <TabsTrigger value="review" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm py-2"><Sparkles className="h-3.5 w-3.5 mr-1 shrink-0" />Review</TabsTrigger>
             </TabsList>
 
             <TabsContent value="ringkasan" className="space-y-4 mt-3">
