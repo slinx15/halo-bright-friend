@@ -1,4 +1,6 @@
 import { useState, useRef } from "react";
+import { format } from "date-fns";
+import { id as localeId } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -13,8 +15,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { PackageMinus, Send, Clock, Store, Hash, ChevronDown, Zap, FileText, CheckCircle2, DollarSign } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { PackageMinus, Send, Clock, Store, Hash, ChevronDown, Zap, FileText, CheckCircle2, DollarSign, CalendarIcon } from "lucide-react";
 import { formatDate, formatNumber, formatRupiah } from "@/lib/formatters";
+import { cn } from "@/lib/utils";
 import { OcrUpload } from "@/components/OcrUpload";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { deductFromStacks } from "@/lib/tumpukanUtils";
@@ -59,11 +64,13 @@ const BarangKeluar = () => {
   const [hargaType, setHargaType] = useState("normal");
   const [catatan, setCatatan] = useState("");
   const [toko, setToko] = useState("");
+  const [tanggal, setTanggal] = useState<Date | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
 
   // Bulk mode state
   const [bulkToko, setBulkToko] = useState("");
   const [bulkCatatan, setBulkCatatan] = useState("");
+  const [bulkTanggal, setBulkTanggal] = useState<Date | undefined>(undefined);
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
 
   const matched = products?.find((p) => p.kode.toUpperCase() === kode.toUpperCase());
@@ -126,6 +133,7 @@ const BarangKeluar = () => {
           catatan: catatan || null,
           toko: toko.trim() || "",
           user_id: user!.id,
+          ...(tanggal ? { created_at: tanggal.toISOString() } : {}),
         }),
       });
       if (!outRes.ok) throw new Error(await outRes.text());
@@ -145,7 +153,7 @@ const BarangKeluar = () => {
       if (!stockRes.ok) throw new Error(await stockRes.text());
 
       toast({ title: "Berhasil", description: `${matched.kode} keluar ${qtyKirim} pcs` });
-      setKode(""); setQtyPesan(0); setQtyKirim(0); setCatatan(""); setToko("");
+      setKode(""); setQtyPesan(0); setQtyKirim(0); setCatatan(""); setToko(""); setTanggal(undefined);
       queryClient.invalidateQueries({ queryKey: ["stock_out_history"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch (err: any) {
@@ -173,6 +181,7 @@ const BarangKeluar = () => {
             product_id: product.id, qty_pesan: item.qtyPesan, qty_kirim: item.qtyKirim,
             harga_type: item.hargaType, harga_satuan: price, total_harga: price * item.qtyKirim,
             catatan: bulkCatatan || null, toko: bulkToko.trim() || "", user_id: user!.id,
+            ...(bulkTanggal ? { created_at: bulkTanggal.toISOString() } : {}),
           }),
         });
         if (!outRes.ok) {
@@ -199,7 +208,7 @@ const BarangKeluar = () => {
       toast({ title: "Berhasil", description: `${successCount} item berhasil disimpan` });
     }
     if (successCount > 0) {
-      setBulkToko(""); setBulkCatatan("");
+      setBulkToko(""); setBulkCatatan(""); setBulkTanggal(undefined);
       queryClient.invalidateQueries({ queryKey: ["stock_out_history"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     }
@@ -328,10 +337,25 @@ const BarangKeluar = () => {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label className="text-xs font-semibold text-muted-foreground">Nama Toko / Pelanggan</Label>
                   <Input value={toko} onChange={(e) => setToko(e.target.value)} placeholder="Nama toko..." className="rounded-lg mt-1" />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold text-muted-foreground">Tanggal (opsional)</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-lg mt-1", !tanggal && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {tanggal ? format(tanggal, "dd MMM yyyy", { locale: localeId }) : "Hari ini"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={tanggal} onSelect={setTanggal} initialFocus className="p-3 pointer-events-auto" />
+                    </PopoverContent>
+                  </Popover>
+                  {tanggal && <button onClick={() => setTanggal(undefined)} className="text-[10px] text-primary mt-0.5 hover:underline">Reset ke hari ini</button>}
                 </div>
                 <div>
                   <Label className="text-xs font-semibold text-muted-foreground">Catatan (opsional)</Label>
@@ -359,6 +383,8 @@ const BarangKeluar = () => {
             setToko={setBulkToko}
             catatan={bulkCatatan}
             setCatatan={setBulkCatatan}
+            tanggal={bulkTanggal}
+            setTanggal={setBulkTanggal}
           />
         </TabsContent>
       </Tabs>

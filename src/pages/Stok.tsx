@@ -1,24 +1,74 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useProducts } from "@/hooks/useProducts";
+import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Package, Search, AlertTriangle, TrendingUp, BoxIcon, ShieldAlert, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Package, Search, AlertTriangle, TrendingUp, BoxIcon, ShieldAlert, Loader2, Trash2 } from "lucide-react";
 import { formatNumber, formatRupiah, getStockStatus, getStockStatusColor } from "@/lib/formatters";
 import { StokSkeleton } from "@/components/LoadingSkeletons";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Progress } from "@/components/ui/progress";
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
 const PAGE_SIZE = 30;
+
+function getAuthHeaders() {
+  const storageKey = `sb-${import.meta.env.VITE_SUPABASE_PROJECT_ID}-auth-token`;
+  let token = SUPABASE_KEY;
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      token = parsed?.access_token || SUPABASE_KEY;
+    }
+  } catch {}
+  return {
+    "Content-Type": "application/json",
+    "apikey": SUPABASE_KEY,
+    "Authorization": `Bearer ${token}`,
+    "Prefer": "return=minimal",
+  };
+}
 
 const Stok = () => {
   const { data: products, isLoading } = useProducts();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const isMobile = useIsMobile();
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const handleResetStock = async () => {
+    setResetting(true);
+    try {
+      const headers = getAuthHeaders();
+      // Reset all stock to 0
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/stock?id=neq.00000000-0000-0000-0000-000000000000`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ jumlah: 0, tumpukan: "", tumpukan_detail: [] }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      toast({ title: "Berhasil", description: "Semua stok telah di-reset ke 0" });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      setShowResetDialog(false);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+    setResetting(false);
+  };
 
   const filtered = useMemo(() =>
     products?.filter(
@@ -80,17 +130,42 @@ const Stok = () => {
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*]:[animation-fill-mode:both]">
       {/* ── Premium Header ── */}
-      <div className="flex items-center gap-3.5">
-        <div className="p-3 rounded-2xl bg-primary/10 shadow-sm">
-          <Package className="h-6 w-6 text-primary" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 rounded-2xl bg-primary/10 shadow-sm">
+            <Package className="h-6 w-6 text-primary" />
+          </div>
+          <div className="space-y-0.5">
+            <h1 className="text-xl font-extrabold tracking-tight leading-tight">Manajemen Stok</h1>
+            <p className="text-muted-foreground text-xs font-medium">
+              {formatNumber(totalItems)} produk · {formatNumber(totalStok)} total pcs
+            </p>
+          </div>
         </div>
-        <div className="space-y-0.5">
-          <h1 className="text-xl font-extrabold tracking-tight leading-tight">Manajemen Stok</h1>
-          <p className="text-muted-foreground text-xs font-medium">
-            {formatNumber(totalItems)} produk · {formatNumber(totalStok)} total pcs
-          </p>
-        </div>
+        <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setShowResetDialog(true)}>
+          <Trash2 className="h-4 w-4 mr-1.5" /> Reset Stok
+        </Button>
       </div>
+
+      {/* Reset Dialog */}
+      <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" /> Reset Semua Stok
+            </DialogTitle>
+            <DialogDescription>
+              Semua jumlah stok akan di-set ke <strong>0</strong> dan data tumpukan akan dihapus. Aksi ini tidak bisa di-undo. Yakin lanjutkan?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowResetDialog(false)} disabled={resetting}>Batal</Button>
+            <Button variant="destructive" onClick={handleResetStock} disabled={resetting}>
+              {resetting ? "Mereset..." : "Ya, Reset Semua"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
