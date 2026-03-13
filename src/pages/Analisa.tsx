@@ -483,7 +483,7 @@ function BudgetPlanner({
     return { items: result, totalCost: budgetAmount - remaining, remaining };
   }, [analyses, budgetAmount, budgetDays, pendingMap]);
 
-  // ─── Periode Mode: Progressive — only compute TODAY with real-time stock ───
+  // ─── Periode Mode: Same logic as Budget Mode, split across plan days ───
   type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string; pendingQty?: number; simStock?: number; simDaysLeft?: number };
   type DayPlan = { day: number; items: RecItem[]; totalCost: number; dailyBudget: number; remaining: number; locked?: boolean };
 
@@ -492,60 +492,75 @@ function BudgetPlanner({
 
     const dailyBudget = planInfo.todayBudget;
     const currentDay = planInfo.dayNumber || 1;
-    // Plan duration is for splitting orders across days, NOT for coverage target
+    // Use same coverage days as Budget Mode (user-configured)
+    const coverageDays = activePlan.coverage_days || 4;
 
     const days: DayPlan[] = [];
 
-    // === Same formula as Review AI: shortfall = velocity × targetDays - stok - pending ===
+    // === Exact same candidate logic as Budget Mode ===
     const sorted = [...analyses]
       .filter(a => a.velocity > 0)
       .sort((a, b) => b.combinedScore - a.combinedScore);
 
-    type Candidate = { item: ProductAnalysis; shortfall: number; todayQty: number; cost: number; reason: string; batch: number };
+    type Candidate = { item: ProductAnalysis; idealQty: number; idealCost: number; reason: string; batch: number; minOrder: number };
     const candidates: Candidate[] = [];
 
     for (const item of sorted) {
-      const stock = item.currentStock;
+      const neededStock = Math.ceil(item.velocity * coverageDays);
+      let deficit = neededStock - item.currentStock;
       const pq = pendingMap.get(item.kode.toUpperCase()) || 0;
+      deficit -= pq;
+      if (deficit <= 0) continue;
+
       const isBW = isBlackWhiteCode(item.kode);
-      
-      // Review AI formula: coverage = cycle + safety (BW=2, other=1) + lead_time
-      const itemCoverage = RULES.CYCLE_DAYS + (isBW ? RULES.SAFETY_BW : RULES.SAFETY_STOCK) + RULES.LEAD_TIME_DAYS;
-      const needed = Math.ceil(item.velocity * itemCoverage);
-      const shortfall = Math.max(0, needed - stock - pq);
-      if (shortfall <= 0) continue;
-
-      // Split shortfall evenly across remaining plan days
-      const todayShare = Math.ceil(shortfall / planInfo.remainingDays);
-
       const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
-      const qty = Math.max(batch, Math.ceil(todayShare / batch) * batch);
+      const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
+
+      // Split deficit across remaining plan days, then round to batch
+      const todayDeficit = Math.ceil(deficit / planInfo.remainingDays);
+      const qty = Math.max(minOrder, Math.ceil(todayDeficit / batch) * batch);
       const cost = qty * item.unitPrice;
 
-      const daysLeft = item.velocity > 0 ? (stock + pq) / item.velocity : 999;
-      const reason = stock === 0 ? "🚨 Stok kosong" :
-        daysLeft <= RULES.CRITICAL_DAYS ? "🔴 Kritis" :
-        daysLeft <= RULES.WARNING_DAYS ? "🟠 Segera habis" : "📦 Perlu restock";
+      const reason = item.isStockOut ? "🚨 Stok kosong" :
+        item.daysOfStock <= RULES.CRITICAL_DAYS ? "🔴 Kritis" :
+        item.daysOfStock <= RULES.WARNING_DAYS ? "🟠 Segera habis" : "📦 Perlu restock";
 
-      candidates.push({ item, shortfall, todayQty: qty, cost, reason, batch });
+      candidates.push({ item, idealQty: qty, idealCost: cost, reason, batch, minOrder });
     }
 
-    // Fit into daily budget, prioritize critical items first
+    // === Same tiered budget fitting as Budget Mode ===
     const dayItems: RecItem[] = [];
     let remaining = dailyBudget;
+    const totalIdealCost = candidates.reduce((s, c) => s + c.idealCost, 0);
 
-    for (const c of candidates) {
-      if (remaining <= 0) break;
-      let qty = c.todayQty;
-      let cost = c.cost;
-      if (cost > remaining) {
-        qty = Math.floor(Math.floor(remaining / c.item.unitPrice) / c.batch) * c.batch;
-        if (qty < c.batch) continue;
-        cost = qty * c.item.unitPrice;
+    if (totalIdealCost <= dailyBudget) {
+      // Everything fits in today's budget
+      for (const c of candidates) {
+        const pq = pendingMap.get(c.item.kode.toUpperCase()) || 0;
+        dayItems.push({ item: c.item, qty: c.idealQty, cost: c.idealCost, reason: c.reason, pendingQty: pq || undefined });
+        remaining -= c.idealCost;
       }
-      const pq = pendingMap.get(c.item.kode.toUpperCase()) || 0;
-      dayItems.push({ item: c.item, qty, cost, reason: c.reason, pendingQty: pq || undefined });
-      remaining -= cost;
+    } else {
+      // Tiered prioritization: critical → bestseller → rest
+      const tier1 = candidates.filter(c => c.item.isStockOut || c.item.daysOfStock <= RULES.CRITICAL_DAYS);
+      const tier2 = candidates.filter(c => !tier1.includes(c) && c.item.isBestSeller);
+      const tier3 = candidates.filter(c => !tier1.includes(c) && !tier2.includes(c));
+
+      for (const tier of [tier1, tier2, tier3]) {
+        for (const c of tier) {
+          if (remaining <= 0) break;
+          let qty = c.idealQty;
+          let cost = c.idealCost;
+          if (cost > remaining) {
+            qty = Math.floor(Math.floor(remaining / c.item.unitPrice) / c.batch) * c.batch;
+            if (qty < c.minOrder) continue;
+            cost = qty * c.item.unitPrice;
+          }
+          const pq = pendingMap.get(c.item.kode.toUpperCase()) || 0;
+          dayItems.push({ item: c.item, qty, cost, reason: c.reason, pendingQty: pq || undefined });
+          remaining -= cost;
+        }
+      }
     }
 
     days.push({
