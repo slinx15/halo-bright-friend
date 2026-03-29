@@ -68,6 +68,21 @@ const BarangMasuk = () => {
   const addLine = () => setItems((prev) => [...prev, { kode: "", qty: 1 }]);
   const removeLine = (i: number) => setItems((prev) => prev.filter((_, idx) => idx !== i));
 
+  const retryOp = async <T,>(fn: () => Promise<T>, retries = 2): Promise<T> => {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        return await fn();
+      } catch (err) {
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw new Error("Unreachable");
+  };
+
   const handleSubmit = async () => {
     const validItems = items.filter((i) => i.productId && i.qty > 0);
     if (validItems.length === 0) {
@@ -75,51 +90,62 @@ const BarangMasuk = () => {
       return;
     }
     setSubmitting(true);
-    try {
-      for (const item of validItems) {
+    let successCount = 0;
+    const errors: string[] = [];
+
+    for (const item of validItems) {
+      try {
         const kode = item.productKode || item.kode;
         const newStacks = splitIntoStacks(item.qty, kode);
 
-        await supabase.from("stock_in").insert({
+        await retryOp(() => Promise.resolve(supabase.from("stock_in").insert({
           product_id: item.productId!,
           qty: item.qty,
           tumpukan: newStacks.join(","),
           catatan: catatan || null,
           user_id: user!.id,
-        });
+        }).then(r => { if (r.error) throw r.error; return r; })));
 
-        const { data: existing } = await supabase
+        const { data: existing } = await retryOp(() => Promise.resolve(supabase
           .from("stock")
           .select("*")
           .eq("product_id", item.productId!)
-          .maybeSingle();
+          .maybeSingle()
+          .then(r => { if (r.error) throw r.error; return r; })));
 
         if (existing) {
           const currentStacks = (existing.tumpukan_detail as number[]) ?? [];
           const merged = addStacks(currentStacks, newStacks);
-          await supabase
+          await retryOp(() => Promise.resolve(supabase
             .from("stock")
             .update({
               jumlah: existing.jumlah + item.qty,
               tumpukan_detail: merged,
             })
-            .eq("id", existing.id);
+            .eq("id", existing.id)
+            .then(r => { if (r.error) throw r.error; return r; })));
         } else {
-          await supabase.from("stock").insert({
+          await retryOp(() => Promise.resolve(supabase.from("stock").insert({
             product_id: item.productId!,
             jumlah: item.qty,
             tumpukan_detail: newStacks,
-          });
+          }).then(r => { if (r.error) throw r.error; return r; })));
         }
+        successCount++;
+      } catch (itemErr: any) {
+        errors.push(`${item.kode}: ${itemErr.message}`);
       }
-      toast({ title: "Berhasil", description: `${validItems.length} item masuk tercatat` });
-      setItems([{ kode: "", qty: 1 }]);
-      setCatatan("");
-      queryClient.invalidateQueries({ queryKey: ["stock_in_history"] });
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
+
+    if (errors.length > 0) {
+      toast({ title: `${successCount} berhasil, ${errors.length} gagal`, description: errors.join("; "), variant: "destructive" });
+    } else {
+      toast({ title: "Berhasil", description: `${validItems.length} item masuk tercatat` });
+    }
+    setItems([{ kode: "", qty: 1 }]);
+    setCatatan("");
+    queryClient.invalidateQueries({ queryKey: ["stock_in_history"] });
+    queryClient.invalidateQueries({ queryKey: ["products"] });
     setSubmitting(false);
   };
 
