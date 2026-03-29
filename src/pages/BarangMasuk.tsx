@@ -125,11 +125,11 @@ const BarangMasuk = () => {
             .eq("id", existing.id)
             .then(r => { if (r.error) throw r.error; return r; })));
         } else {
-          await retryOp(() => supabase.from("stock").insert({
+          await retryOp(() => Promise.resolve(supabase.from("stock").insert({
             product_id: item.productId!,
             jumlah: item.qty,
             tumpukan_detail: newStacks,
-          }).then(r => { if (r.error) throw r.error; return r; }));
+          }).then(r => { if (r.error) throw r.error; return r; })));
         }
         successCount++;
       } catch (itemErr: any) {
