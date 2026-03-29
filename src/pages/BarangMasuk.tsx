@@ -104,7 +104,7 @@ const BarangMasuk = () => {
           tumpukan: newStacks.join(","),
           catatan: catatan || null,
           user_id: user!.id,
-        }).then(r => { if (r.error) throw r.error; return r; }));
+        }).then(r => { if (r.error) throw r.error; return r; })));
 
         const { data: existing } = await retryOp(() => supabase
           .from("stock")
