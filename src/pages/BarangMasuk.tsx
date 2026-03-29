@@ -116,14 +116,14 @@ const BarangMasuk = () => {
         if (existing) {
           const currentStacks = (existing.tumpukan_detail as number[]) ?? [];
           const merged = addStacks(currentStacks, newStacks);
-          await retryOp(() => supabase
+          await retryOp(() => Promise.resolve(supabase
             .from("stock")
             .update({
               jumlah: existing.jumlah + item.qty,
               tumpukan_detail: merged,
             })
             .eq("id", existing.id)
-            .then(r => { if (r.error) throw r.error; return r; }));
+            .then(r => { if (r.error) throw r.error; return r; })));
         } else {
           await retryOp(() => supabase.from("stock").insert({
             product_id: item.productId!,
