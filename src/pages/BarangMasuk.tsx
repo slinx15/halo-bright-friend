@@ -98,7 +98,7 @@ const BarangMasuk = () => {
         const kode = item.productKode || item.kode;
         const newStacks = splitIntoStacks(item.qty, kode);
 
-        await retryOp(() => supabase.from("stock_in").insert({
+        await retryOp(() => Promise.resolve(supabase.from("stock_in").insert({
           product_id: item.productId!,
           qty: item.qty,
           tumpukan: newStacks.join(","),
