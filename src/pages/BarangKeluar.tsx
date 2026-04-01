@@ -552,6 +552,7 @@ const BarangKeluar = () => {
                         <TableHead className="text-right font-bold">Kirim</TableHead>
                         <TableHead className="font-bold">Harga</TableHead>
                         <TableHead className="text-right font-bold">Total</TableHead>
+                        {role === "admin" && <TableHead className="w-10"></TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -567,11 +568,34 @@ const BarangKeluar = () => {
                           </TableCell>
                           <TableCell className="capitalize text-xs">{h.harga_type}</TableCell>
                           <TableCell className="text-right font-bold tabular-nums">{formatRupiah(h.total_harga)}</TableCell>
+                          {role === "admin" && (
+                            <TableCell>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" disabled={deletingId === h.id}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Hapus Transaksi?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      {h.products?.kode} — {formatNumber(h.qty_kirim)} pcs ({formatRupiah(h.total_harga)}). Stok akan dikembalikan.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDeleteTransaction(h)}>Hapus</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))}
                       {(!history || history.length === 0) && (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center text-muted-foreground py-10">Belum ada riwayat</TableCell>
+                          <TableCell colSpan={role === "admin" ? 9 : 8} className="text-center text-muted-foreground py-10">Belum ada riwayat</TableCell>
                         </TableRow>
                       )}
                     </TableBody>
