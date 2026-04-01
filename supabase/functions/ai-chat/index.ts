@@ -587,7 +587,13 @@ ${repeatBlock}
 
 ${trendBlock}
 
-SEMUA PRODUK:
+${profitBlock}
+
+${customerPrefsBlock}
+
+${alertsBlock}
+
+SEMUA PRODUK (termasuk 3 level harga: normal/grosir/grosir2):
 ${allProductsList}
 
 ═══ RULES ═══
