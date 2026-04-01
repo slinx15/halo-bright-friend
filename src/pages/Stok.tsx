@@ -315,6 +315,7 @@ const Stok = () => {
                         <TableCell className="text-right text-sm tabular-nums text-muted-foreground">{p.prices ? formatRupiah(p.prices.harga_modal) : "-"}</TableCell>
                         <TableCell className="text-right text-sm tabular-nums">{p.prices ? formatRupiah(p.prices.harga_normal) : "-"}</TableCell>
                         <TableCell className="text-right text-sm tabular-nums">{p.prices ? formatRupiah(p.prices.harga_grosir) : "-"}</TableCell>
+                        <TableCell className="text-right text-sm tabular-nums">{p.prices ? formatRupiah(p.prices.harga_grosir2) : "-"}</TableCell>
                         <TableCell>
                           <Badge variant="secondary" className={`${getStockStatusColor(status)} rounded-full text-xs`}>
                             {status === "kritis" ? "🔴 Kritis" : status === "warning" ? "🟡 Warning" : "🟢 Aman"}
