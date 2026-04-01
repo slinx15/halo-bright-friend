@@ -548,6 +548,12 @@ Total perlu order: ${needRestock.length} produk, ${totalRestockQty} pcs, ~Rp ${t
 
 ═══ ${trendBlock} ═══
 
+═══ ${profitBlock} ═══
+
+═══ ${customerPrefsBlock} ═══
+
+═══ ${alertsBlock} ═══
+
 ═══ RULES RISET ═══
 - MINIMAL 1000-2000 kata untuk riset yang thorough & actionable
 - SELALU kasih angka spesifik (harga, persentase, timeline, biaya)
