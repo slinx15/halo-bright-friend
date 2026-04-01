@@ -331,6 +331,7 @@ const ManajemenProduk = () => {
                       <TableCell className="text-right text-sm tabular-nums text-muted-foreground">{p.prices ? formatRupiah(p.prices.harga_modal) : "-"}</TableCell>
                       <TableCell className="text-right text-sm tabular-nums">{p.prices ? formatRupiah(p.prices.harga_normal) : "-"}</TableCell>
                       <TableCell className="text-right text-sm tabular-nums">{p.prices ? formatRupiah(p.prices.harga_grosir) : "-"}</TableCell>
+                      <TableCell className="text-right text-sm tabular-nums">{p.prices ? formatRupiah(p.prices.harga_grosir2) : "-"}</TableCell>
                       {isAdmin && (
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
