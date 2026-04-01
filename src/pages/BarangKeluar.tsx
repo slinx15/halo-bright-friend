@@ -510,8 +510,31 @@ const BarangKeluar = () => {
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center text-[11px] text-muted-foreground gap-1">
-                        <Clock className="h-3 w-3" /> {formatDate(h.created_at)}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center text-[11px] text-muted-foreground gap-1">
+                          <Clock className="h-3 w-3" /> {formatDate(h.created_at)}
+                        </div>
+                        {role === "admin" && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" disabled={deletingId === h.id}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Hapus Transaksi?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {h.products?.kode} — {formatNumber(h.qty_kirim)} pcs ({formatRupiah(h.total_harga)}). Stok akan dikembalikan.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Batal</AlertDialogCancel>
+                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDeleteTransaction(h)}>Hapus</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </div>
                     </div>
                   ))}
