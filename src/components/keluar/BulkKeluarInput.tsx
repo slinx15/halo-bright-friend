@@ -100,11 +100,16 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
 
   const canSubmit = submitItems.length > 0 && overStockItems.length === 0;
 
+  const getPrice = (item: BulkKeluarItem) => {
+    const p = item.product?.prices;
+    if (!p) return 0;
+    if (item.hargaType === "grosir2") return p.harga_grosir2;
+    if (item.hargaType === "grosir") return p.harga_grosir;
+    return p.harga_normal;
+  };
+
   const totalRevenue = submitItems.reduce((sum, item) => {
-    const price = item.product?.prices
-      ? item.hargaType === "grosir" ? item.product.prices.harga_grosir : item.product.prices.harga_normal
-      : 0;
-    return sum + price * item.qtyKirim;
+    return sum + getPrice(item) * item.qtyKirim;
   }, 0);
 
   const handleSubmit = async () => {
