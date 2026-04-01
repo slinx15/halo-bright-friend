@@ -291,15 +291,19 @@ const Dashboard = () => {
   const totalItems = products?.length ?? 0;
   const totalStok = products?.reduce((sum, p) => sum + (p.stock?.jumlah ?? 0), 0) ?? 0;
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  // WIB (UTC+7) midnight for today
+  const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
+  const nowUtc = new Date();
+  const nowWib = new Date(nowUtc.getTime() + WIB_OFFSET_MS);
+  const todayWibStr = `${nowWib.getUTCFullYear()}-${String(nowWib.getUTCMonth() + 1).padStart(2, "0")}-${String(nowWib.getUTCDate()).padStart(2, "0")}`;
+  const todayStartUtc = new Date(todayWibStr + "T00:00:00+07:00");
 
   const { data: todaySales } = useQuery({
     queryKey: ["dashboard_today_sales"],
     queryFn: async () => {
       const headers = getAuthHeaders();
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/stock_out?select=product_id,qty_kirim,total_harga,created_at&created_at=gte.${todayStart.toISOString()}&order=created_at.desc`,
+        `${SUPABASE_URL}/rest/v1/stock_out?select=product_id,qty_kirim,total_harga,created_at&created_at=gte.${todayStartUtc.toISOString()}&order=created_at.desc`,
         { headers }
       );
       if (!res.ok) throw new Error(await res.text());
@@ -308,9 +312,7 @@ const Dashboard = () => {
     refetchInterval: 30000,
   });
 
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-  sevenDaysAgo.setHours(0, 0, 0, 0);
+  const sevenDaysAgoUtc = new Date(todayStartUtc.getTime() - 6 * 86400000);
 
   const { data: weekSales } = useQuery({
     queryKey: ["dashboard_week_sales"],
