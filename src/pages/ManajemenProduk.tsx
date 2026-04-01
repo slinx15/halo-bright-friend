@@ -312,6 +312,7 @@ const ManajemenProduk = () => {
                     <TableHead className="text-right font-bold">Modal</TableHead>
                     <TableHead className="text-right font-bold">Normal</TableHead>
                     <TableHead className="text-right font-bold">Grosir</TableHead>
+                    <TableHead className="text-right font-bold">Grosir 2</TableHead>
                     {isAdmin && <TableHead className="text-right font-bold">Aksi</TableHead>}
                   </TableRow>
                 </TableHeader>
