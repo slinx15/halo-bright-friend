@@ -102,7 +102,7 @@ const ManajemenProduk = () => {
       } else {
         const { data: newProduct, error } = await supabase.from("products").insert({ kode: kode.toUpperCase(), nama: kode.toUpperCase(), kategori: kategori || null }).select().single();
         if (error) throw error;
-        await supabase.from("prices").insert({ product_id: newProduct.id, harga_modal: hargaModal, harga_normal: hargaNormal, harga_grosir: hargaGrosir });
+        await supabase.from("prices").insert({ product_id: newProduct.id, harga_modal: hargaModal, harga_normal: hargaNormal, harga_grosir: hargaGrosir, harga_grosir2: hargaGrosir2 });
         if (stokAwal > 0) {
           await supabase.from("stock").insert({ product_id: newProduct.id, jumlah: stokAwal });
         }
