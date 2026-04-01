@@ -75,7 +75,7 @@ const BarangKeluar = () => {
 
   const matched = products?.find((p) => p.kode.toUpperCase() === kode.toUpperCase());
   const hargaSatuan = matched?.prices
-    ? hargaType === "grosir" ? matched.prices.harga_grosir : matched.prices.harga_normal
+    ? hargaType === "grosir2" ? matched.prices.harga_grosir2 : hargaType === "grosir" ? matched.prices.harga_grosir : matched.prices.harga_normal
     : 0;
   const totalHarga = hargaSatuan * qtyKirim;
   const stokTersedia = matched?.stock?.jumlah ?? 0;
