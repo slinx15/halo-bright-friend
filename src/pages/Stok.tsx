@@ -258,7 +258,7 @@ const Stok = () => {
                         "[&>div]:bg-success"
                       }`}
                     />
-                    <div className="grid grid-cols-3 gap-2 text-[11px]">
+                    <div className="grid grid-cols-4 gap-2 text-[11px]">
                       <div>
                         <span className="text-muted-foreground">Modal</span>
                         <p className="font-semibold tabular-nums">{p.prices ? formatRupiah(p.prices.harga_modal) : "-"}</p>
@@ -270,6 +270,10 @@ const Stok = () => {
                       <div>
                         <span className="text-muted-foreground">Grosir</span>
                         <p className="font-semibold tabular-nums">{p.prices ? formatRupiah(p.prices.harga_grosir) : "-"}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Grosir 2</span>
+                        <p className="font-semibold tabular-nums">{p.prices ? formatRupiah(p.prices.harga_grosir2) : "-"}</p>
                       </div>
                     </div>
                     {stacks.length > 0 && (
