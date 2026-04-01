@@ -45,6 +45,7 @@ const BarangMasuk = () => {
         .from("stock_in")
         .select("*, products(kode, nama)")
         .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
         .limit(50);
       if (error) throw error;
       return data;
