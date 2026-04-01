@@ -84,7 +84,7 @@ const ManajemenProduk = () => {
 
   const resetForm = () => {
     setKode(""); setKategori("");
-    setHargaModal(0); setHargaNormal(0); setHargaGrosir(0); setStokAwal(0);
+    setHargaModal(0); setHargaNormal(0); setHargaGrosir(0); setHargaGrosir2(0); setStokAwal(0);
     setEditId(null);
   };
 
