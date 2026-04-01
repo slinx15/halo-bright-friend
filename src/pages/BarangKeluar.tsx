@@ -17,7 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { PackageMinus, Send, Clock, Store, Hash, ChevronDown, Zap, FileText, CheckCircle2, DollarSign, CalendarIcon } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { PackageMinus, Send, Clock, Store, Hash, ChevronDown, Zap, FileText, CheckCircle2, DollarSign, CalendarIcon, Trash2 } from "lucide-react";
 import { formatDate, formatNumber, formatRupiah } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { OcrUpload } from "@/components/OcrUpload";
@@ -49,11 +50,12 @@ function getAuthHeaders(prefer = "return=minimal") {
 }
 
 const BarangKeluar = () => {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const { data: products } = useProducts();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const bulkRef = useRef<BulkKeluarInputHandle>(null);
   const [activeTab, setActiveTab] = useState("bulk");
 
@@ -229,6 +231,51 @@ const BarangKeluar = () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
     }
     setBulkSubmitting(false);
+  };
+
+  const handleDeleteTransaction = async (item: any) => {
+    setDeletingId(item.id);
+    try {
+      const headers = getAuthHeaders();
+      // Restore stock first
+      const stockRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/stock?product_id=eq.${item.product_id}`,
+        { headers: { ...headers, Prefer: "return=representation" } }
+      );
+      if (stockRes.ok) {
+        const stockData = await stockRes.json();
+        if (stockData.length > 0) {
+          const currentStock = stockData[0].jumlah ?? 0;
+          const currentStacks = (stockData[0].tumpukan_detail as number[]) ?? [];
+          const restoredStacks = currentStacks.length > 0
+            ? [...currentStacks, item.qty_kirim]
+            : currentStacks;
+          await fetch(
+            `${SUPABASE_URL}/rest/v1/stock?product_id=eq.${item.product_id}`,
+            {
+              method: "PATCH",
+              headers,
+              body: JSON.stringify({
+                jumlah: currentStock + item.qty_kirim,
+                tumpukan_detail: restoredStacks,
+              }),
+            }
+          );
+        }
+      }
+      // Delete the stock_out record
+      const delRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/stock_out?id=eq.${item.id}`,
+        { method: "DELETE", headers }
+      );
+      if (!delRes.ok) throw new Error(await delRes.text());
+      toast({ title: "Berhasil", description: `Transaksi ${item.products?.kode} dihapus, stok dikembalikan +${item.qty_kirim}` });
+      queryClient.invalidateQueries({ queryKey: ["stock_out_history"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+    setDeletingId(null);
   };
 
   return (
@@ -463,8 +510,31 @@ const BarangKeluar = () => {
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center text-[11px] text-muted-foreground gap-1">
-                        <Clock className="h-3 w-3" /> {formatDate(h.created_at)}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center text-[11px] text-muted-foreground gap-1">
+                          <Clock className="h-3 w-3" /> {formatDate(h.created_at)}
+                        </div>
+                        {role === "admin" && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" disabled={deletingId === h.id}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Hapus Transaksi?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {h.products?.kode} — {formatNumber(h.qty_kirim)} pcs ({formatRupiah(h.total_harga)}). Stok akan dikembalikan.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Batal</AlertDialogCancel>
+                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDeleteTransaction(h)}>Hapus</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -482,6 +552,7 @@ const BarangKeluar = () => {
                         <TableHead className="text-right font-bold">Kirim</TableHead>
                         <TableHead className="font-bold">Harga</TableHead>
                         <TableHead className="text-right font-bold">Total</TableHead>
+                        {role === "admin" && <TableHead className="w-10"></TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -497,11 +568,34 @@ const BarangKeluar = () => {
                           </TableCell>
                           <TableCell className="capitalize text-xs">{h.harga_type}</TableCell>
                           <TableCell className="text-right font-bold tabular-nums">{formatRupiah(h.total_harga)}</TableCell>
+                          {role === "admin" && (
+                            <TableCell>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" disabled={deletingId === h.id}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Hapus Transaksi?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      {h.products?.kode} — {formatNumber(h.qty_kirim)} pcs ({formatRupiah(h.total_harga)}). Stok akan dikembalikan.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDeleteTransaction(h)}>Hapus</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))}
                       {(!history || history.length === 0) && (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center text-muted-foreground py-10">Belum ada riwayat</TableCell>
+                          <TableCell colSpan={role === "admin" ? 9 : 8} className="text-center text-muted-foreground py-10">Belum ada riwayat</TableCell>
                         </TableRow>
                       )}
                     </TableBody>
