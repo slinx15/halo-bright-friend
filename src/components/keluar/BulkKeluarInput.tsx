@@ -20,7 +20,7 @@ export interface BulkKeluarItem {
   kode: string;
   qtyPesan: number;
   qtyKirim: number;
-  hargaType: "normal" | "grosir";
+  hargaType: "normal" | "grosir" | "grosir2";
   product?: ProductWithDetails;
   isValid: boolean;
 }
@@ -54,7 +54,7 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
       kode: product ? product.kode : kode.toUpperCase(),
       qtyPesan: partial.qtyPesan ?? 0,
       qtyKirim: partial.qtyKirim ?? 0,
-      hargaType: (partial.hargaType as "normal" | "grosir") ?? "normal",
+      hargaType: (partial.hargaType as "normal" | "grosir" | "grosir2") ?? "normal",
       product,
       isValid: !!product,
     };
@@ -100,11 +100,16 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
 
   const canSubmit = submitItems.length > 0 && overStockItems.length === 0;
 
+  const getPrice = (item: BulkKeluarItem) => {
+    const p = item.product?.prices;
+    if (!p) return 0;
+    if (item.hargaType === "grosir2") return p.harga_grosir2;
+    if (item.hargaType === "grosir") return p.harga_grosir;
+    return p.harga_normal;
+  };
+
   const totalRevenue = submitItems.reduce((sum, item) => {
-    const price = item.product?.prices
-      ? item.hargaType === "grosir" ? item.product.prices.harga_grosir : item.product.prices.harga_normal
-      : 0;
-    return sum + price * item.qtyKirim;
+    return sum + getPrice(item) * item.qtyKirim;
   }, 0);
 
   const handleSubmit = async () => {
@@ -114,9 +119,7 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
 
   const renderMobileCard = (item: BulkKeluarItem, idx: number) => {
     const stok = item.product?.stock?.jumlah ?? 0;
-    const price = item.product?.prices
-      ? item.hargaType === "grosir" ? item.product.prices.harga_grosir : item.product.prices.harga_normal
-      : 0;
+    const price = getPrice(item);
     const total = price * item.qtyKirim;
     const overStock = item.isValid && item.qtyKirim > stok;
 
@@ -191,6 +194,7 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
             <SelectContent>
               <SelectItem value="normal">Normal</SelectItem>
               <SelectItem value="grosir">Grosir</SelectItem>
+              <SelectItem value="grosir2">Grosir 2</SelectItem>
             </SelectContent>
           </Select>
           <span className="text-sm font-bold text-primary tabular-nums">
@@ -260,9 +264,7 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
                 <tbody>
                   {items.map((item, idx) => {
                     const stok = item.product?.stock?.jumlah ?? 0;
-                    const price = item.product?.prices
-                      ? item.hargaType === "grosir" ? item.product.prices.harga_grosir : item.product.prices.harga_normal
-                      : 0;
+                    const price = getPrice(item);
                     const total = price * item.qtyKirim;
                     const overStock = item.isValid && item.qtyKirim > stok;
 
@@ -289,6 +291,7 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
                             <SelectContent>
                               <SelectItem value="normal">Normal</SelectItem>
                               <SelectItem value="grosir">Grosir</SelectItem>
+                              <SelectItem value="grosir2">Grosir 2</SelectItem>
                             </SelectContent>
                           </Select>
                         </td>

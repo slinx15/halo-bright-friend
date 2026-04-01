@@ -75,7 +75,7 @@ const BarangKeluar = () => {
 
   const matched = products?.find((p) => p.kode.toUpperCase() === kode.toUpperCase());
   const hargaSatuan = matched?.prices
-    ? hargaType === "grosir" ? matched.prices.harga_grosir : matched.prices.harga_normal
+    ? hargaType === "grosir2" ? matched.prices.harga_grosir2 : hargaType === "grosir" ? matched.prices.harga_grosir : matched.prices.harga_normal
     : 0;
   const totalHarga = hargaSatuan * qtyKirim;
   const stokTersedia = matched?.stock?.jumlah ?? 0;
@@ -189,7 +189,7 @@ const BarangKeluar = () => {
         const stok = product.stock?.jumlah ?? 0;
         const stacks = (product.stock?.tumpukan_detail as number[]) ?? [];
         const price = product.prices
-          ? item.hargaType === "grosir" ? product.prices.harga_grosir : product.prices.harga_normal
+          ? item.hargaType === "grosir2" ? product.prices.harga_grosir2 : item.hargaType === "grosir" ? product.prices.harga_grosir : product.prices.harga_normal
           : 0;
         const outRes = await fetchWithRetry(`${SUPABASE_URL}/rest/v1/stock_out`, {
           method: "POST", headers,
@@ -310,6 +310,7 @@ const BarangKeluar = () => {
                     <SelectContent>
                       <SelectItem value="normal">Normal {matched?.prices ? `(${formatRupiah(matched.prices.harga_normal)})` : ""}</SelectItem>
                       <SelectItem value="grosir">Grosir {matched?.prices ? `(${formatRupiah(matched.prices.harga_grosir)})` : ""}</SelectItem>
+                      <SelectItem value="grosir2">Grosir 2 {matched?.prices ? `(${formatRupiah(matched.prices.harga_grosir2)})` : ""}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

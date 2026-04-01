@@ -36,6 +36,7 @@ const ManajemenProduk = () => {
   const [hargaModal, setHargaModal] = useState(0);
   const [hargaNormal, setHargaNormal] = useState(0);
   const [hargaGrosir, setHargaGrosir] = useState(0);
+  const [hargaGrosir2, setHargaGrosir2] = useState(0);
   const [stokAwal, setStokAwal] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
@@ -83,7 +84,7 @@ const ManajemenProduk = () => {
 
   const resetForm = () => {
     setKode(""); setKategori("");
-    setHargaModal(0); setHargaNormal(0); setHargaGrosir(0); setStokAwal(0);
+    setHargaModal(0); setHargaNormal(0); setHargaGrosir(0); setHargaGrosir2(0); setStokAwal(0);
     setEditId(null);
   };
 
@@ -96,12 +97,12 @@ const ManajemenProduk = () => {
     try {
       if (editId) {
         await supabase.from("products").update({ kode: kode.toUpperCase(), nama: kode.toUpperCase(), kategori: kategori || null }).eq("id", editId);
-        await supabase.from("prices").update({ harga_modal: hargaModal, harga_normal: hargaNormal, harga_grosir: hargaGrosir }).eq("product_id", editId);
+        await supabase.from("prices").update({ harga_modal: hargaModal, harga_normal: hargaNormal, harga_grosir: hargaGrosir, harga_grosir2: hargaGrosir2 }).eq("product_id", editId);
         toast({ title: "Berhasil", description: `${kode} diperbarui` });
       } else {
         const { data: newProduct, error } = await supabase.from("products").insert({ kode: kode.toUpperCase(), nama: kode.toUpperCase(), kategori: kategori || null }).select().single();
         if (error) throw error;
-        await supabase.from("prices").insert({ product_id: newProduct.id, harga_modal: hargaModal, harga_normal: hargaNormal, harga_grosir: hargaGrosir });
+        await supabase.from("prices").insert({ product_id: newProduct.id, harga_modal: hargaModal, harga_normal: hargaNormal, harga_grosir: hargaGrosir, harga_grosir2: hargaGrosir2 });
         if (stokAwal > 0) {
           await supabase.from("stock").insert({ product_id: newProduct.id, jumlah: stokAwal });
         }
@@ -119,7 +120,7 @@ const ManajemenProduk = () => {
   const handleEdit = (p: any) => {
     setEditId(p.id); setKode(p.kode); setKategori(p.kategori || "");
     setHargaModal(p.prices?.harga_modal ?? 0); setHargaNormal(p.prices?.harga_normal ?? 0);
-    setHargaGrosir(p.prices?.harga_grosir ?? 0); setStokAwal(0); setShowAdd(true);
+    setHargaGrosir(p.prices?.harga_grosir ?? 0); setHargaGrosir2(p.prices?.harga_grosir2 ?? 0); setStokAwal(0); setShowAdd(true);
   };
 
   const handleDelete = async (id: string, kode: string) => {
@@ -177,7 +178,7 @@ const ManajemenProduk = () => {
                       <Input value={kategori} onChange={(e) => setKategori(e.target.value)} placeholder="Katun" className="rounded-lg mt-1" />
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label className="text-xs font-semibold text-muted-foreground">H. Modal</Label>
                       <Input type="number" value={hargaModal} onChange={(e) => setHargaModal(parseInt(e.target.value) || 0)} className="rounded-lg mt-1 tabular-nums" />
@@ -189,6 +190,10 @@ const ManajemenProduk = () => {
                     <div>
                       <Label className="text-xs font-semibold text-muted-foreground">H. Grosir</Label>
                       <Input type="number" value={hargaGrosir} onChange={(e) => setHargaGrosir(parseInt(e.target.value) || 0)} className="rounded-lg mt-1 tabular-nums" />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-semibold text-muted-foreground">H. Grosir 2</Label>
+                      <Input type="number" value={hargaGrosir2} onChange={(e) => setHargaGrosir2(parseInt(e.target.value) || 0)} className="rounded-lg mt-1 tabular-nums" />
                     </div>
                   </div>
                   {!editId && (
@@ -265,7 +270,7 @@ const ManajemenProduk = () => {
                     </div>
                     <span className="font-extrabold text-lg tabular-nums">{formatNumber(p.stock?.jumlah ?? 0)}</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-[11px]">
+                  <div className="grid grid-cols-4 gap-2 text-[11px]">
                     <div>
                       <span className="text-muted-foreground">Modal</span>
                       <p className="font-semibold tabular-nums">{p.prices ? formatRupiah(p.prices.harga_modal) : "-"}</p>
@@ -277,6 +282,10 @@ const ManajemenProduk = () => {
                     <div>
                       <span className="text-muted-foreground">Grosir</span>
                       <p className="font-semibold tabular-nums">{p.prices ? formatRupiah(p.prices.harga_grosir) : "-"}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Grosir 2</span>
+                      <p className="font-semibold tabular-nums">{p.prices ? formatRupiah(p.prices.harga_grosir2) : "-"}</p>
                     </div>
                   </div>
                   {isAdmin && (
@@ -303,6 +312,7 @@ const ManajemenProduk = () => {
                     <TableHead className="text-right font-bold">Modal</TableHead>
                     <TableHead className="text-right font-bold">Normal</TableHead>
                     <TableHead className="text-right font-bold">Grosir</TableHead>
+                    <TableHead className="text-right font-bold">Grosir 2</TableHead>
                     {isAdmin && <TableHead className="text-right font-bold">Aksi</TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -321,6 +331,7 @@ const ManajemenProduk = () => {
                       <TableCell className="text-right text-sm tabular-nums text-muted-foreground">{p.prices ? formatRupiah(p.prices.harga_modal) : "-"}</TableCell>
                       <TableCell className="text-right text-sm tabular-nums">{p.prices ? formatRupiah(p.prices.harga_normal) : "-"}</TableCell>
                       <TableCell className="text-right text-sm tabular-nums">{p.prices ? formatRupiah(p.prices.harga_grosir) : "-"}</TableCell>
+                      <TableCell className="text-right text-sm tabular-nums">{p.prices ? formatRupiah(p.prices.harga_grosir2) : "-"}</TableCell>
                       {isAdmin && (
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
