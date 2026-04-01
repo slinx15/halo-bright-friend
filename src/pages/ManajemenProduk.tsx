@@ -178,7 +178,7 @@ const ManajemenProduk = () => {
                       <Input value={kategori} onChange={(e) => setKategori(e.target.value)} placeholder="Katun" className="rounded-lg mt-1" />
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label className="text-xs font-semibold text-muted-foreground">H. Modal</Label>
                       <Input type="number" value={hargaModal} onChange={(e) => setHargaModal(parseInt(e.target.value) || 0)} className="rounded-lg mt-1 tabular-nums" />
@@ -190,6 +190,10 @@ const ManajemenProduk = () => {
                     <div>
                       <Label className="text-xs font-semibold text-muted-foreground">H. Grosir</Label>
                       <Input type="number" value={hargaGrosir} onChange={(e) => setHargaGrosir(parseInt(e.target.value) || 0)} className="rounded-lg mt-1 tabular-nums" />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-semibold text-muted-foreground">H. Grosir 2</Label>
+                      <Input type="number" value={hargaGrosir2} onChange={(e) => setHargaGrosir2(parseInt(e.target.value) || 0)} className="rounded-lg mt-1 tabular-nums" />
                     </div>
                   </div>
                   {!editId && (
