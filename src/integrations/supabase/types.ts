@@ -186,6 +186,7 @@ export type Database = {
       prices: {
         Row: {
           harga_grosir: number
+          harga_grosir2: number
           harga_modal: number
           harga_normal: number
           id: string
@@ -194,6 +195,7 @@ export type Database = {
         }
         Insert: {
           harga_grosir?: number
+          harga_grosir2?: number
           harga_modal?: number
           harga_normal?: number
           id?: string
@@ -202,6 +204,7 @@ export type Database = {
         }
         Update: {
           harga_grosir?: number
+          harga_grosir2?: number
           harga_modal?: number
           harga_normal?: number
           id?: string
