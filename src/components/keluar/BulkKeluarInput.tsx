@@ -240,6 +240,74 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
           </div>
         </div>
 
+        {/* Bulk harga per kategori */}
+        {items.filter(i => i.isValid).length > 0 && (
+          <div className="bg-muted/50 rounded-xl p-3 space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Set Harga Sekaligus</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {/* Warna */}
+              {items.some(i => i.isValid && !i.kode.toUpperCase().includes("WHT") && !i.kode.toUpperCase().includes("BLCK") && !i.kode.toUpperCase().includes("BLK")) && (
+                <div>
+                  <label className="text-[10px] text-muted-foreground font-medium">🎨 Warna ({items.filter(i => i.isValid && !i.kode.toUpperCase().includes("WHT") && !i.kode.toUpperCase().includes("BLCK") && !i.kode.toUpperCase().includes("BLK")).length} item)</label>
+                  <Select onValueChange={(v) => {
+                    setItems(prev => prev.map(item => {
+                      if (!item.isValid) return item;
+                      const k = item.kode.toUpperCase();
+                      if (k.includes("WHT") || k.includes("BLCK") || k.includes("BLK")) return item;
+                      return { ...item, hargaType: v as "normal" | "grosir" | "grosir2" };
+                    }));
+                  }}>
+                    <SelectTrigger className="h-9 text-xs mt-0.5"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="grosir">Grosir</SelectItem>
+                      <SelectItem value="grosir2">Grosir 2</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {/* WHT */}
+              {items.some(i => i.isValid && i.kode.toUpperCase().includes("WHT")) && (
+                <div>
+                  <label className="text-[10px] text-muted-foreground font-medium">⬜ WHT ({items.filter(i => i.isValid && i.kode.toUpperCase().includes("WHT")).length} item)</label>
+                  <Select onValueChange={(v) => {
+                    setItems(prev => prev.map(item => {
+                      if (!item.isValid || !item.kode.toUpperCase().includes("WHT")) return item;
+                      return { ...item, hargaType: v as "normal" | "grosir" | "grosir2" };
+                    }));
+                  }}>
+                    <SelectTrigger className="h-9 text-xs mt-0.5"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="grosir">Grosir</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {/* BLCK */}
+              {items.some(i => i.isValid && (i.kode.toUpperCase().includes("BLCK") || i.kode.toUpperCase().includes("BLK"))) && (
+                <div>
+                  <label className="text-[10px] text-muted-foreground font-medium">⬛ BLCK ({items.filter(i => i.isValid && (i.kode.toUpperCase().includes("BLCK") || i.kode.toUpperCase().includes("BLK"))).length} item)</label>
+                  <Select onValueChange={(v) => {
+                    setItems(prev => prev.map(item => {
+                      if (!item.isValid) return item;
+                      const k = item.kode.toUpperCase();
+                      if (!k.includes("BLCK") && !k.includes("BLK")) return item;
+                      return { ...item, hargaType: v as "normal" | "grosir" | "grosir2" };
+                    }));
+                  }}>
+                    <SelectTrigger className="h-9 text-xs mt-0.5"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="grosir">Grosir</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Items - Mobile: Cards, Desktop: Table */}
         {items.length > 0 && (
           isMobile ? (
