@@ -120,7 +120,7 @@ const ManajemenProduk = () => {
   const handleEdit = (p: any) => {
     setEditId(p.id); setKode(p.kode); setKategori(p.kategori || "");
     setHargaModal(p.prices?.harga_modal ?? 0); setHargaNormal(p.prices?.harga_normal ?? 0);
-    setHargaGrosir(p.prices?.harga_grosir ?? 0); setStokAwal(0); setShowAdd(true);
+    setHargaGrosir(p.prices?.harga_grosir ?? 0); setHargaGrosir2(p.prices?.harga_grosir2 ?? 0); setStokAwal(0); setShowAdd(true);
   };
 
   const handleDelete = async (id: string, kode: string) => {
