@@ -97,7 +97,7 @@ const ManajemenProduk = () => {
     try {
       if (editId) {
         await supabase.from("products").update({ kode: kode.toUpperCase(), nama: kode.toUpperCase(), kategori: kategori || null }).eq("id", editId);
-        await supabase.from("prices").update({ harga_modal: hargaModal, harga_normal: hargaNormal, harga_grosir: hargaGrosir }).eq("product_id", editId);
+        await supabase.from("prices").update({ harga_modal: hargaModal, harga_normal: hargaNormal, harga_grosir: hargaGrosir, harga_grosir2: hargaGrosir2 }).eq("product_id", editId);
         toast({ title: "Berhasil", description: `${kode} diperbarui` });
       } else {
         const { data: newProduct, error } = await supabase.from("products").insert({ kode: kode.toUpperCase(), nama: kode.toUpperCase(), kategori: kategori || null }).select().single();
