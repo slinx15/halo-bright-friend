@@ -194,6 +194,7 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
             <SelectContent>
               <SelectItem value="normal">Normal</SelectItem>
               <SelectItem value="grosir">Grosir</SelectItem>
+              <SelectItem value="grosir2">Grosir 2</SelectItem>
             </SelectContent>
           </Select>
           <span className="text-sm font-bold text-primary tabular-nums">
