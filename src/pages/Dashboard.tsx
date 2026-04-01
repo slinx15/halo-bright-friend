@@ -291,15 +291,19 @@ const Dashboard = () => {
   const totalItems = products?.length ?? 0;
   const totalStok = products?.reduce((sum, p) => sum + (p.stock?.jumlah ?? 0), 0) ?? 0;
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  // WIB (UTC+7) midnight for today
+  const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
+  const nowUtc = new Date();
+  const nowWib = new Date(nowUtc.getTime() + WIB_OFFSET_MS);
+  const todayWibStr = `${nowWib.getUTCFullYear()}-${String(nowWib.getUTCMonth() + 1).padStart(2, "0")}-${String(nowWib.getUTCDate()).padStart(2, "0")}`;
+  const todayStartUtc = new Date(todayWibStr + "T00:00:00+07:00");
 
   const { data: todaySales } = useQuery({
     queryKey: ["dashboard_today_sales"],
     queryFn: async () => {
       const headers = getAuthHeaders();
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/stock_out?select=product_id,qty_kirim,total_harga,created_at&created_at=gte.${todayStart.toISOString()}&order=created_at.desc`,
+        `${SUPABASE_URL}/rest/v1/stock_out?select=product_id,qty_kirim,total_harga,created_at&created_at=gte.${todayStartUtc.toISOString()}&order=created_at.desc`,
         { headers }
       );
       if (!res.ok) throw new Error(await res.text());
@@ -308,16 +312,14 @@ const Dashboard = () => {
     refetchInterval: 30000,
   });
 
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-  sevenDaysAgo.setHours(0, 0, 0, 0);
+  const sevenDaysAgoUtc = new Date(todayStartUtc.getTime() - 6 * 86400000);
 
   const { data: weekSales } = useQuery({
     queryKey: ["dashboard_week_sales"],
     queryFn: async () => {
       const headers = getAuthHeaders();
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/stock_out?select=qty_kirim,total_harga,created_at&created_at=gte.${sevenDaysAgo.toISOString()}&order=created_at.asc`,
+        `${SUPABASE_URL}/rest/v1/stock_out?select=qty_kirim,total_harga,created_at&created_at=gte.${sevenDaysAgoUtc.toISOString()}&order=created_at.asc`,
         { headers }
       );
       if (!res.ok) throw new Error(await res.text());
@@ -338,21 +340,30 @@ const Dashboard = () => {
   const marginPct = omzetHariIni > 0 ? Math.round((profitHariIni / omzetHariIni) * 100) : 0;
 
   const chartData = (() => {
-    const toLocalDateStr = (isoStr: string) => {
-      const d = new Date(isoStr);
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    // Convert UTC timestamp to WIB (UTC+7) date string to avoid timezone mismatch
+    const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
+    const toWibDateStr = (isoStr: string) => {
+      const utc = new Date(isoStr).getTime();
+      const wib = new Date(utc + WIB_OFFSET_MS);
+      return `${wib.getUTCFullYear()}-${String(wib.getUTCMonth() + 1).padStart(2, "0")}-${String(wib.getUTCDate()).padStart(2, "0")}`;
+    };
+    const toWibLabel = (d: Date) => {
+      const utc = d.getTime();
+      const wib = new Date(utc + WIB_OFFSET_MS);
+      const dayNames = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+      return `${dayNames[wib.getUTCDay()]} ${wib.getUTCDate()}`;
     };
 
     const days: { label: string; date: string; omzet: number; pcs: number }[] = [];
+    const now = new Date();
     for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      const label = d.toLocaleDateString("id-ID", { weekday: "short", day: "numeric" });
+      const d = new Date(now.getTime() - i * 86400000);
+      const dateStr = toWibDateStr(d.toISOString());
+      const label = toWibLabel(d);
       days.push({ label, date: dateStr, omzet: 0, pcs: 0 });
     }
     weekSales?.forEach(sale => {
-      const saleDate = toLocalDateStr(sale.created_at);
+      const saleDate = toWibDateStr(sale.created_at);
       const day = days.find(d => d.date === saleDate);
       if (day) {
         day.omzet += sale.total_harga;
