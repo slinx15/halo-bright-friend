@@ -50,11 +50,12 @@ function getAuthHeaders(prefer = "return=minimal") {
 }
 
 const BarangKeluar = () => {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const { data: products } = useProducts();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const bulkRef = useRef<BulkKeluarInputHandle>(null);
   const [activeTab, setActiveTab] = useState("bulk");
 
