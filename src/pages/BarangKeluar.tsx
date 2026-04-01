@@ -90,7 +90,7 @@ const BarangKeluar = () => {
     queryFn: async () => {
       const headers = getAuthHeaders("return=representation");
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/stock_out?select=*,products(kode,nama)&order=created_at.desc&limit=50`,
+        `${SUPABASE_URL}/rest/v1/stock_out?select=*,products(kode,nama)&order=created_at.desc,id.desc&limit=50`,
         { headers }
       );
       if (!res.ok) throw new Error(await res.text());
