@@ -20,7 +20,7 @@ export interface BulkKeluarItem {
   kode: string;
   qtyPesan: number;
   qtyKirim: number;
-  hargaType: "normal" | "grosir";
+  hargaType: "normal" | "grosir" | "grosir2";
   product?: ProductWithDetails;
   isValid: boolean;
 }
