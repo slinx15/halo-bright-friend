@@ -319,7 +319,7 @@ const Dashboard = () => {
     queryFn: async () => {
       const headers = getAuthHeaders();
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/stock_out?select=qty_kirim,total_harga,created_at&created_at=gte.${sevenDaysAgo.toISOString()}&order=created_at.asc`,
+        `${SUPABASE_URL}/rest/v1/stock_out?select=qty_kirim,total_harga,created_at&created_at=gte.${sevenDaysAgoUtc.toISOString()}&order=created_at.asc`,
         { headers }
       );
       if (!res.ok) throw new Error(await res.text());
