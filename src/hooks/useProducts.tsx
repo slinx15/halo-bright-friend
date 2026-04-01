@@ -7,7 +7,7 @@ export interface ProductWithDetails {
   kategori: string | null;
   is_active: boolean;
   stock?: { jumlah: number; tumpukan: string | null; tumpukan_detail: number[] | null };
-  prices?: { harga_modal: number; harga_normal: number; harga_grosir: number };
+  prices?: { harga_modal: number; harga_normal: number; harga_grosir: number; harga_grosir2: number };
 }
 
 function getAuthToken(): string {

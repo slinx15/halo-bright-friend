@@ -54,7 +54,7 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
       kode: product ? product.kode : kode.toUpperCase(),
       qtyPesan: partial.qtyPesan ?? 0,
       qtyKirim: partial.qtyKirim ?? 0,
-      hargaType: (partial.hargaType as "normal" | "grosir") ?? "normal",
+      hargaType: (partial.hargaType as "normal" | "grosir" | "grosir2") ?? "normal",
       product,
       isValid: !!product,
     };
