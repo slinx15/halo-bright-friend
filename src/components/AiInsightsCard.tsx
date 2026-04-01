@@ -4,17 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sparkles, RefreshCw, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-
-function getAuthToken(): string {
-  const storageKey = Object.keys(localStorage).find(k => k.includes("auth-token"));
-  if (!storageKey) return "";
-  try {
-    const parsed = JSON.parse(localStorage.getItem(storageKey) || "");
-    return parsed?.access_token || "";
-  } catch {
-    return "";
-  }
-}
+import { supabase } from "@/integrations/supabase/client";
 
 export function AiInsightsCard() {
   const [manualRefresh, setManualRefresh] = useState(0);
@@ -22,14 +12,16 @@ export function AiInsightsCard() {
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ["ai-insights", manualRefresh],
     queryFn: async () => {
-      const token = getAuthToken();
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Belum login");
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-insights`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${token}`,
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({}),
@@ -41,7 +33,7 @@ export function AiInsightsCard() {
       }
       return res.json() as Promise<{ insights: string }>;
     },
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 10 * 60 * 1000,
     retry: 1,
   });
 
