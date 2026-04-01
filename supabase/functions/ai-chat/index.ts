@@ -302,6 +302,64 @@ atau [] jika tidak ada yang perlu diingat.`;
     const fallingColors = Object.entries(colorSales).filter(([, d]) => d.tw < d.lw && d.lw > 0).sort(([, a], [, b]) => (a.tw - a.lw) - (b.tw - b.lw)).slice(0, 10);
     const trendBlock = `TREN WARNA:\n🔥 Naik: ${risingColors.length > 0 ? risingColors.map(([k, d]) => `${k}(${d.lw}→${d.tw})`).join(", ") : "Tidak ada"}\n📉 Turun: ${fallingColors.length > 0 ? fallingColors.map(([k, d]) => `${k}(${d.lw}→${d.tw})`).join(", ") : "Tidak ada"}`;
 
+    // ─── Profit Analysis per Harga Type ───
+    const profitByType: Record<string, { pcs: number; omzet: number; profit: number; trx: number }> = {};
+    for (const s of recentSales) {
+      const type = s.harga_type || "normal";
+      if (!profitByType[type]) profitByType[type] = { pcs: 0, omzet: 0, profit: 0, trx: 0 };
+      const prod = products.find((p: any) => p.id === s.product_id);
+      const modal = prod ? prod._hargaModal * s.qty_kirim : 0;
+      profitByType[type].pcs += s.qty_kirim;
+      profitByType[type].omzet += s.total_harga || 0;
+      profitByType[type].profit += (s.total_harga || 0) - modal;
+      profitByType[type].trx += 1;
+    }
+    const profitBlock = `PROFIT PER TIPE HARGA (7 hari):\n${Object.entries(profitByType).map(([type, d]) => {
+      const marginPct = d.omzet > 0 ? Math.round((d.profit / d.omzet) * 100) : 0;
+      return `${type.toUpperCase()}: ${d.trx} trx, ${d.pcs} pcs, omzet Rp ${d.omzet.toLocaleString("id-ID")}, profit Rp ${d.profit.toLocaleString("id-ID")} (margin ${marginPct}%)`;
+    }).join("\n")}`;
+
+    // ─── Customer Price Preferences ───
+    const tokoPricePrefs: Record<string, Record<string, number>> = {};
+    for (const s of stockOut) {
+      const toko = (s.toko ?? "").trim().toUpperCase();
+      if (!toko) continue;
+      const type = s.harga_type || "normal";
+      if (!tokoPricePrefs[toko]) tokoPricePrefs[toko] = {};
+      tokoPricePrefs[toko][type] = (tokoPricePrefs[toko][type] || 0) + s.qty_kirim;
+    }
+    const customerPrefsBlock = `PREFERENSI HARGA PER PELANGGAN:\n${Object.entries(tokoPricePrefs).slice(0, 15).map(([toko, types]) => {
+      const dominant = Object.entries(types).sort(([,a],[,b]) => b - a)[0];
+      const total = Object.values(types).reduce((s,v) => s+v, 0);
+      return `${toko}: dominan ${dominant[0].toUpperCase()} (${Math.round(dominant[1]/total*100)}%), detail: ${Object.entries(types).map(([t,q]) => `${t}=${q}pcs`).join(",")}`;
+    }).join("\n")}`;
+
+    // ─── Anomaly Detection / Smart Alerts ───
+    const alerts: string[] = [];
+    // 1. Sales drop detection (compare this week vs last week)
+    const lastWeekSales = stockOut.filter((s: any) => { const d = new Date(s.created_at); return d >= lastWeekStart && d < thisWeekStart; });
+    const thisWeekSales = stockOut.filter((s: any) => new Date(s.created_at) >= thisWeekStart);
+    const twOmzet = thisWeekSales.reduce((s: number, r: any) => s + (r.total_harga || 0), 0);
+    const lwOmzet = lastWeekSales.reduce((s: number, r: any) => s + (r.total_harga || 0), 0);
+    if (lwOmzet > 0) {
+      const changePercent = Math.round(((twOmzet - lwOmzet) / lwOmzet) * 100);
+      if (changePercent <= -20) alerts.push(`🔴 Omzet TURUN ${Math.abs(changePercent)}% vs minggu lalu (Rp ${twOmzet.toLocaleString("id-ID")} vs Rp ${lwOmzet.toLocaleString("id-ID")})`);
+      else if (changePercent >= 20) alerts.push(`🟢 Omzet NAIK ${changePercent}% vs minggu lalu (Rp ${twOmzet.toLocaleString("id-ID")} vs Rp ${lwOmzet.toLocaleString("id-ID")})`);
+    }
+    // 2. Stock-out best sellers
+    const stockOutBestSellers = bestSellers.filter((a: any) => a.isStockOut);
+    if (stockOutBestSellers.length > 0) alerts.push(`🚨 BEST SELLER HABIS: ${stockOutBestSellers.map((a: any) => a.kode).join(", ")} — potensi kehilangan penjualan!`);
+    // 3. Customers going inactive
+    if (atRiskCustomers.length > 0) alerts.push(`⚠️ ${atRiskCustomers.length} pelanggan MULAI HILANG: ${atRiskCustomers.slice(0, 5).map(c => c.nama).join(", ")}`);
+    // 4. Low margin transactions
+    const lowMarginTypes = Object.entries(profitByType).filter(([, d]) => d.omzet > 0 && (d.profit / d.omzet) < 0.15);
+    if (lowMarginTypes.length > 0) alerts.push(`💸 MARGIN TIPIS (<15%): ${lowMarginTypes.map(([t, d]) => `${t}(${Math.round(d.profit/d.omzet*100)}%)`).join(", ")}`);
+    // 5. Overstock (DOS > 30 hari)
+    const overstocked = analyses.filter((a: any) => a.dos > 30 && a.velocity > 0);
+    if (overstocked.length > 0) alerts.push(`📦 OVERSTOCK (>30 hari): ${overstocked.slice(0, 5).map((a: any) => `${a.kode}(${a.dos}hr)`).join(", ")}`);
+
+    const alertsBlock = alerts.length > 0 ? `🔔 NOTIFIKASI CERDAS:\n${alerts.join("\n")}` : "🔔 NOTIFIKASI: Semua aman, tidak ada anomali terdeteksi ✅";
+
     // ─── Knowledge Modules ───
     const KNOWLEDGE_MODULES: Record<string, { keywords: string[]; content: string }> = {
       industri: {
