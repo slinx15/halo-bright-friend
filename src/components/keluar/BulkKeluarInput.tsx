@@ -119,9 +119,7 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
 
   const renderMobileCard = (item: BulkKeluarItem, idx: number) => {
     const stok = item.product?.stock?.jumlah ?? 0;
-    const price = item.product?.prices
-      ? item.hargaType === "grosir" ? item.product.prices.harga_grosir : item.product.prices.harga_normal
-      : 0;
+    const price = getPrice(item);
     const total = price * item.qtyKirim;
     const overStock = item.isValid && item.qtyKirim > stok;
 
