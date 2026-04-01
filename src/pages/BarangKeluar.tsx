@@ -233,6 +233,51 @@ const BarangKeluar = () => {
     setBulkSubmitting(false);
   };
 
+  const handleDeleteTransaction = async (item: any) => {
+    setDeletingId(item.id);
+    try {
+      const headers = getAuthHeaders();
+      // Restore stock first
+      const stockRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/stock?product_id=eq.${item.product_id}`,
+        { headers: { ...headers, Prefer: "return=representation" } }
+      );
+      if (stockRes.ok) {
+        const stockData = await stockRes.json();
+        if (stockData.length > 0) {
+          const currentStock = stockData[0].jumlah ?? 0;
+          const currentStacks = (stockData[0].tumpukan_detail as number[]) ?? [];
+          const restoredStacks = currentStacks.length > 0
+            ? [...currentStacks, item.qty_kirim]
+            : currentStacks;
+          await fetch(
+            `${SUPABASE_URL}/rest/v1/stock?product_id=eq.${item.product_id}`,
+            {
+              method: "PATCH",
+              headers,
+              body: JSON.stringify({
+                jumlah: currentStock + item.qty_kirim,
+                tumpukan_detail: restoredStacks,
+              }),
+            }
+          );
+        }
+      }
+      // Delete the stock_out record
+      const delRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/stock_out?id=eq.${item.id}`,
+        { method: "DELETE", headers }
+      );
+      if (!delRes.ok) throw new Error(await delRes.text());
+      toast({ title: "Berhasil", description: `Transaksi ${item.products?.kode} dihapus, stok dikembalikan +${item.qty_kirim}` });
+      queryClient.invalidateQueries({ queryKey: ["stock_out_history"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+    setDeletingId(null);
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*:nth-child(5)]:![animation-delay:200ms] [&>*]:[animation-fill-mode:both]">
       {/* ── Premium Header ── */}
