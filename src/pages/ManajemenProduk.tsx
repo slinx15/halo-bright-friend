@@ -36,6 +36,7 @@ const ManajemenProduk = () => {
   const [hargaModal, setHargaModal] = useState(0);
   const [hargaNormal, setHargaNormal] = useState(0);
   const [hargaGrosir, setHargaGrosir] = useState(0);
+  const [hargaGrosir2, setHargaGrosir2] = useState(0);
   const [stokAwal, setStokAwal] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
