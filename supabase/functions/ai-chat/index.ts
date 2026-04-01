@@ -30,7 +30,7 @@ function getSafetyDays(kode: string): number { return isBlackWhite(kode) ? RULES
 function roundUpToBatch(qty: number, batch: number): number { return qty <= 0 ? 0 : Math.ceil(qty / batch) * batch; }
 
 interface SaleRecord { product_id: string; qty_pesan: number; created_at: string; }
-interface ProductData { id: string; kode: string; nama: string; kategori: string | null; _stok: number; _hargaModal: number; _tumpukan: number[] | null; }
+interface ProductData { id: string; kode: string; nama: string; kategori: string | null; _stok: number; _hargaModal: number; _hargaNormal: number; _hargaGrosir: number; _hargaGrosir2: number; _tumpukan: number[] | null; }
 
 function computeWMAVelocity(sales: SaleRecord[], productId: string) {
   const now = new Date(); now.setHours(0, 0, 0, 0);
