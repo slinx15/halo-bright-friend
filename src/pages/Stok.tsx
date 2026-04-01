@@ -295,8 +295,9 @@ const Stok = () => {
                     <TableHead className="text-right font-bold">Stok</TableHead>
                     <TableHead className="font-bold">Tumpukan</TableHead>
                     <TableHead className="text-right font-bold">Modal</TableHead>
-                    <TableHead className="text-right font-bold">Normal</TableHead>
+                     <TableHead className="text-right font-bold">Normal</TableHead>
                     <TableHead className="text-right font-bold">Grosir</TableHead>
+                    <TableHead className="text-right font-bold">Grosir 2</TableHead>
                     <TableHead className="font-bold">Status</TableHead>
                   </TableRow>
                 </TableHeader>
