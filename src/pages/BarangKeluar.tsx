@@ -310,6 +310,7 @@ const BarangKeluar = () => {
                     <SelectContent>
                       <SelectItem value="normal">Normal {matched?.prices ? `(${formatRupiah(matched.prices.harga_normal)})` : ""}</SelectItem>
                       <SelectItem value="grosir">Grosir {matched?.prices ? `(${formatRupiah(matched.prices.harga_grosir)})` : ""}</SelectItem>
+                      <SelectItem value="grosir2">Grosir 2 {matched?.prices ? `(${formatRupiah(matched.prices.harga_grosir2)})` : ""}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
