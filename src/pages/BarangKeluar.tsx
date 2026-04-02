@@ -86,9 +86,15 @@ const BarangKeluar = () => {
     },
   });
 
-  // Today's stats from history
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const todayItems = history?.filter((h: any) => h.created_at?.startsWith(todayStr)) ?? [];
+  // Today's stats from history (use local date, not UTC)
+  const todayLocal = new Date();
+  const todayStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, "0")}-${String(todayLocal.getDate()).padStart(2, "0")}`;
+  const todayItems = history?.filter((h: any) => {
+    if (!h.created_at) return false;
+    const d = new Date(h.created_at);
+    const localStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    return localStr === todayStr;
+  }) ?? [];
   const todayQty = todayItems.reduce((s: number, h: any) => s + (h.qty_kirim ?? 0), 0);
   const todayRevenue = todayItems.reduce((s: number, h: any) => s + (h.total_harga ?? 0), 0);
 
