@@ -33,7 +33,7 @@ const Opname = () => {
   const { data: history } = useQuery({
     queryKey: ["opname_history"],
     queryFn: async () => {
-      const headers = getAuthHeaders();
+      const headers = await getAuthHeaders();
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/stock_opname_log?select=*,products(kode,nama)&order=created_at.desc&limit=50`,
         { headers: { ...headers, "Prefer": "return=representation" } }
@@ -66,7 +66,7 @@ const Opname = () => {
         });
         stockUpserts.push({ product_id: product.id, jumlah: item.total, tumpukan_detail: item.stacks });
       }
-      const headers = getAuthHeaders();
+      const headers = await getAuthHeaders();
       if (opnameLogs.length > 0) {
         const logRes = await fetch(`${SUPABASE_URL}/rest/v1/stock_opname_log`, { method: "POST", headers, body: JSON.stringify(opnameLogs) });
         if (!logRes.ok) throw new Error(await logRes.text());

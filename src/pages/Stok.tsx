@@ -36,7 +36,7 @@ const Stok = () => {
   const handleResetStock = async () => {
     setResetting(true);
     try {
-      const headers = getAuthHeaders();
+      const headers = await getAuthHeaders();
       // Reset all stock to 0
       const res = await fetch(`${SUPABASE_URL}/rest/v1/stock?id=neq.00000000-0000-0000-0000-000000000000`, {
         method: "PATCH",

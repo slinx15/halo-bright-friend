@@ -72,7 +72,7 @@ const BarangKeluar = () => {
   const { data: history } = useQuery({
     queryKey: ["stock_out_history"],
     queryFn: async () => {
-      const headers = getAuthHeaders("return=representation");
+      const headers = await getAuthHeaders("return=representation");
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/stock_out?select=*,products(kode,nama)&order=created_at.desc,id.desc&limit=50`,
         { headers }
@@ -103,7 +103,7 @@ const BarangKeluar = () => {
     }
     setSubmitting(true);
     try {
-      const headers = getAuthHeaders();
+      const headers = await getAuthHeaders();
       const outRes = await fetch(`${SUPABASE_URL}/rest/v1/stock_out`, {
         method: "POST",
         headers,
@@ -164,7 +164,7 @@ const BarangKeluar = () => {
 
   const handleBulkSubmit = async (items: BulkKeluarItem[]) => {
     setBulkSubmitting(true);
-    const headers = getAuthHeaders();
+    const headers = await getAuthHeaders();
     let successCount = 0;
     const errors: string[] = [];
     for (const item of items) {
@@ -218,7 +218,7 @@ const BarangKeluar = () => {
   const handleDeleteTransaction = async (item: any) => {
     setDeletingId(item.id);
     try {
-      const headers = getAuthHeaders();
+      const headers = await getAuthHeaders();
       // Restore stock first
       const stockRes = await fetch(
         `${SUPABASE_URL}/rest/v1/stock?product_id=eq.${item.product_id}`,

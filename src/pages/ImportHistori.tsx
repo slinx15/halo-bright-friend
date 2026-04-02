@@ -85,7 +85,7 @@ const ImportHistori = () => {
     try {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/import-sales-history`, {
         method: "POST",
-        headers: getAuthHeaders(),
+        headers: await getAuthHeaders(),
         body: JSON.stringify({ rows, clear_before_import: clearBeforeImport }),
       });
       const data = await res.json();
@@ -255,7 +255,7 @@ function ExportSection() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const headers = getAuthHeaders();
+      const headers = await getAuthHeaders();
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - parseInt(period));
       daysAgo.setHours(0, 0, 0, 0);

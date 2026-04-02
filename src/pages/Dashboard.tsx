@@ -284,7 +284,7 @@ const Dashboard = () => {
   const { data: todaySales } = useQuery({
     queryKey: ["dashboard_today_sales"],
     queryFn: async () => {
-      const headers = getAuthHeaders();
+      const headers = await getAuthHeaders();
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/stock_out?select=product_id,qty_kirim,total_harga,created_at&created_at=gte.${todayStartUtc.toISOString()}&order=created_at.desc`,
         { headers }
@@ -300,7 +300,7 @@ const Dashboard = () => {
   const { data: weekSales } = useQuery({
     queryKey: ["dashboard_week_sales"],
     queryFn: async () => {
-      const headers = getAuthHeaders();
+      const headers = await getAuthHeaders();
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/stock_out?select=qty_kirim,total_harga,created_at&created_at=gte.${sevenDaysAgoUtc.toISOString()}&order=created_at.asc`,
         { headers }
