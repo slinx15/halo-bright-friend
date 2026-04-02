@@ -64,6 +64,7 @@ const App = () => (
                 <Route path="/import-histori" element={<ImportHistori />} />
                 <Route path="/ai" element={<AiChat />} />
                 <Route path="/users" element={<ManajemenUser />} />
+                <Route path="/laporan" element={<Laporan />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
