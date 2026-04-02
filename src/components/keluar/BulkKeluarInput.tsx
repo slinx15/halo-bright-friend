@@ -112,6 +112,13 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
     return p.harga_normal;
   };
 
+  const priceLabel = (prices: ProductWithDetails["prices"], type: string) => {
+    if (!prices) return type === "grosir2" ? "Grosir 2" : type === "grosir" ? "Grosir" : "Normal";
+    const val = type === "grosir2" ? prices.harga_grosir2 : type === "grosir" ? prices.harga_grosir : prices.harga_normal;
+    const label = type === "grosir2" ? "Grosir 2" : type === "grosir" ? "Grosir" : "Normal";
+    return `${label} - ${formatRupiah(val)}`;
+  };
+
   const totalRevenue = submitItems.reduce((sum, item) => {
     return sum + getPrice(item) * item.qtyKirim;
   }, 0);
@@ -204,9 +211,11 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="normal">Normal</SelectItem>
-                <SelectItem value="grosir">Grosir</SelectItem>
-                <SelectItem value="grosir2">Grosir 2</SelectItem>
+                <SelectItem value="normal">{priceLabel(item.product?.prices, "normal")}</SelectItem>
+                <SelectItem value="grosir">{priceLabel(item.product?.prices, "grosir")}</SelectItem>
+                {item.product?.prices?.harga_grosir2 ? (
+                  <SelectItem value="grosir2">{priceLabel(item.product?.prices, "grosir2")}</SelectItem>
+                ) : null}
               </SelectContent>
             </Select>
           </div>
@@ -490,9 +499,11 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
                           <Select value={item.hargaType} onValueChange={(v) => updateItem(idx, "hargaType", v)}>
                             <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="normal">Normal</SelectItem>
-                              <SelectItem value="grosir">Grosir</SelectItem>
-                              <SelectItem value="grosir2">Grosir 2</SelectItem>
+                              <SelectItem value="normal">{priceLabel(item.product?.prices, "normal")}</SelectItem>
+                              <SelectItem value="grosir">{priceLabel(item.product?.prices, "grosir")}</SelectItem>
+                              {item.product?.prices?.harga_grosir2 ? (
+                                <SelectItem value="grosir2">{priceLabel(item.product?.prices, "grosir2")}</SelectItem>
+                              ) : null}
                             </SelectContent>
                           </Select>
                         </td>
