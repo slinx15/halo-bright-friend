@@ -449,7 +449,7 @@ const BarangMasuk = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {history?.map((h: any, idx: number) => (
+                      {filteredHistory.map((h: any, idx: number) => (
                         <TableRow key={h.id} className={idx % 2 === 0 ? "" : "bg-muted/15"}>
                           <TableCell className="text-xs text-muted-foreground">{formatDate(h.created_at)}</TableCell>
                           <TableCell className="font-mono font-bold text-sm">{h.products?.kode}</TableCell>
@@ -463,10 +463,10 @@ const BarangMasuk = () => {
                           <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{h.catatan || "-"}</TableCell>
                         </TableRow>
                       ))}
-                      {(!history || history.length === 0) && (
+                      {filteredHistory.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={6} className="text-center text-muted-foreground py-10">
-                            Belum ada riwayat barang masuk
+                            {history?.length ? "Tidak ada hasil" : "Belum ada riwayat barang masuk"}
                           </TableCell>
                         </TableRow>
                       )}
