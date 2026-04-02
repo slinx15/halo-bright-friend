@@ -211,9 +211,11 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="normal">Normal</SelectItem>
-                <SelectItem value="grosir">Grosir</SelectItem>
-                <SelectItem value="grosir2">Grosir 2</SelectItem>
+                <SelectItem value="normal">{priceLabel(item.product?.prices, "normal")}</SelectItem>
+                <SelectItem value="grosir">{priceLabel(item.product?.prices, "grosir")}</SelectItem>
+                {item.product?.prices?.harga_grosir2 ? (
+                  <SelectItem value="grosir2">{priceLabel(item.product?.prices, "grosir2")}</SelectItem>
+                ) : null}
               </SelectContent>
             </Select>
           </div>
