@@ -171,8 +171,8 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
           <p className="text-destructive text-[10px] font-medium px-0.5">✗ Tidak ditemukan</p>
         )}
 
-        {/* Row 2: Pesan + Kirim + Harga + Total */}
-        <div className="flex items-end gap-1.5">
+        {/* Row 2: Pesan + Kirim */}
+        <div className="flex items-end gap-2">
           <div className="flex-1 min-w-0">
             <label className="text-[9px] font-semibold text-muted-foreground uppercase">Pesan</label>
             <Input
@@ -193,9 +193,14 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
               placeholder="0"
             />
           </div>
-          <div className="w-[72px] shrink-0">
+        </div>
+
+        {/* Row 3: Harga + Total - lebih jelas */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex-1">
+            <label className="text-[9px] font-semibold text-muted-foreground uppercase">Harga</label>
             <Select value={item.hargaType} onValueChange={(v) => updateItem(idx, "hargaType", v)}>
-              <SelectTrigger className="h-9 text-[10px] px-2">
+              <SelectTrigger className="h-9 text-xs mt-0.5">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -205,9 +210,11 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
               </SelectContent>
             </Select>
           </div>
-          <span className="text-xs font-bold text-primary tabular-nums whitespace-nowrap min-w-[60px] text-right pb-2">
-            {item.isValid && item.qtyKirim > 0 ? formatRupiah(total) : "-"}
-          </span>
+          <div className="text-right pt-3">
+            <span className="text-sm font-bold text-primary tabular-nums">
+              {item.isValid && item.qtyKirim > 0 ? formatRupiah(total) : "-"}
+            </span>
+          </div>
         </div>
       </div>
     );
