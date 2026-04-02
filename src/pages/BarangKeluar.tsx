@@ -134,7 +134,7 @@ const BarangKeluar = () => {
           catatan: catatan || null,
           toko: toko.trim() || "",
           user_id: user!.id,
-          ...(tanggal ? { created_at: tanggal.toISOString() } : {}),
+          ...(tanggal ? { created_at: new Date(tanggal.getFullYear(), tanggal.getMonth(), tanggal.getDate(), 12, 0, 0).toISOString() } : {}),
         }),
       });
       if (!outRes.ok) throw new Error(await outRes.text());
@@ -198,7 +198,7 @@ const BarangKeluar = () => {
             product_id: product.id, qty_pesan: item.qtyPesan, qty_kirim: item.qtyKirim,
             harga_type: item.hargaType, harga_satuan: price, total_harga: price * item.qtyKirim,
             catatan: bulkCatatan || null, toko: bulkToko.trim() || "", user_id: user!.id,
-            ...(bulkTanggal ? { created_at: bulkTanggal.toISOString() } : {}),
+            ...(bulkTanggal ? { created_at: new Date(bulkTanggal.getFullYear(), bulkTanggal.getMonth(), bulkTanggal.getDate(), 12, 0, 0).toISOString() } : {}),
           }),
         });
         if (!outRes.ok) {
