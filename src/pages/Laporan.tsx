@@ -148,8 +148,11 @@ export default function Laporan() {
   return (
     <div className="space-y-4">
       <PageHeader
+        icon={BarChart3}
+        iconColor="text-primary"
+        iconBg="bg-primary/10"
         title="Laporan Bulanan"
-        description="Ringkasan penjualan dan barang masuk per bulan"
+        subtitle="Ringkasan penjualan dan barang masuk per bulan"
       />
 
       {/* Month Picker */}
