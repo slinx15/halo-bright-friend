@@ -57,6 +57,10 @@ const BarangKeluar = () => {
   const [bulkTanggal, setBulkTanggal] = useState<Date | undefined>(undefined);
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
 
+  // Search/filter state for history
+  const [historySearch, setHistorySearch] = useState("");
+  const [historyDateFilter, setHistoryDateFilter] = useState<Date | undefined>(undefined);
+
   const matched = products?.find((p) => p.kode.toUpperCase() === kode.toUpperCase());
   const hargaSatuan = matched?.prices
     ? hargaType === "grosir2" ? matched.prices.harga_grosir2 : hargaType === "grosir" ? matched.prices.harga_grosir : matched.prices.harga_normal
