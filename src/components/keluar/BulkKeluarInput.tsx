@@ -112,6 +112,13 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
     return p.harga_normal;
   };
 
+  const priceLabel = (prices: ProductWithDetails["prices"], type: string) => {
+    if (!prices) return type === "grosir2" ? "Grosir 2" : type === "grosir" ? "Grosir" : "Normal";
+    const val = type === "grosir2" ? prices.harga_grosir2 : type === "grosir" ? prices.harga_grosir : prices.harga_normal;
+    const label = type === "grosir2" ? "Grosir 2" : type === "grosir" ? "Grosir" : "Normal";
+    return `${label} - ${formatRupiah(val)}`;
+  };
+
   const totalRevenue = submitItems.reduce((sum, item) => {
     return sum + getPrice(item) * item.qtyKirim;
   }, 0);
