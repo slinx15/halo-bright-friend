@@ -123,22 +123,25 @@ export default function Laporan() {
 
   // Stock in summary
   const stockInSummary = useMemo(() => {
-    if (!stockInData) return { totalTx: 0, totalQty: 0, byProduct: [] };
+    if (!stockInData) return { totalTx: 0, totalQty: 0, totalModal: 0, byProduct: [] };
 
     const totalTx = stockInData.length;
     const totalQty = stockInData.reduce((s, r) => s + (r.qty || 0), 0);
 
-    const productMap = new Map<string, { kode: string; nama: string; qty: number }>();
+    const productMap = new Map<string, { kode: string; nama: string; qty: number; modal: number; hargaModal: number }>();
     stockInData.forEach((r: any) => {
       const kode = r.products?.kode || "?";
       const nama = r.products?.nama || "";
-      const existing = productMap.get(kode) || { kode, nama, qty: 0 };
+      const hargaModal = r.products?.prices?.[0]?.harga_modal || r.products?.prices?.harga_modal || 0;
+      const existing = productMap.get(kode) || { kode, nama, qty: 0, modal: 0, hargaModal };
       existing.qty += r.qty || 0;
+      existing.modal += (r.qty || 0) * hargaModal;
       productMap.set(kode, existing);
     });
     const byProduct = Array.from(productMap.values()).sort((a, b) => b.qty - a.qty);
+    const totalModal = byProduct.reduce((s, p) => s + p.modal, 0);
 
-    return { totalTx, totalQty, byProduct };
+    return { totalTx, totalQty, totalModal, byProduct };
   }, [stockInData]);
 
   const isLoading = salesLoading || stockInLoading;
