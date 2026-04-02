@@ -471,15 +471,48 @@ const BarangKeluar = () => {
             </CollapsibleTrigger>
           </CardHeader>
           <CollapsibleContent>
-            <CardContent>
+            <CardContent className="space-y-3">
+              {/* Search & Filter */}
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Cari kode, nama, toko..."
+                    value={historySearch}
+                    onChange={(e) => setHistorySearch(e.target.value)}
+                    className="pl-9 rounded-xl h-10"
+                  />
+                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="icon" className={cn("rounded-xl h-10 w-10 shrink-0", historyDateFilter && "border-primary text-primary")}>
+                      <CalendarIcon className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar mode="single" selected={historyDateFilter} onSelect={setHistoryDateFilter} initialFocus className="p-3 pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              {historyDateFilter && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-xs rounded-full">
+                    {format(historyDateFilter, "dd MMM yyyy", { locale: localeId })}
+                  </Badge>
+                  <button onClick={() => setHistoryDateFilter(undefined)} className="text-[10px] text-primary hover:underline">Reset</button>
+                </div>
+              )}
+              {filteredHistory.length !== (history?.length ?? 0) && (
+                <p className="text-xs text-muted-foreground">{filteredHistory.length} dari {history?.length} transaksi</p>
+              )}
               {isMobile ? (
                 <div className="space-y-2.5">
-                  {(!history || history.length === 0) ? (
+                  {filteredHistory.length === 0 ? (
                     <div className="py-10 text-center">
                       <PackageMinus className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
-                      <p className="text-sm text-muted-foreground font-medium">Belum ada riwayat</p>
+                      <p className="text-sm text-muted-foreground font-medium">{history?.length ? "Tidak ada hasil" : "Belum ada riwayat"}</p>
                     </div>
-                  ) : history.map((h: any) => (
+                  ) : filteredHistory.map((h: any) => (
                     <div key={h.id} className="rounded-xl border border-border/60 p-3.5 space-y-2 transition-all duration-150 active:scale-[0.98] bg-card">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 min-w-0">
