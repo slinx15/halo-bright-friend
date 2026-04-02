@@ -4,26 +4,9 @@ import { useProducts } from "@/hooks/useProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+import { getAuthHeaders } from "@/lib/authHeaders";
 
-function getAuthHeaders() {
-  const storageKey = `sb-${import.meta.env.VITE_SUPABASE_PROJECT_ID}-auth-token`;
-  let token = SUPABASE_KEY;
-  try {
-    const raw = localStorage.getItem(storageKey);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      token = parsed?.access_token || SUPABASE_KEY;
-    }
-  } catch {}
-  return {
-    "Content-Type": "application/json",
-    "apikey": SUPABASE_KEY,
-    "Authorization": `Bearer ${token}`,
-    "Prefer": "return=minimal",
-  };
-}
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,7 +33,7 @@ const Opname = () => {
   const { data: history } = useQuery({
     queryKey: ["opname_history"],
     queryFn: async () => {
-      const headers = getAuthHeaders();
+      const headers = await getAuthHeaders();
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/stock_opname_log?select=*,products(kode,nama)&order=created_at.desc&limit=50`,
         { headers: { ...headers, "Prefer": "return=representation" } }
@@ -83,7 +66,7 @@ const Opname = () => {
         });
         stockUpserts.push({ product_id: product.id, jumlah: item.total, tumpukan_detail: item.stacks });
       }
-      const headers = getAuthHeaders();
+      const headers = await getAuthHeaders();
       if (opnameLogs.length > 0) {
         const logRes = await fetch(`${SUPABASE_URL}/rest/v1/stock_opname_log`, { method: "POST", headers, body: JSON.stringify(opnameLogs) });
         if (!logRes.ok) throw new Error(await logRes.text());

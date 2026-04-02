@@ -12,25 +12,9 @@ import { toast } from "sonner";
 import { useProducts } from "@/hooks/useProducts";
 import * as XLSX from "xlsx";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+import { getAuthHeaders } from "@/lib/authHeaders";
 
-function getAuthHeaders() {
-  const storageKey = `sb-${import.meta.env.VITE_SUPABASE_PROJECT_ID}-auth-token`;
-  let token = SUPABASE_KEY;
-  try {
-    const raw = localStorage.getItem(storageKey);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      token = parsed?.access_token || SUPABASE_KEY;
-    }
-  } catch {}
-  return {
-    "Content-Type": "application/json",
-    apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${token}`,
-  };
-}
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 type ParsedRow = {
   tanggal: string;
@@ -101,7 +85,7 @@ const ImportHistori = () => {
     try {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/import-sales-history`, {
         method: "POST",
-        headers: getAuthHeaders(),
+        headers: await getAuthHeaders(),
         body: JSON.stringify({ rows, clear_before_import: clearBeforeImport }),
       });
       const data = await res.json();
@@ -271,7 +255,7 @@ function ExportSection() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const headers = getAuthHeaders();
+      const headers = await getAuthHeaders();
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - parseInt(period));
       daysAgo.setHours(0, 0, 0, 0);

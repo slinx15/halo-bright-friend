@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,7 +18,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { PackageMinus, Send, Clock, Store, Hash, ChevronDown, Zap, FileText, CheckCircle2, DollarSign, CalendarIcon, Trash2 } from "lucide-react";
+import { PackageMinus, Send, Clock, Store, Hash, ChevronDown, Zap, FileText, CheckCircle2, DollarSign, CalendarIcon, Trash2, Search } from "lucide-react";
 import { formatDate, formatNumber, formatRupiah } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { OcrUpload } from "@/components/OcrUpload";
@@ -27,27 +27,9 @@ import { deductFromStacks } from "@/lib/tumpukanUtils";
 import { BulkKeluarInput, type BulkKeluarItem, type BulkKeluarInputHandle } from "@/components/keluar/BulkKeluarInput";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TransactionSkeleton } from "@/components/LoadingSkeletons";
+import { getAuthHeaders } from "@/lib/authHeaders";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-function getAuthHeaders(prefer = "return=minimal") {
-  const storageKey = `sb-${import.meta.env.VITE_SUPABASE_PROJECT_ID}-auth-token`;
-  let token = SUPABASE_KEY;
-  try {
-    const raw = localStorage.getItem(storageKey);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      token = parsed?.access_token || SUPABASE_KEY;
-    }
-  } catch {}
-  return {
-    "Content-Type": "application/json",
-    "apikey": SUPABASE_KEY,
-    "Authorization": `Bearer ${token}`,
-    "Prefer": prefer,
-  };
-}
 
 const BarangKeluar = () => {
   const { user, role } = useAuth();
@@ -75,6 +57,10 @@ const BarangKeluar = () => {
   const [bulkTanggal, setBulkTanggal] = useState<Date | undefined>(undefined);
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
 
+  // Search/filter state for history
+  const [historySearch, setHistorySearch] = useState("");
+  const [historyDateFilter, setHistoryDateFilter] = useState<Date | undefined>(undefined);
+
   const matched = products?.find((p) => p.kode.toUpperCase() === kode.toUpperCase());
   const hargaSatuan = matched?.prices
     ? hargaType === "grosir2" ? matched.prices.harga_grosir2 : hargaType === "grosir" ? matched.prices.harga_grosir : matched.prices.harga_normal
@@ -90,7 +76,7 @@ const BarangKeluar = () => {
   const { data: history } = useQuery({
     queryKey: ["stock_out_history"],
     queryFn: async () => {
-      const headers = getAuthHeaders("return=representation");
+      const headers = await getAuthHeaders("return=representation");
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/stock_out?select=*,products(kode,nama)&order=created_at.desc,id.desc&limit=50`,
         { headers }
@@ -105,6 +91,19 @@ const BarangKeluar = () => {
   const todayItems = history?.filter((h: any) => h.created_at?.startsWith(todayStr)) ?? [];
   const todayQty = todayItems.reduce((s: number, h: any) => s + (h.qty_kirim ?? 0), 0);
   const todayRevenue = todayItems.reduce((s: number, h: any) => s + (h.total_harga ?? 0), 0);
+
+  const filteredHistory = useMemo(() => {
+    if (!history) return [];
+    return history.filter((h: any) => {
+      const matchSearch = !historySearch || 
+        h.products?.kode?.toLowerCase().includes(historySearch.toLowerCase()) ||
+        h.products?.nama?.toLowerCase().includes(historySearch.toLowerCase()) ||
+        h.toko?.toLowerCase().includes(historySearch.toLowerCase());
+      const matchDate = !historyDateFilter || 
+        h.created_at?.startsWith(format(historyDateFilter, "yyyy-MM-dd"));
+      return matchSearch && matchDate;
+    });
+  }, [history, historySearch, historyDateFilter]);
 
   const handleSubmit = async () => {
     if (!matched) {
@@ -121,7 +120,7 @@ const BarangKeluar = () => {
     }
     setSubmitting(true);
     try {
-      const headers = getAuthHeaders();
+      const headers = await getAuthHeaders();
       const outRes = await fetch(`${SUPABASE_URL}/rest/v1/stock_out`, {
         method: "POST",
         headers,
@@ -182,7 +181,7 @@ const BarangKeluar = () => {
 
   const handleBulkSubmit = async (items: BulkKeluarItem[]) => {
     setBulkSubmitting(true);
-    const headers = getAuthHeaders();
+    const headers = await getAuthHeaders();
     let successCount = 0;
     const errors: string[] = [];
     for (const item of items) {
@@ -236,7 +235,7 @@ const BarangKeluar = () => {
   const handleDeleteTransaction = async (item: any) => {
     setDeletingId(item.id);
     try {
-      const headers = getAuthHeaders();
+      const headers = await getAuthHeaders();
       // Restore stock first
       const stockRes = await fetch(
         `${SUPABASE_URL}/rest/v1/stock?product_id=eq.${item.product_id}`,
@@ -472,15 +471,48 @@ const BarangKeluar = () => {
             </CollapsibleTrigger>
           </CardHeader>
           <CollapsibleContent>
-            <CardContent>
+            <CardContent className="space-y-3">
+              {/* Search & Filter */}
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Cari kode, nama, toko..."
+                    value={historySearch}
+                    onChange={(e) => setHistorySearch(e.target.value)}
+                    className="pl-9 rounded-xl h-10"
+                  />
+                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="icon" className={cn("rounded-xl h-10 w-10 shrink-0", historyDateFilter && "border-primary text-primary")}>
+                      <CalendarIcon className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar mode="single" selected={historyDateFilter} onSelect={setHistoryDateFilter} initialFocus className="p-3 pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              {historyDateFilter && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-xs rounded-full">
+                    {format(historyDateFilter, "dd MMM yyyy", { locale: localeId })}
+                  </Badge>
+                  <button onClick={() => setHistoryDateFilter(undefined)} className="text-[10px] text-primary hover:underline">Reset</button>
+                </div>
+              )}
+              {filteredHistory.length !== (history?.length ?? 0) && (
+                <p className="text-xs text-muted-foreground">{filteredHistory.length} dari {history?.length} transaksi</p>
+              )}
               {isMobile ? (
                 <div className="space-y-2.5">
-                  {(!history || history.length === 0) ? (
+                  {filteredHistory.length === 0 ? (
                     <div className="py-10 text-center">
                       <PackageMinus className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
-                      <p className="text-sm text-muted-foreground font-medium">Belum ada riwayat</p>
+                      <p className="text-sm text-muted-foreground font-medium">{history?.length ? "Tidak ada hasil" : "Belum ada riwayat"}</p>
                     </div>
-                  ) : history.map((h: any) => (
+                  ) : filteredHistory.map((h: any) => (
                     <div key={h.id} className="rounded-xl border border-border/60 p-3.5 space-y-2 transition-all duration-150 active:scale-[0.98] bg-card">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 min-w-0">
@@ -556,7 +588,7 @@ const BarangKeluar = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {history?.map((h: any, idx: number) => (
+                      {filteredHistory.map((h: any, idx: number) => (
                         <TableRow key={h.id} className={idx % 2 === 0 ? "" : "bg-muted/15"}>
                           <TableCell className="text-xs text-muted-foreground">{formatDate(h.created_at)}</TableCell>
                           <TableCell className="font-mono font-bold text-sm">{h.products?.kode}</TableCell>
@@ -593,9 +625,9 @@ const BarangKeluar = () => {
                           )}
                         </TableRow>
                       ))}
-                      {(!history || history.length === 0) && (
+                      {filteredHistory.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={role === "admin" ? 9 : 8} className="text-center text-muted-foreground py-10">Belum ada riwayat</TableCell>
+                          <TableCell colSpan={role === "admin" ? 9 : 8} className="text-center text-muted-foreground py-10">{history?.length ? "Tidak ada hasil" : "Belum ada riwayat"}</TableCell>
                         </TableRow>
                       )}
                     </TableBody>

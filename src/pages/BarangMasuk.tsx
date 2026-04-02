@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,8 +12,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { PackagePlus, Plus, Trash2, Send, Clock, Package, Hash, ChevronDown, CheckCircle2, Box } from "lucide-react";
+import { PackagePlus, Plus, Trash2, Send, Clock, Package, Hash, ChevronDown, CheckCircle2, Box, Search, CalendarIcon } from "lucide-react";
 import { formatDate, formatNumber } from "@/lib/formatters";
+import { format } from "date-fns";
+import { id as localeId } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { OcrUpload } from "@/components/OcrUpload";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { splitIntoStacks, addStacks } from "@/lib/tumpukanUtils";
@@ -37,6 +42,8 @@ const BarangMasuk = () => {
   const [catatan, setCatatan] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const isMobile = useIsMobile();
+  const [historySearch, setHistorySearch] = useState("");
+  const [historyDateFilter, setHistoryDateFilter] = useState<Date | undefined>(undefined);
 
   const { data: history } = useQuery({
     queryKey: ["stock_in_history"],
@@ -152,6 +159,18 @@ const BarangMasuk = () => {
 
   const validCount = items.filter((i) => i.productId && i.qty > 0).length;
   const totalQty = items.filter((i) => i.productId && i.qty > 0).reduce((s, i) => s + i.qty, 0);
+
+  const filteredHistory = useMemo(() => {
+    if (!history) return [];
+    return history.filter((h: any) => {
+      const matchSearch = !historySearch || 
+        h.products?.kode?.toLowerCase().includes(historySearch.toLowerCase()) ||
+        h.products?.nama?.toLowerCase().includes(historySearch.toLowerCase());
+      const matchDate = !historyDateFilter || 
+        h.created_at?.startsWith(format(historyDateFilter, "yyyy-MM-dd"));
+      return matchSearch && matchDate;
+    });
+  }, [history, historySearch, historyDateFilter]);
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*:nth-child(5)]:![animation-delay:200ms] [&>*]:[animation-fill-mode:both]">
@@ -339,16 +358,49 @@ const BarangMasuk = () => {
             </CollapsibleTrigger>
           </CardHeader>
           <CollapsibleContent>
-            <CardContent>
+            <CardContent className="space-y-3">
+              {/* Search & Filter */}
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Cari kode, nama..."
+                    value={historySearch}
+                    onChange={(e) => setHistorySearch(e.target.value)}
+                    className="pl-9 rounded-xl h-10"
+                  />
+                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="icon" className={cn("rounded-xl h-10 w-10 shrink-0", historyDateFilter && "border-primary text-primary")}>
+                      <CalendarIcon className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar mode="single" selected={historyDateFilter} onSelect={setHistoryDateFilter} initialFocus className="p-3 pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              {historyDateFilter && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-xs rounded-full">
+                    {format(historyDateFilter, "dd MMM yyyy", { locale: localeId })}
+                  </Badge>
+                  <button onClick={() => setHistoryDateFilter(undefined)} className="text-[10px] text-primary hover:underline">Reset</button>
+                </div>
+              )}
+              {filteredHistory.length !== (history?.length ?? 0) && (
+                <p className="text-xs text-muted-foreground">{filteredHistory.length} dari {history?.length} entri</p>
+              )}
               {isMobile ? (
                 <div className="space-y-2.5">
-                  {(!history || history.length === 0) ? (
+                  {filteredHistory.length === 0 ? (
                     <div className="py-10 text-center">
                       <Package className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
-                      <p className="text-sm text-muted-foreground font-medium">Belum ada riwayat barang masuk</p>
+                      <p className="text-sm text-muted-foreground font-medium">{history?.length ? "Tidak ada hasil" : "Belum ada riwayat barang masuk"}</p>
                     </div>
                   ) : (
-                    history.map((h: any) => (
+                    filteredHistory.map((h: any) => (
                       <div
                         key={h.id}
                         className="rounded-xl border border-border/60 p-3.5 space-y-1.5 transition-all duration-150 active:scale-[0.98] bg-card"
@@ -397,7 +449,7 @@ const BarangMasuk = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {history?.map((h: any, idx: number) => (
+                      {filteredHistory.map((h: any, idx: number) => (
                         <TableRow key={h.id} className={idx % 2 === 0 ? "" : "bg-muted/15"}>
                           <TableCell className="text-xs text-muted-foreground">{formatDate(h.created_at)}</TableCell>
                           <TableCell className="font-mono font-bold text-sm">{h.products?.kode}</TableCell>
@@ -411,10 +463,10 @@ const BarangMasuk = () => {
                           <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{h.catatan || "-"}</TableCell>
                         </TableRow>
                       ))}
-                      {(!history || history.length === 0) && (
+                      {filteredHistory.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={6} className="text-center text-muted-foreground py-10">
-                            Belum ada riwayat barang masuk
+                            {history?.length ? "Tidak ada hasil" : "Belum ada riwayat barang masuk"}
                           </TableCell>
                         </TableRow>
                       )}

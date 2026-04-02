@@ -12,26 +12,9 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+import { getAuthHeaders } from "@/lib/authHeaders";
 
-function getAuthHeaders() {
-  const storageKey = `sb-${import.meta.env.VITE_SUPABASE_PROJECT_ID}-auth-token`;
-  let token = SUPABASE_KEY;
-  try {
-    const raw = localStorage.getItem(storageKey);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      token = parsed?.access_token || SUPABASE_KEY;
-    }
-  } catch {}
-  return {
-    "Content-Type": "application/json",
-    "apikey": SUPABASE_KEY,
-    "Authorization": `Bearer ${token}`,
-    "Accept": "application/json",
-  };
-}
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 // ── Time-based greeting ───────────────────────────────────────────
 function getGreeting() {
@@ -301,7 +284,7 @@ const Dashboard = () => {
   const { data: todaySales } = useQuery({
     queryKey: ["dashboard_today_sales"],
     queryFn: async () => {
-      const headers = getAuthHeaders();
+      const headers = await getAuthHeaders();
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/stock_out?select=product_id,qty_kirim,total_harga,created_at&created_at=gte.${todayStartUtc.toISOString()}&order=created_at.desc`,
         { headers }
@@ -317,7 +300,7 @@ const Dashboard = () => {
   const { data: weekSales } = useQuery({
     queryKey: ["dashboard_week_sales"],
     queryFn: async () => {
-      const headers = getAuthHeaders();
+      const headers = await getAuthHeaders();
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/stock_out?select=qty_kirim,total_harga,created_at&created_at=gte.${sevenDaysAgoUtc.toISOString()}&order=created_at.asc`,
         { headers }
