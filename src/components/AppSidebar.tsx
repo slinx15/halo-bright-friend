@@ -15,7 +15,6 @@ import {
   Bot,
   Users,
   FileBarChart,
-  Users,
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import { cn } from "@/lib/utils";
