@@ -42,6 +42,8 @@ const BarangMasuk = () => {
   const [catatan, setCatatan] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const isMobile = useIsMobile();
+  const [historySearch, setHistorySearch] = useState("");
+  const [historyDateFilter, setHistoryDateFilter] = useState<Date | undefined>(undefined);
 
   const { data: history } = useQuery({
     queryKey: ["stock_in_history"],
