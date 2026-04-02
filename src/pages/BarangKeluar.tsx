@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,7 +18,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { PackageMinus, Send, Clock, Store, Hash, ChevronDown, Zap, FileText, CheckCircle2, DollarSign, CalendarIcon, Trash2 } from "lucide-react";
+import { PackageMinus, Send, Clock, Store, Hash, ChevronDown, Zap, FileText, CheckCircle2, DollarSign, CalendarIcon, Trash2, Search } from "lucide-react";
 import { formatDate, formatNumber, formatRupiah } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { OcrUpload } from "@/components/OcrUpload";
@@ -27,27 +27,9 @@ import { deductFromStacks } from "@/lib/tumpukanUtils";
 import { BulkKeluarInput, type BulkKeluarItem, type BulkKeluarInputHandle } from "@/components/keluar/BulkKeluarInput";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TransactionSkeleton } from "@/components/LoadingSkeletons";
+import { getAuthHeaders } from "@/lib/authHeaders";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-function getAuthHeaders(prefer = "return=minimal") {
-  const storageKey = `sb-${import.meta.env.VITE_SUPABASE_PROJECT_ID}-auth-token`;
-  let token = SUPABASE_KEY;
-  try {
-    const raw = localStorage.getItem(storageKey);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      token = parsed?.access_token || SUPABASE_KEY;
-    }
-  } catch {}
-  return {
-    "Content-Type": "application/json",
-    "apikey": SUPABASE_KEY,
-    "Authorization": `Bearer ${token}`,
-    "Prefer": prefer,
-  };
-}
 
 const BarangKeluar = () => {
   const { user, role } = useAuth();

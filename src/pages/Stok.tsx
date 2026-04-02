@@ -16,28 +16,11 @@ import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Progress } from "@/components/ui/progress";
 
+import { getAuthHeaders } from "@/lib/authHeaders";
+
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 const PAGE_SIZE = 30;
-
-function getAuthHeaders() {
-  const storageKey = `sb-${import.meta.env.VITE_SUPABASE_PROJECT_ID}-auth-token`;
-  let token = SUPABASE_KEY;
-  try {
-    const raw = localStorage.getItem(storageKey);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      token = parsed?.access_token || SUPABASE_KEY;
-    }
-  } catch {}
-  return {
-    "Content-Type": "application/json",
-    "apikey": SUPABASE_KEY,
-    "Authorization": `Bearer ${token}`,
-    "Prefer": "return=minimal",
-  };
-}
 
 const Stok = () => {
   const { data: products, isLoading } = useProducts();
