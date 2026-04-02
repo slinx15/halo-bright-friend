@@ -92,6 +92,19 @@ const BarangKeluar = () => {
   const todayQty = todayItems.reduce((s: number, h: any) => s + (h.qty_kirim ?? 0), 0);
   const todayRevenue = todayItems.reduce((s: number, h: any) => s + (h.total_harga ?? 0), 0);
 
+  const filteredHistory = useMemo(() => {
+    if (!history) return [];
+    return history.filter((h: any) => {
+      const matchSearch = !historySearch || 
+        h.products?.kode?.toLowerCase().includes(historySearch.toLowerCase()) ||
+        h.products?.nama?.toLowerCase().includes(historySearch.toLowerCase()) ||
+        h.toko?.toLowerCase().includes(historySearch.toLowerCase());
+      const matchDate = !historyDateFilter || 
+        h.created_at?.startsWith(format(historyDateFilter, "yyyy-MM-dd"));
+      return matchSearch && matchDate;
+    });
+  }, [history, historySearch, historyDateFilter]);
+
   const handleSubmit = async () => {
     if (!matched) {
       toast({ title: "Error", description: "Produk tidak ditemukan", variant: "destructive" });
