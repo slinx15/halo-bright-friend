@@ -400,7 +400,7 @@ const BarangMasuk = () => {
                       <p className="text-sm text-muted-foreground font-medium">{history?.length ? "Tidak ada hasil" : "Belum ada riwayat barang masuk"}</p>
                     </div>
                   ) : (
-                    history.map((h: any) => (
+                    filteredHistory.map((h: any) => (
                       <div
                         key={h.id}
                         className="rounded-xl border border-border/60 p-3.5 space-y-1.5 transition-all duration-150 active:scale-[0.98] bg-card"
