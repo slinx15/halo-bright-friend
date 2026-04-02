@@ -66,7 +66,7 @@ export default function Laporan() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stock_in")
-        .select("*, products(kode, nama, kategori)")
+        .select("*, products(kode, nama, kategori, prices(harga_modal))")
         .gte("created_at", startISO)
         .lte("created_at", endISO)
         .order("created_at", { ascending: false });
@@ -123,22 +123,25 @@ export default function Laporan() {
 
   // Stock in summary
   const stockInSummary = useMemo(() => {
-    if (!stockInData) return { totalTx: 0, totalQty: 0, byProduct: [] };
+    if (!stockInData) return { totalTx: 0, totalQty: 0, totalModal: 0, byProduct: [] };
 
     const totalTx = stockInData.length;
     const totalQty = stockInData.reduce((s, r) => s + (r.qty || 0), 0);
 
-    const productMap = new Map<string, { kode: string; nama: string; qty: number }>();
+    const productMap = new Map<string, { kode: string; nama: string; qty: number; modal: number; hargaModal: number }>();
     stockInData.forEach((r: any) => {
       const kode = r.products?.kode || "?";
       const nama = r.products?.nama || "";
-      const existing = productMap.get(kode) || { kode, nama, qty: 0 };
+      const hargaModal = r.products?.prices?.[0]?.harga_modal || r.products?.prices?.harga_modal || 0;
+      const existing = productMap.get(kode) || { kode, nama, qty: 0, modal: 0, hargaModal };
       existing.qty += r.qty || 0;
+      existing.modal += (r.qty || 0) * hargaModal;
       productMap.set(kode, existing);
     });
     const byProduct = Array.from(productMap.values()).sort((a, b) => b.qty - a.qty);
+    const totalModal = byProduct.reduce((s, p) => s + p.modal, 0);
 
-    return { totalTx, totalQty, byProduct };
+    return { totalTx, totalQty, totalModal, byProduct };
   }, [stockInData]);
 
   const isLoading = salesLoading || stockInLoading;
@@ -317,7 +320,7 @@ export default function Laporan() {
           {/* ═══ TAB BARANG MASUK ═══ */}
           <TabsContent value="masuk" className="space-y-4">
             {/* Summary Cards */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <Card className="rounded-xl border-0 shadow-sm">
                 <CardContent className="p-3 text-center">
                   <ShoppingCart className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
@@ -329,7 +332,14 @@ export default function Laporan() {
                 <CardContent className="p-3 text-center">
                   <Package className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
                   <p className="text-lg font-extrabold text-primary">{formatNumber(stockInSummary.totalQty)}</p>
-                  <p className="text-[10px] text-muted-foreground font-semibold uppercase">Total Qty Masuk</p>
+                  <p className="text-[10px] text-muted-foreground font-semibold uppercase">Qty Masuk</p>
+                </CardContent>
+              </Card>
+              <Card className="rounded-xl border-0 shadow-sm">
+                <CardContent className="p-3 text-center">
+                  <DollarSign className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
+                  <p className={cn("font-extrabold text-destructive", isMobile ? "text-sm" : "text-lg")}>{formatRupiah(stockInSummary.totalModal)}</p>
+                  <p className="text-[10px] text-muted-foreground font-semibold uppercase">Total Modal</p>
                 </CardContent>
               </Card>
             </div>
@@ -358,7 +368,10 @@ export default function Laporan() {
                           <p className="text-[10px] text-muted-foreground truncate">{p.nama}</p>
                         </div>
                       </div>
-                      <span className="text-sm font-bold tabular-nums shrink-0 pl-2">{formatNumber(p.qty)} pcs</span>
+                      <div className="text-right shrink-0 pl-2">
+                        <p className="text-sm font-bold tabular-nums">{formatNumber(p.qty)} pcs</p>
+                        <p className="text-[10px] text-muted-foreground">{formatRupiah(p.modal)}</p>
+                      </div>
                     </div>
                   ))}
                   {stockInSummary.byProduct.length === 0 && (
