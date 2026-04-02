@@ -134,7 +134,7 @@ const BarangKeluar = () => {
           catatan: catatan || null,
           toko: toko.trim() || "",
           user_id: user!.id,
-          ...(tanggal ? { created_at: tanggal.toISOString() } : {}),
+          ...(tanggal ? { created_at: new Date(tanggal.getFullYear(), tanggal.getMonth(), tanggal.getDate(), 12, 0, 0).toISOString() } : {}),
         }),
       });
       if (!outRes.ok) throw new Error(await outRes.text());
