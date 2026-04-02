@@ -160,6 +160,18 @@ const BarangMasuk = () => {
   const validCount = items.filter((i) => i.productId && i.qty > 0).length;
   const totalQty = items.filter((i) => i.productId && i.qty > 0).reduce((s, i) => s + i.qty, 0);
 
+  const filteredHistory = useMemo(() => {
+    if (!history) return [];
+    return history.filter((h: any) => {
+      const matchSearch = !historySearch || 
+        h.products?.kode?.toLowerCase().includes(historySearch.toLowerCase()) ||
+        h.products?.nama?.toLowerCase().includes(historySearch.toLowerCase());
+      const matchDate = !historyDateFilter || 
+        h.created_at?.startsWith(format(historyDateFilter, "yyyy-MM-dd"));
+      return matchSearch && matchDate;
+    });
+  }, [history, historySearch, historyDateFilter]);
+
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*:nth-child(5)]:![animation-delay:200ms] [&>*]:[animation-fill-mode:both]">
       {/* ── Premium Header ── */}
