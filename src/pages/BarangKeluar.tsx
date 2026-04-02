@@ -625,9 +625,9 @@ const BarangKeluar = () => {
                           )}
                         </TableRow>
                       ))}
-                      {(!history || history.length === 0) && (
+                      {filteredHistory.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={role === "admin" ? 9 : 8} className="text-center text-muted-foreground py-10">Belum ada riwayat</TableCell>
+                          <TableCell colSpan={role === "admin" ? 9 : 8} className="text-center text-muted-foreground py-10">{history?.length ? "Tidak ada hasil" : "Belum ada riwayat"}</TableCell>
                         </TableRow>
                       )}
                     </TableBody>
