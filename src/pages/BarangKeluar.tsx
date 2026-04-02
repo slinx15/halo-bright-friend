@@ -588,7 +588,7 @@ const BarangKeluar = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {history?.map((h: any, idx: number) => (
+                      {filteredHistory.map((h: any, idx: number) => (
                         <TableRow key={h.id} className={idx % 2 === 0 ? "" : "bg-muted/15"}>
                           <TableCell className="text-xs text-muted-foreground">{formatDate(h.created_at)}</TableCell>
                           <TableCell className="font-mono font-bold text-sm">{h.products?.kode}</TableCell>
