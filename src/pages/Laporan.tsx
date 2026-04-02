@@ -320,7 +320,7 @@ export default function Laporan() {
           {/* ═══ TAB BARANG MASUK ═══ */}
           <TabsContent value="masuk" className="space-y-4">
             {/* Summary Cards */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <Card className="rounded-xl border-0 shadow-sm">
                 <CardContent className="p-3 text-center">
                   <ShoppingCart className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
@@ -332,7 +332,14 @@ export default function Laporan() {
                 <CardContent className="p-3 text-center">
                   <Package className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
                   <p className="text-lg font-extrabold text-primary">{formatNumber(stockInSummary.totalQty)}</p>
-                  <p className="text-[10px] text-muted-foreground font-semibold uppercase">Total Qty Masuk</p>
+                  <p className="text-[10px] text-muted-foreground font-semibold uppercase">Qty Masuk</p>
+                </CardContent>
+              </Card>
+              <Card className="rounded-xl border-0 shadow-sm">
+                <CardContent className="p-3 text-center">
+                  <DollarSign className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
+                  <p className={cn("font-extrabold text-destructive", isMobile ? "text-sm" : "text-lg")}>{formatRupiah(stockInSummary.totalModal)}</p>
+                  <p className="text-[10px] text-muted-foreground font-semibold uppercase">Total Modal</p>
                 </CardContent>
               </Card>
             </div>
@@ -361,7 +368,10 @@ export default function Laporan() {
                           <p className="text-[10px] text-muted-foreground truncate">{p.nama}</p>
                         </div>
                       </div>
-                      <span className="text-sm font-bold tabular-nums shrink-0 pl-2">{formatNumber(p.qty)} pcs</span>
+                      <div className="text-right shrink-0 pl-2">
+                        <p className="text-sm font-bold tabular-nums">{formatNumber(p.qty)} pcs</p>
+                        <p className="text-[10px] text-muted-foreground">{formatRupiah(p.modal)}</p>
+                      </div>
                     </div>
                   ))}
                   {stockInSummary.byProduct.length === 0 && (
