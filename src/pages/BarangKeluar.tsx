@@ -105,8 +105,11 @@ const BarangKeluar = () => {
         h.products?.kode?.toLowerCase().includes(historySearch.toLowerCase()) ||
         h.products?.nama?.toLowerCase().includes(historySearch.toLowerCase()) ||
         h.toko?.toLowerCase().includes(historySearch.toLowerCase());
-      const matchDate = !historyDateFilter || 
-        h.created_at?.startsWith(format(historyDateFilter, "yyyy-MM-dd"));
+      const matchDate = !historyDateFilter || (() => {
+        const d = new Date(h.created_at);
+        const localStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        return localStr === format(historyDateFilter, "yyyy-MM-dd");
+      })();
       return matchSearch && matchDate;
     });
   }, [history, historySearch, historyDateFilter]);
