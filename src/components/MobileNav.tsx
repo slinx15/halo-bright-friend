@@ -34,6 +34,7 @@ const primaryNav = [
 
 const secondaryNav = [
   { icon: ClipboardCheck, label: "Opname", path: "/opname", adminOnly: false },
+  { icon: FileBarChart, label: "Laporan Bulanan", path: "/laporan", adminOnly: false },
   { icon: Settings, label: "Produk", path: "/produk", adminOnly: false },
   { icon: FileUp, label: "Import & Export", path: "/import-histori", adminOnly: false },
   { icon: Bot, label: "AI Assistant", path: "/ai", adminOnly: false },
