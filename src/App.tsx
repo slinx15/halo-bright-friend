@@ -17,6 +17,7 @@ import ManajemenProduk from "@/pages/ManajemenProduk";
 import ImportHistori from "@/pages/ImportHistori";
 import AiChat from "@/pages/AiChat";
 import ManajemenUser from "@/pages/ManajemenUser";
+import Laporan from "@/pages/Laporan";
 import NotFound from "@/pages/NotFound";
 
 const Analisa = lazy(() => import("@/pages/Analisa"));
@@ -63,6 +64,7 @@ const App = () => (
                 <Route path="/import-histori" element={<ImportHistori />} />
                 <Route path="/ai" element={<AiChat />} />
                 <Route path="/users" element={<ManajemenUser />} />
+                <Route path="/laporan" element={<Laporan />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

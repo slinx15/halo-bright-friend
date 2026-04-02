@@ -14,6 +14,7 @@ import {
   FileUp,
   Bot,
   Users,
+  FileBarChart,
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ const navItems = [
   { icon: Package, label: "Stok", path: "/stok", group: "inventaris" },
   { icon: ClipboardCheck, label: "Opname", path: "/opname", group: "inventaris" },
   { icon: BarChart3, label: "Analisa", path: "/analisa", group: "laporan" },
+  { icon: FileBarChart, label: "Laporan Bulanan", path: "/laporan", group: "laporan" },
   { icon: Settings, label: "Produk", path: "/produk", group: "laporan" },
   { icon: FileUp, label: "Import Histori", path: "/import-histori", group: "laporan" },
   { icon: Bot, label: "AI Assistant", path: "/ai", group: "laporan" },
