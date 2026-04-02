@@ -143,7 +143,7 @@ export default function Laporan() {
   const medalIcons = ["🥇", "🥈", "🥉"];
 
   return (
-    <div className="space-y-4 pb-4">
+    <div className="space-y-4 pb-4 px-4 md:px-6 pt-4">
       <PageHeader
         icon={BarChart3}
         iconColor="text-primary"
