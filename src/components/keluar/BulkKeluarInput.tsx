@@ -439,8 +439,8 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
                     }}>
                       <SelectTrigger className="h-9 text-xs mt-0.5"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="normal">Normal</SelectItem>
-                        <SelectItem value="grosir">Grosir</SelectItem>
+                        <SelectItem value="normal">{priceLabel(blckItems[0]?.product?.prices, "normal")}</SelectItem>
+                        <SelectItem value="grosir">{priceLabel(blckItems[0]?.product?.prices, "grosir")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
