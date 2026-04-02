@@ -14,6 +14,8 @@ import {
   FileUp,
   Bot,
   Users,
+  FileBarChart,
+  Users,
   MoreHorizontal,
   X,
   LogOut,
