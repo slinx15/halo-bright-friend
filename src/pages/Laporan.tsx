@@ -199,28 +199,20 @@ export default function Laporan() {
 
           {/* ═══════════ TAB PENJUALAN ═══════════ */}
           <TabsContent value="penjualan" className="space-y-4 mt-0">
-            {/* Hero Revenue Card */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary to-primary/80 p-5 text-primary-foreground shadow-lg">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-8 translate-x-8" />
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-6 -translate-x-6" />
-              <div className="relative z-10">
-                <p className="text-xs font-semibold uppercase tracking-wider opacity-80">Total Omzet</p>
-                <p className="text-3xl font-extrabold mt-1 tracking-tight">{formatRupiah(salesSummary.totalRevenue)}</p>
-                <div className="flex items-center gap-4 mt-3 text-xs opacity-90">
-                  <span className="flex items-center gap-1">
-                    <ShoppingCart className="h-3.5 w-3.5" />
-                    {formatNumber(salesSummary.totalTx)} transaksi
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Package className="h-3.5 w-3.5" />
-                    {formatNumber(salesSummary.totalQty)} pcs
-                  </span>
+            {/* Hero Revenue Card - compact */}
+            <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary to-primary/80 px-4 py-3 text-primary-foreground shadow-md">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full -translate-y-6 translate-x-6" />
+              <div className="relative z-10 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider opacity-80">Total Omzet</p>
+                  <p className="text-xl font-extrabold tracking-tight">{formatRupiah(salesSummary.totalRevenue)}</p>
+                  <div className="flex items-center gap-3 mt-1 text-[10px] opacity-80">
+                    <span>{formatNumber(salesSummary.totalTx)} tx</span>
+                    <span>{formatNumber(salesSummary.totalQty)} pcs</span>
+                    {salesSummary.avgPerDay > 0 && <span>~{formatRupiah(salesSummary.avgPerDay)}/hari</span>}
+                  </div>
                 </div>
-                {salesSummary.avgPerDay > 0 && (
-                  <p className="mt-2 text-[11px] opacity-70">
-                    Rata-rata {formatRupiah(salesSummary.avgPerDay)}/hari
-                  </p>
-                )}
+                <DollarSign className="h-8 w-8 opacity-20" />
               </div>
             </div>
 
@@ -351,23 +343,19 @@ export default function Laporan() {
 
           {/* ═══════════ TAB BARANG MASUK ═══════════ */}
           <TabsContent value="masuk" className="space-y-4 mt-0">
-            {/* Hero Modal Card */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-destructive/90 via-destructive to-destructive/70 p-5 text-destructive-foreground shadow-lg">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-8 translate-x-8" />
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-6 -translate-x-6" />
-              <div className="relative z-10">
-                <p className="text-xs font-semibold uppercase tracking-wider opacity-80">Total Pengeluaran Modal</p>
-                <p className="text-3xl font-extrabold mt-1 tracking-tight">{formatRupiah(stockInSummary.totalModal)}</p>
-                <div className="flex items-center gap-4 mt-3 text-xs opacity-90">
-                  <span className="flex items-center gap-1">
-                    <ShoppingCart className="h-3.5 w-3.5" />
-                    {formatNumber(stockInSummary.totalTx)} transaksi
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Package className="h-3.5 w-3.5" />
-                    {formatNumber(stockInSummary.totalQty)} pcs masuk
-                  </span>
+            {/* Hero Modal Card - compact */}
+            <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-destructive/90 to-destructive/70 px-4 py-3 text-destructive-foreground shadow-md">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full -translate-y-6 translate-x-6" />
+              <div className="relative z-10 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider opacity-80">Total Pengeluaran Modal</p>
+                  <p className="text-xl font-extrabold tracking-tight">{formatRupiah(stockInSummary.totalModal)}</p>
+                  <div className="flex items-center gap-3 mt-1 text-[10px] opacity-80">
+                    <span>{formatNumber(stockInSummary.totalTx)} tx</span>
+                    <span>{formatNumber(stockInSummary.totalQty)} pcs masuk</span>
+                  </div>
                 </div>
+                <PackagePlus className="h-8 w-8 opacity-20" />
               </div>
             </div>
 
