@@ -8,7 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Send, PackageMinus, AlertTriangle, CheckCircle2, Trash2, Plus, CalendarIcon } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Send, PackageMinus, AlertTriangle, CheckCircle2, Trash2, Plus, CalendarIcon, ChevronDown, SlidersHorizontal, Store, FileText } from "lucide-react";
 import { formatNumber, formatRupiah } from "@/lib/formatters";
 import { deductFromStacks } from "@/lib/tumpukanUtils";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
@@ -44,6 +46,8 @@ export interface BulkKeluarInputHandle {
 export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInputProps>(function BulkKeluarInput({ products, onSubmit, submitting, toko, setToko, catatan, setCatatan, tanggal, setTanggal }, ref) {
   const [items, setItems] = useState<BulkKeluarItem[]>([]);
   const isMobile = useIsMobile();
+  const [metaOpen, setMetaOpen] = useState(false);
+  const [hargaDialogOpen, setHargaDialogOpen] = useState(false);
 
   const findProduct = (kode: string) =>
     products.find((p) => p.kode.toUpperCase() === kode.toUpperCase());
@@ -117,7 +121,14 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
     setItems([]);
   };
 
-  const renderMobileCard = (item: BulkKeluarItem, idx: number) => {
+  // Kategori counts for harga sekaligus
+  const warnaItems = items.filter(i => i.isValid && !i.kode.toUpperCase().includes("WHT") && !i.kode.toUpperCase().includes("BLCK") && !i.kode.toUpperCase().includes("BLK"));
+  const whtItems = items.filter(i => i.isValid && i.kode.toUpperCase().includes("WHT"));
+  const blckItems = items.filter(i => i.isValid && (i.kode.toUpperCase().includes("BLCK") || i.kode.toUpperCase().includes("BLK")));
+
+  const metaSummary = [toko, tanggal ? format(tanggal, "dd/MM", { locale: localeId }) : null, catatan].filter(Boolean).join(" · ");
+
+  const renderCompactMobileCard = (item: BulkKeluarItem, idx: number) => {
     const stok = item.product?.stock?.jumlah ?? 0;
     const price = getPrice(item);
     const total = price * item.qtyKirim;
@@ -127,7 +138,7 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
       <div
         key={idx}
         className={cn(
-          "rounded-xl border p-3 space-y-2.5",
+          "rounded-xl border p-2.5 space-y-1.5",
           !item.isValid && item.kode
             ? "border-destructive/30 bg-destructive/5"
             : overStock
@@ -135,69 +146,66 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
               : "border-border/50 bg-card"
         )}
       >
-        {/* Row 1: Kode + Delete */}
-        <div className="flex items-center gap-2">
+        {/* Row 1: Kode + Nama/Stok + Delete */}
+        <div className="flex items-center gap-1.5">
           <Input
-            className="h-10 text-sm font-mono flex-1"
+            className="h-9 text-sm font-mono flex-1 min-w-0"
             value={item.kode}
             onChange={(e) => updateItem(idx, "kode", e.target.value)}
-            placeholder="Kode produk..."
+            placeholder="Kode..."
             list="bulk-keluar-codes"
           />
-          <Button variant="ghost" size="icon" className="text-destructive shrink-0 h-10 w-10" onClick={() => removeItem(idx)}>
-            <Trash2 className="h-4 w-4" />
+          {item.isValid && (
+            <span className={cn("text-[10px] font-semibold whitespace-nowrap", overStock ? "text-destructive" : "text-muted-foreground")}>
+              Stok: {formatNumber(stok)}
+            </span>
+          )}
+          <Button variant="ghost" size="icon" className="text-destructive shrink-0 h-8 w-8" onClick={() => removeItem(idx)}>
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
+        {item.isValid && (
+          <p className="text-[10px] text-muted-foreground truncate px-0.5">{item.product?.nama}</p>
+        )}
+        {!item.isValid && item.kode && (
+          <p className="text-destructive text-[10px] font-medium px-0.5">✗ Tidak ditemukan</p>
+        )}
 
-        {/* Product info */}
-        {item.isValid ? (
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">{item.product?.nama}</span>
-            <span className={cn("font-semibold", overStock && "text-destructive")}>Stok: {formatNumber(stok)}</span>
-          </div>
-        ) : item.kode ? (
-          <p className="text-destructive text-xs font-medium">✗ Tidak ditemukan</p>
-        ) : null}
-
-        {/* Row 2: Pesan + Kirim */}
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Pesan</label>
+        {/* Row 2: Pesan + Kirim + Harga + Total */}
+        <div className="flex items-end gap-1.5">
+          <div className="flex-1 min-w-0">
+            <label className="text-[9px] font-semibold text-muted-foreground uppercase">Pesan</label>
             <Input
-              type="text"
-              inputMode="numeric"
-              className="h-10 text-sm mt-0.5"
+              type="text" inputMode="numeric"
+              className="h-9 text-sm mt-0.5 touch-manipulation"
               value={item.qtyPesan === 0 ? "" : item.qtyPesan}
               onChange={(e) => updateItem(idx, "qtyPesan", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
               placeholder="0"
             />
           </div>
-          <div>
-            <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Kirim</label>
+          <div className="flex-1 min-w-0">
+            <label className="text-[9px] font-semibold text-muted-foreground uppercase">Kirim</label>
             <Input
-              type="text"
-              inputMode="numeric"
-              className="h-10 text-sm mt-0.5"
+              type="text" inputMode="numeric"
+              className="h-9 text-sm mt-0.5 touch-manipulation"
               value={item.qtyKirim === 0 ? "" : item.qtyKirim}
               onChange={(e) => updateItem(idx, "qtyKirim", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
               placeholder="0"
             />
           </div>
-        </div>
-
-        {/* Row 3: Harga + Total */}
-        <div className="flex items-center justify-between gap-2">
-          <Select value={item.hargaType} onValueChange={(v) => updateItem(idx, "hargaType", v)}>
-            <SelectTrigger className="h-9 text-xs w-28">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="normal">Normal</SelectItem>
-              <SelectItem value="grosir">Grosir</SelectItem>
-              <SelectItem value="grosir2">Grosir 2</SelectItem>
-            </SelectContent>
-          </Select>
-          <span className="text-sm font-bold text-primary tabular-nums">
+          <div className="w-[72px] shrink-0">
+            <Select value={item.hargaType} onValueChange={(v) => updateItem(idx, "hargaType", v)}>
+              <SelectTrigger className="h-9 text-[10px] px-2">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="grosir">Grosir</SelectItem>
+                <SelectItem value="grosir2">Grosir 2</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <span className="text-xs font-bold text-primary tabular-nums whitespace-nowrap min-w-[60px] text-right pb-2">
             {item.isValid && item.qtyKirim > 0 ? formatRupiah(total) : "-"}
           </span>
         </div>
@@ -213,106 +221,224 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
           Input Cepat Barang Keluar
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4 pt-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground">Nama Toko / Pelanggan</label>
-            <Input value={toko} onChange={(e) => setToko(e.target.value)} placeholder="Nama toko..." className="rounded-lg mt-1" />
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground">Tanggal (opsional)</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-lg mt-1", !tanggal && "text-muted-foreground")}>
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {tanggal ? format(tanggal, "dd MMM yyyy", { locale: localeId }) : "Hari ini"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={tanggal} onSelect={setTanggal} initialFocus className="p-3 pointer-events-auto" />
-              </PopoverContent>
-            </Popover>
-            {tanggal && <button onClick={() => setTanggal?.(undefined)} className="text-[10px] text-primary mt-0.5 hover:underline">Reset ke hari ini</button>}
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground">Catatan (opsional)</label>
-            <Input value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder="Catatan..." className="rounded-lg mt-1" />
-          </div>
-        </div>
-
-        {/* Bulk harga per kategori */}
-        {items.filter(i => i.isValid).length > 0 && (
-          <div className="bg-muted/50 rounded-xl p-3 space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Set Harga Sekaligus</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {/* Warna */}
-              {items.some(i => i.isValid && !i.kode.toUpperCase().includes("WHT") && !i.kode.toUpperCase().includes("BLCK") && !i.kode.toUpperCase().includes("BLK")) && (
-                <div>
-                  <label className="text-[10px] text-muted-foreground font-medium">🎨 Warna ({items.filter(i => i.isValid && !i.kode.toUpperCase().includes("WHT") && !i.kode.toUpperCase().includes("BLCK") && !i.kode.toUpperCase().includes("BLK")).length} item)</label>
-                  <Select onValueChange={(v) => {
-                    setItems(prev => prev.map(item => {
-                      if (!item.isValid) return item;
-                      const k = item.kode.toUpperCase();
-                      if (k.includes("WHT") || k.includes("BLCK") || k.includes("BLK")) return item;
-                      return { ...item, hargaType: v as "normal" | "grosir" | "grosir2" };
-                    }));
-                  }}>
-                    <SelectTrigger className="h-9 text-xs mt-0.5"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="normal">Normal</SelectItem>
-                      <SelectItem value="grosir">Grosir</SelectItem>
-                      <SelectItem value="grosir2">Grosir 2</SelectItem>
-                    </SelectContent>
-                  </Select>
+      <CardContent className={cn("space-y-3 pt-4", isMobile && submitItems.length > 0 && "pb-28")}>
+        {/* ── Collapsible Metadata (mobile) / Normal (desktop) ── */}
+        {isMobile ? (
+          <Collapsible open={metaOpen} onOpenChange={setMetaOpen}>
+            <CollapsibleTrigger asChild>
+              <button className="flex items-center justify-between w-full rounded-xl border border-border/60 px-3 py-2.5 text-left min-h-[44px] bg-muted/30 active:scale-[0.98] transition-transform">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Store className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm font-medium truncate">
+                    {metaSummary || "Toko, Tanggal, Catatan"}
+                  </span>
                 </div>
-              )}
-              {/* WHT */}
-              {items.some(i => i.isValid && i.kode.toUpperCase().includes("WHT")) && (
-                <div>
-                  <label className="text-[10px] text-muted-foreground font-medium">⬜ WHT ({items.filter(i => i.isValid && i.kode.toUpperCase().includes("WHT")).length} item)</label>
-                  <Select onValueChange={(v) => {
-                    setItems(prev => prev.map(item => {
-                      if (!item.isValid || !item.kode.toUpperCase().includes("WHT")) return item;
-                      return { ...item, hargaType: v as "normal" | "grosir" | "grosir2" };
-                    }));
-                  }}>
-                    <SelectTrigger className="h-9 text-xs mt-0.5"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="normal">Normal</SelectItem>
-                      <SelectItem value="grosir">Grosir</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              {/* BLCK */}
-              {items.some(i => i.isValid && (i.kode.toUpperCase().includes("BLCK") || i.kode.toUpperCase().includes("BLK"))) && (
-                <div>
-                  <label className="text-[10px] text-muted-foreground font-medium">⬛ BLCK ({items.filter(i => i.isValid && (i.kode.toUpperCase().includes("BLCK") || i.kode.toUpperCase().includes("BLK"))).length} item)</label>
-                  <Select onValueChange={(v) => {
-                    setItems(prev => prev.map(item => {
-                      if (!item.isValid) return item;
-                      const k = item.kode.toUpperCase();
-                      if (!k.includes("BLCK") && !k.includes("BLK")) return item;
-                      return { ...item, hargaType: v as "normal" | "grosir" | "grosir2" };
-                    }));
-                  }}>
-                    <SelectTrigger className="h-9 text-xs mt-0.5"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="normal">Normal</SelectItem>
-                      <SelectItem value="grosir">Grosir</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+                <ChevronDown className={cn("h-4 w-4 text-muted-foreground shrink-0 transition-transform", metaOpen && "rotate-180")} />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-2 space-y-2">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground">Nama Toko / Pelanggan</label>
+                <Input value={toko} onChange={(e) => setToko(e.target.value)} placeholder="Nama toko..." className="rounded-lg mt-1" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground">Tanggal (opsional)</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-lg mt-1", !tanggal && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {tanggal ? format(tanggal, "dd MMM yyyy", { locale: localeId }) : "Hari ini"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={tanggal} onSelect={setTanggal} initialFocus className="p-3 pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+                {tanggal && <button onClick={() => setTanggal?.(undefined)} className="text-[10px] text-primary mt-0.5 hover:underline">Reset ke hari ini</button>}
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground">Catatan (opsional)</label>
+                <Input value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder="Catatan..." className="rounded-lg mt-1" />
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground">Nama Toko / Pelanggan</label>
+              <Input value={toko} onChange={(e) => setToko(e.target.value)} placeholder="Nama toko..." className="rounded-lg mt-1" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground">Tanggal (opsional)</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-lg mt-1", !tanggal && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {tanggal ? format(tanggal, "dd MMM yyyy", { locale: localeId }) : "Hari ini"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={tanggal} onSelect={setTanggal} initialFocus className="p-3 pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+              {tanggal && <button onClick={() => setTanggal?.(undefined)} className="text-[10px] text-primary mt-0.5 hover:underline">Reset ke hari ini</button>}
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground">Catatan (opsional)</label>
+              <Input value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder="Catatan..." className="rounded-lg mt-1" />
             </div>
           </div>
         )}
 
-        {/* Items - Mobile: Cards, Desktop: Table */}
+        {/* ── Set Harga Sekaligus: Popup (mobile) / Inline (desktop) ── */}
+        {validItems.length > 0 && (
+          isMobile ? (
+            <Dialog open={hargaDialogOpen} onOpenChange={setHargaDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="w-full rounded-xl min-h-[40px] gap-2 text-sm font-semibold">
+                  <SlidersHorizontal className="h-4 w-4" />
+                  Set Harga Sekaligus
+                  <Badge variant="secondary" className="text-[10px] ml-auto">{validItems.length} item</Badge>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="rounded-2xl">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-base">
+                    <SlidersHorizontal className="h-4 w-4" />
+                    Set Harga Sekaligus
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  {warnaItems.length > 0 && (
+                    <div>
+                      <label className="text-xs text-muted-foreground font-medium">🎨 Warna ({warnaItems.length} item)</label>
+                      <Select onValueChange={(v) => {
+                        setItems(prev => prev.map(item => {
+                          if (!item.isValid) return item;
+                          const k = item.kode.toUpperCase();
+                          if (k.includes("WHT") || k.includes("BLCK") || k.includes("BLK")) return item;
+                          return { ...item, hargaType: v as "normal" | "grosir" | "grosir2" };
+                        }));
+                      }}>
+                        <SelectTrigger className="h-11 text-sm mt-1"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="normal">Normal</SelectItem>
+                          <SelectItem value="grosir">Grosir</SelectItem>
+                          <SelectItem value="grosir2">Grosir 2</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {whtItems.length > 0 && (
+                    <div>
+                      <label className="text-xs text-muted-foreground font-medium">⬜ WHT ({whtItems.length} item)</label>
+                      <Select onValueChange={(v) => {
+                        setItems(prev => prev.map(item => {
+                          if (!item.isValid || !item.kode.toUpperCase().includes("WHT")) return item;
+                          return { ...item, hargaType: v as "normal" | "grosir" | "grosir2" };
+                        }));
+                      }}>
+                        <SelectTrigger className="h-11 text-sm mt-1"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="normal">Normal</SelectItem>
+                          <SelectItem value="grosir">Grosir</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {blckItems.length > 0 && (
+                    <div>
+                      <label className="text-xs text-muted-foreground font-medium">⬛ BLCK ({blckItems.length} item)</label>
+                      <Select onValueChange={(v) => {
+                        setItems(prev => prev.map(item => {
+                          if (!item.isValid) return item;
+                          const k = item.kode.toUpperCase();
+                          if (!k.includes("BLCK") && !k.includes("BLK")) return item;
+                          return { ...item, hargaType: v as "normal" | "grosir" | "grosir2" };
+                        }));
+                      }}>
+                        <SelectTrigger className="h-11 text-sm mt-1"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="normal">Normal</SelectItem>
+                          <SelectItem value="grosir">Grosir</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  <Button className="w-full rounded-xl" onClick={() => setHargaDialogOpen(false)}>Selesai</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          ) : (
+            <div className="bg-muted/50 rounded-xl p-3 space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Set Harga Sekaligus</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {warnaItems.length > 0 && (
+                  <div>
+                    <label className="text-[10px] text-muted-foreground font-medium">🎨 Warna ({warnaItems.length} item)</label>
+                    <Select onValueChange={(v) => {
+                      setItems(prev => prev.map(item => {
+                        if (!item.isValid) return item;
+                        const k = item.kode.toUpperCase();
+                        if (k.includes("WHT") || k.includes("BLCK") || k.includes("BLK")) return item;
+                        return { ...item, hargaType: v as "normal" | "grosir" | "grosir2" };
+                      }));
+                    }}>
+                      <SelectTrigger className="h-9 text-xs mt-0.5"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="grosir">Grosir</SelectItem>
+                        <SelectItem value="grosir2">Grosir 2</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                {whtItems.length > 0 && (
+                  <div>
+                    <label className="text-[10px] text-muted-foreground font-medium">⬜ WHT ({whtItems.length} item)</label>
+                    <Select onValueChange={(v) => {
+                      setItems(prev => prev.map(item => {
+                        if (!item.isValid || !item.kode.toUpperCase().includes("WHT")) return item;
+                        return { ...item, hargaType: v as "normal" | "grosir" | "grosir2" };
+                      }));
+                    }}>
+                      <SelectTrigger className="h-9 text-xs mt-0.5"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="grosir">Grosir</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                {blckItems.length > 0 && (
+                  <div>
+                    <label className="text-[10px] text-muted-foreground font-medium">⬛ BLCK ({blckItems.length} item)</label>
+                    <Select onValueChange={(v) => {
+                      setItems(prev => prev.map(item => {
+                        if (!item.isValid) return item;
+                        const k = item.kode.toUpperCase();
+                        if (!k.includes("BLCK") && !k.includes("BLK")) return item;
+                        return { ...item, hargaType: v as "normal" | "grosir" | "grosir2" };
+                      }));
+                    }}>
+                      <SelectTrigger className="h-9 text-xs mt-0.5"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="grosir">Grosir</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        )}
+
+        {/* Items - Mobile: Compact Cards, Desktop: Table */}
         {items.length > 0 && (
           isMobile ? (
-            <div className="space-y-2.5">
-              {items.map((item, idx) => renderMobileCard(item, idx))}
+            <div className="space-y-2">
+              {items.map((item, idx) => renderCompactMobileCard(item, idx))}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -401,32 +527,60 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
           </div>
         )}
 
-        {submitItems.length > 0 && (
-          <div className="bg-muted p-3 rounded-lg text-sm flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                {submitItems.length} item akan dikirim
-              </Badge>
-              {validItems.length > submitItems.length && (
-                <span className="text-xs text-muted-foreground">({validItems.length - submitItems.length} dilewati, kirim=0)</span>
-              )}
-              <span className="text-muted-foreground">
-                Total kirim: <strong>{formatNumber(submitItems.reduce((s, i) => s + i.qtyKirim, 0))}</strong> pcs
-              </span>
+        {/* ── Sticky Submit (mobile) / Normal (desktop) ── */}
+        {isMobile && submitItems.length > 0 ? (
+          <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-3 pt-2 bg-background/95 backdrop-blur-md border-t border-border/50 safe-bottom">
+            <div className="flex items-center justify-between mb-2 text-sm">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-[10px]">
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  {submitItems.length} item
+                </Badge>
+                <span className="text-muted-foreground text-xs">
+                  {formatNumber(submitItems.reduce((s, i) => s + i.qtyKirim, 0))} pcs
+                </span>
+              </div>
+              <span className="font-bold text-primary">{formatRupiah(totalRevenue)}</span>
             </div>
-            <span className="font-bold text-primary">{formatRupiah(totalRevenue)}</span>
+            <Button
+              onClick={handleSubmit}
+              disabled={submitting || !canSubmit}
+              className="w-full rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-destructive hover:bg-destructive/90"
+            >
+              <Send className="h-5 w-5 mr-2" />
+              {submitting ? "Menyimpan..." : `Simpan ${submitItems.length} Barang Keluar`}
+            </Button>
           </div>
-        )}
+        ) : (
+          <>
+            {submitItems.length > 0 && (
+              <div className="bg-muted p-3 rounded-lg text-sm flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    {submitItems.length} item akan dikirim
+                  </Badge>
+                  {validItems.length > submitItems.length && (
+                    <span className="text-xs text-muted-foreground">({validItems.length - submitItems.length} dilewati, kirim=0)</span>
+                  )}
+                  <span className="text-muted-foreground">
+                    Total kirim: <strong>{formatNumber(submitItems.reduce((s, i) => s + i.qtyKirim, 0))}</strong> pcs
+                  </span>
+                </div>
+                <span className="font-bold text-primary">{formatRupiah(totalRevenue)}</span>
+              </div>
+            )}
 
-        <Button
-          onClick={handleSubmit}
-          disabled={submitting || !canSubmit}
-          className="w-full rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-destructive hover:bg-destructive/90"
-        >
-          <Send className="h-5 w-5 mr-2" />
-          {submitting ? "Menyimpan..." : `Simpan ${submitItems.length} Barang Keluar`}
-        </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={submitting || !canSubmit}
+              className="w-full rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-destructive hover:bg-destructive/90"
+            >
+              <Send className="h-5 w-5 mr-2" />
+              {submitting ? "Menyimpan..." : `Simpan ${submitItems.length} Barang Keluar`}
+            </Button>
+          </>
+        )}
       </CardContent>
     </Card>
   );
