@@ -198,9 +198,11 @@ const BarangKeluar = () => {
         const product = item.product!;
         const stok = product.stock?.jumlah ?? 0;
         const stacks = (product.stock?.tumpukan_detail as number[]) ?? [];
-        const price = product.prices
-          ? item.hargaType === "grosir2" ? product.prices.harga_grosir2 : item.hargaType === "grosir" ? product.prices.harga_grosir : product.prices.harga_normal
-          : 0;
+        const price = item.hargaType === "custom"
+          ? (item.customHarga ?? 0)
+          : product.prices
+            ? item.hargaType === "grosir2" ? product.prices.harga_grosir2 : item.hargaType === "grosir" ? product.prices.harga_grosir : product.prices.harga_normal
+            : 0;
         const outRes = await fetchWithRetry(`${SUPABASE_URL}/rest/v1/stock_out`, {
           method: "POST", headers,
           body: JSON.stringify({
