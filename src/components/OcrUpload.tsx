@@ -30,6 +30,7 @@ interface OcrItem {
   kategori?: string;
   // validation
   isValid?: boolean;
+  isAmbiguous?: boolean;
   productId?: string;
   productName?: string;
   stokSistem?: number;
@@ -46,54 +47,85 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
   const { data: products } = useProducts();
   const { data: aliases } = useProductAliases();
 
-  // Find product by kode with fallback chain: exact → strip leading zeros → alias
+  // Find product by kode with fallback chain
   const findProduct = (rawKode: string, kategori?: string) => {
     const kode = String(rawKode).toUpperCase().trim();
+    const allProducts = products || [];
+
+    // Step 0: If kategori provided, try "KODE KATEGORI" as full kode match first (e.g. "BLCK 5 Ons")
+    if (kategori) {
+      const fullKode = `${kode} ${kategori}`.toUpperCase();
+      const found = allProducts.find((p) => p.kode.toUpperCase() === fullKode);
+      if (found) return found;
+    }
+
+    // Step 1: Exact kode match, filtered by kategori if available
     const filterByKategori = (list: typeof products) => {
       if (!kategori || !list) return list;
       const matched = list.filter((p) => p.kategori === kategori);
-      return matched.length > 0 ? matched : list; // fallback to all if no match
+      return matched.length > 0 ? matched : list;
     };
-    const pool = filterByKategori(products) || [];
-    // 1. Exact match
+    const pool = filterByKategori(allProducts) || [];
+
     let found = pool.find((p) => p.kode.toUpperCase() === kode);
     if (found) return found;
-    // 1b. Try kode + kategori (e.g. "BLCK" + "5 Ons" → "BLCK 5 Ons")
-    if (kategori) {
-      const kodeWithKat = `${kode} ${kategori.toUpperCase()}`;
-      found = pool.find((p) => p.kode.toUpperCase() === kodeWithKat);
-      if (found) return found;
-      // Also search full products list
-      found = products?.find((p) => p.kode.toUpperCase() === kodeWithKat && p.kategori === kategori);
-      if (found) return found;
-    }
-    // 2. Strip leading zeros
+
+    // Step 2: Strip leading zeros
     const stripped = kode.replace(/^0+/, "");
     if (stripped && stripped !== kode) {
+      // Try with kategori suffix
+      if (kategori) {
+        const fullStripped = `${stripped} ${kategori}`.toUpperCase();
+        found = allProducts.find((p) => p.kode.toUpperCase() === fullStripped);
+        if (found) return found;
+      }
       found = pool.find((p) => p.kode.toUpperCase() === stripped);
       if (found) return found;
     }
-    // 3. Also try adding leading zeros to master code
+
+    // Step 3: Strip leading zeros from master kode too
+    if (kategori) {
+      const fullStripped = `${stripped} ${kategori}`.toUpperCase();
+      found = allProducts.find((p) => p.kode.toUpperCase().replace(/^0+/, "") === fullStripped);
+      if (found) return found;
+    }
     found = pool.find((p) => p.kode.toUpperCase().replace(/^0+/, "") === stripped);
     if (found) return found;
-    // 4. Strip suffix like "G-29", "G-19" etc and try again
+
+    // Step 4: Strip suffix like "G-29"
     const baseKode = kode.replace(/\s+[A-Z]-?\d+$/i, "").replace(/^0+/, "");
     if (baseKode !== stripped) {
+      if (kategori) {
+        const fullBase = `${baseKode} ${kategori}`.toUpperCase();
+        found = allProducts.find((p) => p.kode.toUpperCase() === fullBase);
+        if (found) return found;
+      }
       found = pool.find((p) => p.kode.toUpperCase() === baseKode || p.kode.toUpperCase().replace(/^0+/, "") === baseKode);
       if (found) return found;
     }
-    // 5. Alias table lookup
+
+    // Step 5: Alias table lookup
     if (aliases) {
       const aliasEntry = aliases.find((a) => a.alias.toUpperCase() === kode || a.alias.toUpperCase() === stripped || a.alias.toUpperCase() === baseKode);
       if (aliasEntry) {
         found = pool.find((p) => p.id === aliasEntry.product_id);
         if (found) return found;
-        // Try full products list for alias
-        found = products?.find((p) => p.id === aliasEntry.product_id);
+        found = allProducts.find((p) => p.id === aliasEntry.product_id);
         if (found) return found;
       }
     }
     return null;
+  };
+
+  // Check if a kode is ambiguous (exists in multiple categories)
+  const isAmbiguousKode = (rawKode: string) => {
+    const kode = String(rawKode).toUpperCase().trim();
+    const matches = (products || []).filter((p) => {
+      const baseKode = p.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|18 GRAM)$/, "");
+      return baseKode === kode;
+    });
+    const uniqueCategories = new Set(matches.map((p) => p.kategori));
+    return uniqueCategories.size > 1;
   };
 
   const validateItems = (items: any[]): OcrItem[] => {
@@ -101,11 +133,14 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
       const kode = String(item.kode || "").toUpperCase().trim();
       const kategori = item.kategori || undefined;
       const found = findProduct(kode, kategori);
+      const ambiguous = !kategori && isAmbiguousKode(kode);
+      console.log("OCR validate:", { rawKode: kode, kategori, foundKode: found?.kode, foundKat: found?.kategori, ambiguous });
       return {
         ...item,
         kode: found ? found.kode : kode,
-        kategori,
+        kategori: found ? found.kategori : kategori,
         isValid: !!found,
+        isAmbiguous: ambiguous,
         productId: found?.id,
         productName: found?.nama,
         stokSistem: found?.stock?.jumlah ?? 0,
@@ -240,8 +275,9 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
         const kat = field === "kategori" ? (value || undefined) : updated[idx].kategori;
         const found = findProduct(kode, kat);
         updated[idx].kode = found ? found.kode : kode;
-        updated[idx].kategori = kat;
+        updated[idx].kategori = found ? found.kategori : kat;
         updated[idx].isValid = !!found;
+        updated[idx].isAmbiguous = !kat && isAmbiguousKode(kode);
         updated[idx].productId = found?.id;
         updated[idx].productName = found ? found.nama : undefined;
         updated[idx].stokSistem = found?.stock?.jumlah ?? 0;
@@ -347,7 +383,9 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
                           {item.kode || "(kosong)"}
                         </span>
                       )}
-                      {item.isValid ? (
+                      {item.isAmbiguous ? (
+                        <span className="text-xs text-amber-600 font-medium">⚠ Pilih ukuran →</span>
+                      ) : item.isValid ? (
                         <span className="text-xs text-muted-foreground truncate">
                           {item.productName}
                         </span>
@@ -355,7 +393,10 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
                         <span className="text-xs text-destructive">Tidak ada di Master</span>
                       )}
                       {item.kategori && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+                        <Badge 
+                          variant="outline" 
+                          className={`text-[10px] px-1.5 py-0 shrink-0 ${item.isAmbiguous ? 'border-amber-500 text-amber-600' : ''}`}
+                        >
                           {item.kategori}
                         </Badge>
                       )}
