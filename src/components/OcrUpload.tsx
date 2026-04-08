@@ -376,7 +376,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
                     {mode === "masuk" && (
                       <>
                         <div className="flex items-center gap-1">
-                          <span className="text-xs text-muted-foreground">Qty:</span>
+                          <span className="text-xs text-muted-foreground">{item.kategori === "18 Gram" ? "Pack:" : "Qty:"}</span>
                           <Input
                             type="text"
                             inputMode="numeric"
