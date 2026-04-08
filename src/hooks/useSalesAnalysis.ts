@@ -57,9 +57,14 @@ export function useSalesAnalysis() {
   const { data: products } = useProducts();
   const { data: stockOutData, isLoading } = useStockOutData();
 
+  // Filter hanya produk 2 Ons untuk analisa
+  const products2Ons = (products ?? []).filter(p => p.kategori === "2 Ons");
+  const productIds2Ons = new Set(products2Ons.map(p => p.id));
+  const stockOut2Ons = (stockOutData ?? []).filter(r => productIds2Ons.has(r.product_id));
+
   return {
-    products: products ?? [],
-    stockOutData: stockOutData ?? [],
+    products: products2Ons,
+    stockOutData: stockOut2Ons,
     isLoading,
   };
 }
