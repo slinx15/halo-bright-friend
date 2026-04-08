@@ -690,7 +690,7 @@ ${alertsBlock}
 DETAIL PENJUALAN PER PELANGGAN PER TANGGAL (30 hari, WIB):
 ${tokoDateBlock}
 
-SEMUA PRODUK (termasuk 3 level harga: normal/grosir/grosir2):
+SEMUA PRODUK (semua ukuran, termasuk 3 level harga: normal/grosir/grosir2):
 ${allProductsList}
 
 ═══ RULES ═══
