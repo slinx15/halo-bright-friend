@@ -106,11 +106,22 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
 
     // Step 5: Alias table lookup
     if (aliases) {
-      const aliasEntry = aliases.find((a) => a.alias.toUpperCase() === kode || a.alias.toUpperCase() === stripped || a.alias.toUpperCase() === baseKode);
-      if (aliasEntry) {
-        found = pool.find((p) => p.id === aliasEntry.product_id);
-        if (found) return found;
-        found = allProducts.find((p) => p.id === aliasEntry.product_id);
+      const aliasMatches = aliases.filter(
+        (a) => a.alias.toUpperCase() === kode || a.alias.toUpperCase() === stripped || a.alias.toUpperCase() === baseKode
+      );
+      if (aliasMatches.length > 0) {
+        // If kategori is known, only accept alias targets from that kategori
+        if (kategori) {
+          found = aliasMatches
+            .map((a) => allProducts.find((p) => p.id === a.product_id && p.kategori === kategori))
+            .find(Boolean) ?? null;
+          if (found) return found;
+        }
+
+        // Fallback only when kategori is not provided
+        found = aliasMatches
+          .map((a) => allProducts.find((p) => p.id === a.product_id))
+          .find(Boolean) ?? null;
         if (found) return found;
       }
     }
