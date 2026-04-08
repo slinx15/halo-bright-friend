@@ -364,56 +364,121 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
                     <div>
                       <label className="text-xs text-muted-foreground font-medium">🎨 Warna ({warnaItems.length} item)</label>
                       <Select onValueChange={(v) => {
-                        setItems(prev => prev.map(item => {
-                          if (!item.isValid) return item;
-                          const k = item.kode.toUpperCase();
-                          if (k.includes("WHT") || k.includes("BLCK") || k.includes("BLK")) return item;
-                          return { ...item, hargaType: v as "normal" | "grosir" | "grosir2" };
-                        }));
+                        if (v === "custom") {
+                          if (customWarnaHarga > 0) {
+                            setItems(prev => prev.map(item => {
+                              if (!item.isValid) return item;
+                              const k = item.kode.toUpperCase();
+                              if (k.includes("WHT") || k.includes("BLCK") || k.includes("BLK")) return item;
+                              return { ...item, hargaType: "custom", customHarga: customWarnaHarga };
+                            }));
+                          }
+                        } else {
+                          setItems(prev => prev.map(item => {
+                            if (!item.isValid) return item;
+                            const k = item.kode.toUpperCase();
+                            if (k.includes("WHT") || k.includes("BLCK") || k.includes("BLK")) return item;
+                            return { ...item, hargaType: v as "normal" | "grosir" | "grosir2" };
+                          }));
+                        }
                       }}>
                         <SelectTrigger className="h-11 text-sm mt-1"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="normal">{priceLabel(warnaItems[0]?.product?.prices, "normal")}</SelectItem>
                           <SelectItem value="grosir">{priceLabel(warnaItems[0]?.product?.prices, "grosir")}</SelectItem>
                           <SelectItem value="grosir2">{priceLabel(warnaItems[0]?.product?.prices, "grosir2")}</SelectItem>
+                          <SelectItem value="custom">✏️ Custom</SelectItem>
                         </SelectContent>
                       </Select>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <Input type="text" inputMode="numeric" className="h-9 text-sm flex-1 touch-manipulation" placeholder="Harga custom per pcs..." value={customWarnaHarga || ""} onChange={(e) => setCustomWarnaHarga(parseInt(e.target.value) || 0)} />
+                        <Button size="sm" variant="secondary" className="h-9 text-xs shrink-0" disabled={!customWarnaHarga} onClick={() => {
+                          setItems(prev => prev.map(item => {
+                            if (!item.isValid) return item;
+                            const k = item.kode.toUpperCase();
+                            if (k.includes("WHT") || k.includes("BLCK") || k.includes("BLK")) return item;
+                            return { ...item, hargaType: "custom", customHarga: customWarnaHarga };
+                          }));
+                        }}>Terapkan</Button>
+                      </div>
                     </div>
                   )}
                   {whtItems.length > 0 && (
                     <div>
                       <label className="text-xs text-muted-foreground font-medium">⬜ WHT ({whtItems.length} item)</label>
                       <Select onValueChange={(v) => {
-                        setItems(prev => prev.map(item => {
-                          if (!item.isValid || !item.kode.toUpperCase().includes("WHT")) return item;
-                          return { ...item, hargaType: v as "normal" | "grosir" | "grosir2" };
-                        }));
+                        if (v === "custom") {
+                          if (customWhtHarga > 0) {
+                            setItems(prev => prev.map(item => {
+                              if (!item.isValid || !item.kode.toUpperCase().includes("WHT")) return item;
+                              return { ...item, hargaType: "custom", customHarga: customWhtHarga };
+                            }));
+                          }
+                        } else {
+                          setItems(prev => prev.map(item => {
+                            if (!item.isValid || !item.kode.toUpperCase().includes("WHT")) return item;
+                            return { ...item, hargaType: v as "normal" | "grosir" | "grosir2" };
+                          }));
+                        }
                       }}>
                         <SelectTrigger className="h-11 text-sm mt-1"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="normal">{priceLabel(whtItems[0]?.product?.prices, "normal")}</SelectItem>
                           <SelectItem value="grosir">{priceLabel(whtItems[0]?.product?.prices, "grosir")}</SelectItem>
+                          <SelectItem value="custom">✏️ Custom</SelectItem>
                         </SelectContent>
                       </Select>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <Input type="text" inputMode="numeric" className="h-9 text-sm flex-1 touch-manipulation" placeholder="Harga custom per pcs..." value={customWhtHarga || ""} onChange={(e) => setCustomWhtHarga(parseInt(e.target.value) || 0)} />
+                        <Button size="sm" variant="secondary" className="h-9 text-xs shrink-0" disabled={!customWhtHarga} onClick={() => {
+                          setItems(prev => prev.map(item => {
+                            if (!item.isValid || !item.kode.toUpperCase().includes("WHT")) return item;
+                            return { ...item, hargaType: "custom", customHarga: customWhtHarga };
+                          }));
+                        }}>Terapkan</Button>
+                      </div>
                     </div>
                   )}
                   {blckItems.length > 0 && (
                     <div>
                       <label className="text-xs text-muted-foreground font-medium">⬛ BLCK ({blckItems.length} item)</label>
                       <Select onValueChange={(v) => {
-                        setItems(prev => prev.map(item => {
-                          if (!item.isValid) return item;
-                          const k = item.kode.toUpperCase();
-                          if (!k.includes("BLCK") && !k.includes("BLK")) return item;
-                          return { ...item, hargaType: v as "normal" | "grosir" | "grosir2" };
-                        }));
+                        if (v === "custom") {
+                          if (customBlckHarga > 0) {
+                            setItems(prev => prev.map(item => {
+                              if (!item.isValid) return item;
+                              const k = item.kode.toUpperCase();
+                              if (!k.includes("BLCK") && !k.includes("BLK")) return item;
+                              return { ...item, hargaType: "custom", customHarga: customBlckHarga };
+                            }));
+                          }
+                        } else {
+                          setItems(prev => prev.map(item => {
+                            if (!item.isValid) return item;
+                            const k = item.kode.toUpperCase();
+                            if (!k.includes("BLCK") && !k.includes("BLK")) return item;
+                            return { ...item, hargaType: v as "normal" | "grosir" | "grosir2" };
+                          }));
+                        }
                       }}>
                         <SelectTrigger className="h-11 text-sm mt-1"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="normal">{priceLabel(blckItems[0]?.product?.prices, "normal")}</SelectItem>
                           <SelectItem value="grosir">{priceLabel(blckItems[0]?.product?.prices, "grosir")}</SelectItem>
+                          <SelectItem value="custom">✏️ Custom</SelectItem>
                         </SelectContent>
                       </Select>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <Input type="text" inputMode="numeric" className="h-9 text-sm flex-1 touch-manipulation" placeholder="Harga custom per pcs..." value={customBlckHarga || ""} onChange={(e) => setCustomBlckHarga(parseInt(e.target.value) || 0)} />
+                        <Button size="sm" variant="secondary" className="h-9 text-xs shrink-0" disabled={!customBlckHarga} onClick={() => {
+                          setItems(prev => prev.map(item => {
+                            if (!item.isValid) return item;
+                            const k = item.kode.toUpperCase();
+                            if (!k.includes("BLCK") && !k.includes("BLK")) return item;
+                            return { ...item, hargaType: "custom", customHarga: customBlckHarga };
+                          }));
+                        }}>Terapkan</Button>
+                      </div>
                     </div>
                   )}
                   <Button className="w-full rounded-xl" onClick={() => setHargaDialogOpen(false)}>Selesai</Button>
