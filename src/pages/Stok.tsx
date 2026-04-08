@@ -209,14 +209,14 @@ const Stok = () => {
               <Input className="pl-9 rounded-xl h-10" placeholder="Cari kode / nama..." value={search} onChange={(e) => handleSearch(e.target.value)} />
             </div>
           </div>
-          {/* Kategori filter tabs */}
-          <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 mt-3">
+          {/* Kategori filter */}
+          <div className="flex flex-wrap gap-1.5 mt-3">
             {kategoriList.map((cat) => (
               <Button
                 key={cat}
                 variant={kategoriFilter === cat ? "default" : "outline"}
                 size="sm"
-                className="rounded-full text-xs shrink-0 h-8 px-3"
+                className="rounded-full text-xs h-8 px-3"
                 onClick={() => { setKategoriFilter(cat); setVisibleCount(PAGE_SIZE); }}
               >
                 {cat}
