@@ -58,6 +58,15 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
     // 1. Exact match
     let found = pool.find((p) => p.kode.toUpperCase() === kode);
     if (found) return found;
+    // 1b. Try kode + kategori (e.g. "BLCK" + "5 Ons" → "BLCK 5 Ons")
+    if (kategori) {
+      const kodeWithKat = `${kode} ${kategori.toUpperCase()}`;
+      found = pool.find((p) => p.kode.toUpperCase() === kodeWithKat);
+      if (found) return found;
+      // Also search full products list
+      found = products?.find((p) => p.kode.toUpperCase() === kodeWithKat && p.kategori === kategori);
+      if (found) return found;
+    }
     // 2. Strip leading zeros
     const stripped = kode.replace(/^0+/, "");
     if (stripped && stripped !== kode) {

@@ -65,8 +65,12 @@ const BarangMasuk = () => {
       updated[index] = { ...updated[index], [field]: value };
       if (field === "kode" && products) {
         const input = String(value).toUpperCase();
-        // First try exact match by nama (e.g. "BLCK 5 Ons") for unique identification
-        let found = products.find((p) => p.nama.toUpperCase() === input);
+        // First try exact match by kode (e.g. "BLCK 5 Ons")
+        let found = products.find((p) => p.kode.toUpperCase() === input);
+        // Then try by nama
+        if (!found) {
+          found = products.find((p) => p.nama.toUpperCase() === input);
+        }
         // Fallback: match by kode only if there's exactly one product with that kode
         if (!found) {
           const byKode = products.filter((p) => p.kode.toUpperCase() === input);
