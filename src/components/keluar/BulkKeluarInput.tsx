@@ -49,6 +49,9 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
   const isMobile = useIsMobile();
   const [metaOpen, setMetaOpen] = useState(false);
   const [hargaDialogOpen, setHargaDialogOpen] = useState(false);
+  const [customWarnaHarga, setCustomWarnaHarga] = useState<number>(0);
+  const [customWhtHarga, setCustomWhtHarga] = useState<number>(0);
+  const [customBlckHarga, setCustomBlckHarga] = useState<number>(0);
 
   const findProduct = (kode: string) =>
     products.find((p) => p.kode.toUpperCase() === kode.toUpperCase());
