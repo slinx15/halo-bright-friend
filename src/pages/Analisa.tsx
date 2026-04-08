@@ -1372,7 +1372,8 @@ const Analisa = () => {
                 className={`relative rounded-xl ${tab.activeColor} data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] data-[state=inactive]:hover:bg-muted/60 text-[11px] md:text-xs px-2 md:px-3 py-2.5 font-semibold gap-1.5 transition-all duration-200 ease-out`}
               >
                 <tab.icon className="h-4 w-4 shrink-0" />
-                <span className="truncate">{tab.label}</span>
+                <span className="truncate md:hidden">{tab.mobileLabel}</span>
+                <span className="truncate hidden md:inline">{tab.label}</span>
                 {tab.badge && (
                   <Badge variant="destructive" className="ml-0.5 h-4 min-w-[16px] px-1 text-[9px] rounded-full shrink-0 animate-pulse">
                     {tab.badge}
