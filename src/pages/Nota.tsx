@@ -122,23 +122,27 @@ const Nota = () => {
         <title>Nota - ${selectedNota?.toko} - ${selectedNota?.dateLabel}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; color: #1a1a1a; }
-          .header { text-align: center; margin-bottom: 16px; border-bottom: 2px solid #333; padding-bottom: 12px; }
-          .header h1 { font-size: 20px; font-weight: 800; }
-          .header p { font-size: 11px; color: #666; margin-top: 2px; }
-          .info { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 12px; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-          th { background: #f3f4f6; text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 700; border-bottom: 2px solid #d1d5db; }
-          td { padding: 7px 10px; font-size: 12px; border-bottom: 1px solid #e5e7eb; }
+          body { font-family: 'Arial', sans-serif; padding: 16px; color: #000; font-size: 12px; }
+          .nota-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 8px; }
+          .nota-header h1 { font-size: 14px; font-weight: 900; letter-spacing: 0.5px; }
+          .nota-header .address { font-size: 10px; margin-top: 2px; }
+          .nota-info { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 11px; }
+          .nota-info .label { min-width: 70px; }
+          table { width: 100%; border-collapse: collapse; }
+          th { border: 1px solid #000; padding: 4px 6px; font-size: 11px; font-weight: 700; text-align: center; }
+          td { border: 1px solid #000; padding: 4px 6px; font-size: 11px; }
           .text-right { text-align: right; }
-          .total-row { font-weight: 800; font-size: 14px; border-top: 2px solid #333; }
-          .footer { text-align: center; font-size: 10px; color: #999; margin-top: 20px; }
-          @media print { body { padding: 10px; } }
+          .text-center { text-align: center; }
+          .nota-footer { display: flex; justify-content: space-between; margin-top: 12px; font-size: 11px; }
+          .nota-footer .sign { text-align: center; min-width: 100px; }
+          .nota-footer .sign .line { border-top: 1px solid #000; margin-top: 40px; width: 80px; display: inline-block; }
+          .nota-summary { text-align: right; font-size: 11px; }
+          .nota-summary td { border: 1px solid #000; padding: 2px 6px; }
+          @media print { body { padding: 8px; } }
         </style>
       </head>
       <body>
         ${printRef.current.innerHTML}
-        <div class="footer">Dicetak dari RRCollections • ${new Date().toLocaleString("id-ID")}</div>
         <script>window.print(); window.close();<\/script>
       </body>
       </html>
@@ -178,117 +182,131 @@ const Nota = () => {
 
         {/* Printable content */}
         <div ref={printRef}>
-          <Card className="card-premium overflow-hidden">
-            <CardContent className="p-5 space-y-4">
-              {/* Header */}
-              <div className="text-center space-y-1 pb-3 border-b-2 border-foreground/20">
-                <h2 className="text-xl font-extrabold tracking-tight">
-                  RRCollections
+          <Card className="card-premium overflow-hidden border-2 border-foreground/20">
+            <CardContent className="p-5 space-y-3">
+              {/* Header - mirip nota fisik */}
+              <div className="text-center border-b-2 border-foreground pb-2">
+                <h2 className="text-sm font-black tracking-wider uppercase">
+                  TOKO PERLENGKAPAN JAHIT
                 </h2>
-                <p className="text-[11px] text-muted-foreground">
-                  Nota Penjualan
+                <p className="text-[10px] text-muted-foreground">
+                  Jl. Rancabentang Barat Rt.04 Rw.25 No.517
                 </p>
               </div>
 
-              {/* Info */}
-              <div className="flex justify-between text-xs">
-                <div className="space-y-0.5">
-                  <p>
-                    <span className="text-muted-foreground">Toko:</span>{" "}
-                    <span className="font-bold">{selectedNota.toko}</span>
-                  </p>
-                  <p>
-                    <span className="text-muted-foreground">Tanggal:</span>{" "}
-                    <span className="font-bold">{selectedNota.dateLabel}</span>
+              {/* Info row - Logo area + details */}
+              <div className="flex gap-3 items-start">
+                <div className="shrink-0 space-y-0.5">
+                  <div className="w-14 h-14 rounded-lg bg-foreground/10 flex items-center justify-center">
+                    <span className="text-lg font-black">R R</span>
+                  </div>
+                  <p className="text-[8px] text-center font-bold text-muted-foreground">•COLLECTIONS•</p>
+                </div>
+                <div className="flex-1 text-[10px] space-y-0.5">
+                  <p className="text-muted-foreground">
+                    Sedia: Benang Obras, Reseleting, Benang Jahit, Dll
                   </p>
                 </div>
-                <div className="text-right space-y-0.5">
+                <div className="text-right text-xs space-y-1">
                   <p>
-                    <span className="text-muted-foreground">Total Item:</span>{" "}
-                    <span className="font-bold">
-                      {selectedNota.items.length}
-                    </span>
+                    <span className="text-muted-foreground">Tanggal: </span>
+                    <span className="font-bold">{selectedNota.dateLabel}</span>
                   </p>
                   <p>
-                    <span className="text-muted-foreground">Total Pcs:</span>{" "}
-                    <span className="font-bold">
-                      {formatNumber(selectedNota.totalQty)}
-                    </span>
+                    <span className="text-muted-foreground">Nama/Toko: </span>
+                    <span className="font-bold">{selectedNota.toko}</span>
                   </p>
                 </div>
               </div>
 
-              {/* Table */}
+              {/* No Nota & WA */}
+              <div className="flex justify-between text-[11px] border-b border-foreground/30 pb-1.5">
+                <p>
+                  <span className="text-muted-foreground">No Nota: </span>
+                  <span className="font-bold font-mono">
+                    {selectedNota.date.replace(/-/g, "")}-{selectedNota.toko.slice(0, 3).toUpperCase()}
+                  </span>
+                </p>
+                <p className="text-muted-foreground">📞 081287922663</p>
+              </div>
+
+              {/* Table - mirip nota fisik dengan border penuh */}
               <div className="overflow-x-auto -mx-5 px-5">
-                <table className="w-full text-xs">
+                <table className="w-full text-xs border-collapse">
                   <thead>
-                    <tr className="border-b-2 border-foreground/15">
-                      <th className="text-left py-2 font-bold text-muted-foreground">
-                        No
+                    <tr>
+                      <th className="border border-foreground/30 py-1.5 px-2 text-center font-bold text-[11px] bg-muted/50 w-[60px]">
+                        Banyak-<br/>nya
                       </th>
-                      <th className="text-left py-2 font-bold text-muted-foreground">
-                        Kode
+                      <th className="border border-foreground/30 py-1.5 px-2 text-center font-bold text-[11px] bg-muted/50">
+                        Nama Barang
                       </th>
-                      <th className="text-left py-2 font-bold text-muted-foreground">
-                        Nama
+                      <th className="border border-foreground/30 py-1.5 px-2 text-center font-bold text-[11px] bg-muted/50 w-[90px]">
+                        Harga<br/>Satuan
                       </th>
-                      <th className="text-right py-2 font-bold text-muted-foreground">
-                        Qty
-                      </th>
-                      <th className="text-right py-2 font-bold text-muted-foreground">
-                        Harga
-                      </th>
-                      <th className="text-right py-2 font-bold text-muted-foreground">
-                        Total
+                      <th className="border border-foreground/30 py-1.5 px-2 text-center font-bold text-[11px] bg-muted/50 w-[90px]">
+                        Jumlah
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedNota.items.map((item, i) => (
-                      <tr
-                        key={item.id}
-                        className={cn(
-                          "border-b border-border/30",
-                          i % 2 === 1 && "bg-muted/30"
-                        )}
-                      >
-                        <td className="py-2 text-muted-foreground">{i + 1}</td>
-                        <td className="py-2 font-mono font-bold">
-                          {item.products?.kode ?? "-"}
-                        </td>
-                        <td className="py-2 text-muted-foreground max-w-[120px] truncate">
-                          {item.products?.nama ?? "-"}
-                        </td>
-                        <td className="py-2 text-right font-bold tabular-nums">
+                    {selectedNota.items.map((item) => (
+                      <tr key={item.id}>
+                        <td className="border border-foreground/30 py-1.5 px-2 text-center font-bold tabular-nums">
                           {item.qty_kirim}
                         </td>
-                        <td className="py-2 text-right tabular-nums text-muted-foreground">
+                        <td className="border border-foreground/30 py-1.5 px-2">
+                          <span className="font-mono font-bold text-[10px]">{item.products?.kode ?? "-"}</span>
+                          {item.products?.nama && (
+                            <span className="text-muted-foreground ml-1 text-[10px]">
+                              {item.products.nama}
+                            </span>
+                          )}
+                        </td>
+                        <td className="border border-foreground/30 py-1.5 px-2 text-right tabular-nums">
                           {formatRupiah(item.harga_satuan)}
                         </td>
-                        <td className="py-2 text-right font-bold tabular-nums">
+                        <td className="border border-foreground/30 py-1.5 px-2 text-right font-bold tabular-nums">
                           {formatRupiah(item.total_harga)}
                         </td>
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot>
-                    <tr className="border-t-2 border-foreground/20">
-                      <td
-                        colSpan={3}
-                        className="py-2.5 font-extrabold text-sm"
-                      >
-                        TOTAL
-                      </td>
-                      <td className="py-2.5 text-right font-extrabold text-sm tabular-nums">
-                        {formatNumber(selectedNota.totalQty)}
-                      </td>
-                      <td></td>
-                      <td className="py-2.5 text-right font-extrabold text-sm tabular-nums text-primary">
-                        {formatRupiah(selectedNota.totalHarga)}
-                      </td>
-                    </tr>
-                  </tfoot>
                 </table>
+              </div>
+
+              {/* Footer - Jumlah, Dp, Sisa + tanda tangan */}
+              <div className="flex justify-between items-end pt-1">
+                <div className="flex gap-8 text-[11px]">
+                  <div className="text-center">
+                    <p className="text-muted-foreground">Tanda terima,</p>
+                    <div className="mt-8 border-t border-foreground/40 w-20"></div>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-muted-foreground">Hormat kami,</p>
+                    <div className="mt-8 border-t border-foreground/40 w-20"></div>
+                  </div>
+                </div>
+                <div className="text-xs">
+                  <table className="border-collapse">
+                    <tbody>
+                      <tr>
+                        <td className="border border-foreground/30 py-1 px-2 font-bold text-right">Jumlah Rp.</td>
+                        <td className="border border-foreground/30 py-1 px-3 text-right font-bold tabular-nums text-primary min-w-[100px]">
+                          {formatRupiah(selectedNota.totalHarga)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-foreground/30 py-1 px-2 text-right text-muted-foreground">Dp</td>
+                        <td className="border border-foreground/30 py-1 px-3 text-right tabular-nums">-</td>
+                      </tr>
+                      <tr>
+                        <td className="border border-foreground/30 py-1 px-2 text-right text-muted-foreground">Sisa</td>
+                        <td className="border border-foreground/30 py-1 px-3 text-right tabular-nums">-</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               {/* Notes */}
