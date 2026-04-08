@@ -209,7 +209,20 @@ const Stok = () => {
               <Input className="pl-9 rounded-xl h-10" placeholder="Cari kode / nama..." value={search} onChange={(e) => handleSearch(e.target.value)} />
             </div>
           </div>
-        </CardHeader>
+          {/* Kategori filter tabs */}
+          <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 mt-3">
+            {kategoriList.map((cat) => (
+              <Button
+                key={cat}
+                variant={kategoriFilter === cat ? "default" : "outline"}
+                size="sm"
+                className="rounded-full text-xs shrink-0 h-8 px-3"
+                onClick={() => { setKategoriFilter(cat); setVisibleCount(PAGE_SIZE); }}
+              >
+                {cat}
+              </Button>
+            ))}
+          </div>
         <CardContent>
           {isMobile ? (
             <div className="space-y-2.5">
