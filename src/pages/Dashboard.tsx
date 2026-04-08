@@ -269,7 +269,9 @@ function QuickActions() {
 
 // ── Main Dashboard ────────────────────────────────────────────────
 const Dashboard = () => {
-  const { data: products, isLoading } = useProducts();
+  const { data: allProducts, isLoading } = useProducts();
+  // Dashboard hanya menampilkan produk 2 Ons (stok fisik di rumah)
+  const products = allProducts?.filter(p => p.kategori === "2 Ons");
 
   const totalItems = products?.length ?? 0;
   const totalStok = products?.reduce((sum, p) => sum + (p.stock?.jumlah ?? 0), 0) ?? 0;
