@@ -26,6 +26,7 @@ interface OcrItem {
   nama?: string;
   catatan?: string;
   harga_modal?: number;
+  kategori?: string;
   // validation
   isValid?: boolean;
   productId?: string;
