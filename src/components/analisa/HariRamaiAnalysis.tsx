@@ -33,11 +33,14 @@ function calcHariRamai(sales: StockOutRecord[]): { days: DayData[]; hours: HourD
   for (let i = 0; i < 7; i++) dayMap[i] = { pcs: 0, trx: 0, dates: new Set() };
   for (let i = 0; i < 24; i++) hourMap[i] = { pcs: 0, trx: 0 };
 
+  const WIB_OFFSET_MS = 7 * 3600000;
+
   for (const s of sales) {
-    const d = new Date(s.created_at);
-    const dayOfWeek = d.getDay();
-    const hour = d.getHours();
-    const dateStr = s.created_at.slice(0, 10);
+    const utcMs = new Date(s.created_at).getTime();
+    const wib = new Date(utcMs + WIB_OFFSET_MS);
+    const dayOfWeek = wib.getUTCDay();
+    const hour = wib.getUTCHours();
+    const dateStr = wib.toISOString().slice(0, 10);
 
     dayMap[dayOfWeek].pcs += s.qty_kirim;
     dayMap[dayOfWeek].trx += 1;
