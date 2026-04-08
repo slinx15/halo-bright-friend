@@ -110,15 +110,24 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
         (a) => a.alias.toUpperCase() === kode || a.alias.toUpperCase() === stripped || a.alias.toUpperCase() === baseKode
       );
       if (aliasMatches.length > 0) {
-        // If kategori is known, only accept alias targets from that kategori
         if (kategori) {
-          found = aliasMatches
-            .map((a) => allProducts.find((p) => p.id === a.product_id && p.kategori === kategori))
-            .find(Boolean) ?? null;
-          if (found) return found;
+          for (const aliasMatch of aliasMatches) {
+            const aliasTarget = allProducts.find((p) => p.id === aliasMatch.product_id);
+            if (!aliasTarget) continue;
+
+            const aliasBaseKode = aliasTarget.kode
+              .toUpperCase()
+              .replace(/\s+(2 ONS|3 ONS|5 ONS|18 GRAM)$/, "");
+
+            found = allProducts.find(
+              (p) => p.kategori === kategori && p.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|18 GRAM)$/, "") === aliasBaseKode
+            );
+            if (found) return found;
+          }
+
+          return null;
         }
 
-        // Fallback only when kategori is not provided
         found = aliasMatches
           .map((a) => allProducts.find((p) => p.id === a.product_id))
           .find(Boolean) ?? null;
