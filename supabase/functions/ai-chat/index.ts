@@ -283,7 +283,7 @@ atau [] jika tidak ada yang perlu diingat.`;
       td.dates.push(s.created_at.slice(0, 10));
       td.totalQty += s.qty_kirim;
       td.totalTrx += 1;
-      const prod = products.find((p: any) => p.id === s.product_id);
+      const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
       if (prod) td.favs[prod.kode] = (td.favs[prod.kode] ?? 0) + s.qty_kirim;
     }
     const nowMs = Date.now();
