@@ -24,17 +24,27 @@ serve(async (req) => {
       : "";
 
     const prompts: Record<string, string> = {
-      masuk: `Baca foto formulir order/nota pembelian kain/tekstil.
+      masuk: `Baca foto formulir order/nota pembelian benang obras.
 Format tabel biasanya: NO | KETERANGAN (kode) | ISI | BAL | JUMLAH.
 Ekstrak HANYA baris yang ada isinya (JUMLAH > 0 atau ada kode di KETERANGAN).
 Untuk setiap item: kode = KETERANGAN, qty = JUMLAH.
-PENTING:
-- Kolom KETERANGAN berisi kode produk. Jika ada tambahan teks seperti "G-29", "G-19", atau keterangan lain setelah kode angka, ABAIKAN teks tambahannya. Contoh: "110 G-29" → kode = "110", "2135 G-19" → kode = "2135".
-- Abaikan baris header/judul seperti "B.OBRAS", "REKAPAN", "TOTAL" dsb.
-- Strip leading zero dari kode: "004" → "4", "035" → "35".
-- KONVERSI BAL: Untuk produk HITAM (kode mengandung "HITAM", "HTM", "BLK", "BLACK") dan PUTIH (kode mengandung "PUTIH", "PTH", "WHT", "WHITE"), 1 bal = 50. Jadi jika tertulis "2 bal" untuk hitam/putih, qty = 100. Untuk produk lain, gunakan angka JUMLAH langsung seperti biasa.${codesHint}
+
+PENTING - DETEKSI KATEGORI/UKURAN:
+- Faktur biasanya memiliki HEADER PEMISAH yang menunjukkan kategori ukuran, misalnya:
+  "B.OBRAS 18 GR" atau "B.OBRAS 18 GRAM" → kategori = "18 Gram"
+  "B.OBRAS 2 ONS" atau "B.OBRAS 2 OZ" → kategori = "2 Ons"
+  "B.OBRAS 3 ONS" → kategori = "3 Ons"
+  "B.OBRAS 5 ONS" → kategori = "5 Ons"
+- Semua item DI BAWAH header tersebut termasuk kategori itu, sampai ada header kategori baru.
+- Sertakan field "kategori" di setiap item output.
+
+ATURAN LAIN:
+- Kolom KETERANGAN berisi kode produk. Jika ada tambahan teks seperti "G-29", "G-19", ABAIKAN. Contoh: "110 G-29" → kode = "110".
+- Abaikan baris header/judul ("B.OBRAS", "REKAPAN", "TOTAL" dsb) — jangan masukkan sebagai item.
+- Strip leading zero dari kode: "004" → "4", "035" → "35", "053" → "53".
+- KONVERSI BAL: Untuk HITAM (kode "HITAM","HTM","BLK","BLACK") dan PUTIH (kode "PUTIH","PTH","WHT","WHITE"), 1 bal = 50. Jadi "2 bal" hitam/putih → qty = 100. Produk warna lain gunakan JUMLAH langsung.${codesHint}
 Kembalikan HANYA JSON array tanpa markdown. Contoh:
-[{"kode":"533","qty":25},{"kode":"BLK","qty":100}]
+[{"kode":"53","qty":5,"kategori":"18 Gram"},{"kode":"BLK","qty":100,"kategori":"2 Ons"},{"kode":"BLK","qty":32,"kategori":"5 Ons"}]
 Jika tidak bisa membaca, kembalikan [].`,
 
       keluar: `Baca foto nota penjualan kain/tekstil.
