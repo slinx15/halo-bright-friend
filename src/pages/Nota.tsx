@@ -180,7 +180,6 @@ const Nota = () => {
                 <div className="flex items-center gap-2">
                   <img src={logo} alt="RR Collections" className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg object-contain shrink-0" />
                   <div className="text-[9px] sm:text-[10px] text-muted-foreground flex-1">
-                    <p className="font-bold text-foreground text-[10px]">•COLLECTIONS•</p>
                     <p>Sedia: Benang Obras, Reseleting, Benang Jahit, Dll</p>
                   </div>
                 </div>
