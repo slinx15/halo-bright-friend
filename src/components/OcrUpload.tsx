@@ -89,10 +89,12 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
   const validateItems = (items: any[]): OcrItem[] => {
     return items.map((item) => {
       const kode = String(item.kode || "").toUpperCase().trim();
-      const found = findProduct(kode);
+      const kategori = item.kategori || undefined;
+      const found = findProduct(kode, kategori);
       return {
         ...item,
-        kode: found ? found.kode : kode, // Use master kode if found
+        kode: found ? found.kode : kode,
+        kategori,
         isValid: !!found,
         productId: found?.id,
         productName: found?.nama,
