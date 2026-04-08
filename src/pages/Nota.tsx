@@ -168,10 +168,10 @@ const Nota = () => {
               {/* Header */}
               <div className="text-center border-b-2 border-foreground pb-2">
                 <h2 className="text-xs sm:text-sm font-black tracking-wider uppercase">
-                  TOKO PERLENGKAPAN JAHIT
+                  RR COLLECTIONS
                 </h2>
-                <p className="text-[9px] sm:text-[10px] text-muted-foreground">
-                  Jl. Rancabentang Barat Rt.04 Rw.25 No.517
+                <p className="text-[8px] sm:text-[9px] text-muted-foreground">
+                  Toko Perlengkapan Jahit • Jl. Rancabentang Barat Rt.04 Rw.25 No.517
                 </p>
               </div>
 
