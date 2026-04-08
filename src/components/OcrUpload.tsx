@@ -342,6 +342,11 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
                       ) : (
                         <span className="text-xs text-destructive">Tidak ada di Master</span>
                       )}
+                      {item.kategori && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+                          {item.kategori}
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-1">
                       <Button
