@@ -187,11 +187,15 @@ atau [] jika tidak ada yang perlu diingat.`;
 
     const rawProducts = productsRes.data || [];
     const stockOut = stockOutRes.data || [];
-    const products: ProductData[] = rawProducts.map((p: any) => {
+    const allProducts: ProductData[] = rawProducts.map((p: any) => {
       const stk = Array.isArray(p.stock) ? p.stock[0] : p.stock;
       const prc = Array.isArray(p.prices) ? p.prices[0] : p.prices;
       return { id: p.id, kode: p.kode, nama: p.nama, kategori: p.kategori, _stok: stk?.jumlah ?? 0, _hargaModal: prc?.harga_modal ?? 0, _hargaNormal: prc?.harga_normal ?? 0, _hargaGrosir: prc?.harga_grosir ?? 0, _hargaGrosir2: prc?.harga_grosir2 ?? 0, _tumpukan: stk?.tumpukan_detail ?? null };
     });
+    // Products for analytics (only 2 Ons - physical stock at home)
+    const products = allProducts.filter(p => p.kategori === "2 Ons");
+    // All products including other sizes (for transaction/omzet queries)
+    const allSizeProducts = allProducts;
 
     const firstSaleDates: Record<string, string> = {};
     for (const s of stockOut) { if (!firstSaleDates[s.product_id] || s.created_at < firstSaleDates[s.product_id]) firstSaleDates[s.product_id] = s.created_at; }
