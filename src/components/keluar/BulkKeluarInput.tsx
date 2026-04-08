@@ -22,7 +22,8 @@ export interface BulkKeluarItem {
   kode: string;
   qtyPesan: number;
   qtyKirim: number;
-  hargaType: "normal" | "grosir" | "grosir2";
+  hargaType: "normal" | "grosir" | "grosir2" | "custom";
+  customHarga?: number;
   product?: ProductWithDetails;
   isValid: boolean;
 }
@@ -105,6 +106,7 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
   const canSubmit = submitItems.length > 0 && overStockItems.length === 0;
 
   const getPrice = (item: BulkKeluarItem) => {
+    if (item.hargaType === "custom") return item.customHarga ?? 0;
     const p = item.product?.prices;
     if (!p) return 0;
     if (item.hargaType === "grosir2") return p.harga_grosir2;
