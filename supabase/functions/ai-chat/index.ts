@@ -325,7 +325,7 @@ atau [] jika tidak ada yang perlu diingat.`;
     const colorSales: Record<string, { tw: number; lw: number }> = {};
     for (const s of stockOut) {
       const d = new Date(s.created_at);
-      const prod = products.find((p: any) => p.id === s.product_id);
+      const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
       if (!prod) continue;
       if (!colorSales[prod.kode]) colorSales[prod.kode] = { tw: 0, lw: 0 };
       if (d >= thisWeekStart) colorSales[prod.kode].tw += s.qty_kirim;
