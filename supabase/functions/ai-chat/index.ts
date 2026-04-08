@@ -389,6 +389,45 @@ atau [] jika tidak ada yang perlu diingat.`;
 
     const alertsBlock = alerts.length > 0 ? `🔔 NOTIFIKASI CERDAS:\n${alerts.join("\n")}` : "🔔 NOTIFIKASI: Semua aman, tidak ada anomali terdeteksi ✅";
 
+    // ─── Today Summary (WIB) ───
+    const nowWib = new Date(nowMs + WIB_OFFSET);
+    const todayWibStr = nowWib.toISOString().slice(0, 10);
+    const todaySales = stockOut.filter((s: any) => {
+      const wibDate = new Date(new Date(s.created_at).getTime() + WIB_OFFSET);
+      return wibDate.toISOString().slice(0, 10) === todayWibStr;
+    });
+    const todayPcs = todaySales.reduce((s: number, r: any) => s + (r.qty_kirim || 0), 0);
+    const todayOmzet = todaySales.reduce((s: number, r: any) => s + (r.total_harga || 0), 0);
+    const todayProfit = todaySales.reduce((s: number, r: any) => {
+      const prod = products.find((p: any) => p.id === r.product_id);
+      const modal = prod ? prod._hargaModal * (r.qty_kirim || 0) : 0;
+      return s + ((r.total_harga || 0) - modal);
+    }, 0);
+    const todayTokoSet = new Set(todaySales.map((s: any) => (s.toko ?? "").trim().toUpperCase()).filter(Boolean));
+    const todayTokoCount = todayTokoSet.size;
+    const todayTrxCount = todaySales.length;
+    const todayMarginPct = todayOmzet > 0 ? Math.round((todayProfit / todayOmzet) * 100) : 0;
+    
+    // Per-toko breakdown for today
+    const todayPerToko: Record<string, { pcs: number; omzet: number; items: string[] }> = {};
+    for (const s of todaySales) {
+      const toko = (s.toko ?? "").trim() || "Tanpa nama";
+      if (!todayPerToko[toko]) todayPerToko[toko] = { pcs: 0, omzet: 0, items: [] };
+      todayPerToko[toko].pcs += s.qty_kirim || 0;
+      todayPerToko[toko].omzet += s.total_harga || 0;
+      const prod = products.find((p: any) => p.id === s.product_id);
+      todayPerToko[toko].items.push(`${prod?.kode || "?"}=${s.qty_kirim}`);
+    }
+    const todayTokoDetail = Object.entries(todayPerToko)
+      .sort(([, a], [, b]) => b.omzet - a.omzet)
+      .map(([toko, d]) => `${toko}: ${d.pcs} pcs, Rp ${d.omzet.toLocaleString("id-ID")} [${d.items.join(",")}]`)
+      .join("\n");
+
+    const todayBlock = `📊 PENJUALAN HARI INI (${todayWibStr}, WIB):
+${todayTrxCount} transaksi | ${todayPcs} pcs | ${todayTokoCount} toko
+Omzet: Rp ${todayOmzet.toLocaleString("id-ID")} | Profit: Rp ${todayProfit.toLocaleString("id-ID")} (margin ${todayMarginPct}%)
+${todayTokoCount > 0 ? `Detail per toko:\n${todayTokoDetail}` : "Belum ada penjualan hari ini."}`;
+
     // ─── Knowledge Modules ───
     const KNOWLEDGE_MODULES: Record<string, { keywords: string[]; content: string }> = {
       industri: {
@@ -564,6 +603,8 @@ ${Object.values(KNOWLEDGE_MODULES).map(m => m.content).join("\n\n")}
 ═══ MEMORY BOSS ═══
 ${memoryBlock}
 
+═══ ${todayBlock} ═══
+
 ═══ DATA TOKO BOSS (REAL-TIME) ═══
 ${products.length} produk aktif | Omzet 7 hari: Rp ${totalOmzet7d.toLocaleString("id-ID")} (${totalPcs7d} pcs)
 Best seller: ${bestSellerList || "-"}
@@ -609,7 +650,9 @@ ${knowledgeBlock}
 ═══ MEMORY ═══
 ${memoryBlock}
 
-═══ DATA TOKO HARI INI ═══
+═══ ${todayBlock} ═══
+
+═══ DATA TOKO ═══
 ${products.length} produk aktif, stok total ${products.reduce((s, p) => s + p._stok, 0)} pcs | ${products.filter(p => p._stok === 0).length} stok kosong | ${critical.length} DARURAT(1-2 hari) | ${warning.length} MENIPIS(3-4 hari) | ${bestSellers.length} best seller(≥5/hari) | Perlu order: ${needRestock.length} produk, ${totalRestockQty} pcs, ~Rp ${totalRestockCost.toLocaleString("id-ID")}
 
 Omzet 7 hari: Rp ${totalOmzet7d.toLocaleString("id-ID")} (${totalPcs7d} pcs) | Top pelanggan: ${topCustomers.join("; ") || "-"}
@@ -645,7 +688,8 @@ ${allProductsList}
 - Bisnis OFFLINE, belum online→kalau tanya online kasih roadmap realistis.
 - Bahasa santai kayak WA sama partner bisnis. SELALU pakai data untuk stok/penjualan, jangan ngarang. Saran bisnis boleh dari knowledge, jelaskan logika. Emoji 😊, bold+list. Tanggapi curhat ANTUSIAS+masukan KONKRET. Gunakan memory("Kemarin boss bilang X..."). JANGAN istilah teknis(velocity,DOS,WMA,anomaly,threshold,engine). Luar keahlian→jujur+sarankan profesional. Selalu kasih next step konkret.
 - KRITIS: Kalau boss tanya data penjualan per pelanggan per tanggal, gunakan DETAIL PENJUALAN PER PELANGGAN PER TANGGAL di atas. JANGAN mengarang angka. Kalau data tidak ada di context, bilang "data tidak tersedia" daripada menebak.
-- KRITIS: Hitung total qty dan omzet dari item-item yang tertulis, JANGAN mengalikan atau menambahkan angka sembarangan.`;
+- KRITIS: Hitung total qty dan omzet dari item-item yang tertulis, JANGAN mengalikan atau menambahkan angka sembarangan.
+- KRITIS: Kalau boss tanya "penjualan hari ini", "omzet hari ini", "profit hari ini", atau "berapa toko hari ini", gunakan data PENJUALAN HARI INI di atas. Data ini sudah dihitung pakai timezone WIB.`;
 
     const systemPrompt = research_mode ? researchSystemPrompt : normalSystemPrompt;
     const aiModel = research_mode ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview";
