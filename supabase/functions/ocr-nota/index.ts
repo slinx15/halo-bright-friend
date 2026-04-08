@@ -42,7 +42,8 @@ ATURAN LAIN:
 - Kolom KETERANGAN berisi kode produk. Jika ada tambahan teks seperti "G-29", "G-19", ABAIKAN. Contoh: "110 G-29" → kode = "110".
 - Abaikan baris header/judul ("B.OBRAS", "REKAPAN", "TOTAL" dsb) — jangan masukkan sebagai item.
 - Strip leading zero dari kode: "004" → "4", "035" → "35", "053" → "53".
-- KONVERSI BAL: Untuk HITAM (kode "HITAM","HTM","BLK","BLACK") dan PUTIH (kode "PUTIH","PTH","WHT","WHITE"), 1 bal = 50. Jadi "2 bal" hitam/putih → qty = 100. Produk warna lain gunakan JUMLAH langsung.${codesHint}
+- GUNAKAN KOLOM JUMLAH: Selalu ambil qty dari kolom JUMLAH (kolom terakhir). Kolom ISI dan BAL hanya info tambahan. JANGAN hitung sendiri dari BAL × ISI. Ambil angka JUMLAH persis seperti tertulis.
+- KONVERSI BAL khusus: HANYA jika kolom JUMLAH tidak ada/kosong/0 DAN ada kolom BAL, maka untuk HITAM (BLK/BLACK/HTM) dan PUTIH (WHT/WHITE/PTH) hitung 1 bal = 50. Tapi jika JUMLAH sudah terisi, gunakan JUMLAH langsung.${codesHint}
 Kembalikan HANYA JSON array tanpa markdown. Contoh:
 [{"kode":"53","qty":5,"kategori":"18 Gram"},{"kode":"BLK","qty":100,"kategori":"2 Ons"},{"kode":"BLK","qty":32,"kategori":"5 Ons"}]
 Jika tidak bisa membaca, kembalikan [].`,
