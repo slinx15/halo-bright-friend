@@ -215,6 +215,35 @@ atau [] jika tidak ada yang perlu diingat.`;
     recentSales.forEach((s: any) => { const t = s.toko || "Tanpa nama"; if (!salesByToko[t]) salesByToko[t] = { pcs: 0, omzet: 0 }; salesByToko[t].pcs += s.qty_pesan; salesByToko[t].omzet += s.total_harga; });
     const topCustomers = Object.entries(salesByToko).sort(([, a], [, b]) => b.omzet - a.omzet).slice(0, 5).map(([name, data]) => `${name}: ${data.pcs} pcs, Rp ${data.omzet.toLocaleString("id-ID")}`);
 
+    // ─── Per-Customer Per-Date Breakdown (accurate answers) ───
+    const WIB_OFFSET = 7 * 3600000;
+    const tokoDateSales: Record<string, Record<string, { pcs: number; kirim: number; omzet: number; items: { kode: string; qty: number; kirim: number }[] }>> = {};
+    for (const s of stockOut) {
+      const toko = (s.toko ?? "").trim() || "Tanpa nama";
+      const wibDate = new Date(new Date(s.created_at).getTime() + WIB_OFFSET);
+      const dateKey = wibDate.toISOString().slice(0, 10);
+      if (!tokoDateSales[toko]) tokoDateSales[toko] = {};
+      if (!tokoDateSales[toko][dateKey]) tokoDateSales[toko][dateKey] = { pcs: 0, kirim: 0, omzet: 0, items: [] };
+      const td = tokoDateSales[toko][dateKey];
+      td.pcs += s.qty_pesan;
+      td.kirim += s.qty_kirim;
+      td.omzet += s.total_harga || 0;
+      const prod = products.find((p: any) => p.id === s.product_id);
+      td.items.push({ kode: prod?.kode || "?", qty: s.qty_pesan, kirim: s.qty_kirim });
+    }
+    // Format: compact but accurate
+    const tokoDateBlock = Object.entries(tokoDateSales)
+      .sort(([, a], [, b]) => Object.values(b).reduce((s, d) => s + d.omzet, 0) - Object.values(a).reduce((s, d) => s + d.omzet, 0))
+      .slice(0, 20)
+      .map(([toko, dates]) => {
+        const dateLines = Object.entries(dates).sort(([a], [b]) => b.localeCompare(a)).map(([date, d]) => {
+          const topItems = d.items.sort((a, b) => b.qty - a.qty).slice(0, 10).map(i => `${i.kode}=${i.qty}`).join(",");
+          const moreCount = d.items.length > 10 ? ` +${d.items.length - 10} lainnya` : "";
+          return `  ${date}: pesan ${d.pcs} kirim ${d.kirim} pcs, Rp ${d.omzet.toLocaleString("id-ID")} [${topItems}${moreCount}]`;
+        }).join("\n");
+        return `${toko}:\n${dateLines}`;
+      }).join("\n");
+
     const criticalList = critical.slice(0, 15).map((a: any) => `${a.kode} (${a.nama}): stok ${a.stok}, laku ${a.velocity}/hari, cukup ${a.dos} hari, order ${a.rekomendasi} pcs (Rp ${a.cost.toLocaleString("id-ID")})`).join("\n");
     const warningList = warning.slice(0, 10).map((a: any) => `${a.kode}: stok ${a.stok}, laku ${a.velocity}/hari, cukup ${a.dos} hari, order ${a.rekomendasi} pcs`).join("\n");
     const bestSellerList = bestSellers.slice(0, 10).map((a: any) => `${a.kode}: laku ${a.velocity}/hari, stok ${a.stok}, cukup ${a.dos} hari`).join("\n");
