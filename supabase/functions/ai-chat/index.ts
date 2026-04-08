@@ -609,8 +609,9 @@ ${memoryBlock}
 
 ═══ ${todayBlock} ═══
 
-═══ DATA TOKO BOSS (REAL-TIME) ═══
-${products.length} produk aktif | Omzet 7 hari: Rp ${totalOmzet7d.toLocaleString("id-ID")} (${totalPcs7d} pcs)
+═══ DATA TOKO BOSS (REAL-TIME, STOK & ANALISA = HANYA 2 ONS) ═══
+${products.length} produk 2 Ons aktif | Total semua ukuran: ${allSizeProducts.length} produk | Omzet 7 hari: Rp ${totalOmzet7d.toLocaleString("id-ID")} (${totalPcs7d} pcs)
+KONTEKS UKURAN: 2 Ons=stok di rumah, 3 Ons/5 Ons/18 Gram=pesan dulu ke supplier. 3 Ons hanya Hitam & Putih.
 Best seller: ${bestSellerList || "-"}
 Top pelanggan: ${topCustomers.join("; ") || "-"}
 Produk darurat: ${criticalList || "Aman"}
