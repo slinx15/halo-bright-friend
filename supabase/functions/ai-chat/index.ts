@@ -232,7 +232,7 @@ atau [] jika tidak ada yang perlu diingat.`;
       td.pcs += s.qty_pesan;
       td.kirim += s.qty_kirim;
       td.omzet += s.total_harga || 0;
-      const prod = products.find((p: any) => p.id === s.product_id);
+      const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
       td.items.push({ kode: prod?.kode || "?", qty: s.qty_pesan, kirim: s.qty_kirim });
     }
     // Format: compact but accurate
