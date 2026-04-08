@@ -340,7 +340,7 @@ atau [] jika tidak ada yang perlu diingat.`;
     for (const s of recentSales) {
       const type = s.harga_type || "normal";
       if (!profitByType[type]) profitByType[type] = { pcs: 0, omzet: 0, profit: 0, trx: 0 };
-      const prod = products.find((p: any) => p.id === s.product_id);
+      const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
       const modal = prod ? prod._hargaModal * s.qty_kirim : 0;
       profitByType[type].pcs += s.qty_kirim;
       profitByType[type].omzet += s.total_harga || 0;
