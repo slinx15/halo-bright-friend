@@ -133,11 +133,14 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
       const kode = String(item.kode || "").toUpperCase().trim();
       const kategori = item.kategori || undefined;
       const found = findProduct(kode, kategori);
+      const ambiguous = !kategori && isAmbiguousKode(kode);
+      console.log("OCR validate:", { rawKode: kode, kategori, foundKode: found?.kode, foundKat: found?.kategori, ambiguous });
       return {
         ...item,
         kode: found ? found.kode : kode,
-        kategori,
+        kategori: found ? found.kategori : kategori,
         isValid: !!found,
+        isAmbiguous: ambiguous,
         productId: found?.id,
         productName: found?.nama,
         stokSistem: found?.stock?.jumlah ?? 0,
