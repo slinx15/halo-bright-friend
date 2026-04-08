@@ -294,7 +294,12 @@ const Stok = () => {
                     const stacks = (p.stock?.tumpukan_detail as number[]) ?? [];
                     return (
                       <TableRow key={p.id} className={idx % 2 === 0 ? "" : "bg-muted/15"}>
-                        <TableCell className="font-mono font-bold text-sm">{p.kode}</TableCell>
+                        <TableCell className="font-mono font-bold text-sm">
+                          {p.kode}
+                          {p.kategori && p.kategori !== '2 Ons' && (
+                            <span className="ml-1.5 text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{p.kategori}</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-sm">{p.nama}</TableCell>
                         <TableCell className="text-right font-extrabold tabular-nums text-base">{formatNumber(jumlah)}</TableCell>
                         <TableCell><TumpukanBadges stacks={stacks} kode={p.kode} /></TableCell>
