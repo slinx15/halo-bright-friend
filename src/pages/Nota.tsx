@@ -14,10 +14,8 @@ import {
   FileText,
   CalendarIcon,
   Search,
-  Printer,
-  ChevronLeft,
+  Share2,
   Store,
-  Package,
   ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
