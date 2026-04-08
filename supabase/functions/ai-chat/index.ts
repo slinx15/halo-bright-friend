@@ -187,11 +187,15 @@ atau [] jika tidak ada yang perlu diingat.`;
 
     const rawProducts = productsRes.data || [];
     const stockOut = stockOutRes.data || [];
-    const products: ProductData[] = rawProducts.map((p: any) => {
+    const allProducts: ProductData[] = rawProducts.map((p: any) => {
       const stk = Array.isArray(p.stock) ? p.stock[0] : p.stock;
       const prc = Array.isArray(p.prices) ? p.prices[0] : p.prices;
       return { id: p.id, kode: p.kode, nama: p.nama, kategori: p.kategori, _stok: stk?.jumlah ?? 0, _hargaModal: prc?.harga_modal ?? 0, _hargaNormal: prc?.harga_normal ?? 0, _hargaGrosir: prc?.harga_grosir ?? 0, _hargaGrosir2: prc?.harga_grosir2 ?? 0, _tumpukan: stk?.tumpukan_detail ?? null };
     });
+    // Products for analytics (only 2 Ons - physical stock at home)
+    const products = allProducts.filter(p => p.kategori === "2 Ons");
+    // All products including other sizes (for transaction/omzet queries)
+    const allSizeProducts = allProducts;
 
     const firstSaleDates: Record<string, string> = {};
     for (const s of stockOut) { if (!firstSaleDates[s.product_id] || s.created_at < firstSaleDates[s.product_id]) firstSaleDates[s.product_id] = s.created_at; }
@@ -228,7 +232,7 @@ atau [] jika tidak ada yang perlu diingat.`;
       td.pcs += s.qty_pesan;
       td.kirim += s.qty_kirim;
       td.omzet += s.total_harga || 0;
-      const prod = products.find((p: any) => p.id === s.product_id);
+      const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
       td.items.push({ kode: prod?.kode || "?", qty: s.qty_pesan, kirim: s.qty_kirim });
     }
     // Format: compact but accurate
@@ -248,7 +252,7 @@ atau [] jika tidak ada yang perlu diingat.`;
     const warningList = warning.slice(0, 10).map((a: any) => `${a.kode}: stok ${a.stok}, laku ${a.velocity}/hari, cukup ${a.dos} hari, order ${a.rekomendasi} pcs`).join("\n");
     const bestSellerList = bestSellers.slice(0, 10).map((a: any) => `${a.kode}: laku ${a.velocity}/hari, stok ${a.stok}, cukup ${a.dos} hari`).join("\n");
     const restockSummary = needRestock.slice(0, 20).map((a: any) => `${a.kode}: order ${a.rekomendasi} pcs (${a.dosStatus === "CRITICAL" ? "darurat" : a.dosStatus === "WARNING" ? "menipis" : "pantau"}, laku ${a.velocity}/hari, stok ${a.stok})`).join("\n");
-    const allProductsList = products.map((p: any) => { const a = analyses.find((x: any) => x.kode === p.kode); return a ? `${p.kode}|${p.nama}|stok:${p._stok}|laku:${a.velocity}/hari|cukup:${a.dos}hari|status:${a.dosStatus}|order:${a.rekomendasi}|modal:${p._hargaModal}|normal:${p._hargaNormal}|grosir:${p._hargaGrosir}|grosir2:${p._hargaGrosir2}` : `${p.kode}|${p.nama}|stok:${p._stok}|modal:${p._hargaModal}|normal:${p._hargaNormal}|grosir:${p._hargaGrosir}|grosir2:${p._hargaGrosir2}|kat:${p.kategori || '-'}`; }).join("\n");
+    const allProductsList = allSizeProducts.map((p: any) => { const a = analyses.find((x: any) => x.kode === p.kode); return a ? `${p.kode}|${p.nama}|stok:${p._stok}|laku:${a.velocity}/hari|cukup:${a.dos}hari|status:${a.dosStatus}|order:${a.rekomendasi}|modal:${p._hargaModal}|normal:${p._hargaNormal}|grosir:${p._hargaGrosir}|grosir2:${p._hargaGrosir2}|kat:${p.kategori}` : `${p.kode}|${p.nama}|stok:${p._stok}|modal:${p._hargaModal}|normal:${p._hargaNormal}|grosir:${p._hargaGrosir}|grosir2:${p._hargaGrosir2}|kat:${p.kategori || '-'}`; }).join("\n");
 
     // ─── Hari Ramai Analysis ───
     const HARI_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -279,7 +283,7 @@ atau [] jika tidak ada yang perlu diingat.`;
       td.dates.push(s.created_at.slice(0, 10));
       td.totalQty += s.qty_kirim;
       td.totalTrx += 1;
-      const prod = products.find((p: any) => p.id === s.product_id);
+      const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
       if (prod) td.favs[prod.kode] = (td.favs[prod.kode] ?? 0) + s.qty_kirim;
     }
     const nowMs = Date.now();
@@ -321,7 +325,7 @@ atau [] jika tidak ada yang perlu diingat.`;
     const colorSales: Record<string, { tw: number; lw: number }> = {};
     for (const s of stockOut) {
       const d = new Date(s.created_at);
-      const prod = products.find((p: any) => p.id === s.product_id);
+      const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
       if (!prod) continue;
       if (!colorSales[prod.kode]) colorSales[prod.kode] = { tw: 0, lw: 0 };
       if (d >= thisWeekStart) colorSales[prod.kode].tw += s.qty_kirim;
@@ -336,7 +340,7 @@ atau [] jika tidak ada yang perlu diingat.`;
     for (const s of recentSales) {
       const type = s.harga_type || "normal";
       if (!profitByType[type]) profitByType[type] = { pcs: 0, omzet: 0, profit: 0, trx: 0 };
-      const prod = products.find((p: any) => p.id === s.product_id);
+      const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
       const modal = prod ? prod._hargaModal * s.qty_kirim : 0;
       profitByType[type].pcs += s.qty_kirim;
       profitByType[type].omzet += s.total_harga || 0;
@@ -399,7 +403,7 @@ atau [] jika tidak ada yang perlu diingat.`;
     const todayPcs = todaySales.reduce((s: number, r: any) => s + (r.qty_kirim || 0), 0);
     const todayOmzet = todaySales.reduce((s: number, r: any) => s + (r.total_harga || 0), 0);
     const todayProfit = todaySales.reduce((s: number, r: any) => {
-      const prod = products.find((p: any) => p.id === r.product_id);
+      const prod = allSizeProducts.find((p: any) => p.id === r.product_id);
       const modal = prod ? prod._hargaModal * (r.qty_kirim || 0) : 0;
       return s + ((r.total_harga || 0) - modal);
     }, 0);
@@ -415,7 +419,7 @@ atau [] jika tidak ada yang perlu diingat.`;
       if (!todayPerToko[toko]) todayPerToko[toko] = { pcs: 0, omzet: 0, items: [] };
       todayPerToko[toko].pcs += s.qty_kirim || 0;
       todayPerToko[toko].omzet += s.total_harga || 0;
-      const prod = products.find((p: any) => p.id === s.product_id);
+      const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
       todayPerToko[toko].items.push(`${prod?.kode || "?"}=${s.qty_kirim}`);
     }
     const todayTokoDetail = Object.entries(todayPerToko)
@@ -605,8 +609,9 @@ ${memoryBlock}
 
 ═══ ${todayBlock} ═══
 
-═══ DATA TOKO BOSS (REAL-TIME) ═══
-${products.length} produk aktif | Omzet 7 hari: Rp ${totalOmzet7d.toLocaleString("id-ID")} (${totalPcs7d} pcs)
+═══ DATA TOKO BOSS (REAL-TIME, STOK & ANALISA = HANYA 2 ONS) ═══
+${products.length} produk 2 Ons aktif | Total semua ukuran: ${allSizeProducts.length} produk | Omzet 7 hari: Rp ${totalOmzet7d.toLocaleString("id-ID")} (${totalPcs7d} pcs)
+KONTEKS UKURAN: 2 Ons=stok di rumah, 3 Ons/5 Ons/18 Gram=pesan dulu ke supplier. 3 Ons hanya Hitam & Putih.
 Best seller: ${bestSellerList || "-"}
 Top pelanggan: ${topCustomers.join("; ") || "-"}
 Produk darurat: ${criticalList || "Aman"}
@@ -638,7 +643,15 @@ ${tokoDateBlock}
 - Setiap rekomendasi harus ada estimasi BIAYA dan TIMELINE
 - Akhiri SELALU dengan ACTION PLAN yang bisa dikerjakan minggu ini`;
 
-    const normalSystemPrompt = `Kamu PARTNER BISNIS UTAMA Boss RRCollections — toko benang craft/obras. Keahlian setara konsultan senior industri craft & textile.
+    const normalSystemPrompt = `Kamu PARTNER BISNIS UTAMA Boss RRCollections — toko benang craft/obras merk Ivory. Keahlian setara konsultan senior industri craft & textile.
+
+═══ KONTEKS UKURAN PRODUK ═══
+Boss menjual benang obras dalam 4 ukuran: 2 Ons, 3 Ons, 5 Ons, dan 18 Gram.
+- **2 Ons**: STOK DI RUMAH — ini produk utama yang Boss simpan stoknya. Semua analisa stok, restock, tren, velocity, DOS hanya untuk 2 Ons.
+- **3 Ons**: PESAN DULU ke supplier — hanya tersedia warna Hitam (BLCK) dan Putih (WHT), TIDAK ADA warna lain.
+- **5 Ons**: PESAN DULU ke supplier — tersedia semua warna seperti 2 Ons.
+- **18 Gram**: PESAN DULU ke supplier — tersedia semua warna seperti 2 Ons.
+Kalau ada transaksi 3 Ons/5 Ons/18 Gram, itu tetap dihitung di omzet & profit tapi BUKAN bagian dari manajemen stok.
 
 ═══ TANGGAL & WAKTU ═══
 Hari ini: ${hariIni}, jam ${jamSekarang} WIB
@@ -652,8 +665,9 @@ ${memoryBlock}
 
 ═══ ${todayBlock} ═══
 
-═══ DATA TOKO ═══
-${products.length} produk aktif, stok total ${products.reduce((s, p) => s + p._stok, 0)} pcs | ${products.filter(p => p._stok === 0).length} stok kosong | ${critical.length} DARURAT(1-2 hari) | ${warning.length} MENIPIS(3-4 hari) | ${bestSellers.length} best seller(≥5/hari) | Perlu order: ${needRestock.length} produk, ${totalRestockQty} pcs, ~Rp ${totalRestockCost.toLocaleString("id-ID")}
+═══ DATA TOKO (STOK & ANALISA = HANYA 2 ONS) ═══
+${products.length} produk 2 Ons aktif, stok total ${products.reduce((s, p) => s + p._stok, 0)} pcs | ${products.filter(p => p._stok === 0).length} stok kosong | ${critical.length} DARURAT(1-2 hari) | ${warning.length} MENIPIS(3-4 hari) | ${bestSellers.length} best seller(≥5/hari) | Perlu order: ${needRestock.length} produk, ${totalRestockQty} pcs, ~Rp ${totalRestockCost.toLocaleString("id-ID")}
+Total semua ukuran: ${allSizeProducts.length} produk (termasuk 3 Ons, 5 Ons, 18 Gram)
 
 Omzet 7 hari: Rp ${totalOmzet7d.toLocaleString("id-ID")} (${totalPcs7d} pcs) | Top pelanggan: ${topCustomers.join("; ") || "-"}
 
@@ -677,7 +691,7 @@ ${alertsBlock}
 DETAIL PENJUALAN PER PELANGGAN PER TANGGAL (30 hari, WIB):
 ${tokoDateBlock}
 
-SEMUA PRODUK (termasuk 3 level harga: normal/grosir/grosir2):
+SEMUA PRODUK (semua ukuran, termasuk 3 level harga: normal/grosir/grosir2):
 ${allProductsList}
 
 ═══ RULES ═══
