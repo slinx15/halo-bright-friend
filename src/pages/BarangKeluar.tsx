@@ -193,11 +193,28 @@ const BarangKeluar = () => {
     const headers = await getAuthHeaders();
     let successCount = 0;
     const errors: string[] = [];
+
+    // Track live stock per product to handle duplicate product codes correctly
+    const liveStock = new Map<string, { jumlah: number; stacks: number[] }>();
+
     for (const item of items) {
       try {
         const product = item.product!;
-        const stok = product.stock?.jumlah ?? 0;
-        const stacks = (product.stock?.tumpukan_detail as number[]) ?? [];
+
+        // Get live stock: use tracked value if already processed, otherwise from cache
+        if (!liveStock.has(product.id)) {
+          liveStock.set(product.id, {
+            jumlah: product.stock?.jumlah ?? 0,
+            stacks: [...((product.stock?.tumpukan_detail as number[]) ?? [])],
+          });
+        }
+        const currentStock = liveStock.get(product.id)!;
+
+        if (item.qtyKirim > currentStock.jumlah) {
+          errors.push(`${item.kode}: Stok tidak cukup (sisa ${currentStock.jumlah})`);
+          continue;
+        }
+
         const price = item.hargaType === "custom"
           ? (item.customHarga ?? 0)
           : product.prices
@@ -216,15 +233,24 @@ const BarangKeluar = () => {
           errors.push(`${item.kode}: ${await outRes.text()}`);
           continue;
         }
-        const newStacks = deductFromStacks(stacks, item.qtyKirim);
+
+        // Deduct from tracked live stock
+        const newStacks = deductFromStacks(currentStock.stacks, item.qtyKirim);
+        const newJumlah = currentStock.jumlah - item.qtyKirim;
+
         const stockRes = await fetchWithRetry(
           `${SUPABASE_URL}/rest/v1/stock?product_id=eq.${product.id}`,
-          { method: "PATCH", headers, body: JSON.stringify({ jumlah: stok - item.qtyKirim, tumpukan_detail: newStacks }) }
+          { method: "PATCH", headers, body: JSON.stringify({ jumlah: newJumlah, tumpukan_detail: newStacks }) }
         );
         if (!stockRes.ok) {
           errors.push(`${item.kode} (stok): ${await stockRes.text()}`);
           continue;
         }
+
+        // Update tracked stock for next item with same product
+        currentStock.jumlah = newJumlah;
+        currentStock.stacks = newStacks;
+
         successCount++;
       } catch (err: any) {
         errors.push(`${item.kode}: ${err.message}`);
