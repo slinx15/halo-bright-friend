@@ -373,17 +373,36 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
                   {/* Mode-specific fields - always editable */}
                   <div className="flex gap-3 flex-wrap mt-1 items-center">
                     {mode === "masuk" && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs text-muted-foreground">Qty:</span>
-                        <Input
-                          type="text"
-                          inputMode="numeric"
-                          className="h-9 w-20 text-sm font-semibold touch-manipulation"
-                          value={item.qty === 0 ? "" : item.qty || ""}
-                          onChange={(e) => updateOcrItem(idx, "qty", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
-                          placeholder="0"
-                        />
-                      </div>
+                      <>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground">Qty:</span>
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            className="h-9 w-20 text-sm font-semibold touch-manipulation"
+                            value={item.qty === 0 ? "" : item.qty || ""}
+                            onChange={(e) => updateOcrItem(idx, "qty", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
+                            placeholder="0"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground">Ukuran:</span>
+                          <Select
+                            value={item.kategori || ""}
+                            onValueChange={(val) => updateOcrItem(idx, "kategori", val)}
+                          >
+                            <SelectTrigger className="h-9 w-28 text-xs">
+                              <SelectValue placeholder="Pilih..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="2 Ons">2 Ons</SelectItem>
+                              <SelectItem value="3 Ons">3 Ons</SelectItem>
+                              <SelectItem value="5 Ons">5 Ons</SelectItem>
+                              <SelectItem value="18 Gram">18 Gram</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </>
                     )}
                     {mode === "keluar" && (
                       <>
