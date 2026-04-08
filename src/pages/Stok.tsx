@@ -28,7 +28,7 @@ const Stok = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
-  const [kategoriFilter, setKategoriFilter] = useState<string>("Semua");
+  const [kategoriFilter, setKategoriFilter] = useState<string>("2 Ons");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resetting, setResetting] = useState(false);
