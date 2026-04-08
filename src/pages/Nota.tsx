@@ -108,44 +108,27 @@ const Nota = () => {
     });
   }, [history, search, dateFilter]);
 
-  const handlePrint = () => {
-    if (!printRef.current) return;
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
+  const handleShareWA = () => {
+    if (!selectedNota) return;
+    let text = `*NOTA PENJUALAN - RR COLLECTIONS*\n`;
+    text += `Toko Perlengkapan Jahit\nJl. Rancabentang Barat Rt.04 Rw.25 No.517\n\n`;
+    text += `📅 Tanggal: ${selectedNota.dateLabel}\n`;
+    text += `🏪 Nama/Toko: ${selectedNota.toko}\n`;
+    text += `No Nota: ${selectedNota.date.replace(/-/g, "")}-${selectedNota.toko.slice(0, 3).toUpperCase()}\n\n`;
+    text += `━━━━━━━━━━━━━━━━━━\n`;
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Nota - ${selectedNota?.toko} - ${selectedNota?.dateLabel}</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Arial', sans-serif; padding: 16px; color: #000; font-size: 12px; }
-          .nota-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 8px; }
-          .nota-header h1 { font-size: 14px; font-weight: 900; letter-spacing: 0.5px; }
-          .nota-header .address { font-size: 10px; margin-top: 2px; }
-          .nota-info { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 11px; }
-          .nota-info .label { min-width: 70px; }
-          table { width: 100%; border-collapse: collapse; }
-          th { border: 1px solid #000; padding: 4px 6px; font-size: 11px; font-weight: 700; text-align: center; }
-          td { border: 1px solid #000; padding: 4px 6px; font-size: 11px; }
-          .text-right { text-align: right; }
-          .text-center { text-align: center; }
-          .nota-footer { display: flex; justify-content: space-between; margin-top: 12px; font-size: 11px; }
-          .nota-footer .sign { text-align: center; min-width: 100px; }
-          .nota-footer .sign .line { border-top: 1px solid #000; margin-top: 40px; width: 80px; display: inline-block; }
-          .nota-summary { text-align: right; font-size: 11px; }
-          .nota-summary td { border: 1px solid #000; padding: 2px 6px; }
-          @media print { body { padding: 8px; } }
-        </style>
-      </head>
-      <body>
-        ${printRef.current.innerHTML}
-        <script>window.print(); window.close();<\/script>
-      </body>
-      </html>
-    `);
-    printWindow.document.close();
+    selectedNota.items.forEach((item, i) => {
+      const kode = item.products?.kode ?? "-";
+      text += `${i + 1}. ${kode} x${item.qty_kirim}\n`;
+      text += `   ${formatRupiah(item.harga_satuan)} → *${formatRupiah(item.total_harga)}*\n`;
+    });
+
+    text += `━━━━━━━━━━━━━━━━━━\n`;
+    text += `*TOTAL: ${formatRupiah(selectedNota.totalHarga)}*\n\n`;
+    text += `📞 081287922663`;
+
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, "_blank");
   };
 
   // Detail view
@@ -170,11 +153,11 @@ const Nota = () => {
           <Button
             variant="outline"
             size="sm"
-            className="rounded-xl gap-1.5"
-            onClick={handlePrint}
+            className="rounded-xl gap-1.5 text-green-600 border-green-600 hover:bg-green-50"
+            onClick={handleShareWA}
           >
-            <Printer className="h-4 w-4" />
-            Print
+            <Share2 className="h-4 w-4" />
+            WhatsApp
           </Button>
         </div>
 
