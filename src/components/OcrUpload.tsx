@@ -9,6 +9,7 @@ import { useProductAliases } from "@/hooks/useProductAliases";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface OcrUploadProps {
   mode: "masuk" | "keluar" | "opname";
@@ -224,10 +225,11 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
     setOcrItems((prev) => {
       const updated = [...prev];
       updated[idx] = { ...updated[idx], [field]: value };
-      // Re-validate kode if changed
-      if (field === "kode") {
-        const kode = String(value).toUpperCase().trim();
-        const found = findProduct(kode, updated[idx].kategori);
+      // Re-validate kode if kode or kategori changed
+      if (field === "kode" || field === "kategori") {
+        const kode = String(field === "kode" ? value : updated[idx].kode).toUpperCase().trim();
+        const kat = field === "kategori" ? (value || undefined) : updated[idx].kategori;
+        const found = findProduct(kode, kat);
         updated[idx].kode = found ? found.kode : kode;
         updated[idx].isValid = !!found;
         updated[idx].productId = found?.id;
@@ -371,17 +373,36 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
                   {/* Mode-specific fields - always editable */}
                   <div className="flex gap-3 flex-wrap mt-1 items-center">
                     {mode === "masuk" && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs text-muted-foreground">Qty:</span>
-                        <Input
-                          type="text"
-                          inputMode="numeric"
-                          className="h-9 w-20 text-sm font-semibold touch-manipulation"
-                          value={item.qty === 0 ? "" : item.qty || ""}
-                          onChange={(e) => updateOcrItem(idx, "qty", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
-                          placeholder="0"
-                        />
-                      </div>
+                      <>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground">Qty:</span>
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            className="h-9 w-20 text-sm font-semibold touch-manipulation"
+                            value={item.qty === 0 ? "" : item.qty || ""}
+                            onChange={(e) => updateOcrItem(idx, "qty", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
+                            placeholder="0"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground">Ukuran:</span>
+                          <Select
+                            value={item.kategori || ""}
+                            onValueChange={(val) => updateOcrItem(idx, "kategori", val)}
+                          >
+                            <SelectTrigger className="h-9 w-28 text-xs">
+                              <SelectValue placeholder="Pilih..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="2 Ons">2 Ons</SelectItem>
+                              <SelectItem value="3 Ons">3 Ons</SelectItem>
+                              <SelectItem value="5 Ons">5 Ons</SelectItem>
+                              <SelectItem value="18 Gram">18 Gram</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </>
                     )}
                     {mode === "keluar" && (
                       <>
