@@ -1369,13 +1369,20 @@ const Analisa = () => {
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className={`relative rounded-xl ${tab.activeColor} data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] data-[state=inactive]:hover:bg-muted/60 text-[11px] md:text-xs px-2 md:px-3 py-2.5 font-semibold gap-1.5 transition-all duration-200 ease-out`}
+                className={`relative rounded-xl ${tab.activeColor} data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] data-[state=inactive]:hover:bg-muted/60 text-[11px] md:text-xs px-1.5 md:px-3 py-2.5 font-semibold gap-1 md:gap-1.5 transition-all duration-200 ease-out flex flex-col md:flex-row items-center`}
               >
-                <tab.icon className="h-4 w-4 shrink-0" />
-                <span className="truncate md:hidden">{tab.mobileLabel}</span>
-                <span className="truncate hidden md:inline">{tab.label}</span>
+                <div className="relative">
+                  <tab.icon className="h-4 w-4 shrink-0" />
+                  {tab.badge && (
+                    <span className="md:hidden absolute -top-1.5 -right-2 h-4 min-w-[16px] px-1 text-[9px] rounded-full bg-destructive text-destructive-foreground flex items-center justify-center font-bold">
+                      {tab.badge}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] md:text-xs leading-tight">{tab.mobileLabel}</span>
+                <span className="hidden md:inline">{tab.label !== tab.mobileLabel ? ` ${tab.label}` : ""}</span>
                 {tab.badge && (
-                  <Badge variant="destructive" className="ml-0.5 h-4 min-w-[16px] px-1 text-[9px] rounded-full shrink-0 animate-pulse">
+                  <Badge variant="destructive" className="hidden md:flex ml-0.5 h-4 min-w-[16px] px-1 text-[9px] rounded-full shrink-0 animate-pulse">
                     {tab.badge}
                   </Badge>
                 )}
