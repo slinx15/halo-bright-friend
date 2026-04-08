@@ -419,7 +419,7 @@ atau [] jika tidak ada yang perlu diingat.`;
       if (!todayPerToko[toko]) todayPerToko[toko] = { pcs: 0, omzet: 0, items: [] };
       todayPerToko[toko].pcs += s.qty_kirim || 0;
       todayPerToko[toko].omzet += s.total_harga || 0;
-      const prod = products.find((p: any) => p.id === s.product_id);
+      const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
       todayPerToko[toko].items.push(`${prod?.kode || "?"}=${s.qty_kirim}`);
     }
     const todayTokoDetail = Object.entries(todayPerToko)
