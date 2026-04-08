@@ -215,6 +215,35 @@ atau [] jika tidak ada yang perlu diingat.`;
     recentSales.forEach((s: any) => { const t = s.toko || "Tanpa nama"; if (!salesByToko[t]) salesByToko[t] = { pcs: 0, omzet: 0 }; salesByToko[t].pcs += s.qty_pesan; salesByToko[t].omzet += s.total_harga; });
     const topCustomers = Object.entries(salesByToko).sort(([, a], [, b]) => b.omzet - a.omzet).slice(0, 5).map(([name, data]) => `${name}: ${data.pcs} pcs, Rp ${data.omzet.toLocaleString("id-ID")}`);
 
+    // ─── Per-Customer Per-Date Breakdown (accurate answers) ───
+    const WIB_OFFSET = 7 * 3600000;
+    const tokoDateSales: Record<string, Record<string, { pcs: number; kirim: number; omzet: number; items: { kode: string; qty: number; kirim: number }[] }>> = {};
+    for (const s of stockOut) {
+      const toko = (s.toko ?? "").trim() || "Tanpa nama";
+      const wibDate = new Date(new Date(s.created_at).getTime() + WIB_OFFSET);
+      const dateKey = wibDate.toISOString().slice(0, 10);
+      if (!tokoDateSales[toko]) tokoDateSales[toko] = {};
+      if (!tokoDateSales[toko][dateKey]) tokoDateSales[toko][dateKey] = { pcs: 0, kirim: 0, omzet: 0, items: [] };
+      const td = tokoDateSales[toko][dateKey];
+      td.pcs += s.qty_pesan;
+      td.kirim += s.qty_kirim;
+      td.omzet += s.total_harga || 0;
+      const prod = products.find((p: any) => p.id === s.product_id);
+      td.items.push({ kode: prod?.kode || "?", qty: s.qty_pesan, kirim: s.qty_kirim });
+    }
+    // Format: compact but accurate
+    const tokoDateBlock = Object.entries(tokoDateSales)
+      .sort(([, a], [, b]) => Object.values(b).reduce((s, d) => s + d.omzet, 0) - Object.values(a).reduce((s, d) => s + d.omzet, 0))
+      .slice(0, 20)
+      .map(([toko, dates]) => {
+        const dateLines = Object.entries(dates).sort(([a], [b]) => b.localeCompare(a)).map(([date, d]) => {
+          const topItems = d.items.sort((a, b) => b.qty - a.qty).slice(0, 10).map(i => `${i.kode}=${i.qty}`).join(",");
+          const moreCount = d.items.length > 10 ? ` +${d.items.length - 10} lainnya` : "";
+          return `  ${date}: pesan ${d.pcs} kirim ${d.kirim} pcs, Rp ${d.omzet.toLocaleString("id-ID")} [${topItems}${moreCount}]`;
+        }).join("\n");
+        return `${toko}:\n${dateLines}`;
+      }).join("\n");
+
     const criticalList = critical.slice(0, 15).map((a: any) => `${a.kode} (${a.nama}): stok ${a.stok}, laku ${a.velocity}/hari, cukup ${a.dos} hari, order ${a.rekomendasi} pcs (Rp ${a.cost.toLocaleString("id-ID")})`).join("\n");
     const warningList = warning.slice(0, 10).map((a: any) => `${a.kode}: stok ${a.stok}, laku ${a.velocity}/hari, cukup ${a.dos} hari, order ${a.rekomendasi} pcs`).join("\n");
     const bestSellerList = bestSellers.slice(0, 10).map((a: any) => `${a.kode}: laku ${a.velocity}/hari, stok ${a.stok}, cukup ${a.dos} hari`).join("\n");
@@ -554,6 +583,9 @@ Total perlu order: ${needRestock.length} produk, ${totalRestockQty} pcs, ~Rp ${t
 
 ═══ ${alertsBlock} ═══
 
+═══ DETAIL PENJUALAN PER PELANGGAN PER TANGGAL (30 hari, WIB) ═══
+${tokoDateBlock}
+
 ═══ RULES RISET ═══
 - MINIMAL 1000-2000 kata untuk riset yang thorough & actionable
 - SELALU kasih angka spesifik (harga, persentase, timeline, biaya)
@@ -599,6 +631,9 @@ ${customerPrefsBlock}
 
 ${alertsBlock}
 
+DETAIL PENJUALAN PER PELANGGAN PER TANGGAL (30 hari, WIB):
+${tokoDateBlock}
+
 SEMUA PRODUK (termasuk 3 level harga: normal/grosir/grosir2):
 ${allProductsList}
 
@@ -608,7 +643,9 @@ ${allProductsList}
 - Kalau boss tanya soal pelanggan, gunakan data preferensi harga per toko untuk rekomendasi personal.
 - PROAKTIF sampaikan notifikasi cerdas (anomali omzet, best seller habis, pelanggan hilang, margin tipis, overstock) di awal chat atau saat relevan.
 - Bisnis OFFLINE, belum online→kalau tanya online kasih roadmap realistis.
-- Bahasa santai kayak WA sama partner bisnis. SELALU pakai data untuk stok/penjualan, jangan ngarang. Saran bisnis boleh dari knowledge, jelaskan logika. Emoji 😊, bold+list. Tanggapi curhat ANTUSIAS+masukan KONKRET. Gunakan memory("Kemarin boss bilang X..."). JANGAN istilah teknis(velocity,DOS,WMA,anomaly,threshold,engine). Luar keahlian→jujur+sarankan profesional. Selalu kasih next step konkret.`;
+- Bahasa santai kayak WA sama partner bisnis. SELALU pakai data untuk stok/penjualan, jangan ngarang. Saran bisnis boleh dari knowledge, jelaskan logika. Emoji 😊, bold+list. Tanggapi curhat ANTUSIAS+masukan KONKRET. Gunakan memory("Kemarin boss bilang X..."). JANGAN istilah teknis(velocity,DOS,WMA,anomaly,threshold,engine). Luar keahlian→jujur+sarankan profesional. Selalu kasih next step konkret.
+- KRITIS: Kalau boss tanya data penjualan per pelanggan per tanggal, gunakan DETAIL PENJUALAN PER PELANGGAN PER TANGGAL di atas. JANGAN mengarang angka. Kalau data tidak ada di context, bilang "data tidak tersedia" daripada menebak.
+- KRITIS: Hitung total qty dan omzet dari item-item yang tertulis, JANGAN mengalikan atau menambahkan angka sembarangan.`;
 
     const systemPrompt = research_mode ? researchSystemPrompt : normalSystemPrompt;
     const aiModel = research_mode ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview";
