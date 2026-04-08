@@ -227,7 +227,7 @@ const Stok = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="font-mono font-bold text-sm">{p.kode}</span>
-                        {p.kategori && p.kategori !== '2 Ons' && (
+                        {p.kategori && (
                           <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{p.kategori}</span>
                         )}
                         <Badge variant="secondary" className={`text-[10px] rounded-full px-2 ${getStockStatusColor(status)}`}>
@@ -296,7 +296,7 @@ const Stok = () => {
                       <TableRow key={p.id} className={idx % 2 === 0 ? "" : "bg-muted/15"}>
                         <TableCell className="font-mono font-bold text-sm">
                           {p.kode}
-                          {p.kategori && p.kategori !== '2 Ons' && (
+                          {p.kategori && (
                             <span className="ml-1.5 text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{p.kategori}</span>
                           )}
                         </TableCell>
