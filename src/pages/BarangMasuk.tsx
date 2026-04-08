@@ -64,7 +64,14 @@ const BarangMasuk = () => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
       if (field === "kode" && products) {
-        const found = products.find((p) => p.kode.toUpperCase() === String(value).toUpperCase());
+        const input = String(value).toUpperCase();
+        // First try exact match by nama (e.g. "BLCK 5 Ons") for unique identification
+        let found = products.find((p) => p.nama.toUpperCase() === input);
+        // Fallback: match by kode only if there's exactly one product with that kode
+        if (!found) {
+          const byKode = products.filter((p) => p.kode.toUpperCase() === input);
+          found = byKode.length === 1 ? byKode[0] : undefined;
+        }
         updated[index].productName = found?.nama;
         updated[index].productId = found?.id;
         updated[index].productKode = found?.kode;
@@ -313,7 +320,7 @@ const BarangMasuk = () => {
           })}
 
           <datalist id="product-codes">
-            {products?.map((p) => <option key={p.id} value={p.kode} />)}
+            {products?.map((p) => <option key={p.id} value={p.nama} label={`${p.kode} — ${p.nama}`} />)}
           </datalist>
 
           <Button variant="outline" size="sm" onClick={addLine} className="rounded-xl transition-all duration-150 active:scale-95 min-h-[44px]">
