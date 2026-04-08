@@ -143,18 +143,18 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
     return items.map((item) => {
       const kode = String(item.kode || "").toUpperCase().trim();
       const kategori = item.kategori || undefined;
-      const found = findProduct(kode, kategori);
       const ambiguous = !kategori && isAmbiguousKode(kode);
+      const found = ambiguous ? null : findProduct(kode, kategori);
       console.log("OCR validate:", { rawKode: kode, kategori, foundKode: found?.kode, foundKat: found?.kategori, ambiguous });
       return {
         ...item,
         kode: found ? found.kode : kode,
         kategori: found ? found.kategori : kategori,
-        isValid: !!found,
+        isValid: ambiguous ? false : !!found,
         isAmbiguous: ambiguous,
-        productId: found?.id,
-        productName: found?.nama,
-        stokSistem: found?.stock?.jumlah ?? 0,
+        productId: ambiguous ? undefined : found?.id,
+        productName: ambiguous ? undefined : found?.nama,
+        stokSistem: ambiguous ? 0 : found?.stock?.jumlah ?? 0,
       };
     });
   };
