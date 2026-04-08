@@ -15,6 +15,7 @@ import { StokSkeleton } from "@/components/LoadingSkeletons";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
 import { getAuthHeaders } from "@/lib/authHeaders";
 
@@ -210,18 +211,35 @@ const Stok = () => {
             </div>
           </div>
           {/* Kategori filter */}
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            {kategoriList.map((cat) => (
-              <Button
-                key={cat}
-                variant={kategoriFilter === cat ? "default" : "outline"}
-                size="sm"
-                className="rounded-full text-xs h-8 px-3"
-                onClick={() => { setKategoriFilter(cat); setVisibleCount(PAGE_SIZE); }}
-              >
-                {cat}
-              </Button>
-            ))}
+          <div className="flex flex-wrap gap-2 mt-3">
+            {kategoriList.map((cat) => {
+              const isActive = kategoriFilter === cat;
+              const count = cat === "Semua" 
+                ? (products?.length ?? 0) 
+                : (products?.filter(p => p.kategori === cat).length ?? 0);
+              return (
+                <button
+                  key={cat}
+                  onClick={() => { setKategoriFilter(cat); setVisibleCount(PAGE_SIZE); }}
+                  className={cn(
+                    "relative flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all duration-200",
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/25 scale-[1.02]"
+                      : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground hover:scale-[1.02] active:scale-95"
+                  )}
+                >
+                  <span>{cat}</span>
+                  <span className={cn(
+                    "text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[20px] text-center tabular-nums",
+                    isActive
+                      ? "bg-primary-foreground/20 text-primary-foreground"
+                      : "bg-background/80 text-muted-foreground"
+                  )}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </CardHeader>
         <CardContent>
