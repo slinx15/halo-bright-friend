@@ -267,7 +267,7 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
             <CollapsibleContent className="pt-2 space-y-2">
               <div>
                 <label className="text-xs font-semibold text-muted-foreground">Nama Toko / Pelanggan</label>
-                <Input value={toko} onChange={(e) => setToko(e.target.value)} placeholder="Nama toko..." className="rounded-lg mt-1" />
+                <Input value={toko} onChange={(e) => { setToko(e.target.value); setValidationErrors([]); }} placeholder="Nama toko..." className="rounded-lg mt-1" />
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted-foreground">Tanggal (opsional)</label>
