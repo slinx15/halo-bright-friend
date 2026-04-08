@@ -54,13 +54,21 @@ const Stok = () => {
     setResetting(false);
   };
 
+  const kategoriList = useMemo(() => {
+    const cats = new Set<string>();
+    products?.forEach((p) => { if (p.kategori) cats.add(p.kategori); });
+    return ["Semua", ...Array.from(cats).sort()];
+  }, [products]);
+
   const filtered = useMemo(() =>
-    products?.filter(
-      (p) =>
+    products?.filter((p) => {
+      const matchSearch = !search ||
         p.kode.toLowerCase().includes(search.toLowerCase()) ||
-        p.nama.toLowerCase().includes(search.toLowerCase())
-    ) ?? [],
-    [products, search]
+        p.nama.toLowerCase().includes(search.toLowerCase());
+      const matchKategori = kategoriFilter === "Semua" || p.kategori === kategoriFilter;
+      return matchSearch && matchKategori;
+    }) ?? [],
+    [products, search, kategoriFilter]
   );
 
   const visibleItems = useMemo(() =>
