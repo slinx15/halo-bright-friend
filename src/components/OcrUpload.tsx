@@ -9,6 +9,7 @@ import { useProductAliases } from "@/hooks/useProductAliases";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface OcrUploadProps {
   mode: "masuk" | "keluar" | "opname";
