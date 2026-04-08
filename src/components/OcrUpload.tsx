@@ -275,8 +275,9 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
         const kat = field === "kategori" ? (value || undefined) : updated[idx].kategori;
         const found = findProduct(kode, kat);
         updated[idx].kode = found ? found.kode : kode;
-        updated[idx].kategori = kat;
+        updated[idx].kategori = found ? found.kategori : kat;
         updated[idx].isValid = !!found;
+        updated[idx].isAmbiguous = !kat && isAmbiguousKode(kode);
         updated[idx].productId = found?.id;
         updated[idx].productName = found ? found.nama : undefined;
         updated[idx].stokSistem = found?.stock?.jumlah ?? 0;
