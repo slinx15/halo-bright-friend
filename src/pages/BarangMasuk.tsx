@@ -216,7 +216,7 @@ const BarangMasuk = () => {
         </div>
         <div className="card-premium bg-accent/5 p-3 text-center">
           <p className="text-2xl font-extrabold text-foreground tabular-nums">{formatNumber(totalQty)}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Total Qty</p>
+          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Total Unit</p>
         </div>
       </div>
 
@@ -270,7 +270,7 @@ const BarangMasuk = () => {
                     )}
                   </div>
                   <div className="w-20">
-                    <Label className="text-xs font-semibold text-muted-foreground">Qty</Label>
+                    <Label className="text-xs font-semibold text-muted-foreground">{matchedProduct?.kategori === "18 Gram" ? "Pack" : "Qty"}</Label>
                     <Input
                       type="text"
                       inputMode="numeric"
@@ -331,7 +331,7 @@ const BarangMasuk = () => {
             className="w-full rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-success hover:bg-success/90"
           >
             <Send className="h-5 w-5 mr-2" />
-            {submitting ? "Menyimpan..." : `Simpan Barang Masuk${validCount > 0 ? ` (${validCount} item, ${formatNumber(totalQty)} pcs)` : ""}`}
+            {submitting ? "Menyimpan..." : `Simpan Barang Masuk${validCount > 0 ? ` (${validCount} item)` : ""}`}
           </Button>
         </CardContent>
       </Card>
