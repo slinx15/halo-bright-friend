@@ -123,7 +123,19 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
     return sum + getPrice(item) * item.qtyKirim;
   }, 0);
 
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
   const handleSubmit = async () => {
+    const errors: string[] = [];
+    if (!toko.trim()) errors.push("Toko belum diisi");
+    if (!tanggal) errors.push("Tanggal belum dipilih");
+    
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      setMetaOpen(true);
+      return;
+    }
+    setValidationErrors([]);
     await onSubmit(submitItems);
     setItems([]);
   };
