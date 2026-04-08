@@ -123,7 +123,19 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
     return sum + getPrice(item) * item.qtyKirim;
   }, 0);
 
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
   const handleSubmit = async () => {
+    const errors: string[] = [];
+    if (!toko.trim()) errors.push("Toko belum diisi");
+    if (!tanggal) errors.push("Tanggal belum dipilih");
+    
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      setMetaOpen(true);
+      return;
+    }
+    setValidationErrors([]);
     await onSubmit(submitItems);
     setItems([]);
   };
@@ -242,11 +254,11 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
         {isMobile ? (
           <Collapsible open={metaOpen} onOpenChange={setMetaOpen}>
             <CollapsibleTrigger asChild>
-              <button className="flex items-center justify-between w-full rounded-xl border border-border/60 px-3 py-2.5 text-left min-h-[44px] bg-muted/30 active:scale-[0.98] transition-transform">
+              <button className={cn("flex items-center justify-between w-full rounded-xl border px-3 py-2.5 text-left min-h-[44px] active:scale-[0.98] transition-transform", validationErrors.length > 0 ? "border-destructive bg-destructive/10" : "border-border/60 bg-muted/30")}>
                 <div className="flex items-center gap-2 min-w-0">
-                  <Store className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="text-sm font-medium truncate">
-                    {metaSummary || "Toko, Tanggal, Catatan"}
+                  <Store className={cn("h-4 w-4 shrink-0", validationErrors.length > 0 ? "text-destructive" : "text-muted-foreground")} />
+                  <span className={cn("text-sm font-medium truncate", validationErrors.length > 0 && "text-destructive")}>
+                    {validationErrors.length > 0 ? validationErrors.join(" & ") : (metaSummary || "Toko, Tanggal, Catatan")}
                   </span>
                 </div>
                 <ChevronDown className={cn("h-4 w-4 text-muted-foreground shrink-0 transition-transform", metaOpen && "rotate-180")} />
@@ -255,7 +267,7 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
             <CollapsibleContent className="pt-2 space-y-2">
               <div>
                 <label className="text-xs font-semibold text-muted-foreground">Nama Toko / Pelanggan</label>
-                <Input value={toko} onChange={(e) => setToko(e.target.value)} placeholder="Nama toko..." className="rounded-lg mt-1" />
+                <Input value={toko} onChange={(e) => { setToko(e.target.value); setValidationErrors([]); }} placeholder="Nama toko..." className="rounded-lg mt-1" />
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted-foreground">Tanggal (opsional)</label>
