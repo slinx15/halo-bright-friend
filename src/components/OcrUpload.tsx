@@ -46,30 +46,39 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
   const { data: aliases } = useProductAliases();
 
   // Find product by kode with fallback chain: exact → strip leading zeros → alias
-  const findProduct = (rawKode: string) => {
+  const findProduct = (rawKode: string, kategori?: string) => {
     const kode = String(rawKode).toUpperCase().trim();
+    const filterByKategori = (list: typeof products) => {
+      if (!kategori || !list) return list;
+      const matched = list.filter((p) => p.kategori === kategori);
+      return matched.length > 0 ? matched : list; // fallback to all if no match
+    };
+    const pool = filterByKategori(products) || [];
     // 1. Exact match
-    let found = products?.find((p) => p.kode.toUpperCase() === kode);
+    let found = pool.find((p) => p.kode.toUpperCase() === kode);
     if (found) return found;
     // 2. Strip leading zeros
     const stripped = kode.replace(/^0+/, "");
     if (stripped && stripped !== kode) {
-      found = products?.find((p) => p.kode.toUpperCase() === stripped);
+      found = pool.find((p) => p.kode.toUpperCase() === stripped);
       if (found) return found;
     }
     // 3. Also try adding leading zeros to master code
-    found = products?.find((p) => p.kode.toUpperCase().replace(/^0+/, "") === stripped);
+    found = pool.find((p) => p.kode.toUpperCase().replace(/^0+/, "") === stripped);
     if (found) return found;
     // 4. Strip suffix like "G-29", "G-19" etc and try again
     const baseKode = kode.replace(/\s+[A-Z]-?\d+$/i, "").replace(/^0+/, "");
     if (baseKode !== stripped) {
-      found = products?.find((p) => p.kode.toUpperCase() === baseKode || p.kode.toUpperCase().replace(/^0+/, "") === baseKode);
+      found = pool.find((p) => p.kode.toUpperCase() === baseKode || p.kode.toUpperCase().replace(/^0+/, "") === baseKode);
       if (found) return found;
     }
     // 5. Alias table lookup
     if (aliases) {
       const aliasEntry = aliases.find((a) => a.alias.toUpperCase() === kode || a.alias.toUpperCase() === stripped || a.alias.toUpperCase() === baseKode);
       if (aliasEntry) {
+        found = pool.find((p) => p.id === aliasEntry.product_id);
+        if (found) return found;
+        // Try full products list for alias
         found = products?.find((p) => p.id === aliasEntry.product_id);
         if (found) return found;
       }
