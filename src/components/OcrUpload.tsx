@@ -227,7 +227,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
       // Re-validate kode if changed
       if (field === "kode") {
         const kode = String(value).toUpperCase().trim();
-        const found = findProduct(kode);
+        const found = findProduct(kode, updated[idx].kategori);
         updated[idx].kode = found ? found.kode : kode;
         updated[idx].isValid = !!found;
         updated[idx].productId = found?.id;
