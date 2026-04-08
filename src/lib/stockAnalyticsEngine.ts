@@ -10,7 +10,7 @@ import type { ProductWithDetails } from "@/hooks/useProducts";
 export const RULES = {
   CYCLE_DAYS: 3,
   SAFETY_STOCK: 1,       // Safety 1 hari untuk warna
-  SAFETY_BW: 3,          // Safety 3 hari untuk hitam/putih (dinaikkan dari 2)
+  SAFETY_BW: 2,          // Safety 2 hari untuk hitam/putih
   BATCH: 25,
   BATCH_BW: 50,
   MIN_ORDER_PER_CODE: 25,
