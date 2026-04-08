@@ -18,34 +18,48 @@ serve(async (req) => {
     const { image_base64, mode, master_codes } = await req.json();
     if (!image_base64) throw new Error("image_base64 is required");
 
-    // Build master codes hint for AI
-    const codesHint = master_codes && master_codes.length > 0
-      ? `\nDaftar kode produk yang ada di master: ${master_codes.join(", ")}.\nCocokkan kode di nota ke kode master terdekat. Misalnya jika nota tulis "HITAM" atau "BLCK" tapi master punya "BLK", gunakan "BLK". Jika nota tulis "0533" tapi master punya "533", gunakan "533". Abaikan leading zero. Selalu gunakan kode dari daftar master jika cocok.`
-      : "";
+    // Build master codes hint for AI - only send BASE codes (without category suffix)
+    let codesHint = "";
+    if (master_codes && master_codes.length > 0) {
+      // Extract unique base codes (strip category suffixes like " 2 Ons", " 5 Ons", " 18 Gram", " 3 Ons")
+      const baseCodes = [...new Set(master_codes.map((c: string) =>
+        c.replace(/\s+(2 Ons|3 Ons|5 Ons|18 Gram)$/i, "")
+      ))];
+      codesHint = `\nDaftar KODE DASAR produk di master: ${baseCodes.join(", ")}.\nCocokkan kode di nota ke kode dasar master terdekat. Misalnya jika nota tulis "HITAM" atau "BLCK" tapi master punya "BLK", gunakan "BLK". Jika nota tulis "0533" tapi master punya "533", gunakan "533". Abaikan leading zero. JANGAN tambahkan suffix ukuran ke kode — cukup kode dasar saja. Kategori/ukuran HARUS ditentukan terpisah dari HEADER BAGIAN di nota.`;
+    }
 
     const prompts: Record<string, string> = {
       masuk: `Baca foto formulir order/nota pembelian benang obras.
 Format tabel biasanya: NO | KETERANGAN (kode) | ISI | BAL | JUMLAH.
 Ekstrak HANYA baris yang ada isinya (JUMLAH > 0 atau ada kode di KETERANGAN).
-Untuk setiap item: kode = KETERANGAN, qty = JUMLAH.
+Untuk setiap item: kode = KETERANGAN (kode dasar TANPA ukuran), qty = JUMLAH.
 
-PENTING - DETEKSI KATEGORI/UKURAN:
-- Faktur biasanya memiliki HEADER PEMISAH yang menunjukkan kategori ukuran, misalnya:
-  "B.OBRAS 18 GR" atau "B.OBRAS 18 GRAM" → kategori = "18 Gram"
-  "B.OBRAS 2 ONS" atau "B.OBRAS 2 OZ" → kategori = "2 Ons"
-  "B.OBRAS 3 ONS" → kategori = "3 Ons"
-  "B.OBRAS 5 ONS" → kategori = "5 Ons"
-- Semua item DI BAWAH header tersebut termasuk kategori itu, sampai ada header kategori baru.
-- Sertakan field "kategori" di setiap item output.
+SANGAT PENTING - DETEKSI KATEGORI/UKURAN DARI HEADER:
+Faktur benang SELALU memiliki HEADER PEMISAH yang membagi item berdasarkan ukuran:
+  - "B.OBRAS 18 GR" / "B.OBRAS 18 GRAM" / "18 GR" / "18 GRAM" → kategori = "18 Gram"
+  - "B.OBRAS 2 ONS" / "B.OBRAS 2 OZ" / "2 ONS" → kategori = "2 Ons"
+  - "B.OBRAS 3 ONS" / "3 ONS" → kategori = "3 Ons"
+  - "B.OBRAS 5 ONS" / "5 ONS" → kategori = "5 Ons"
 
-ATURAN LAIN:
+ATURAN KATEGORI:
+1. Kode produk yang SAMA (contoh: BLCK, WHT, 53) BISA muncul di BEBERAPA bagian ukuran berbeda.
+2. Setiap item WAJIB mendapat kategori dari header bagian di atasnya.
+3. JANGAN default ke "2 Ons" — baca header bagian dengan teliti.
+4. Jika TIDAK ADA header ukuran yang terdeteksi, set kategori = null.
+5. Kode yang sama di bagian berbeda = item TERPISAH dengan kategori masing-masing.
+
+ATURAN KODE:
 - Kolom KETERANGAN berisi kode produk. Jika ada tambahan teks seperti "G-29", "G-19", ABAIKAN. Contoh: "110 G-29" → kode = "110".
 - Abaikan baris header/judul ("B.OBRAS", "REKAPAN", "TOTAL" dsb) — jangan masukkan sebagai item.
 - Strip leading zero dari kode: "004" → "4", "035" → "35", "053" → "53".
-- GUNAKAN KOLOM JUMLAH: Selalu ambil qty dari kolom JUMLAH (kolom terakhir). Kolom ISI dan BAL hanya info tambahan. JANGAN hitung sendiri dari BAL × ISI. Ambil angka JUMLAH persis seperti tertulis.
-- KONVERSI BAL khusus: HANYA jika kolom JUMLAH tidak ada/kosong/0 DAN ada kolom BAL, maka untuk HITAM (BLK/BLACK/HTM) dan PUTIH (WHT/WHITE/PTH) hitung 1 bal = 50. Tapi jika JUMLAH sudah terisi, gunakan JUMLAH langsung.${codesHint}
+- JANGAN masukkan suffix ukuran ke kode. Kode = kode dasar saja. Contoh benar: "BLCK", bukan "BLCK 5 Ons".
+
+ATURAN QTY:
+- GUNAKAN KOLOM JUMLAH: Selalu ambil qty dari kolom JUMLAH (kolom terakhir). Kolom ISI dan BAL hanya info tambahan. JANGAN hitung sendiri dari BAL × ISI.
+- KONVERSI BAL khusus: HANYA jika kolom JUMLAH tidak ada/kosong/0 DAN ada kolom BAL, maka untuk HITAM (BLK/BLACK/HTM) dan PUTIH (WHT/WHITE/PTH) hitung 1 bal = 50.${codesHint}
+
 Kembalikan HANYA JSON array tanpa markdown. Contoh:
-[{"kode":"53","qty":5,"kategori":"18 Gram"},{"kode":"BLK","qty":100,"kategori":"2 Ons"},{"kode":"BLK","qty":32,"kategori":"5 Ons"}]
+[{"kode":"53","qty":5,"kategori":"18 Gram"},{"kode":"BLCK","qty":100,"kategori":"2 Ons"},{"kode":"BLCK","qty":32,"kategori":"5 Ons"}]
 Jika tidak bisa membaca, kembalikan [].`,
 
       keluar: `Baca foto nota penjualan kain/tekstil.
