@@ -197,9 +197,7 @@ const Nota = () => {
               {/* Info row - Logo area + details */}
               <div className="flex gap-3 items-start">
                 <div className="shrink-0 space-y-0.5">
-                  <div className="w-14 h-14 rounded-lg bg-foreground/10 flex items-center justify-center">
-                    <span className="text-lg font-black">R R</span>
-                  </div>
+                  <img src={logo} alt="RR Collections" className="w-14 h-14 rounded-lg object-contain" />
                   <p className="text-[8px] text-center font-bold text-muted-foreground">•COLLECTIONS•</p>
                 </div>
                 <div className="flex-1 text-[10px] space-y-0.5">
