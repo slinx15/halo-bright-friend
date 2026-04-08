@@ -403,7 +403,7 @@ atau [] jika tidak ada yang perlu diingat.`;
     const todayPcs = todaySales.reduce((s: number, r: any) => s + (r.qty_kirim || 0), 0);
     const todayOmzet = todaySales.reduce((s: number, r: any) => s + (r.total_harga || 0), 0);
     const todayProfit = todaySales.reduce((s: number, r: any) => {
-      const prod = products.find((p: any) => p.id === r.product_id);
+      const prod = allSizeProducts.find((p: any) => p.id === r.product_id);
       const modal = prod ? prod._hargaModal * (r.qty_kirim || 0) : 0;
       return s + ((r.total_harga || 0) - modal);
     }, 0);
