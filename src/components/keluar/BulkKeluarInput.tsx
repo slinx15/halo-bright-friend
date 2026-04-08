@@ -230,15 +230,33 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
                 {item.product?.prices?.harga_grosir2 ? (
                   <SelectItem value="grosir2">{priceLabel(item.product?.prices, "grosir2")}</SelectItem>
                 ) : null}
+                <SelectItem value="custom">✏️ Custom</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div className="text-right pt-3">
-            <span className="text-sm font-bold text-primary tabular-nums">
-              {item.isValid && item.qtyKirim > 0 ? formatRupiah(total) : "-"}
-            </span>
-          </div>
+          {item.hargaType === "custom" ? (
+            <div className="w-28 pt-3">
+              <Input
+                type="text" inputMode="numeric"
+                className="h-9 text-xs text-right font-bold touch-manipulation"
+                placeholder="Rp ..."
+                value={item.customHarga === undefined || item.customHarga === 0 ? "" : item.customHarga}
+                onChange={(e) => updateItem(idx, "customHarga", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
+              />
+            </div>
+          ) : (
+            <div className="text-right pt-3">
+              <span className="text-sm font-bold text-primary tabular-nums">
+                {item.isValid && item.qtyKirim > 0 ? formatRupiah(total) : "-"}
+              </span>
+            </div>
+          )}
         </div>
+        {item.hargaType === "custom" && item.qtyKirim > 0 && (item.customHarga ?? 0) > 0 && (
+          <div className="text-right">
+            <span className="text-sm font-bold text-primary tabular-nums">{formatRupiah(total)}</span>
+          </div>
+        )}
       </div>
     );
   };
