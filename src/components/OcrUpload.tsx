@@ -382,7 +382,9 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
                           {item.kode || "(kosong)"}
                         </span>
                       )}
-                      {item.isValid ? (
+                      {item.isAmbiguous ? (
+                        <span className="text-xs text-amber-600 font-medium">⚠ Pilih ukuran →</span>
+                      ) : item.isValid ? (
                         <span className="text-xs text-muted-foreground truncate">
                           {item.productName}
                         </span>
@@ -390,7 +392,10 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
                         <span className="text-xs text-destructive">Tidak ada di Master</span>
                       )}
                       {item.kategori && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+                        <Badge 
+                          variant="outline" 
+                          className={`text-[10px] px-1.5 py-0 shrink-0 ${item.isAmbiguous ? 'border-amber-500 text-amber-600' : ''}`}
+                        >
                           {item.kategori}
                         </Badge>
                       )}
