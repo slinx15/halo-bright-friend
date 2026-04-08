@@ -603,6 +603,8 @@ ${Object.values(KNOWLEDGE_MODULES).map(m => m.content).join("\n\n")}
 ═══ MEMORY BOSS ═══
 ${memoryBlock}
 
+═══ ${todayBlock} ═══
+
 ═══ DATA TOKO BOSS (REAL-TIME) ═══
 ${products.length} produk aktif | Omzet 7 hari: Rp ${totalOmzet7d.toLocaleString("id-ID")} (${totalPcs7d} pcs)
 Best seller: ${bestSellerList || "-"}
