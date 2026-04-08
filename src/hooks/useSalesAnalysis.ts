@@ -21,7 +21,7 @@ function useStockOutData() {
     queryKey: ["stock-out-all"],
     queryFn: async () => {
       const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - 30);
+      cutoff.setDate(cutoff.getDate() - 56); // 8 weeks for more stable averages
       const cutoffStr = cutoff.toISOString();
 
       const token = getAuthToken();

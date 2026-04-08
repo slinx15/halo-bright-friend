@@ -109,7 +109,7 @@ export default function HariRamaiAnalysis({ stockOutData }: { stockOutData: Stoc
           <span className="text-lg">📅</span>
           <p className="text-[10px] text-muted-foreground mt-1">Hari Paling Ramai</p>
           <p className="text-xl font-black text-primary">{busiestDay?.nama ?? "-"}</p>
-          <p className="text-xs text-muted-foreground">rata-rata {busiestDay?.avgPcs ?? 0} pcs/hari</p>
+          <p className="text-xs text-muted-foreground">rata-rata {busiestDay?.avgPcs ?? 0} pcs/hari ({busiestDay?.weeks ?? 0}x data)</p>
         </div>
         <div className="card-premium bg-warning/5 p-4 animate-fade-in" style={{ animationDelay: "60ms", animationFillMode: "both" }}>
           <span className="text-lg">⏰</span>
