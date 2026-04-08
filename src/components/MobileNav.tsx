@@ -15,6 +15,7 @@ import {
   Bot,
   Users,
   FileBarChart,
+  FileText,
   MoreHorizontal,
   X,
   LogOut,
@@ -32,6 +33,7 @@ const primaryNav = [
 ];
 
 const secondaryNav = [
+  { icon: FileText, label: "Nota Jual", path: "/nota", adminOnly: false },
   { icon: ClipboardCheck, label: "Opname", path: "/opname", adminOnly: false },
   { icon: FileBarChart, label: "Laporan Bulanan", path: "/laporan", adminOnly: false },
   { icon: Settings, label: "Produk", path: "/produk", adminOnly: false },

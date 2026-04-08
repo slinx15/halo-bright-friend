@@ -15,6 +15,7 @@ import {
   Bot,
   Users,
   FileBarChart,
+  FileText,
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/", group: "main" },
   { icon: PackagePlus, label: "Barang Masuk", path: "/masuk", group: "transaksi" },
   { icon: PackageMinus, label: "Barang Keluar", path: "/keluar", group: "transaksi" },
+  { icon: FileText, label: "Nota Jual", path: "/nota", group: "transaksi" },
   { icon: Package, label: "Stok", path: "/stok", group: "inventaris" },
   { icon: ClipboardCheck, label: "Opname", path: "/opname", group: "inventaris" },
   { icon: BarChart3, label: "Analisa", path: "/analisa", group: "laporan" },
