@@ -583,6 +583,9 @@ Total perlu order: ${needRestock.length} produk, ${totalRestockQty} pcs, ~Rp ${t
 
 ═══ ${alertsBlock} ═══
 
+═══ DETAIL PENJUALAN PER PELANGGAN PER TANGGAL (30 hari, WIB) ═══
+${tokoDateBlock}
+
 ═══ RULES RISET ═══
 - MINIMAL 1000-2000 kata untuk riset yang thorough & actionable
 - SELALU kasih angka spesifik (harga, persentase, timeline, biaya)
