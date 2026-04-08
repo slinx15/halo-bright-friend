@@ -153,7 +153,7 @@ const Nota = () => {
           <Button
             variant="outline"
             size="sm"
-            className="rounded-xl gap-1.5 text-green-600 border-green-600 hover:bg-green-50"
+            className="rounded-xl gap-1.5 text-success border-success hover:bg-success/10"
             onClick={handleShareWA}
           >
             <Share2 className="h-4 w-4" />
