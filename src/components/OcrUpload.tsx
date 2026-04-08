@@ -225,10 +225,11 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
     setOcrItems((prev) => {
       const updated = [...prev];
       updated[idx] = { ...updated[idx], [field]: value };
-      // Re-validate kode if changed
-      if (field === "kode") {
-        const kode = String(value).toUpperCase().trim();
-        const found = findProduct(kode, updated[idx].kategori);
+      // Re-validate kode if kode or kategori changed
+      if (field === "kode" || field === "kategori") {
+        const kode = String(field === "kode" ? value : updated[idx].kode).toUpperCase().trim();
+        const kat = field === "kategori" ? (value || undefined) : updated[idx].kategori;
+        const found = findProduct(kode, kat);
         updated[idx].kode = found ? found.kode : kode;
         updated[idx].isValid = !!found;
         updated[idx].productId = found?.id;
