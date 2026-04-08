@@ -30,6 +30,7 @@ interface OcrItem {
   kategori?: string;
   // validation
   isValid?: boolean;
+  isAmbiguous?: boolean;
   productId?: string;
   productName?: string;
   stokSistem?: number;
