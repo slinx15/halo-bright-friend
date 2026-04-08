@@ -455,7 +455,7 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
           isMobile ? (
             <div className="space-y-3">
               {items.map((item, idx) => (
-                <div key={idx} className="rounded-lg border bg-card p-3 shadow-sm">
+                <div key={idx} className={cn("rounded-lg border p-3 shadow-sm", idx % 2 === 0 ? "bg-card" : "bg-muted/40")}>
                   {renderCompactMobileCard(item, idx)}
                 </div>
               ))}
