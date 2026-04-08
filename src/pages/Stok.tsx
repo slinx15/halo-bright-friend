@@ -223,6 +223,7 @@ const Stok = () => {
               </Button>
             ))}
           </div>
+        </CardHeader>
         <CardContent>
           {isMobile ? (
             <div className="space-y-2.5">
