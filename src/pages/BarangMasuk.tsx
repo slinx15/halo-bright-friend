@@ -270,7 +270,7 @@ const BarangMasuk = () => {
                     )}
                   </div>
                   <div className="w-20">
-                    <Label className="text-xs font-semibold text-muted-foreground">Qty</Label>
+                    <Label className="text-xs font-semibold text-muted-foreground">{matchedProduct?.kategori === "18 Gram" ? "Pack" : "Qty"}</Label>
                     <Input
                       type="text"
                       inputMode="numeric"
