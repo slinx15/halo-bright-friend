@@ -122,23 +122,27 @@ const Nota = () => {
         <title>Nota - ${selectedNota?.toko} - ${selectedNota?.dateLabel}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; color: #1a1a1a; }
-          .header { text-align: center; margin-bottom: 16px; border-bottom: 2px solid #333; padding-bottom: 12px; }
-          .header h1 { font-size: 20px; font-weight: 800; }
-          .header p { font-size: 11px; color: #666; margin-top: 2px; }
-          .info { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 12px; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-          th { background: #f3f4f6; text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 700; border-bottom: 2px solid #d1d5db; }
-          td { padding: 7px 10px; font-size: 12px; border-bottom: 1px solid #e5e7eb; }
+          body { font-family: 'Arial', sans-serif; padding: 16px; color: #000; font-size: 12px; }
+          .nota-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 8px; }
+          .nota-header h1 { font-size: 14px; font-weight: 900; letter-spacing: 0.5px; }
+          .nota-header .address { font-size: 10px; margin-top: 2px; }
+          .nota-info { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 11px; }
+          .nota-info .label { min-width: 70px; }
+          table { width: 100%; border-collapse: collapse; }
+          th { border: 1px solid #000; padding: 4px 6px; font-size: 11px; font-weight: 700; text-align: center; }
+          td { border: 1px solid #000; padding: 4px 6px; font-size: 11px; }
           .text-right { text-align: right; }
-          .total-row { font-weight: 800; font-size: 14px; border-top: 2px solid #333; }
-          .footer { text-align: center; font-size: 10px; color: #999; margin-top: 20px; }
-          @media print { body { padding: 10px; } }
+          .text-center { text-align: center; }
+          .nota-footer { display: flex; justify-content: space-between; margin-top: 12px; font-size: 11px; }
+          .nota-footer .sign { text-align: center; min-width: 100px; }
+          .nota-footer .sign .line { border-top: 1px solid #000; margin-top: 40px; width: 80px; display: inline-block; }
+          .nota-summary { text-align: right; font-size: 11px; }
+          .nota-summary td { border: 1px solid #000; padding: 2px 6px; }
+          @media print { body { padding: 8px; } }
         </style>
       </head>
       <body>
         ${printRef.current.innerHTML}
-        <div class="footer">Dicetak dari RRCollections • ${new Date().toLocaleString("id-ID")}</div>
         <script>window.print(); window.close();<\/script>
       </body>
       </html>
