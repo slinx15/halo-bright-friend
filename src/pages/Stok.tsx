@@ -27,6 +27,7 @@ const Stok = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
+  const [kategoriFilter, setKategoriFilter] = useState<string>("Semua");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -53,13 +54,21 @@ const Stok = () => {
     setResetting(false);
   };
 
+  const kategoriList = useMemo(() => {
+    const cats = new Set<string>();
+    products?.forEach((p) => { if (p.kategori) cats.add(p.kategori); });
+    return ["Semua", ...Array.from(cats).sort()];
+  }, [products]);
+
   const filtered = useMemo(() =>
-    products?.filter(
-      (p) =>
+    products?.filter((p) => {
+      const matchSearch = !search ||
         p.kode.toLowerCase().includes(search.toLowerCase()) ||
-        p.nama.toLowerCase().includes(search.toLowerCase())
-    ) ?? [],
-    [products, search]
+        p.nama.toLowerCase().includes(search.toLowerCase());
+      const matchKategori = kategoriFilter === "Semua" || p.kategori === kategoriFilter;
+      return matchSearch && matchKategori;
+    }) ?? [],
+    [products, search, kategoriFilter]
   );
 
   const visibleItems = useMemo(() =>
@@ -199,6 +208,20 @@ const Stok = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input className="pl-9 rounded-xl h-10" placeholder="Cari kode / nama..." value={search} onChange={(e) => handleSearch(e.target.value)} />
             </div>
+          </div>
+          {/* Kategori filter tabs */}
+          <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 mt-3">
+            {kategoriList.map((cat) => (
+              <Button
+                key={cat}
+                variant={kategoriFilter === cat ? "default" : "outline"}
+                size="sm"
+                className="rounded-full text-xs shrink-0 h-8 px-3"
+                onClick={() => { setKategoriFilter(cat); setVisibleCount(PAGE_SIZE); }}
+              >
+                {cat}
+              </Button>
+            ))}
           </div>
         </CardHeader>
         <CardContent>
