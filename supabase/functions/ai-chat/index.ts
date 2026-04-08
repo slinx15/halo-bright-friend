@@ -664,8 +664,9 @@ ${memoryBlock}
 
 ═══ ${todayBlock} ═══
 
-═══ DATA TOKO ═══
-${products.length} produk aktif, stok total ${products.reduce((s, p) => s + p._stok, 0)} pcs | ${products.filter(p => p._stok === 0).length} stok kosong | ${critical.length} DARURAT(1-2 hari) | ${warning.length} MENIPIS(3-4 hari) | ${bestSellers.length} best seller(≥5/hari) | Perlu order: ${needRestock.length} produk, ${totalRestockQty} pcs, ~Rp ${totalRestockCost.toLocaleString("id-ID")}
+═══ DATA TOKO (STOK & ANALISA = HANYA 2 ONS) ═══
+${products.length} produk 2 Ons aktif, stok total ${products.reduce((s, p) => s + p._stok, 0)} pcs | ${products.filter(p => p._stok === 0).length} stok kosong | ${critical.length} DARURAT(1-2 hari) | ${warning.length} MENIPIS(3-4 hari) | ${bestSellers.length} best seller(≥5/hari) | Perlu order: ${needRestock.length} produk, ${totalRestockQty} pcs, ~Rp ${totalRestockCost.toLocaleString("id-ID")}
+Total semua ukuran: ${allSizeProducts.length} produk (termasuk 3 Ons, 5 Ons, 18 Gram)
 
 Omzet 7 hari: Rp ${totalOmzet7d.toLocaleString("id-ID")} (${totalPcs7d} pcs) | Top pelanggan: ${topCustomers.join("; ") || "-"}
 
