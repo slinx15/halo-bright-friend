@@ -15,6 +15,7 @@ import { StokSkeleton } from "@/components/LoadingSkeletons";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
 import { getAuthHeaders } from "@/lib/authHeaders";
 
