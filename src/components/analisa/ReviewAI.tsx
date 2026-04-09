@@ -103,8 +103,9 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
     }
 
     const findProduct = (k: string) => {
+      const kUpper = k.toUpperCase();
       // 1. Direct match
-      let found = products?.find(p => p.kode.toUpperCase() === k);
+      let found = products?.find(p => p.kode.toUpperCase() === kUpper);
       if (found) return found;
       
       // 2. Strip leading zeros

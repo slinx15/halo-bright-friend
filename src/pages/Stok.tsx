@@ -32,6 +32,15 @@ const Stok = () => {
   const [search, setSearch] = useState("");
   const initialKategori = searchParams.get("kategori") || "Semua";
   const [kategoriFilter, setKategoriFilter] = useState<string>(initialKategori);
+
+  // Sync filter when navigating from other pages (e.g., Dashboard)
+  useEffect(() => {
+    const paramKategori = searchParams.get("kategori");
+    if (paramKategori && paramKategori !== kategoriFilter) {
+      setKategoriFilter(paramKategori);
+      setVisibleCount(PAGE_SIZE);
+    }
+  }, [searchParams]);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resetting, setResetting] = useState(false);
