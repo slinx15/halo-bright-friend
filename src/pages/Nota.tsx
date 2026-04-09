@@ -223,19 +223,19 @@ const Nota = () => {
 
               {/* Table - compact for mobile */}
               <div className="overflow-x-auto -mx-3 sm:-mx-5 px-3 sm:px-5">
-                <table className="w-full text-[10px] sm:text-xs border-collapse min-w-0">
+                <table className="w-full text-xs sm:text-sm border-collapse min-w-0">
                   <thead>
                     <tr>
-                      <th className="border border-foreground/30 py-1 px-1 sm:px-2 text-center font-bold bg-muted/50 w-[40px] sm:w-[55px]">
+                      <th className="border border-foreground/30 py-1.5 px-1.5 sm:px-2 text-center font-bold bg-muted/50 w-[45px] sm:w-[55px]">
                         Qty
                       </th>
-                      <th className="border border-foreground/30 py-1 px-1 sm:px-2 text-center font-bold bg-muted/50">
+                      <th className="border border-foreground/30 py-1.5 px-1.5 sm:px-2 text-center font-bold bg-muted/50">
                         Barang
                       </th>
-                      <th className="border border-foreground/30 py-1 px-1 sm:px-2 text-center font-bold bg-muted/50 w-[65px] sm:w-[85px]">
+                      <th className="border border-foreground/30 py-1.5 px-1.5 sm:px-2 text-center font-bold bg-muted/50 w-[70px] sm:w-[90px]">
                         Harga
                       </th>
-                      <th className="border border-foreground/30 py-1 px-1 sm:px-2 text-center font-bold bg-muted/50 w-[75px] sm:w-[90px]">
+                      <th className="border border-foreground/30 py-1.5 px-1.5 sm:px-2 text-center font-bold bg-muted/50 w-[80px] sm:w-[100px]">
                         Jumlah
                       </th>
                     </tr>
@@ -243,16 +243,16 @@ const Nota = () => {
                   <tbody>
                     {selectedNota.items.map((item) => (
                       <tr key={item.id}>
-                        <td className="border border-foreground/30 py-1 px-1 sm:px-2 text-center font-bold tabular-nums">
+                        <td className="border border-foreground/30 py-1.5 px-1.5 sm:px-2 text-center font-bold tabular-nums">
                           {item.qty_kirim}
                         </td>
-                        <td className="border border-foreground/30 py-1 px-1 sm:px-2">
+                        <td className="border border-foreground/30 py-1.5 px-1.5 sm:px-2">
                           <span className="font-mono font-bold">{item.products?.kode ?? "-"}</span>
                         </td>
-                        <td className="border border-foreground/30 py-1 px-1 sm:px-2 text-right tabular-nums">
+                        <td className="border border-foreground/30 py-1.5 px-1.5 sm:px-2 text-right tabular-nums">
                           {formatRupiah(item.harga_satuan)}
                         </td>
-                        <td className="border border-foreground/30 py-1 px-1 sm:px-2 text-right font-bold tabular-nums">
+                        <td className="border border-foreground/30 py-1.5 px-1.5 sm:px-2 text-right font-bold tabular-nums">
                           {formatRupiah(item.total_harga)}
                         </td>
                       </tr>
