@@ -236,8 +236,13 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
         )}
       </div>
 
-      {/* Qty info — bigger */}
+      {/* Stock + Qty info */}
       <div className="flex items-center gap-3 text-sm flex-wrap">
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <Package className="h-3.5 w-3.5" />
+          <span>Stok:</span>
+          <span className={`font-extrabold text-base ${card.stok === 0 ? "text-destructive" : card.stok <= 5 ? "text-warning" : "text-foreground"}`}>{formatNumber(card.stok)}</span>
+        </div>
         <div className="flex items-center gap-1.5 text-muted-foreground">
           <ShoppingCart className="h-3.5 w-3.5" />
           <span>Pesan:</span>
@@ -289,12 +294,20 @@ function MissedProductCard({ card }: { card: MissedCard }) {
       <div className="rounded-xl px-4 py-3 text-sm leading-relaxed font-medium bg-red-100/80 dark:bg-red-900/30 text-red-800 dark:text-red-300">
         💬 {getMissedReason(card)}
       </div>
-      <div className="flex items-center gap-3 text-xs text-muted-foreground px-1 flex-wrap">
+      <div className="flex items-center gap-3 text-sm flex-wrap">
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <Package className="h-3.5 w-3.5" />
+          <span>Stok:</span>
+          <span className={`font-extrabold text-base ${card.stok === 0 ? "text-destructive" : card.stok <= 5 ? "text-warning" : "text-foreground"}`}>{formatNumber(card.stok)}</span>
+        </div>
         {(card.pending_qty ?? 0) > 0 && (
-          <span>📦 Pending: <span className="font-bold text-purple-600 dark:text-purple-400">{formatNumber(card.pending_qty!)}</span></span>
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <span>📦 Pending:</span>
+            <span className="font-extrabold text-purple-600 dark:text-purple-400 text-base">{formatNumber(card.pending_qty!)}</span>
+          </div>
         )}
         {card.cost > 0 && (
-          <span>Budget: <span className="font-bold text-foreground">{formatRupiah(card.cost)}</span></span>
+          <span className="text-xs text-muted-foreground">Budget: <span className="font-bold text-foreground">{formatRupiah(card.cost)}</span></span>
         )}
       </div>
     </div>
