@@ -109,8 +109,8 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
       if (found) return found;
       
       // 2. Strip leading zeros
-      const stripped = k.replace(/^0+/, "");
-      if (stripped !== k) {
+      const stripped = kUpper.replace(/^0+/, "");
+      if (stripped !== kUpper) {
         found = products?.find(p => p.kode.toUpperCase() === stripped);
         if (found) return found;
       }
@@ -119,8 +119,8 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
       
       // 3. Try category suffix expansion (e.g., "BLCK 5OZ" → "BLCK 5 Ons")
       for (const [alias, suffix] of Object.entries(CATEGORY_ALIASES)) {
-        if (k.endsWith(alias) || k.endsWith(alias.replace(" ", ""))) {
-          const baseKode = k.replace(new RegExp(alias.replace(" ", "\\s*") + "$"), "").trim();
+        if (kUpper.endsWith(alias) || kUpper.endsWith(alias.replace(" ", ""))) {
+          const baseKode = kUpper.replace(new RegExp(alias.replace(" ", "\\s*") + "$"), "").trim();
           const fullKode = baseKode + " " + suffix;
           found = products?.find(p => p.kode.toUpperCase() === fullKode.toUpperCase());
           if (found) return found;
@@ -133,7 +133,7 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
       
       // 4. Alias lookup
       if (aliases) {
-        const aliasEntry = aliases.find(a => a.alias.toUpperCase() === k || a.alias.toUpperCase() === (k.replace(/^0+/, "")));
+        const aliasEntry = aliases.find(a => a.alias.toUpperCase() === kUpper || a.alias.toUpperCase() === stripped);
         if (aliasEntry) return products?.find(p => p.id === aliasEntry.product_id);
       }
       return null;
