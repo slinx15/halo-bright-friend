@@ -43,6 +43,7 @@ const BarangKeluar = () => {
 
   // Single mode state
   const [kode, setKode] = useState("");
+  const [singleKategori, setSingleKategori] = useState("2 Ons");
   const [qtyPesan, setQtyPesan] = useState(0);
   const [qtyKirim, setQtyKirim] = useState(0);
   const [hargaType, setHargaType] = useState("normal");
@@ -61,7 +62,25 @@ const BarangKeluar = () => {
   const [historySearch, setHistorySearch] = useState("");
   const [historyDateFilter, setHistoryDateFilter] = useState<Date | undefined>(undefined);
 
-  const matched = products?.find((p) => p.kode.toUpperCase() === kode.toUpperCase());
+  // Single mode: find product by base code within selected kategori
+  const singleFilteredProducts = useMemo(() => {
+    return (products || []).filter(p => p.kategori === singleKategori);
+  }, [products, singleKategori]);
+
+  const matched = useMemo(() => {
+    if (!kode.trim()) return undefined;
+    const k = kode.toUpperCase().trim();
+    // Try exact match first
+    let found = singleFilteredProducts.find(p => p.kode.toUpperCase() === k);
+    if (found) return found;
+    // Try base code match (strip suffix)
+    found = singleFilteredProducts.find(p => {
+      const base = p.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|18 GRAM)$/i, "");
+      return base === k;
+    });
+    return found;
+  }, [kode, singleFilteredProducts]);
+
   const hargaSatuan = matched?.prices
     ? hargaType === "grosir2" ? matched.prices.harga_grosir2 : hargaType === "grosir" ? matched.prices.harga_grosir : matched.prices.harga_normal
     : 0;
@@ -372,12 +391,35 @@ const BarangKeluar = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 pt-4">
+              {/* Category tabs */}
+              <div className="flex gap-1.5 overflow-x-auto pb-1">
+                {[
+                  { value: "2 Ons", label: "2 Ons" },
+                  { value: "3 Ons", label: "3 Ons" },
+                  { value: "5 Ons", label: "5 Ons" },
+                  { value: "18 Gram", label: "18 Gram" },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => { setSingleKategori(opt.value); setKode(""); }}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all min-h-[36px] ${
+                      singleKategori === opt.value
+                        ? "bg-destructive text-destructive-foreground shadow-sm"
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-semibold text-muted-foreground">Kode Produk</Label>
                   <Input placeholder="Kode..." value={kode} onChange={(e) => setKode(e.target.value.toUpperCase())} list="product-codes-out" className="rounded-lg mt-1" />
                   <datalist id="product-codes-out">
-                    {products?.map((p) => <option key={p.id} value={p.kode} />)}
+                    {singleFilteredProducts.map((p) => <option key={p.id} value={p.kode} />)}
                   </datalist>
                   {matched && (
                     <p className="text-xs text-success mt-1 font-medium flex items-center gap-1">
