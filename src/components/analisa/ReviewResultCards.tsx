@@ -248,12 +248,6 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
           <span>Pesan:</span>
           <span className="font-extrabold text-foreground text-base">{formatNumber(card.qty_boss)}</span>
         </div>
-        {(card.pending_qty ?? 0) > 0 && (
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <span>📦 Pending:</span>
-            <span className="font-extrabold text-purple-600 dark:text-purple-400 text-base">{formatNumber(card.pending_qty!)}</span>
-          </div>
-        )}
         {(needMore || tooMuch) && (
           <>
             <span className="text-muted-foreground">→</span>
@@ -300,12 +294,6 @@ function MissedProductCard({ card }: { card: MissedCard }) {
           <span>Stok:</span>
           <span className={`font-extrabold text-base ${card.stok === 0 ? "text-destructive" : card.stok <= 5 ? "text-warning" : "text-foreground"}`}>{formatNumber(card.stok)}</span>
         </div>
-        {(card.pending_qty ?? 0) > 0 && (
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <span>📦 Pending:</span>
-            <span className="font-extrabold text-purple-600 dark:text-purple-400 text-base">{formatNumber(card.pending_qty!)}</span>
-          </div>
-        )}
         {card.cost > 0 && (
           <span className="text-xs text-muted-foreground">Budget: <span className="font-bold text-foreground">{formatRupiah(card.cost)}</span></span>
         )}
