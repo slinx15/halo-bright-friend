@@ -1359,12 +1359,11 @@ const Analisa = () => {
       {/* MAIN CONTENT — TABS */}
       <Tabs defaultValue="restock" className="w-full">
         <div className="rounded-2xl bg-card/80 backdrop-blur-sm border border-border/40 shadow-md p-1.5">
-          <TabsList className="grid grid-cols-4 w-full bg-transparent h-auto p-0 gap-1">
+          <TabsList className="grid grid-cols-3 w-full bg-transparent h-auto p-0 gap-1">
             {[
               { value: "restock", icon: ShoppingCart, label: "Restock", mobileLabel: "Restock", badge: needsReorder > 0 ? needsReorder : null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
               { value: "penjualan", icon: Trophy, label: "Penjualan", mobileLabel: "Jual", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
-              { value: "toko", icon: Store, label: "Toko", mobileLabel: "Toko", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
-              { value: "insight", icon: BarChart3, label: "Insight", mobileLabel: "Insight", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
+              { value: "insight", icon: BarChart3, label: "Lainnya", mobileLabel: "Lainnya", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
             ].map(tab => (
               <TabsTrigger
                 key={tab.value}
@@ -1380,7 +1379,6 @@ const Analisa = () => {
                   )}
                 </div>
                 <span className="text-[10px] md:text-xs leading-tight">{tab.mobileLabel}</span>
-                <span className="hidden md:inline">{tab.label !== tab.mobileLabel ? ` ${tab.label}` : ""}</span>
                 {tab.badge && (
                   <Badge variant="destructive" className="hidden md:flex ml-0.5 h-4 min-w-[16px] px-1 text-[9px] rounded-full shrink-0 animate-pulse">
                     {tab.badge}
