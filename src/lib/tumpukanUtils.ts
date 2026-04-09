@@ -15,9 +15,9 @@ export function getMaxStack(kode: string, kategori?: string): number {
  * e.g. splitIntoStacks(50, "R533") => [25, 25]
  * e.g. splitIntoStacks(50, "BLCK") => [50]
  */
-export function splitIntoStacks(qty: number, kode: string): number[] {
+export function splitIntoStacks(qty: number, kode: string, kategori?: string): number[] {
   if (qty <= 0) return [];
-  const max = getMaxStack(kode);
+  const max = getMaxStack(kode, kategori);
   const stacks: number[] = [];
   let remaining = qty;
   while (remaining > 0) {
