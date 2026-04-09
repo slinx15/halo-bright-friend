@@ -35,16 +35,17 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
     // Normalize: collapse multiple spaces, trim dots/spaces around separators
     const line = rawLine.replace(/\s+/g, " ").trim();
     
-    // Flexible pattern: KODE [separator] QTY — separator can be space, dash, dot, colon, =, or combo
-    const matchKodeFirst = line.match(/^([A-Za-z0-9\-\/]+)[.\s]*[\s=\-:]+\s*(\d+)\s*(?:pcs|pc|buah)?$/i);
+    // Try to extract: everything before the last number = kode, last number = qty
+    // Supports: "BLCK 5OZ 25", "8842 -50", "R143. -50", "WHT 3OZ-25"
+    const matchGeneral = line.match(/^(.+?)[.\s]*[\s=\-:]+\s*(\d+)\s*(?:pcs|pc|buah|pack)?$/i);
     // QTY KODE (only when second part has letters)
-    const matchQtyFirst = line.match(/^(\d+)\s*(?:pcs|pc|buah)?\s+([A-Za-z][A-Za-z0-9\-\/]*)\s*$/i);
+    const matchQtyFirst = line.match(/^(\d+)\s*(?:pcs|pc|buah|pack)?\s+([A-Za-z][A-Za-z0-9\-\/\s]*)\s*$/i);
 
-    const match = matchKodeFirst || matchQtyFirst;
+    const match = matchGeneral || matchQtyFirst;
     if (!match) continue;
 
     let kode: string, qty: number;
-    if (matchQtyFirst && !matchKodeFirst) {
+    if (matchQtyFirst && !matchGeneral) {
       qty = parseInt(match[1]);
       kode = match[2].toUpperCase().trim();
     } else {
@@ -52,14 +53,24 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
       qty = parseInt(match[2]);
     }
     
-    // Clean kode: remove trailing dots, spaces
-    kode = kode.replace(/[.\s]+$/, "");
+    // Clean kode: remove trailing dots, spaces, dashes
+    kode = kode.replace(/[.\s\-]+$/, "");
 
     if (qty <= 0) continue;
 
+    // Category suffix aliases for non-2 Ons products
+    const CATEGORY_ALIASES: Record<string, string> = {
+      "18G": "18 Gram", "18GRAM": "18 Gram", "18GR": "18 Gram",
+      "3OZ": "3 Ons", "3ONS": "3 Ons", "3 OZ": "3 Ons",
+      "5OZ": "5 Ons", "5ONS": "5 Ons", "5 OZ": "5 Ons",
+    };
+
     const findProduct = (k: string) => {
+      // 1. Direct match
       let found = products?.find(p => p.kode.toUpperCase() === k);
       if (found) return found;
+      
+      // 2. Strip leading zeros
       const stripped = k.replace(/^0+/, "");
       if (stripped !== k) {
         found = products?.find(p => p.kode.toUpperCase() === stripped);
@@ -67,6 +78,23 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
       }
       found = products?.find(p => p.kode.toUpperCase().replace(/^0+/, "") === stripped);
       if (found) return found;
+      
+      // 3. Try category suffix expansion (e.g., "BLCK 5OZ" → "BLCK 5 Ons")
+      for (const [alias, suffix] of Object.entries(CATEGORY_ALIASES)) {
+        if (k.endsWith(alias) || k.endsWith(alias.replace(" ", ""))) {
+          const baseKode = k.replace(new RegExp(alias.replace(" ", "\\s*") + "$"), "").trim();
+          const fullKode = baseKode + " " + suffix;
+          found = products?.find(p => p.kode.toUpperCase() === fullKode.toUpperCase());
+          if (found) return found;
+          // Also try with stripped zeros
+          const strippedBase = baseKode.replace(/^0+/, "");
+          const fullKode2 = strippedBase + " " + suffix;
+          found = products?.find(p => p.kode.toUpperCase() === fullKode2.toUpperCase());
+          if (found) return found;
+        }
+      }
+      
+      // 4. Alias lookup
       if (aliases) {
         const aliasEntry = aliases.find(a => a.alias.toUpperCase() === k || a.alias.toUpperCase() === stripped);
         if (aliasEntry) return products?.find(p => p.id === aliasEntry.product_id);

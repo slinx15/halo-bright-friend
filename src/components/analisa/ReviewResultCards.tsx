@@ -3,7 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Sparkles, AlertTriangle, CheckCircle2, Plus, Flame, ArrowDown,
-  TrendingUp, ShoppingCart, PackageX, Wallet, CirclePlus, CircleAlert, ChevronDown
+  TrendingUp, ShoppingCart, PackageX, Wallet, CirclePlus, CircleAlert, ChevronDown,
+  Package
 } from "lucide-react";
 import { formatRupiah, formatNumber } from "@/lib/formatters";
 
@@ -43,13 +44,24 @@ export interface MissedCard {
   pending_qty?: number;
 }
 
+export interface OtherItem {
+  kode: string;
+  nama: string;
+  kategori: string;
+  qty: number;
+  harga_modal: number;
+  cost: number;
+}
+
 export interface ReviewResult {
   score: number;
   summary: string;
   cards: ReviewCard[];
   missed: MissedCard[];
+  other_items?: OtherItem[];
   unknown_codes: string[];
   total_cost: number;
+  total_cost_other?: number;
   budget_tambah: number;
   budget_missed: number;
   budget_total: number;
@@ -314,22 +326,31 @@ function CollapsibleSection({ icon: Icon, title, count, color, sectionRef, isOpe
 }
 
 export function ReviewResultCards({ result, alreadySent }: { result: ReviewResult; alreadySent: boolean }) {
-  const { score, summary, cards, missed, unknown_codes, total_cost, budget_tambah, budget_missed, budget_total } = result;
+  const { score, summary, cards, missed, other_items = [], unknown_codes, total_cost, total_cost_other = 0, budget_tambah, budget_missed, budget_total } = result;
 
   const needMoreCards = cards.filter(c => isNeedMore(c)).sort((a, b) => a.dos - b.dos);
   const tooMuchCards = !alreadySent ? cards.filter(c => isTooMuch(c)) : [];
   const okCards = cards.filter(c => !isNeedMore(c) && !(isTooMuch(c) && !alreadySent));
 
   const totalTambah = needMoreCards.reduce((sum, c) => sum + getShortfall(c), 0);
-  const hasBudgetExtra = (budget_tambah || 0) > 0 || (budget_missed || 0) > 0;
+  const hasBudgetExtra = (budget_tambah || 0) > 0 || (budget_missed || 0) > 0 || total_cost_other > 0;
+
+  // Group other items by kategori
+  const otherByKategori: Record<string, typeof other_items> = {};
+  for (const item of other_items) {
+    const kat = item.kategori || "Lainnya";
+    if (!otherByKategori[kat]) otherByKategori[kat] = [];
+    otherByKategori[kat].push(item);
+  }
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    tambah: true, missed: true, kurangi: false, cukup: false,
+    tambah: true, missed: true, kurangi: false, cukup: false, other: true,
   });
   const tambahRef = useRef<HTMLDivElement>(null);
   const missedRef = useRef<HTMLDivElement>(null);
   const kurangiRef = useRef<HTMLDivElement>(null);
   const cukupRef = useRef<HTMLDivElement>(null);
+  const otherRef = useRef<HTMLDivElement>(null);
 
   const toggleSection = (key: string) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
 
@@ -340,7 +361,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
 
   return (
     <div className="space-y-5">
-      {/* ── Summary Card — BIGGER & BOLDER ── */}
+      {/* ── Summary Card ── */}
       <Card className="card-premium overflow-hidden shadow-premium">
         <CardContent className="p-5">
           {/* Score + Title */}
@@ -355,7 +376,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
             </div>
           </div>
           
-          {/* Budget Breakdown — bigger text */}
+          {/* Budget Breakdown */}
           <div className="mt-5 rounded-xl bg-muted/40 p-4 space-y-2.5">
             <div className="flex items-center gap-2 text-sm font-bold text-foreground">
               <Wallet className="h-4 w-4 text-primary" />
@@ -363,13 +384,13 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
             </div>
             <div className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Pesanan awal</span>
+                <span className="text-muted-foreground">Pesanan 2 Ons</span>
                 <span className="font-bold tabular-nums text-base">{formatRupiah(total_cost)}</span>
               </div>
               {(budget_tambah || 0) > 0 && (
                 <div className="flex items-center justify-between text-orange-600 dark:text-orange-400">
                   <span className="flex items-center gap-1.5">
-                    <CirclePlus className="h-3.5 w-3.5" /> Tambahan
+                    <CirclePlus className="h-3.5 w-3.5" /> Tambahan 2 Ons
                   </span>
                   <span className="font-bold tabular-nums text-base">+{formatRupiah(budget_tambah)}</span>
                 </div>
@@ -382,11 +403,19 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
                   <span className="font-bold tabular-nums text-base">+{formatRupiah(budget_missed)}</span>
                 </div>
               )}
+              {total_cost_other > 0 && (
+                <div className="flex items-center justify-between text-purple-600 dark:text-purple-400">
+                  <span className="flex items-center gap-1.5">
+                    <Package className="h-3.5 w-3.5" /> Ukuran lain
+                  </span>
+                  <span className="font-bold tabular-nums text-base">+{formatRupiah(total_cost_other)}</span>
+                </div>
+              )}
               {hasBudgetExtra && (
                 <>
                   <div className="border-t border-border/50 my-1.5" />
                   <div className="flex items-center justify-between font-extrabold">
-                    <span className="text-base">Total</span>
+                    <span className="text-base">Total Semua</span>
                     <span className="tabular-nums text-primary text-xl">{formatRupiah(budget_total || total_cost)}</span>
                   </div>
                 </>
@@ -394,7 +423,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
             </div>
           </div>
 
-          {/* Quick Stats — bigger */}
+          {/* Quick Stats */}
           <div className="grid grid-cols-2 gap-2 mt-4">
             {needMoreCards.length > 0 && (
               <StatPill
@@ -432,11 +461,20 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
                 onClick={() => scrollToSection("cukup", cukupRef)}
               />
             )}
+            {other_items.length > 0 && (
+              <StatPill
+                icon={Package}
+                label="Ukuran lain"
+                value={`${other_items.length}`}
+                className="bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400"
+                onClick={() => scrollToSection("other", otherRef)}
+              />
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Sections */}
+      {/* 2 Ons Sections */}
       {needMoreCards.length > 0 && (
         <CollapsibleSection icon={Plus} title="Perlu Ditambah" count={needMoreCards.length} color="bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400" sectionRef={tambahRef} isOpen={openSections.tambah} onToggle={() => toggleSection("tambah")}>
           {needMoreCards.map((card, i) => (
@@ -474,6 +512,46 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
               <ProductCard card={card} alreadySent={alreadySent} />
             </div>
           ))}
+        </CollapsibleSection>
+      )}
+
+      {/* ── Non-2 Ons Section ── */}
+      {other_items.length > 0 && (
+        <CollapsibleSection icon={Package} title="Pesanan Ukuran Lain" count={other_items.length} color="bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400" sectionRef={otherRef} isOpen={openSections.other} onToggle={() => toggleSection("other")}>
+          {Object.entries(otherByKategori).map(([kategori, items]) => (
+            <div key={kategori} className="space-y-2">
+              <div className="flex items-center gap-2 px-1">
+                <Badge variant="secondary" className="text-xs font-bold bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-400">
+                  {kategori}
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  {items.length} item · {formatRupiah(items.reduce((s, i) => s + i.cost, 0))}
+                </span>
+              </div>
+              {items.map((item, i) => (
+                <div key={item.kode} className="card-premium p-4 space-y-2 bg-purple-50/50 dark:bg-purple-950/20 border-purple-200/60 dark:border-purple-800/40 animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <span className="font-mono font-extrabold text-base">{item.kode}</span>
+                      <p className="text-sm text-muted-foreground truncate mt-0.5">{item.nama}</p>
+                    </div>
+                    <span className="inline-flex items-center gap-1 bg-purple-500 text-white rounded-full px-3 py-1.5 text-sm font-bold shadow-sm shrink-0">
+                      <ShoppingCart className="h-3.5 w-3.5" /> {formatNumber(item.qty)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Modal: {formatRupiah(item.harga_modal)}/pcs</span>
+                    <span className="font-bold tabular-nums">{formatRupiah(item.cost)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+          {/* Subtotal */}
+          <div className="flex items-center justify-between px-2 py-2 rounded-xl bg-purple-100/60 dark:bg-purple-900/30">
+            <span className="text-sm font-bold text-purple-700 dark:text-purple-400">Subtotal ukuran lain</span>
+            <span className="text-base font-extrabold tabular-nums text-purple-700 dark:text-purple-400">{formatRupiah(total_cost_other)}</span>
+          </div>
         </CollapsibleSection>
       )}
 
