@@ -264,35 +264,35 @@ const Nota = () => {
               {/* Summary total */}
               <div className="space-y-1.5">
                 <div className="flex justify-end">
-                  <table className="border-collapse text-[10px] sm:text-xs">
+                  <table className="border-collapse text-xs sm:text-sm">
                     <tbody>
                       <tr>
-                        <td className="border border-foreground/30 py-1 px-2 font-bold text-right">Jumlah</td>
-                        <td className="border border-foreground/30 py-1 px-2 text-right font-bold tabular-nums text-primary w-[90px] sm:w-[110px]">
+                        <td className="border border-foreground/30 py-1.5 px-2 font-bold text-right">Jumlah</td>
+                        <td className="border border-foreground/30 py-1.5 px-2 text-right font-bold tabular-nums text-primary w-[100px] sm:w-[120px]">
                           {formatRupiah(selectedNota.totalHarga)}
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-foreground/30 py-1 px-2 text-right text-muted-foreground">Dp</td>
-                        <td className="border border-foreground/30 py-1 px-2 text-right tabular-nums">-</td>
+                        <td className="border border-foreground/30 py-1.5 px-2 text-right text-muted-foreground">Dp</td>
+                        <td className="border border-foreground/30 py-1.5 px-2 text-right tabular-nums">-</td>
                       </tr>
                       <tr>
-                        <td className="border border-foreground/30 py-1 px-2 text-right text-muted-foreground">Sisa</td>
-                        <td className="border border-foreground/30 py-1 px-2 text-right tabular-nums">-</td>
+                        <td className="border border-foreground/30 py-1.5 px-2 text-right text-muted-foreground">Sisa</td>
+                        <td className="border border-foreground/30 py-1.5 px-2 text-right tabular-nums">-</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
 
                 {/* Tanda tangan */}
-                <div className="flex justify-around text-[10px] text-muted-foreground pt-2">
+                <div className="flex justify-around text-xs text-muted-foreground pt-2">
                   <div className="text-center">
                     <p>Tanda terima,</p>
-                    <div className="mt-8 border-t border-foreground/40 w-16 sm:w-20 mx-auto"></div>
+                    <div className="mt-8 border-t border-foreground/40 w-20 mx-auto"></div>
                   </div>
                   <div className="text-center">
                     <p>Hormat kami,</p>
-                    <div className="mt-8 border-t border-foreground/40 w-16 sm:w-20 mx-auto"></div>
+                    <div className="mt-8 border-t border-foreground/40 w-20 mx-auto"></div>
                   </div>
                 </div>
               </div>
