@@ -6,7 +6,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Camera, Loader2, Send, Sparkles, FileText, Trash2,
-  CheckCircle2, AlertTriangle, CalendarIcon, X, Package, Plus, Minus, Truck, Clock
+  CheckCircle2, AlertTriangle, CalendarIcon, X, Package, Plus, Truck, Clock
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -27,19 +27,12 @@ interface ReviewItem {
   productName?: string;
 }
 
-interface InputRow {
-  kode: string;
-  qty: string;
-}
-
 function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[] {
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
   const items: ReviewItem[] = [];
 
   for (const line of lines) {
-    // Pattern 1: KODE QTY (e.g., "110 25", "ABC-123 50")
     const matchKodeFirst = line.match(/^([A-Za-z0-9\-\/\.]+)\s*[=\-:\s]+\s*(\d+)\s*(?:pcs|pc|buah)?$/i);
-    // Pattern 2: QTY KODE (e.g., "50 ABC-123") — only when second part has letters
     const matchQtyFirst = line.match(/^(\d+)\s*(?:pcs|pc|buah)?\s+([A-Za-z][A-Za-z0-9\-\/\.]*)\s*$/i);
 
     const match = matchKodeFirst || matchQtyFirst;
@@ -47,11 +40,9 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
 
     let kode: string, qty: number;
     if (matchQtyFirst && !matchKodeFirst) {
-      // Only flip when explicitly QTY first + alpha KODE
       qty = parseInt(match[1]);
       kode = match[2].toUpperCase().trim();
     } else {
-      // Default: first value is KODE, second is QTY
       kode = match[1].toUpperCase().trim();
       qty = parseInt(match[2]);
     }
@@ -89,7 +80,6 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
 
 export default function ReviewAI() {
   const [expandParsed, setExpandParsed] = useState(false);
-  const [rows, setRows] = useState<InputRow[]>([{ kode: "", qty: "" }]);
   const [inputText, setInputText] = useState("");
   const [parsedItems, setParsedItems] = useState<ReviewItem[]>([]);
   const [reviewResult, setReviewResult] = useState<ReviewResult | null>(null);
@@ -99,74 +89,32 @@ export default function ReviewAI() {
   const [targetDays, setTargetDays] = useState<string>("");
   const [alreadySent, setAlreadySent] = useState(false);
   const [showSentDialog, setShowSentDialog] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const { toast } = useToast();
   const { data: products } = useProducts();
   const { data: aliases } = useProductAliases();
 
-  const updateRow = (index: number, field: keyof InputRow, value: string) => {
-    setRows(prev => prev.map((r, i) => i === index ? { ...r, [field]: value } : r));
-  };
-
-  const addRow = () => setRows(prev => [...prev, { kode: "", qty: "" }]);
-
-  const removeRow = (index: number) => {
-    if (rows.length <= 1) return;
-    setRows(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handlePasteRows = (e: React.ClipboardEvent, index: number) => {
-    const text = e.clipboardData.getData("text");
-    if (!text.includes("\n") && !text.includes("\t")) return; // single value, let default handle
-    e.preventDefault();
-    const lines = text.split(/[\n\r]+/).map(l => l.trim()).filter(Boolean);
-    const newRows: InputRow[] = lines.map(line => {
-      // Try tab-separated first, then space/dash/colon
-      const parts = line.split(/[\t]/).length > 1 ? line.split(/[\t]/) : line.split(/[\s=\-:]+/);
-      if (parts.length >= 2) {
-        const first = parts[0].trim();
-        const second = parts[1].trim();
-        // Detect which is kode and which is qty
-        if (/^\d+$/.test(first) && /[A-Za-z]/.test(second)) {
-          return { kode: second.toUpperCase(), qty: first };
-        }
-        return { kode: first.toUpperCase(), qty: second.replace(/[^\d]/g, "") };
-      }
-      return { kode: parts[0]?.toUpperCase() || "", qty: "" };
-    });
-    setRows(prev => {
-      const before = prev.slice(0, index).filter(r => r.kode.trim() || r.qty.trim());
-      const after = prev.slice(index + 1).filter(r => r.kode.trim() || r.qty.trim());
-      const merged = [...before, ...newRows, ...after];
-      return merged.length > 0 ? merged : [{ kode: "", qty: "" }];
-    });
-    toast({ title: "Paste berhasil", description: `${newRows.length} baris ditambahkan` });
-  };
-
-  // Build text from rows for parsing
-  const rowsToText = () => rows.filter(r => r.kode.trim() && r.qty.trim()).map(r => `${r.kode} ${r.qty}`).join("\n");
-
   const handleParse = useCallback(() => {
-    const text = rowsToText();
-    if (!text.trim()) {
-      toast({ title: "Kosong", description: "Isi kode dan qty dulu", variant: "destructive" });
+    if (!inputText.trim()) {
+      toast({ title: "Kosong", description: "Tulis daftar pesanan dulu", variant: "destructive" });
       return;
     }
-    const items = parseInput(text, products || [], aliases || []);
+    const items = parseInput(inputText, products || [], aliases || []);
     if (items.length === 0) {
-      toast({ title: "Format salah", description: "Pastikan kode dan qty sudah diisi", variant: "destructive" });
+      toast({ title: "Format salah", description: "Tulis: KODE QTY per baris\nContoh: 8842 50", variant: "destructive" });
       return;
     }
     setParsedItems(items);
     setShowParsed(true);
     setReviewResult(null);
-  }, [rows, products, aliases, toast]);
+  }, [inputText, products, aliases, toast]);
 
   const handleReview = useCallback(async () => {
     const validItems = parsedItems.filter(i => i.isValid);
     if (validItems.length === 0) {
-      toast({ title: "Tidak ada item valid", description: "Perbaiki kode produk yang merah dulu", variant: "destructive" });
+      toast({ title: "Tidak ada item valid", description: "Perbaiki kode produk yang salah dulu", variant: "destructive" });
       return;
     }
 
@@ -211,9 +159,8 @@ export default function ReviewAI() {
     } finally {
       setIsLoading(false);
     }
-  }, [parsedItems, orderDate, toast]);
+  }, [parsedItems, orderDate, targetDays, alreadySent, toast]);
 
-  // OCR handler
   const handleOcrFile = async (file: File) => {
     if (!file.type.startsWith("image/")) { toast({ title: "Error", description: "File harus gambar", variant: "destructive" }); return; }
     setOcrLoading(true);
@@ -249,12 +196,9 @@ export default function ReviewAI() {
         return;
       }
 
-      const newRows: InputRow[] = ocrItems.map((i: any) => ({ kode: String(i.kode || ""), qty: String(i.qty || i.qty_pesan || 0) }));
-      setRows(prev => {
-        const existing = prev.filter(r => r.kode.trim() || r.qty.trim());
-        return existing.length > 0 ? [...existing, ...newRows] : newRows;
-      });
-      toast({ title: "OCR Berhasil", description: `${ocrItems.length} item terbaca dari foto` });
+      const ocrText = ocrItems.map((i: any) => `${i.kode} ${i.qty || i.qty_pesan || 0}`).join("\n");
+      setInputText(prev => prev ? prev.trim() + "\n" + ocrText : ocrText);
+      toast({ title: "📸 Foto Terbaca!", description: `${ocrItems.length} item berhasil dibaca` });
     } catch (err: any) {
       toast({ title: "Error OCR", description: err.message, variant: "destructive" });
     } finally {
@@ -266,7 +210,6 @@ export default function ReviewAI() {
   const invalidCount = parsedItems.filter(i => !i.isValid).length;
 
   const handleReset = () => {
-    setRows([{ kode: "", qty: "" }]);
     setInputText("");
     setParsedItems([]);
     setReviewResult(null);
@@ -274,116 +217,110 @@ export default function ReviewAI() {
     setOrderDate(undefined);
     setTargetDays("");
     setAlreadySent(false);
+    setShowSettings(false);
   };
 
-  const filledRows = rows.filter(r => r.kode.trim() || r.qty.trim()).length;
+  const lineCount = inputText.split("\n").filter(l => l.trim()).length;
 
   return (
-    <div className="space-y-5 [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*:nth-child(5)]:![animation-delay:200ms] [&>*]:[animation-fill-mode:both]">
-      {/* ── Premium Header (matches other pages) ── */}
+    <div className="space-y-5">
+      {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3.5">
-          <div className="p-3 rounded-2xl bg-gradient-to-br from-primary/20 to-blue-500/10 shadow-sm">
-            <Sparkles className="h-6 w-6 text-primary" />
+          <div className="p-3.5 rounded-2xl bg-gradient-to-br from-primary/20 to-blue-500/10 shadow-sm">
+            <Sparkles className="h-7 w-7 text-primary" />
           </div>
           <div className="space-y-0.5">
             <h3 className="text-xl font-extrabold tracking-tight leading-tight">Review AI</h3>
-            <p className="text-muted-foreground text-xs font-medium">Kirim daftar pesanan, AI kasih masukan</p>
+            <p className="text-muted-foreground text-sm font-medium">Tulis daftar belanja, AI kasih masukan</p>
           </div>
         </div>
       </div>
 
-      {/* Input Card */}
+      {/* ── Input Card — Simple Textarea ── */}
       <Card className="card-premium overflow-hidden">
-        <CardHeader className="pb-3 bg-gradient-to-r from-primary/5 to-transparent">
+        <CardHeader className="pb-2 bg-gradient-to-r from-primary/5 to-transparent">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-bold flex items-center gap-2">
-              <FileText className="h-4 w-4 text-primary" />
-              Daftar Pesanan {filledRows > 0 && <span className="text-primary text-sm font-normal">({filledRows})</span>}
+              <FileText className="h-5 w-5 text-primary" />
+              Daftar Pesanan
+              {lineCount > 0 && <Badge variant="secondary" className="text-xs font-bold">{lineCount}</Badge>}
             </CardTitle>
-            <div>
-              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleOcrFile(f); e.target.value = ""; }} />
-              <Button variant="outline" size="sm" className="rounded-xl font-semibold transition-all duration-150 active:scale-95 h-9 min-h-[44px]" onClick={() => fileRef.current?.click()} disabled={ocrLoading || isLoading}>
-                {ocrLoading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Camera className="h-3.5 w-3.5 mr-1.5" />}
-                {ocrLoading ? "Membaca..." : "Foto Catatan"}
+            <div className="flex items-center gap-2">
+              <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleOcrFile(f); e.target.value = ""; }} />
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-xl font-bold transition-all duration-150 active:scale-95 h-11 px-4 text-sm gap-2" 
+                onClick={() => fileRef.current?.click()} 
+                disabled={ocrLoading || isLoading}
+              >
+                {ocrLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                {ocrLoading ? "Membaca..." : "📸 Foto"}
               </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4 pt-4">
-              <div className="rounded-xl border border-border/60 bg-muted/20 overflow-hidden">
-                {/* Table header */}
-                <div className="grid grid-cols-[1fr_80px_36px] gap-0 px-3 py-2 bg-muted/40 border-b border-border/40">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Kode</span>
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">Qty</span>
-                  <span></span>
+        <CardContent className="space-y-4 pt-3">
+          {/* Textarea */}
+          <div className="relative">
+            <textarea
+              value={inputText}
+              onChange={e => setInputText(e.target.value)}
+              placeholder={"Tulis kode & jumlah, satu baris satu item:\n\n8842 50\nR484 50\n2135 25"}
+              rows={6}
+              className="w-full rounded-xl border-2 border-border/60 bg-muted/20 px-4 py-3 text-base font-mono font-bold leading-relaxed placeholder:text-muted-foreground/40 placeholder:font-normal placeholder:text-sm focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+              disabled={isLoading}
+            />
+            {inputText && (
+              <button
+                type="button"
+                onClick={() => setInputText("")}
+                className="absolute top-3 right-3 p-1.5 rounded-lg bg-muted/60 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Optional settings toggle */}
+          <button
+            type="button"
+            onClick={() => setShowSettings(!showSettings)}
+            className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Package className="h-3.5 w-3.5" />
+            {showSettings ? "Sembunyikan opsi lanjutan" : "Opsi lanjutan (opsional)"}
+          </button>
+
+          {showSettings && (
+            <div className="space-y-3 animate-fade-in">
+              {/* Target Days */}
+              <div className="rounded-xl bg-muted/30 p-3.5 space-y-2">
+                <label className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                  <Package className="h-3.5 w-3.5" />
+                  Target Hari
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    placeholder="7"
+                    value={targetDays}
+                    onChange={e => setTargetDays(e.target.value)}
+                    className="w-20 h-10 rounded-xl border border-input bg-background px-3 text-base font-bold tabular-nums text-center focus:outline-none focus:ring-2 focus:ring-ring"
+                    disabled={isLoading}
+                  />
+                  <span className="text-sm text-muted-foreground">hari</span>
                 </div>
-                {/* Rows */}
-                <div className="divide-y divide-border/30 max-h-[280px] overflow-y-auto">
-                  {rows.map((row, i) => {
-                    const product = row.kode.trim() ? (products || []).find(p => p.kode.toUpperCase() === row.kode.toUpperCase() || p.kode.toUpperCase().replace(/^0+/, "") === row.kode.toUpperCase().replace(/^0+/, "")) : null;
-                    const hasInput = row.kode.trim().length > 0;
-                    const isInvalid = hasInput && !product;
-                    return (
-                      <div key={i} className={`grid grid-cols-[1fr_80px_36px] gap-0 items-center ${isInvalid ? "bg-destructive/5" : ""}`}>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            value={row.kode}
-                            onChange={e => updateRow(i, "kode", e.target.value.toUpperCase())}
-                            onPaste={e => handlePasteRows(e, i)}
-                            placeholder={i === 0 ? "Kode produk (bisa paste banyak baris)" : "Kode produk"}
-                            className="w-full h-10 px-3 bg-transparent text-sm font-mono font-bold placeholder:text-muted-foreground/40 placeholder:font-normal focus:outline-none focus:bg-primary/5 transition-colors"
-                            disabled={isLoading}
-                          />
-                          {product && (
-                            <span className="absolute bottom-0.5 left-3 text-[9px] text-muted-foreground truncate max-w-[150px]">{product.nama}</span>
-                          )}
-                          {isInvalid && (
-                            <span className="absolute bottom-0.5 left-3 text-[9px] text-destructive">Tidak dikenal</span>
-                          )}
-                        </div>
-                        <input
-                          type="number"
-                          min="1"
-                          value={row.qty}
-                          onChange={e => updateRow(i, "qty", e.target.value)}
-                          placeholder="0"
-                          className="w-full h-10 px-2 bg-transparent text-sm font-bold tabular-nums text-center placeholder:text-muted-foreground/40 focus:outline-none focus:bg-primary/5 transition-colors border-l border-border/30"
-                          disabled={isLoading}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeRow(i)}
-                          className="flex items-center justify-center h-10 text-muted-foreground/40 hover:text-destructive transition-colors disabled:opacity-30"
-                          disabled={isLoading || rows.length <= 1}
-                        >
-                          <Minus className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-                {/* Add row button */}
-                <button
-                  type="button"
-                  onClick={addRow}
-                  className="w-full flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-primary hover:bg-primary/5 transition-colors border-t border-border/40"
-                  disabled={isLoading}
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Tambah Baris
-                </button>
               </div>
 
-            {/* Settings Grid */}
-            <div className="grid grid-cols-1 gap-3">
               {/* Date Picker */}
               <div className="rounded-xl bg-muted/30 p-3.5 space-y-2">
-                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-                  <CalendarIcon className="h-3 w-3" />
-                  Tanggal Pesan ke Supplier
-                  <span className="normal-case font-normal text-muted-foreground/70">(opsional)</span>
+                <label className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                  <CalendarIcon className="h-3.5 w-3.5" />
+                  Tanggal Pesan (opsional)
                 </label>
                 <div className="flex items-center gap-2">
                   <Popover>
@@ -392,12 +329,12 @@ export default function ReviewAI() {
                         variant="outline"
                         size="sm"
                         className={cn(
-                          "justify-start text-left font-normal flex-1 rounded-lg h-9 bg-background",
+                          "justify-start text-left font-normal flex-1 rounded-xl h-10 bg-background text-sm",
                           !orderDate && "text-muted-foreground"
                         )}
                         disabled={isLoading}
                       >
-                        <CalendarIcon className="h-3.5 w-3.5 mr-2 shrink-0" />
+                        <CalendarIcon className="h-4 w-4 mr-2 shrink-0" />
                         {orderDate
                           ? format(orderDate, "EEEE, d MMMM yyyy", { locale: idLocale })
                           : "Pilih tanggal..."}
@@ -418,7 +355,7 @@ export default function ReviewAI() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 shrink-0 rounded-lg"
+                      className="h-10 w-10 shrink-0 rounded-xl"
                       onClick={() => setOrderDate(undefined)}
                       disabled={isLoading}
                     >
@@ -426,84 +363,56 @@ export default function ReviewAI() {
                     </Button>
                   )}
                 </div>
-                {orderDate && (
-                  <div className="flex items-start gap-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 px-2.5 py-2 text-[11px] text-amber-700 dark:text-amber-400">
-                    <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
-                    <span>AI akan analisa penjualan setelah {format(orderDate, "d MMM", { locale: idLocale })} & kasih saran tambahan</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Target Days + Already Sent row */}
-              {/* Target Days */}
-              <div className="rounded-xl bg-muted/30 p-3.5 space-y-2">
-                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-                  <Package className="h-3 w-3" />
-                  Target Hari
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min="1"
-                    max="30"
-                    placeholder="7"
-                    value={targetDays}
-                    onChange={e => setTargetDays(e.target.value)}
-                    className="w-16 h-9 rounded-lg border border-input bg-background px-2 text-sm font-bold tabular-nums text-center focus:outline-none focus:ring-2 focus:ring-ring"
-                    disabled={isLoading}
-                  />
-                  <span className="text-xs text-muted-foreground">hari</span>
-                </div>
-                {targetDays && parseInt(targetDays) > 0 && (
-                  <p className="text-[10px] text-muted-foreground leading-snug">
-                    Hitung untuk <strong>{targetDays} hari</strong>
-                  </p>
-                )}
               </div>
             </div>
+          )}
 
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              <Button className="flex-1 rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg" onClick={handleParse} disabled={filledRows === 0 || isLoading}>
-                <FileText className="h-4 w-4 mr-2" />
-                Cek Daftar
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            <Button 
+              className="flex-1 rounded-xl h-14 text-lg font-bold transition-all duration-150 active:scale-[0.97] shadow-md hover:shadow-lg" 
+              onClick={handleParse} 
+              disabled={lineCount === 0 || isLoading}
+            >
+              <FileText className="h-5 w-5 mr-2" />
+              Cek Daftar
+            </Button>
+            {(parsedItems.length > 0 || reviewResult) && (
+              <Button variant="ghost" size="icon" className="h-14 w-14 rounded-xl shrink-0" onClick={handleReset} disabled={isLoading}>
+                <Trash2 className="h-5 w-5" />
               </Button>
-              {(parsedItems.length > 0 || reviewResult) && (
-                <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl shrink-0 min-h-[44px]" onClick={handleReset} disabled={isLoading}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
-      {/* Parsed Items — compact inline summary + dialog detail */}
+      {/* ── Parsed Result + Review Button ── */}
       {showParsed && parsedItems.length > 0 && (
         <div className="flex items-center gap-2.5">
           <Button
             variant="outline"
             size="sm"
-            className="rounded-xl text-xs font-semibold gap-1.5 min-h-[44px] transition-all duration-150 active:scale-95"
+            className="rounded-xl text-sm font-bold gap-2 h-12 px-4 transition-all duration-150 active:scale-95"
             onClick={() => setExpandParsed(true)}
           >
-            <FileText className="h-3.5 w-3.5" />
+            <FileText className="h-4 w-4" />
             {validCount} item
-            {invalidCount > 0 && <span className="text-destructive">({invalidCount} unknown)</span>}
+            {invalidCount > 0 && <span className="text-destructive font-bold">({invalidCount} salah)</span>}
           </Button>
           <Button
-            className="flex-1 rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg"
+            className="flex-1 rounded-xl h-14 text-lg font-bold transition-all duration-150 active:scale-[0.97] shadow-md hover:shadow-lg"
             onClick={() => setShowSentDialog(true)}
             disabled={isLoading}
           >
             {isLoading ? (
               <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Menganalisa...
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Menganalisa...</span>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <Send className="h-4 w-4" />
-                {orderDate ? "Review + Top-Up" : "Review AI"}
+                <Send className="h-5 w-5" />
+                <span>Review AI</span>
               </div>
             )}
           </Button>
@@ -514,38 +423,38 @@ export default function ReviewAI() {
       <Dialog open={expandParsed} onOpenChange={setExpandParsed}>
         <DialogContent className="sm:max-w-md rounded-2xl max-h-[80vh] flex flex-col p-0 gap-0">
           <DialogHeader className="px-5 pt-5 pb-3">
-            <DialogTitle className="flex items-center gap-2 text-base">
-              <FileText className="h-4 w-4 text-primary" />
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+              <FileText className="h-5 w-5 text-primary" />
               Daftar Item
             </DialogTitle>
-            <DialogDescription className="flex gap-1.5 mt-1">
-              <Badge variant="secondary" className="bg-success/10 text-success text-[10px]">
-                <CheckCircle2 className="h-3 w-3 mr-0.5" /> {validCount} valid
+            <DialogDescription className="flex gap-2 mt-1">
+              <Badge variant="secondary" className="bg-success/10 text-success text-xs font-bold">
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> {validCount} valid
               </Badge>
               {invalidCount > 0 && (
-                <Badge variant="secondary" className="bg-destructive/10 text-destructive text-[10px]">
-                  <AlertTriangle className="h-3 w-3 mr-0.5" /> {invalidCount} unknown
+                <Badge variant="secondary" className="bg-destructive/10 text-destructive text-xs font-bold">
+                  <AlertTriangle className="h-3.5 w-3.5 mr-1" /> {invalidCount} salah
                 </Badge>
               )}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-1.5">
+          <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-2">
             {parsedItems.map((item, i) => (
               <div
                 key={i}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
+                className={`flex items-center justify-between px-4 py-3 rounded-xl text-base ${
                   item.isValid ? "bg-card border border-border/60" : "bg-destructive/5 border border-destructive/20"
                 }`}
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-mono font-bold">{item.kode}</span>
+                  <span className="font-mono font-bold text-base">{item.kode}</span>
                   {item.isValid ? (
-                    <span className="text-xs text-muted-foreground truncate">{item.productName}</span>
+                    <span className="text-sm text-muted-foreground truncate">{item.productName}</span>
                   ) : (
-                    <span className="text-xs text-destructive">Tidak dikenal</span>
+                    <span className="text-sm text-destructive font-bold">❌ Salah</span>
                   )}
                 </div>
-                <span className="font-bold text-sm tabular-nums ml-2">{item.qty} pcs</span>
+                <span className="font-bold text-base tabular-nums ml-2">{item.qty}</span>
               </div>
             ))}
           </div>
@@ -556,9 +465,9 @@ export default function ReviewAI() {
       <Dialog open={showSentDialog} onOpenChange={setShowSentDialog}>
         <DialogContent className="sm:max-w-sm rounded-2xl p-0 gap-0 overflow-hidden">
           <DialogHeader className="px-6 pt-6 pb-2">
-            <DialogTitle className="text-center text-lg">Pesanan ini sudah dikirim?</DialogTitle>
-            <DialogDescription className="text-center text-sm text-muted-foreground">
-              AI butuh tahu status pengiriman untuk kasih saran yang tepat
+            <DialogTitle className="text-center text-xl font-bold">Pesanan sudah dikirim?</DialogTitle>
+            <DialogDescription className="text-center text-base text-muted-foreground">
+              Supaya AI kasih saran yang tepat
             </DialogDescription>
           </DialogHeader>
           <div className="px-6 pb-6 pt-3 grid grid-cols-2 gap-3">
@@ -569,14 +478,14 @@ export default function ReviewAI() {
                 setShowSentDialog(false);
                 handleReview();
               }}
-              className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-border bg-card hover:border-primary hover:bg-primary/5 transition-all group"
+              className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-border bg-card hover:border-primary hover:bg-primary/5 transition-all active:scale-95 group"
             >
-              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                <Clock className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+              <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                <Clock className="h-7 w-7 text-muted-foreground group-hover:text-primary transition-colors" />
               </div>
               <div className="text-center">
-                <p className="font-bold text-sm">Belum</p>
-                <p className="text-[11px] text-muted-foreground">Masih rencana</p>
+                <p className="font-bold text-base">Belum</p>
+                <p className="text-sm text-muted-foreground">Masih rencana</p>
               </div>
             </button>
             <button
@@ -586,14 +495,14 @@ export default function ReviewAI() {
                 setShowSentDialog(false);
                 handleReview();
               }}
-              className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-border bg-card hover:border-primary hover:bg-primary/5 transition-all group"
+              className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-border bg-card hover:border-primary hover:bg-primary/5 transition-all active:scale-95 group"
             >
-              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                <Truck className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+              <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                <Truck className="h-7 w-7 text-muted-foreground group-hover:text-primary transition-colors" />
               </div>
               <div className="text-center">
-                <p className="font-bold text-sm">Sudah</p>
-                <p className="text-[11px] text-muted-foreground">Sudah dikirim</p>
+                <p className="font-bold text-base">Sudah</p>
+                <p className="text-sm text-muted-foreground">Sudah dikirim</p>
               </div>
             </button>
           </div>
