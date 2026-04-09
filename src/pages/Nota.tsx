@@ -192,10 +192,10 @@ const Nota = () => {
             <CardContent className="p-3 sm:p-5 space-y-3">
               {/* Header */}
               <div className="text-center border-b-2 border-foreground pb-2">
-                <h2 className="text-xs sm:text-sm font-black tracking-wider uppercase">
+                <h2 className="text-sm sm:text-base font-black tracking-wider uppercase">
                   RR COLLECTIONS
                 </h2>
-                <p className="text-[8px] sm:text-[9px] text-muted-foreground">
+                <p className="text-[11px] sm:text-xs text-muted-foreground">
                   Toko Perlengkapan Jahit • Jl. Rancabentang Barat Rt.04 Rw.25 No.517
                 </p>
               </div>
@@ -203,17 +203,17 @@ const Nota = () => {
               {/* Info - stacked on mobile */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <img src={logo} alt="RR Collections" className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg object-contain shrink-0" />
-                  <div className="text-[9px] sm:text-[10px] text-muted-foreground flex-1">
+                  <img src={logo} alt="RR Collections" className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg object-contain shrink-0" />
+                  <div className="text-xs text-muted-foreground flex-1">
                     <p>Sedia: Benang Obras, Reseleting, Benang Jahit, Dll</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-1 text-[10px] sm:text-xs">
+                <div className="grid grid-cols-2 gap-1 text-xs sm:text-sm">
                   <p><span className="text-muted-foreground">Tanggal: </span><span className="font-bold">{selectedNota.dateLabel}</span></p>
                   <p className="text-right"><span className="text-muted-foreground">Toko: </span><span className="font-bold">{selectedNota.toko}</span></p>
                   <p>
                     <span className="text-muted-foreground">No: </span>
-                    <span className="font-bold font-mono text-[9px]">
+                    <span className="font-bold font-mono text-xs">
                       {selectedNota.date.replace(/-/g, "")}-{selectedNota.toko.slice(0, 3).toUpperCase()}
                     </span>
                   </p>
@@ -223,19 +223,19 @@ const Nota = () => {
 
               {/* Table - compact for mobile */}
               <div className="overflow-x-auto -mx-3 sm:-mx-5 px-3 sm:px-5">
-                <table className="w-full text-[10px] sm:text-xs border-collapse min-w-0">
+                <table className="w-full text-xs sm:text-sm border-collapse min-w-0">
                   <thead>
                     <tr>
-                      <th className="border border-foreground/30 py-1 px-1 sm:px-2 text-center font-bold bg-muted/50 w-[40px] sm:w-[55px]">
+                      <th className="border border-foreground/30 py-1.5 px-1.5 sm:px-2 text-center font-bold bg-muted/50 w-[45px] sm:w-[55px]">
                         Qty
                       </th>
-                      <th className="border border-foreground/30 py-1 px-1 sm:px-2 text-center font-bold bg-muted/50">
+                      <th className="border border-foreground/30 py-1.5 px-1.5 sm:px-2 text-center font-bold bg-muted/50">
                         Barang
                       </th>
-                      <th className="border border-foreground/30 py-1 px-1 sm:px-2 text-center font-bold bg-muted/50 w-[65px] sm:w-[85px]">
+                      <th className="border border-foreground/30 py-1.5 px-1.5 sm:px-2 text-center font-bold bg-muted/50 w-[70px] sm:w-[90px]">
                         Harga
                       </th>
-                      <th className="border border-foreground/30 py-1 px-1 sm:px-2 text-center font-bold bg-muted/50 w-[75px] sm:w-[90px]">
+                      <th className="border border-foreground/30 py-1.5 px-1.5 sm:px-2 text-center font-bold bg-muted/50 w-[80px] sm:w-[100px]">
                         Jumlah
                       </th>
                     </tr>
@@ -243,16 +243,16 @@ const Nota = () => {
                   <tbody>
                     {selectedNota.items.map((item) => (
                       <tr key={item.id}>
-                        <td className="border border-foreground/30 py-1 px-1 sm:px-2 text-center font-bold tabular-nums">
+                        <td className="border border-foreground/30 py-1.5 px-1.5 sm:px-2 text-center font-bold tabular-nums">
                           {item.qty_kirim}
                         </td>
-                        <td className="border border-foreground/30 py-1 px-1 sm:px-2">
+                        <td className="border border-foreground/30 py-1.5 px-1.5 sm:px-2">
                           <span className="font-mono font-bold">{item.products?.kode ?? "-"}</span>
                         </td>
-                        <td className="border border-foreground/30 py-1 px-1 sm:px-2 text-right tabular-nums">
+                        <td className="border border-foreground/30 py-1.5 px-1.5 sm:px-2 text-right tabular-nums">
                           {formatRupiah(item.harga_satuan)}
                         </td>
-                        <td className="border border-foreground/30 py-1 px-1 sm:px-2 text-right font-bold tabular-nums">
+                        <td className="border border-foreground/30 py-1.5 px-1.5 sm:px-2 text-right font-bold tabular-nums">
                           {formatRupiah(item.total_harga)}
                         </td>
                       </tr>
@@ -264,35 +264,35 @@ const Nota = () => {
               {/* Summary total */}
               <div className="space-y-1.5">
                 <div className="flex justify-end">
-                  <table className="border-collapse text-[10px] sm:text-xs">
+                  <table className="border-collapse text-xs sm:text-sm">
                     <tbody>
                       <tr>
-                        <td className="border border-foreground/30 py-1 px-2 font-bold text-right">Jumlah</td>
-                        <td className="border border-foreground/30 py-1 px-2 text-right font-bold tabular-nums text-primary w-[90px] sm:w-[110px]">
+                        <td className="border border-foreground/30 py-1.5 px-2 font-bold text-right">Jumlah</td>
+                        <td className="border border-foreground/30 py-1.5 px-2 text-right font-bold tabular-nums text-primary w-[100px] sm:w-[120px]">
                           {formatRupiah(selectedNota.totalHarga)}
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-foreground/30 py-1 px-2 text-right text-muted-foreground">Dp</td>
-                        <td className="border border-foreground/30 py-1 px-2 text-right tabular-nums">-</td>
+                        <td className="border border-foreground/30 py-1.5 px-2 text-right text-muted-foreground">Dp</td>
+                        <td className="border border-foreground/30 py-1.5 px-2 text-right tabular-nums">-</td>
                       </tr>
                       <tr>
-                        <td className="border border-foreground/30 py-1 px-2 text-right text-muted-foreground">Sisa</td>
-                        <td className="border border-foreground/30 py-1 px-2 text-right tabular-nums">-</td>
+                        <td className="border border-foreground/30 py-1.5 px-2 text-right text-muted-foreground">Sisa</td>
+                        <td className="border border-foreground/30 py-1.5 px-2 text-right tabular-nums">-</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
 
                 {/* Tanda tangan */}
-                <div className="flex justify-around text-[10px] text-muted-foreground pt-2">
+                <div className="flex justify-around text-xs text-muted-foreground pt-2">
                   <div className="text-center">
                     <p>Tanda terima,</p>
-                    <div className="mt-8 border-t border-foreground/40 w-16 sm:w-20 mx-auto"></div>
+                    <div className="mt-8 border-t border-foreground/40 w-20 mx-auto"></div>
                   </div>
                   <div className="text-center">
                     <p>Hormat kami,</p>
-                    <div className="mt-8 border-t border-foreground/40 w-16 sm:w-20 mx-auto"></div>
+                    <div className="mt-8 border-t border-foreground/40 w-20 mx-auto"></div>
                   </div>
                 </div>
               </div>
