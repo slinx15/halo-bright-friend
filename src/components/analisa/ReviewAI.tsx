@@ -28,17 +28,54 @@ interface ReviewItem {
 }
 
 function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[] {
-  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+  const lines = text.split("\n").map(l => l.trim());
   const items: ReviewItem[] = [];
 
+  // Category suffix aliases for non-2 Ons products
+  const CATEGORY_ALIASES: Record<string, string> = {
+    "18G": "18 Gram", "18GRAM": "18 Gram", "18GR": "18 Gram",
+    "3OZ": "3 Ons", "3ONS": "3 Ons", "3 OZ": "3 Ons",
+    "5OZ": "5 Ons", "5ONS": "5 Ons", "5 OZ": "5 Ons",
+  };
+
+  // Header detection regex: matches lines like "2 on", "3 ons", "5 on", "18 gram", "B obras 2 on"
+  const HEADER_PATTERNS: { regex: RegExp; kategori: string }[] = [
+    { regex: /\b18\s*g(?:r(?:am)?)?/i, kategori: "18 Gram" },
+    { regex: /\b5\s*o(?:n(?:s)?|z)/i, kategori: "5 Ons" },
+    { regex: /\b3\s*o(?:n(?:s)?|z)/i, kategori: "3 Ons" },
+    { regex: /\b2\s*o(?:n(?:s)?|z)/i, kategori: "2 Ons" },
+  ];
+
+  // Name-to-kode mapping for common product names in non-2 Ons categories
+  const NAME_TO_KODE: Record<string, string> = {
+    "PUTIH": "WHT", "HITAM": "BLCK", "WHITE": "WHT", "BLACK": "BLCK",
+  };
+
+  let activeKategori: string | null = null; // null = default (2 Ons)
+
   for (const rawLine of lines) {
-    // Normalize: collapse multiple spaces, trim dots/spaces around separators
     const line = rawLine.replace(/\s+/g, " ").trim();
     
+    // Skip empty lines and separators
+    if (!line || /^[-=_]+$/.test(line)) continue;
+
+    // Check if this line is a category header
+    let isHeader = false;
+    for (const { regex, kategori } of HEADER_PATTERNS) {
+      if (regex.test(line)) {
+        // Only treat as header if it does NOT look like a product line (no qty pattern)
+        const hasQty = /[\s.\-:=]+\d+\s*(?:pcs|pc|buah|pack)?$/i.test(line);
+        if (!hasQty) {
+          activeKategori = kategori;
+          isHeader = true;
+          break;
+        }
+      }
+    }
+    if (isHeader) continue;
+
     // Try to extract: everything before the last number = kode, last number = qty
-    // Supports: "BLCK 5OZ 25", "8842 -50", "R143. -50", "WHT 3OZ-25"
     const matchGeneral = line.match(/^(.+?)[.\s]*[\s=\-:]+\s*(\d+)\s*(?:pcs|pc|buah|pack)?$/i);
-    // QTY KODE (only when second part has letters)
     const matchQtyFirst = line.match(/^(\d+)\s*(?:pcs|pc|buah|pack)?\s+([A-Za-z][A-Za-z0-9\-\/\s]*)\s*$/i);
 
     const match = matchGeneral || matchQtyFirst;
@@ -58,12 +95,12 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
 
     if (qty <= 0) continue;
 
-    // Category suffix aliases for non-2 Ons products
-    const CATEGORY_ALIASES: Record<string, string> = {
-      "18G": "18 Gram", "18GRAM": "18 Gram", "18GR": "18 Gram",
-      "3OZ": "3 Ons", "3ONS": "3 Ons", "3 OZ": "3 Ons",
-      "5OZ": "5 Ons", "5ONS": "5 Ons", "5 OZ": "5 Ons",
-    };
+    // If active kategori is non-2 Ons, append suffix to kode
+    if (activeKategori && activeKategori !== "2 Ons") {
+      // Map common names like PUTIH → WHT
+      const mappedKode = NAME_TO_KODE[kode] || kode;
+      kode = mappedKode + " " + activeKategori;
+    }
 
     const findProduct = (k: string) => {
       // 1. Direct match
@@ -86,7 +123,6 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
           const fullKode = baseKode + " " + suffix;
           found = products?.find(p => p.kode.toUpperCase() === fullKode.toUpperCase());
           if (found) return found;
-          // Also try with stripped zeros
           const strippedBase = baseKode.replace(/^0+/, "");
           const fullKode2 = strippedBase + " " + suffix;
           found = products?.find(p => p.kode.toUpperCase() === fullKode2.toUpperCase());
@@ -96,7 +132,7 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
       
       // 4. Alias lookup
       if (aliases) {
-        const aliasEntry = aliases.find(a => a.alias.toUpperCase() === k || a.alias.toUpperCase() === stripped);
+        const aliasEntry = aliases.find(a => a.alias.toUpperCase() === k || a.alias.toUpperCase() === (k.replace(/^0+/, "")));
         if (aliasEntry) return products?.find(p => p.id === aliasEntry.product_id);
       }
       return null;
