@@ -108,28 +108,52 @@ const Nota = () => {
     });
   }, [history, search, dateFilter]);
 
-  const handleShareWA = () => {
-    if (!selectedNota) return;
-    let text = `*NOTA PENJUALAN - RR COLLECTIONS*\n`;
-    text += `Toko Perlengkapan Jahit\nJl. Rancabentang Barat Rt.04 Rw.25 No.517\n\n`;
-    text += `📅 Tanggal: ${selectedNota.dateLabel}\n`;
-    text += `🏪 Nama/Toko: ${selectedNota.toko}\n`;
-    text += `No Nota: ${selectedNota.date.replace(/-/g, "")}-${selectedNota.toko.slice(0, 3).toUpperCase()}\n\n`;
-    text += `━━━━━━━━━━━━━━━━━━\n`;
+  const [isSharing, setIsSharing] = useState(false);
 
-    selectedNota.items.forEach((item, i) => {
-      const kode = item.products?.kode ?? "-";
-      text += `${i + 1}. ${kode} x${item.qty_kirim}\n`;
-      text += `   ${formatRupiah(item.harga_satuan)} → *${formatRupiah(item.total_harga)}*\n`;
-    });
+  const handleShareWA = useCallback(async () => {
+    if (!selectedNota || !printRef.current) return;
+    setIsSharing(true);
 
-    text += `━━━━━━━━━━━━━━━━━━\n`;
-    text += `*TOTAL: ${formatRupiah(selectedNota.totalHarga)}*\n\n`;
-    text += `📞 081287922663`;
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(printRef.current, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        logging: false,
+      });
 
-    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(url, "_blank");
-  };
+      const blob = await new Promise<Blob>((resolve) =>
+        canvas.toBlob((b) => resolve(b!), "image/png")
+      );
+
+      const file = new File([blob], `nota-${selectedNota.date}-${selectedNota.toko}.png`, {
+        type: "image/png",
+      });
+
+      // Try native share with image (mobile-friendly)
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `Nota ${selectedNota.toko} - ${selectedNota.dateLabel}`,
+        });
+      } else {
+        // Fallback: download image
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = file.name;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (err: any) {
+      if (err?.name !== "AbortError") {
+        console.error("Share error:", err);
+      }
+    } finally {
+      setIsSharing(false);
+    }
+  }, [selectedNota]);
 
   // Detail view
   if (selectedNota) {
