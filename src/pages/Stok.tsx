@@ -26,10 +26,12 @@ const PAGE_SIZE = 30;
 
 const Stok = () => {
   const { data: products, isLoading } = useProducts();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
-  const [kategoriFilter, setKategoriFilter] = useState<string>("Semua");
+  const initialKategori = searchParams.get("kategori") || "Semua";
+  const [kategoriFilter, setKategoriFilter] = useState<string>(initialKategori);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resetting, setResetting] = useState(false);
