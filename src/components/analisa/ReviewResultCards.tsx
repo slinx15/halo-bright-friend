@@ -129,40 +129,40 @@ function getMissedReason(card: MissedCard): string {
   return `Barang ${speed} tapi ${timeLeft}, harus pesan sebelum kehabisan`;
 }
 
-// Score ring component
+// ── Score Ring — BIGGER ──
 function ScoreRing({ score }: { score: number }) {
   const pct = (score / 10) * 100;
   const color = score >= 8 ? "text-success" : score >= 5 ? "text-warning" : "text-destructive";
   const strokeColor = score >= 8 ? "stroke-success" : score >= 5 ? "stroke-warning" : "stroke-destructive";
   const bgStroke = "stroke-muted";
-  const r = 28;
+  const r = 42;
   const circ = 2 * Math.PI * r;
   const offset = circ - (pct / 100) * circ;
 
   return (
     <div className="relative flex items-center justify-center">
-      <svg width="72" height="72" viewBox="0 0 72 72">
-        <circle cx="36" cy="36" r={r} fill="none" className={bgStroke} strokeWidth="5" />
+      <svg width="100" height="100" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r={r} fill="none" className={bgStroke} strokeWidth="6" />
         <circle
-          cx="36" cy="36" r={r} fill="none"
+          cx="50" cy="50" r={r} fill="none"
           className={strokeColor}
-          strokeWidth="5"
+          strokeWidth="6"
           strokeLinecap="round"
           strokeDasharray={circ}
           strokeDashoffset={offset}
-          transform="rotate(-90 36 36)"
+          transform="rotate(-90 50 50)"
           style={{ transition: "stroke-dashoffset 0.8s ease-out" }}
         />
       </svg>
       <div className={`absolute inset-0 flex flex-col items-center justify-center ${color}`}>
-        <span className="text-xl font-black leading-none tabular-nums">{score}</span>
-        <span className="text-[9px] font-medium text-muted-foreground">/10</span>
+        <span className="text-3xl font-black leading-none tabular-nums">{score}</span>
+        <span className="text-xs font-bold text-muted-foreground">/10</span>
       </div>
     </div>
   );
 }
 
-// Stat pill - clickable
+// ── Stat Pill — Bigger ──
 function StatPill({ icon: Icon, label, value, className = "", onClick }: {
   icon: any; label: string; value: string | number; className?: string; onClick?: () => void;
 }) {
@@ -170,15 +170,16 @@ function StatPill({ icon: Icon, label, value, className = "", onClick }: {
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs transition-all active:scale-95 ${onClick ? "cursor-pointer hover:ring-2 hover:ring-ring/30" : ""} ${className}`}
+      className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-all active:scale-95 ${onClick ? "cursor-pointer hover:ring-2 hover:ring-ring/30" : ""} ${className}`}
     >
-      <Icon className="h-3.5 w-3.5 shrink-0" />
-      <span className="font-medium">{label}</span>
-      <span className="font-bold ml-auto tabular-nums">{value}</span>
+      <Icon className="h-4 w-4 shrink-0" />
+      <span className="font-bold">{label}</span>
+      <span className="font-extrabold ml-auto tabular-nums">{value}</span>
     </button>
   );
 }
 
+// ── Product Card — Bigger text, more spacing ──
 function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boolean }) {
   const needMore = isNeedMore(card);
   const tooMuch = !alreadySent && isTooMuch(card);
@@ -192,62 +193,62 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
     : "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50";
 
   return (
-    <div className={`card-premium p-3.5 space-y-2 transition-all duration-200 active:scale-[0.98] ${accentClass}`}>
+    <div className={`card-premium p-4 space-y-3 transition-all duration-200 active:scale-[0.98] ${accentClass}`}>
       {/* Header row */}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <span className="font-mono font-bold text-sm">{card.kode}</span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono font-extrabold text-base">{card.kode}</span>
             {card.is_bestseller && (
-              <span className="inline-flex items-center gap-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
-                <Flame className="h-3 w-3" /> Laris
+              <span className="inline-flex items-center gap-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 rounded-full px-2 py-0.5 text-xs font-bold">
+                <Flame className="h-3.5 w-3.5" /> Laris
               </span>
             )}
           </div>
-          <p className="text-[11px] text-muted-foreground truncate mt-0.5">{card.nama}</p>
+          <p className="text-sm text-muted-foreground truncate mt-0.5">{card.nama}</p>
         </div>
         
-        {/* Action badge */}
+        {/* Action badge — bigger */}
         {needMore ? (
-          <span className="inline-flex items-center gap-1 bg-orange-500 text-white rounded-full px-2.5 py-1 text-[11px] font-bold shadow-sm shrink-0">
-            <Plus className="h-3 w-3" /> Tambah {formatNumber(shortfall)}
+          <span className="inline-flex items-center gap-1 bg-orange-500 text-white rounded-full px-3 py-1.5 text-sm font-bold shadow-sm shrink-0">
+            <Plus className="h-3.5 w-3.5" /> +{formatNumber(shortfall)}
           </span>
         ) : tooMuch ? (
-          <span className="inline-flex items-center gap-1 bg-blue-500 text-white rounded-full px-2.5 py-1 text-[11px] font-bold shadow-sm shrink-0">
-            <ArrowDown className="h-3 w-3" /> Kurangi {formatNumber(excess)}
+          <span className="inline-flex items-center gap-1 bg-blue-500 text-white rounded-full px-3 py-1.5 text-sm font-bold shadow-sm shrink-0">
+            <ArrowDown className="h-3.5 w-3.5" /> -{formatNumber(excess)}
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1 bg-emerald-500 text-white rounded-full px-2.5 py-1 text-[11px] font-bold shadow-sm shrink-0">
-            <CheckCircle2 className="h-3 w-3" /> Cukup
+          <span className="inline-flex items-center gap-1 bg-emerald-500 text-white rounded-full px-3 py-1.5 text-sm font-bold shadow-sm shrink-0">
+            <CheckCircle2 className="h-3.5 w-3.5" /> OK
           </span>
         )}
       </div>
 
-      {/* Qty info */}
-      <div className="flex items-center gap-3 text-xs flex-wrap">
-        <div className="flex items-center gap-1 text-muted-foreground">
-          <ShoppingCart className="h-3 w-3" />
+      {/* Qty info — bigger */}
+      <div className="flex items-center gap-3 text-sm flex-wrap">
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <ShoppingCart className="h-3.5 w-3.5" />
           <span>Pesan:</span>
-          <span className="font-bold text-foreground">{formatNumber(card.qty_boss)}</span>
+          <span className="font-extrabold text-foreground text-base">{formatNumber(card.qty_boss)}</span>
         </div>
         {(card.pending_qty ?? 0) > 0 && (
-          <div className="flex items-center gap-1 text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-muted-foreground">
             <span>📦 Pending:</span>
-            <span className="font-bold text-purple-600 dark:text-purple-400">{formatNumber(card.pending_qty!)}</span>
+            <span className="font-extrabold text-purple-600 dark:text-purple-400 text-base">{formatNumber(card.pending_qty!)}</span>
           </div>
         )}
         {(needMore || tooMuch) && (
           <>
             <span className="text-muted-foreground">→</span>
-            <span className={`font-bold ${needMore ? "text-orange-600 dark:text-orange-400" : "text-blue-600 dark:text-blue-400"}`}>
+            <span className={`font-extrabold text-base ${needMore ? "text-orange-600 dark:text-orange-400" : "text-blue-600 dark:text-blue-400"}`}>
               {formatNumber(card.ideal_qty)} pcs
             </span>
           </>
         )}
       </div>
 
-      {/* Reason bubble */}
-      <div className={`rounded-xl px-3 py-2 text-[11px] leading-relaxed ${
+      {/* Reason bubble — bigger */}
+      <div className={`rounded-xl px-4 py-3 text-sm leading-relaxed font-medium ${
         needMore 
           ? "bg-orange-100/80 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300" 
           : tooMuch
@@ -260,22 +261,23 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
   );
 }
 
+// ── Missed Product Card — Bigger ──
 function MissedProductCard({ card }: { card: MissedCard }) {
   return (
-    <div className="card-premium p-3.5 space-y-2 transition-all duration-200 active:scale-[0.98] bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50">
+    <div className="card-premium p-4 space-y-3 transition-all duration-200 active:scale-[0.98] bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <span className="font-mono font-bold text-sm">{card.kode}</span>
-          <p className="text-[11px] text-muted-foreground truncate mt-0.5">{card.nama}</p>
+          <span className="font-mono font-extrabold text-base">{card.kode}</span>
+          <p className="text-sm text-muted-foreground truncate mt-0.5">{card.nama}</p>
         </div>
-        <span className="inline-flex items-center gap-1 bg-destructive text-destructive-foreground rounded-full px-2.5 py-1 text-[11px] font-bold shadow-sm shrink-0">
-          <Plus className="h-3 w-3" /> Pesan {formatNumber(card.ideal_qty)}
+        <span className="inline-flex items-center gap-1 bg-destructive text-destructive-foreground rounded-full px-3 py-1.5 text-sm font-bold shadow-sm shrink-0">
+          <Plus className="h-3.5 w-3.5" /> Pesan {formatNumber(card.ideal_qty)}
         </span>
       </div>
-      <div className="rounded-xl px-3 py-2 text-[11px] leading-relaxed bg-red-100/80 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+      <div className="rounded-xl px-4 py-3 text-sm leading-relaxed font-medium bg-red-100/80 dark:bg-red-900/30 text-red-800 dark:text-red-300">
         💬 {getMissedReason(card)}
       </div>
-      <div className="flex items-center gap-3 text-[10px] text-muted-foreground px-1 flex-wrap">
+      <div className="flex items-center gap-3 text-xs text-muted-foreground px-1 flex-wrap">
         {(card.pending_qty ?? 0) > 0 && (
           <span>📦 Pending: <span className="font-bold text-purple-600 dark:text-purple-400">{formatNumber(card.pending_qty!)}</span></span>
         )}
@@ -287,25 +289,26 @@ function MissedProductCard({ card }: { card: MissedCard }) {
   );
 }
 
-function CollapsibleSection({ icon: Icon, title, count, color, defaultOpen = true, sectionRef, isOpen, onToggle, children }: {
-  icon: any; title: string; count: number; color: string; defaultOpen?: boolean;
+// ── Collapsible Section — Bigger touch target ──
+function CollapsibleSection({ icon: Icon, title, count, color, sectionRef, isOpen, onToggle, children }: {
+  icon: any; title: string; count: number; color: string;
   sectionRef?: React.RefObject<HTMLDivElement>; isOpen: boolean; onToggle: () => void; children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-2" ref={sectionRef}>
+    <div className="space-y-2.5" ref={sectionRef}>
       <button
         type="button"
         onClick={onToggle}
-        className="flex items-center gap-2 px-1 pt-1 w-full text-left group min-h-[44px] transition-all duration-150 active:scale-[0.98]"
+        className="flex items-center gap-2.5 px-1 pt-1 w-full text-left group min-h-[48px] transition-all duration-150 active:scale-[0.98]"
       >
-        <div className={`flex items-center justify-center h-7 w-7 rounded-lg ${color}`}>
-          <Icon className="h-4 w-4" />
+        <div className={`flex items-center justify-center h-8 w-8 rounded-xl ${color}`}>
+          <Icon className="h-4.5 w-4.5" />
         </div>
-        <span className="text-sm font-bold">{title}</span>
-        <span className="text-xs text-muted-foreground">({count})</span>
-        <ChevronDown className={`h-4 w-4 ml-auto text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        <span className="text-base font-bold">{title}</span>
+        <Badge variant="secondary" className="text-xs font-bold">{count}</Badge>
+        <ChevronDown className={`h-5 w-5 ml-auto text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
-      {isOpen && children}
+      {isOpen && <div className="space-y-2.5">{children}</div>}
     </div>
   );
 }
@@ -320,8 +323,6 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
   const totalTambah = needMoreCards.reduce((sum, c) => sum + getShortfall(c), 0);
   const hasBudgetExtra = (budget_tambah || 0) > 0 || (budget_missed || 0) > 0;
 
-
-  // Section open states
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     tambah: true, missed: true, kurangi: false, cukup: false,
   });
@@ -338,67 +339,68 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
   }, []);
 
   return (
-    <div className="space-y-5 [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*:nth-child(5)]:![animation-delay:200ms] [&>*:nth-child(6)]:![animation-delay:250ms] [&>*]:[animation-fill-mode:both]">
-      {/* Summary Card */}
+    <div className="space-y-5">
+      {/* ── Summary Card — BIGGER & BOLDER ── */}
       <Card className="card-premium overflow-hidden shadow-premium">
         <CardContent className="p-5">
-          <div className="flex items-start gap-4">
+          {/* Score + Title */}
+          <div className="flex items-center gap-5">
             <ScoreRing score={score} />
             <div className="flex-1 min-w-0 space-y-2">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <span className="text-sm font-bold">Hasil Review AI</span>
+                <Sparkles className="h-5 w-5 text-primary" />
+                <span className="text-lg font-extrabold">Hasil Review</span>
               </div>
-              {summary && <p className="text-xs text-muted-foreground leading-relaxed">{summary}</p>}
+              {summary && <p className="text-sm text-muted-foreground leading-relaxed">{summary}</p>}
             </div>
           </div>
           
-          {/* Budget Breakdown */}
-          <div className="mt-4 rounded-xl bg-muted/40 p-3.5 space-y-2">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-              <Wallet className="h-3.5 w-3.5 text-primary" />
+          {/* Budget Breakdown — bigger text */}
+          <div className="mt-5 rounded-xl bg-muted/40 p-4 space-y-2.5">
+            <div className="flex items-center gap-2 text-sm font-bold text-foreground">
+              <Wallet className="h-4 w-4 text-primary" />
               Rincian Budget
             </div>
-            <div className="space-y-1.5 text-xs">
+            <div className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Pesanan awal</span>
-                <span className="font-bold tabular-nums">{formatRupiah(total_cost)}</span>
+                <span className="font-bold tabular-nums text-base">{formatRupiah(total_cost)}</span>
               </div>
               {(budget_tambah || 0) > 0 && (
                 <div className="flex items-center justify-between text-orange-600 dark:text-orange-400">
-                  <span className="flex items-center gap-1">
-                    <CirclePlus className="h-3 w-3" /> Tambahan (kurang)
+                  <span className="flex items-center gap-1.5">
+                    <CirclePlus className="h-3.5 w-3.5" /> Tambahan
                   </span>
-                  <span className="font-bold tabular-nums">+{formatRupiah(budget_tambah)}</span>
+                  <span className="font-bold tabular-nums text-base">+{formatRupiah(budget_tambah)}</span>
                 </div>
               )}
               {(budget_missed || 0) > 0 && (
                 <div className="flex items-center justify-between text-destructive">
-                  <span className="flex items-center gap-1">
-                    <CircleAlert className="h-3 w-3" /> Belum dipesan (kritis)
+                  <span className="flex items-center gap-1.5">
+                    <CircleAlert className="h-3.5 w-3.5" /> Belum dipesan
                   </span>
-                  <span className="font-bold tabular-nums">+{formatRupiah(budget_missed)}</span>
+                  <span className="font-bold tabular-nums text-base">+{formatRupiah(budget_missed)}</span>
                 </div>
               )}
               {hasBudgetExtra && (
                 <>
-                  <div className="border-t border-border/50 my-1" />
-                  <div className="flex items-center justify-between font-bold">
-                    <span>Total yang harus disiapkan</span>
-                    <span className="tabular-nums text-primary text-sm">{formatRupiah(budget_total || total_cost)}</span>
+                  <div className="border-t border-border/50 my-1.5" />
+                  <div className="flex items-center justify-between font-extrabold">
+                    <span className="text-base">Total</span>
+                    <span className="tabular-nums text-primary text-xl">{formatRupiah(budget_total || total_cost)}</span>
                   </div>
                 </>
               )}
             </div>
           </div>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 gap-1.5 mt-3">
+          {/* Quick Stats — bigger */}
+          <div className="grid grid-cols-2 gap-2 mt-4">
             {needMoreCards.length > 0 && (
               <StatPill
                 icon={Plus}
                 label="Tambah"
-                value={`${needMoreCards.length} item (+${formatNumber(totalTambah)})`}
+                value={`${needMoreCards.length} (+${formatNumber(totalTambah)})`}
                 className="bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400"
                 onClick={() => scrollToSection("tambah", tambahRef)}
               />
@@ -407,7 +409,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
               <StatPill
                 icon={ArrowDown}
                 label="Kurangi"
-                value={`${tooMuchCards.length} item`}
+                value={`${tooMuchCards.length}`}
                 className="bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400"
                 onClick={() => scrollToSection("kurangi", kurangiRef)}
               />
@@ -416,7 +418,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
               <StatPill
                 icon={PackageX}
                 label="Belum pesan"
-                value={`${missed.length} item`}
+                value={`${missed.length}`}
                 className="bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400"
                 onClick={() => scrollToSection("missed", missedRef)}
               />
@@ -425,7 +427,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
               <StatPill
                 icon={CheckCircle2}
                 label="Cukup"
-                value={`${okCards.length} item`}
+                value={`${okCards.length}`}
                 className="bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400"
                 onClick={() => scrollToSection("cukup", cukupRef)}
               />
@@ -477,14 +479,12 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
 
       {unknown_codes.length > 0 && (
         <div className="flex items-center gap-2 px-1 flex-wrap">
-          <span className="text-xs text-destructive font-medium">Kode tidak dikenal:</span>
+          <span className="text-sm text-destructive font-bold">Kode tidak dikenal:</span>
           {unknown_codes.map(code => (
-            <Badge key={code} variant="secondary" className="font-mono bg-destructive/10 text-destructive text-[10px]">{code}</Badge>
+            <Badge key={code} variant="secondary" className="font-mono bg-destructive/10 text-destructive text-xs">{code}</Badge>
           ))}
         </div>
       )}
-
-
     </div>
   );
 }
