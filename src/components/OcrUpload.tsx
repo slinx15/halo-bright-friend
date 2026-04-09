@@ -154,7 +154,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
       const kategori = item.kategori || undefined;
       const ambiguous = !kategori && isAmbiguousKode(kode);
       const found = ambiguous ? null : findProduct(kode, kategori);
-      console.log("OCR validate:", { rawKode: kode, kategori, foundKode: found?.kode, foundKat: found?.kategori, ambiguous });
+      console.log("OCR validate:", { rawKode: kode, kategori, foundKode: found?.kode, foundKat: found?.kategori, ambiguous, productsCount: allProducts.length });
       return {
         ...item,
         kode: found ? found.kode : kode,
