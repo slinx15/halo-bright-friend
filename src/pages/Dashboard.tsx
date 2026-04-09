@@ -317,8 +317,9 @@ const Dashboard = () => {
   const omzetHariIni = todaySales?.reduce((s, r) => s + r.total_harga, 0) ?? 0;
   const pcsHariIni = todaySales?.reduce((s, r) => s + r.qty_kirim, 0) ?? 0;
 
+  // Use ALL products (not just 2 Ons) for profit calculation
   const modalHariIni = todaySales?.reduce((s, r) => {
-    const product = products?.find(p => p.id === r.product_id);
+    const product = allProducts?.find(p => p.id === r.product_id);
     const modal = product?.prices?.harga_modal ?? 0;
     return s + (r.qty_kirim * modal);
   }, 0) ?? 0;
