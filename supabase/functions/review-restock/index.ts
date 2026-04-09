@@ -140,7 +140,7 @@ serve(async (req) => {
     // Fetch business data
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
     const queries: Promise<any>[] = [
-      supabase.from("products").select("id, kode, nama, kategori, stock(jumlah), prices(harga_modal, harga_normal, harga_grosir)").eq("is_active", true),
+      supabase.from("products").select("id, kode, nama, kategori, stock(jumlah), prices(harga_modal, harga_normal, harga_grosir)").eq("is_active", true).eq("kategori", "2 Ons"),
       supabase.from("stock_out").select("product_id, qty_pesan, created_at").gte("created_at", cutoff.toISOString()).order("created_at", { ascending: false }).limit(5000),
       // Fetch pending restock items (orders placed but not yet arrived)
       supabase.from("pending_restock").select("id, status").in("status", ["pending", "active"]),
