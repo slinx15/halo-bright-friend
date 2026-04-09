@@ -4,16 +4,17 @@ import { getMaxStack } from "@/lib/tumpukanUtils";
 interface TumpukanBadgesProps {
   stacks: number[];
   kode: string;
+  kategori?: string;
   compact?: boolean;
 }
 
-export function TumpukanBadges({ stacks, kode, compact = false }: TumpukanBadgesProps) {
+export function TumpukanBadges({ stacks, kode, kategori, compact = false }: TumpukanBadgesProps) {
   if (!stacks || stacks.length === 0) {
     return <span className="text-muted-foreground text-xs">-</span>;
   }
 
-  const maxStack = getMaxStack(kode);
-  const isSpecial = maxStack === 50;
+  const maxStack = getMaxStack(kode, kategori);
+  const isSpecial = maxStack >= 32; // 32 (5 Ons) or 50 (BLCK/WHT)
 
   return (
     <div className="flex flex-wrap gap-1">
