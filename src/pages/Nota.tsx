@@ -192,10 +192,10 @@ const Nota = () => {
             <CardContent className="p-3 sm:p-5 space-y-3">
               {/* Header */}
               <div className="text-center border-b-2 border-foreground pb-2">
-                <h2 className="text-xs sm:text-sm font-black tracking-wider uppercase">
+                <h2 className="text-sm sm:text-base font-black tracking-wider uppercase">
                   RR COLLECTIONS
                 </h2>
-                <p className="text-[8px] sm:text-[9px] text-muted-foreground">
+                <p className="text-[11px] sm:text-xs text-muted-foreground">
                   Toko Perlengkapan Jahit • Jl. Rancabentang Barat Rt.04 Rw.25 No.517
                 </p>
               </div>
@@ -203,17 +203,17 @@ const Nota = () => {
               {/* Info - stacked on mobile */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <img src={logo} alt="RR Collections" className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg object-contain shrink-0" />
-                  <div className="text-[9px] sm:text-[10px] text-muted-foreground flex-1">
+                  <img src={logo} alt="RR Collections" className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg object-contain shrink-0" />
+                  <div className="text-xs text-muted-foreground flex-1">
                     <p>Sedia: Benang Obras, Reseleting, Benang Jahit, Dll</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-1 text-[10px] sm:text-xs">
+                <div className="grid grid-cols-2 gap-1 text-xs sm:text-sm">
                   <p><span className="text-muted-foreground">Tanggal: </span><span className="font-bold">{selectedNota.dateLabel}</span></p>
                   <p className="text-right"><span className="text-muted-foreground">Toko: </span><span className="font-bold">{selectedNota.toko}</span></p>
                   <p>
                     <span className="text-muted-foreground">No: </span>
-                    <span className="font-bold font-mono text-[9px]">
+                    <span className="font-bold font-mono text-xs">
                       {selectedNota.date.replace(/-/g, "")}-{selectedNota.toko.slice(0, 3).toUpperCase()}
                     </span>
                   </p>
