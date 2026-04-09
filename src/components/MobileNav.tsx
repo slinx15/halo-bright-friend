@@ -28,7 +28,7 @@ const primaryNav = [
   { icon: LayoutDashboard, label: "Home", path: "/" },
   { icon: PackagePlus, label: "Masuk", path: "/masuk" },
   { icon: PackageMinus, label: "Jual", path: "/keluar" },
-  { icon: Package, label: "Stok", path: "/stok" },
+  { icon: Package, label: "Stok", path: "/stok?kategori=2%20Ons", activePath: "/stok" },
   { icon: BarChart3, label: "Analisa", path: "/analisa" },
 ];
 
