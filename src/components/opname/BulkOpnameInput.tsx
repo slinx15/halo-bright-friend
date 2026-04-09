@@ -23,36 +23,25 @@ interface BulkOpnameInputProps {
 }
 
 const DRAFT_KEY = "opname_draft_rows";
-const DRAFT_KAT_KEY = "opname_draft_kategori";
 
-const KATEGORI_OPTIONS = [
-  { value: "2 Ons", label: "2 Ons" },
-  { value: "3 Ons", label: "3 Ons" },
-  { value: "5 Ons", label: "5 Ons" },
-  { value: "18 Gram", label: "18 Gram" },
-];
-
-function saveDraft(rows: InputRow[], kategori: string) {
+function saveDraft(rows: InputRow[]) {
   try {
     const data = rows.filter(r => r.kode.trim() || r.qty.trim());
     if (data.length > 0) {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
-      localStorage.setItem(DRAFT_KAT_KEY, kategori);
     } else {
       localStorage.removeItem(DRAFT_KEY);
-      localStorage.removeItem(DRAFT_KAT_KEY);
     }
   } catch {}
 }
 
-function loadDraft(): { rows: InputRow[]; kategori: string } | null {
+function loadDraft(): { rows: InputRow[] } | null {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw) as InputRow[];
     if (data.length === 0) return null;
-    const kategori = localStorage.getItem(DRAFT_KAT_KEY) || "2 Ons";
-    return { rows: data.map((r, i) => ({ ...r, id: i + 1 })), kategori };
+    return { rows: data.map((r, i) => ({ ...r, id: i + 1 })) };
   } catch {
     return null;
   }
@@ -69,7 +58,6 @@ export interface BulkOpnameInputHandle {
 
 export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInputProps>(function BulkOpnameInput({ products, onSubmit, submitting }, ref) {
   const draft = useMemo(() => loadDraft(), []);
-  const [kategori, setKategori] = useState<string>(() => draft?.kategori || "2 Ons");
   const [rows, setRows] = useState<InputRow[]>(() => {
     if (draft?.rows) {
       const maxId = Math.max(...draft.rows.map(r => r.id), 0);
@@ -86,27 +74,26 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
   const qtyRefs = useRef<Map<number, HTMLInputElement>>(new Map());
 
   useEffect(() => {
-    saveDraft(rows, kategori);
-  }, [rows, kategori]);
+    saveDraft(rows);
+  }, [rows]);
 
-  // Build product lookup: for selected kategori, map BASE code → product
-  // e.g. kategori="5 Ons" → "BLCK" maps to product "BLCK 5 Ons"
-  // For "2 Ons", base code IS the product kode (e.g. "BLCK")
+  // Auto-detect: search ALL products by kode (exact match, base code, or nama)
   const productKodeSet = useMemo(() => {
     const set = new Map<string, ProductWithDetails>();
     for (const p of products) {
-      if (p.kategori !== kategori) continue;
-      // Extract base code by stripping category suffix
-      const baseKode = p.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|18 GRAM)$/i, "");
-      set.set(baseKode, p);
-      // Also allow full kode match
+      // Full kode
       set.set(p.kode.toUpperCase(), p);
+      // Base code (strip category suffix) — only set if not already taken
+      const baseKode = p.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|18 GRAM)$/i, "");
+      if (!set.has(baseKode)) {
+        set.set(baseKode, p);
+      }
     }
     return set;
-  }, [products, kategori]);
+  }, [products]);
 
   const findProduct = useCallback(
-    (kode: string) => productKodeSet.get(kode.toUpperCase()),
+    (kode: string) => productKodeSet.get(kode.toUpperCase().trim()),
     [productKodeSet]
   );
 
@@ -118,13 +105,13 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
     [findProduct]
   );
 
-  // Re-validate all rows when kategori changes
+  // Re-validate all rows when products change
   useEffect(() => {
     setRows(prev => prev.map(r => ({
       ...r,
       status: r.kode.trim() ? (findProduct(r.kode) ? "valid" : "invalid") : "idle",
     })));
-  }, [kategori, findProduct]);
+  }, [findProduct]);
 
   const updateRow = (id: number, field: "kode" | "qty", value: string) => {
     setRows((prev) =>
@@ -249,10 +236,8 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
     setParsed([]);
     setShowPreview(false);
     localStorage.removeItem(DRAFT_KEY);
-    localStorage.removeItem(DRAFT_KAT_KEY);
   };
 
-  // For findProduct in preview, use full kode from parsed (already resolved)
   const findProductByFullKode = useCallback(
     (kode: string) => {
       return (products || []).find(p => p.kode.toUpperCase() === kode.toUpperCase());
@@ -264,8 +249,6 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
   const validItems = parsed.filter((item) => findProductByFullKode(item.kode));
   const invalidItems = parsed.filter((item) => !findProductByFullKode(item.kode));
 
-  const qtyLabel = kategori === "18 Gram" ? "Pack" : "Qty";
-
   return (
     <Card className="rounded-2xl shadow-md border-0 overflow-hidden">
       <CardHeader className="pb-3 bg-gradient-to-r from-warning/5 to-transparent">
@@ -275,30 +258,14 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 pt-4">
-        {/* Category tabs */}
-        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
-          {KATEGORI_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => !showPreview && setKategori(opt.value)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all min-h-[36px] ${
-                kategori === opt.value
-                  ? "bg-warning text-warning-foreground shadow-sm"
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
-              } ${showPreview ? "opacity-60 cursor-not-allowed" : ""}`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-
         {!showPreview ? (
           <>
             {/* Rows */}
             <div className="max-h-[60vh] overflow-y-auto space-y-2 -mx-1 px-1">
               {rows.map((row) => {
                 const matched = row.status === "valid" ? findProduct(row.kode) : null;
+                const kategoriLabel = matched?.kategori && matched.kategori !== "2 Ons" ? matched.kategori : null;
+                const qtyLabel = matched?.kategori === "18 Gram" ? "Pack" : "Qty";
                 return (
                   <div key={row.id} className="space-y-0.5">
                     <div className="flex gap-2 items-center">
@@ -354,7 +321,10 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
                       </button>
                     </div>
                     {matched && (
-                      <p className="text-[10px] text-muted-foreground pl-1 truncate">{matched.nama}</p>
+                      <p className="text-[10px] text-muted-foreground pl-1 truncate">
+                        {matched.nama}
+                        {kategoriLabel && <Badge variant="secondary" className="text-[8px] px-1 py-0 ml-1">{kategoriLabel}</Badge>}
+                      </p>
                     )}
                   </div>
                 );
@@ -371,7 +341,7 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
 
             {validRows.length > 0 && (
               <p className="text-xs text-muted-foreground text-center tabular-nums">
-                {validRows.length} baris siap • {kategori}
+                {validRows.length} baris siap
               </p>
             )}
 
@@ -385,10 +355,6 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
           </>
         ) : (
           <>
-            <div className="text-xs text-muted-foreground text-center">
-              Kategori: <span className="font-semibold text-foreground">{kategori}</span>
-            </div>
-
             {invalidItems.length > 0 && (
               <div className="bg-destructive/10 text-destructive p-3 rounded-lg text-sm">
                 <div className="flex items-center gap-2 font-medium mb-1">
@@ -409,6 +375,7 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
                   const stokSistem = product.stock?.jumlah ?? 0;
                   const selisih = item.total - stokSistem;
                   const unitLabel = product.kategori === "18 Gram" ? "pack" : "pcs";
+                  const kategoriLabel = product.kategori && product.kategori !== "2 Ons" ? product.kategori : null;
                   return (
                     <div
                       key={item.kode}
@@ -419,7 +386,10 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-mono font-bold text-sm">{item.kode}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono font-bold text-sm">{item.kode}</span>
+                          {kategoriLabel && <Badge variant="secondary" className="text-[8px] px-1 py-0">{kategoriLabel}</Badge>}
+                        </div>
                         <span className={`text-sm font-bold tabular-nums ${
                           selisih === 0 ? "text-success" : "text-destructive"
                         }`}>
