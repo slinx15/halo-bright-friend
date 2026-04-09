@@ -77,7 +77,7 @@ function CommandCenter({ products, isLoading }: { products: any[] | undefined; i
         {cards.map((card, idx) => (
           <button
             key={card.label}
-            onClick={() => navigate("/stok")}
+            onClick={() => navigate("/stok?kategori=2 Ons")}
             className={`card-premium ${card.lightBg} p-3 flex flex-col items-center gap-1 transition-all duration-200 native-press animate-fade-in`}
             style={{ animationDelay: `${idx * 60}ms`, animationFillMode: "both" }}
           >
@@ -218,7 +218,7 @@ function StokRendahCard({ products, isLoading }: { products: any[] | undefined; 
               variant="ghost"
               size="sm"
               className="w-full text-xs mt-1 rounded-xl font-semibold text-primary hover:bg-primary/5"
-              onClick={() => navigate("/stok")}
+              onClick={() => navigate("/stok?kategori=2 Ons")}
             >
               Lihat semua stok →
             </Button>
@@ -236,7 +236,7 @@ function QuickActions() {
     { icon: PackagePlus, label: "Barang Masuk", path: "/masuk", color: "text-success", bg: "bg-success/10" },
     { icon: PackageMinus, label: "Barang Keluar", path: "/keluar", color: "text-destructive", bg: "bg-destructive/10" },
     { icon: ClipboardCheck, label: "Stock Opname", path: "/opname", color: "text-warning", bg: "bg-warning/10" },
-    { icon: Package, label: "Cek Stok", path: "/stok", color: "text-primary", bg: "bg-primary/10" },
+    { icon: Package, label: "Cek Stok", path: "/stok?kategori=2 Ons", color: "text-primary", bg: "bg-primary/10" },
   ];
 
   return (
