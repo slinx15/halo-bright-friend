@@ -89,6 +89,15 @@ interface MissedCard {
   pending_qty: number;
 }
 
+interface OtherItem {
+  kode: string;
+  nama: string;
+  kategori: string;
+  qty: number;
+  harga_modal: number;
+  cost: number;
+}
+
 function getStatus(dos: number): Status {
   if (dos <= RULES.CRITICAL_DAYS) return "kritis";
   if (dos <= RULES.WARNING_DAYS) return "segera";
@@ -137,12 +146,11 @@ serve(async (req) => {
 
     const isTopup = mode === "topup";
 
-    // Fetch business data
+    // Fetch ALL active products (2 Ons for review, others for passthrough cost)
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
     const queries: Promise<any>[] = [
-      supabase.from("products").select("id, kode, nama, kategori, stock(jumlah), prices(harga_modal, harga_normal, harga_grosir)").eq("is_active", true).eq("kategori", "2 Ons"),
+      supabase.from("products").select("id, kode, nama, kategori, stock(jumlah), prices(harga_modal, harga_normal, harga_grosir)").eq("is_active", true),
       supabase.from("stock_out").select("product_id, qty_pesan, created_at").gte("created_at", cutoff.toISOString()).order("created_at", { ascending: false }).limit(5000),
-      // Fetch pending restock items (orders placed but not yet arrived)
       supabase.from("pending_restock").select("id, status").in("status", ["pending", "active"]),
     ];
     if (isTopup && ordered_at) {
@@ -157,7 +165,7 @@ serve(async (req) => {
     const rawProducts = productsRes.data || [];
     const stockOut = stockOutRes.data || [];
 
-    // Build pending qty map from pending_restock_items
+    // Build pending qty map
     const pendingMap: Record<string, number> = {};
     const pendingRestocks = pendingRestockRes.data || [];
     if (pendingRestocks.length > 0) {
@@ -172,21 +180,23 @@ serve(async (req) => {
       }
     }
 
-    // Build product lookup
+    // Build product lookup — ALL categories
     const productMap: Record<string, any> = {};
     for (const p of rawProducts) {
       const stk = Array.isArray(p.stock) ? p.stock[0] : p.stock;
       const prc = Array.isArray(p.prices) ? p.prices[0] : p.prices;
       productMap[p.kode.toUpperCase()] = {
-        id: p.id, kode: p.kode, nama: p.nama, kategori: p.kategori,
+        id: p.id, kode: p.kode, nama: p.nama, kategori: p.kategori || "2 Ons",
         stok: stk?.jumlah ?? 0,
         hargaModal: prc?.harga_modal ?? 0,
       };
     }
 
-    // ─── Build structured cards ───
+    // ─── Separate items into 2 Ons (review) vs others (passthrough) ───
     const cards: ReviewCard[] = [];
-    let totalCost = 0;
+    const otherItems: OtherItem[] = [];
+    let totalCost2Ons = 0;
+    let totalCostOther = 0;
     const unknownCodes: string[] = [];
 
     for (const item of items) {
@@ -199,6 +209,22 @@ serve(async (req) => {
         continue;
       }
 
+      // Non-2 Ons: passthrough (no review, just cost)
+      if (product.kategori !== "2 Ons") {
+        const cost = qty * product.hargaModal;
+        totalCostOther += cost;
+        otherItems.push({
+          kode: product.kode,
+          nama: product.nama,
+          kategori: product.kategori,
+          qty,
+          harga_modal: product.hargaModal,
+          cost,
+        });
+        continue;
+      }
+
+      // 2 Ons: full review
       const { velocity, salesDays } = computeWMAVelocity(stockOut, product.id);
       const isBW = isBlackWhite(kode);
       const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
@@ -211,7 +237,7 @@ serve(async (req) => {
       const idealQty = Math.max(0, targetStock - effectiveStock);
       const idealRounded = idealQty > 0 ? Math.max(isBW ? batch : RULES.MIN_ORDER_PER_CODE, Math.ceil(idealQty / batch) * batch) : 0;
       const cost = qty * product.hargaModal;
-      totalCost += cost;
+      totalCost2Ons += cost;
 
       const status = getStatus(dos);
       const isBestSeller = velocity >= RULES.BESTSELLER_VELOCITY;
@@ -229,11 +255,12 @@ serve(async (req) => {
       });
     }
 
-    // ─── Missed critical products ───
+    // ─── Missed critical products (only 2 Ons) ───
     const selectedKodes = new Set(items.map((i: any) => String(i.kode).toUpperCase().trim()));
     const missed: MissedCard[] = [];
 
     for (const p of rawProducts) {
+      if (p.kategori !== "2 Ons") continue;
       if (selectedKodes.has(p.kode.toUpperCase())) continue;
       const prod = productMap[p.kode.toUpperCase()];
       if (!prod) continue;
@@ -250,7 +277,7 @@ serve(async (req) => {
         const idealQty = Math.max(batch, Math.ceil(velocity * missedTargetDays - effectiveStock));
         const idealRounded = idealQty > 0 ? Math.ceil(idealQty / batch) * batch : 0;
         const missedCost = idealRounded * (prod.hargaModal || 0);
-        if (idealRounded <= 0) continue; // skip if pending already covers it
+        if (idealRounded <= 0) continue;
         missed.push({
           kode: p.kode, nama: p.nama,
           stok: prod.stok, velocity,
@@ -262,19 +289,18 @@ serve(async (req) => {
         });
       }
     }
-    // Sort missed: kritis first, then by dos ascending
     missed.sort((a, b) => a.dos - b.dos);
 
     // ─── Budget breakdown ───
     const budgetTambah = cards.filter(c => c.verdict === "kurang").reduce((sum, c) => sum + (c.ideal_qty - c.qty_boss) * c.harga_modal, 0);
     const budgetMissed = missed.reduce((sum, m) => sum + m.cost, 0);
-    const budgetTotal = totalCost + budgetTambah + budgetMissed;
+    const budgetTotal = totalCost2Ons + totalCostOther + budgetTambah + budgetMissed;
 
-    // ─── Score calculation ───
+    // ─── Score calculation (only 2 Ons) ───
     const totalCards = cards.length;
-    let pasCount = cards.filter(c => c.verdict === "pas" || c.verdict === "ok").length;
-    let kurangCount = cards.filter(c => c.verdict === "kurang").length;
-    let lebihCount = cards.filter(c => c.verdict === "lebih").length;
+    const pasCount = cards.filter(c => c.verdict === "pas" || c.verdict === "ok").length;
+    const kurangCount = cards.filter(c => c.verdict === "kurang").length;
+    const lebihCount = cards.filter(c => c.verdict === "lebih").length;
     const score = totalCards > 0 ? Math.max(1, Math.min(10, Math.round(10 * (pasCount / totalCards) - (kurangCount * 0.5 + lebihCount * 0.3 + missed.length * 0.2)))) : 5;
 
     // ─── Short AI summary ───
@@ -282,11 +308,13 @@ serve(async (req) => {
       total_items: totalCards,
       pas: pasCount, kurang: kurangCount, lebih: lebihCount,
       missed_count: missed.length,
-      total_cost: totalCost,
+      total_cost: totalCost2Ons,
       unknown_count: unknownCodes.length,
       budget_tambah: budgetTambah,
       budget_missed: budgetMissed,
       budget_total: budgetTotal,
+      other_items_count: otherItems.length,
+      other_items_cost: totalCostOther,
     };
 
     const isSent = !!already_sent;
@@ -297,14 +325,19 @@ serve(async (req) => {
 - Fokus saran HANYA pada: (1) item yang KURANG — perlu tambah pesanan baru, (2) produk kritis yang BELUM dipesan — perlu pesan terpisah.
 - Gunakan istilah "pesan tambahan" atau "top-up" bukan "pangkas" atau "kurangi".\n`
       : "";
+    
+    const otherContext = otherItems.length > 0
+      ? `\n- Pesanan ukuran lain (3 Ons/5 Ons/18 Gram): ${otherItems.length} item, budget Rp ${totalCostOther.toLocaleString("id-ID")} (tidak perlu di-review, hanya dihitung biaya)`
+      : "";
+
     const summaryPrompt = `Kamu analis inventaris RRCollections (toko benang grosir). Panggil user "Boss". Bahasa Indonesia casual.${sentContext}
 Buat RINGKASAN SINGKAT 2-3 kalimat untuk hasil review restock ini:
-- ${summaryData.total_items} item di-review
+- ${summaryData.total_items} item 2 Ons di-review
 - ${summaryData.pas} sudah tepat, ${summaryData.kurang} kurang, ${summaryData.lebih} kebanyakan
 - ${summaryData.missed_count} produk kritis belum dipesan
-- Budget pesanan awal: Rp ${totalCost.toLocaleString("id-ID")}
-- Budget tambahan yang perlu: Rp ${budgetTambah.toLocaleString("id-ID")} (item kurang) + Rp ${budgetMissed.toLocaleString("id-ID")} (item belum pesan)
-- Total budget dibutuhkan: Rp ${budgetTotal.toLocaleString("id-ID")}
+- Budget pesanan 2 Ons: Rp ${totalCost2Ons.toLocaleString("id-ID")}
+- Budget tambahan yang perlu: Rp ${budgetTambah.toLocaleString("id-ID")} (item kurang) + Rp ${budgetMissed.toLocaleString("id-ID")} (item belum pesan)${otherContext}
+- Total budget SEMUA ukuran: Rp ${budgetTotal.toLocaleString("id-ID")}
 ${unknownCodes.length > 0 ? `- ${unknownCodes.length} kode tidak dikenal: ${unknownCodes.join(", ")}` : ""}
 
 Beri penilaian singkat + 1 saran paling penting. MAX 3 kalimat. Jangan pake markdown heading, cukup teks biasa.`;
@@ -336,8 +369,10 @@ Beri penilaian singkat + 1 saran paling penting. MAX 3 kalimat. Jangan pake mark
       summary: aiSummary,
       cards,
       missed,
+      other_items: otherItems,
       unknown_codes: unknownCodes,
-      total_cost: totalCost,
+      total_cost: totalCost2Ons,
+      total_cost_other: totalCostOther,
       budget_tambah: budgetTambah,
       budget_missed: budgetMissed,
       budget_total: budgetTotal,
