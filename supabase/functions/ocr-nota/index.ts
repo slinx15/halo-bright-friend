@@ -62,10 +62,16 @@ Kembalikan HANYA JSON array tanpa markdown. Contoh:
 [{"kode":"53","qty":5,"kategori":"18 Gram"},{"kode":"BLCK","qty":100,"kategori":"2 Ons"},{"kode":"BLCK","qty":32,"kategori":"5 Ons"}]
 Jika tidak bisa membaca, kembalikan [].`,
 
-      keluar: `Baca foto nota penjualan kain/tekstil.
-Ekstrak setiap item: kode, qty_pesan, qty_kirim, harga_type ("normal"/"grosir"), toko.${codesHint}
+      keluar: `Baca foto nota penjualan benang obras/kain/tekstil.
+DETEKSI KATEGORI/UKURAN DARI HEADER BAGIAN (sama seperti nota pembelian):
+  - "B.OBRAS 18 GR" / "18 GR" / "18 GRAM" → kategori = "18 Gram"
+  - "B.OBRAS 2 ONS" / "2 ONS" → kategori = "2 Ons"
+  - "B.OBRAS 3 ONS" / "3 ONS" → kategori = "3 Ons"
+  - "B.OBRAS 5 ONS" / "5 ONS" → kategori = "5 Ons"
+Jika tidak ada header ukuran, set kategori = null.
+Ekstrak setiap item: kode (kode dasar TANPA ukuran), qty_pesan, qty_kirim, harga_type ("normal"/"grosir"), toko, kategori.${codesHint}
 Kembalikan HANYA JSON array tanpa markdown. Contoh:
-[{"kode":"R533","qty_pesan":10,"qty_kirim":10,"harga_type":"normal","toko":"Toko ABC"}]
+[{"kode":"R533","qty_pesan":10,"qty_kirim":10,"harga_type":"normal","toko":"Toko ABC","kategori":"2 Ons"}]
 Jika tidak bisa membaca, kembalikan [].`,
 
       opname: `Baca foto catatan stok opname kain/tekstil.
