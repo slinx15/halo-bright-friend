@@ -31,9 +31,14 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
   const items: ReviewItem[] = [];
 
-  for (const line of lines) {
-    const matchKodeFirst = line.match(/^([A-Za-z0-9\-\/\.]+)\s*[=\-:\s]+\s*(\d+)\s*(?:pcs|pc|buah)?$/i);
-    const matchQtyFirst = line.match(/^(\d+)\s*(?:pcs|pc|buah)?\s+([A-Za-z][A-Za-z0-9\-\/\.]*)\s*$/i);
+  for (const rawLine of lines) {
+    // Normalize: collapse multiple spaces, trim dots/spaces around separators
+    const line = rawLine.replace(/\s+/g, " ").trim();
+    
+    // Flexible pattern: KODE [separator] QTY — separator can be space, dash, dot, colon, =, or combo
+    const matchKodeFirst = line.match(/^([A-Za-z0-9\-\/]+)[.\s]*[\s=\-:]+\s*(\d+)\s*(?:pcs|pc|buah)?$/i);
+    // QTY KODE (only when second part has letters)
+    const matchQtyFirst = line.match(/^(\d+)\s*(?:pcs|pc|buah)?\s+([A-Za-z][A-Za-z0-9\-\/]*)\s*$/i);
 
     const match = matchKodeFirst || matchQtyFirst;
     if (!match) continue;
@@ -46,6 +51,9 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
       kode = match[1].toUpperCase().trim();
       qty = parseInt(match[2]);
     }
+    
+    // Clean kode: remove trailing dots, spaces
+    kode = kode.replace(/[.\s]+$/, "");
 
     if (qty <= 0) continue;
 
