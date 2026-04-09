@@ -2,7 +2,6 @@ import { useState, useRef, useCallback, useMemo, useEffect, forwardRef, useImper
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { Send, FileText, CheckCircle2, AlertTriangle, Plus, Trash2, X } from "lucide-react";
@@ -24,26 +23,36 @@ interface BulkOpnameInputProps {
 }
 
 const DRAFT_KEY = "opname_draft_rows";
+const DRAFT_KAT_KEY = "opname_draft_kategori";
 
-function saveDraft(rows: InputRow[]) {
+const KATEGORI_OPTIONS = [
+  { value: "2 Ons", label: "2 Ons" },
+  { value: "3 Ons", label: "3 Ons" },
+  { value: "5 Ons", label: "5 Ons" },
+  { value: "18 Gram", label: "18 Gram" },
+];
+
+function saveDraft(rows: InputRow[], kategori: string) {
   try {
     const data = rows.filter(r => r.kode.trim() || r.qty.trim());
     if (data.length > 0) {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+      localStorage.setItem(DRAFT_KAT_KEY, kategori);
     } else {
       localStorage.removeItem(DRAFT_KEY);
+      localStorage.removeItem(DRAFT_KAT_KEY);
     }
   } catch {}
 }
 
-function loadDraft(): InputRow[] | null {
+function loadDraft(): { rows: InputRow[]; kategori: string } | null {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw) as InputRow[];
     if (data.length === 0) return null;
-    // Re-assign IDs to avoid conflicts
-    return data.map((r, i) => ({ ...r, id: i + 1 }));
+    const kategori = localStorage.getItem(DRAFT_KAT_KEY) || "2 Ons";
+    return { rows: data.map((r, i) => ({ ...r, id: i + 1 })), kategori };
   } catch {
     return null;
   }
@@ -59,12 +68,13 @@ export interface BulkOpnameInputHandle {
 }
 
 export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInputProps>(function BulkOpnameInput({ products, onSubmit, submitting }, ref) {
+  const draft = useMemo(() => loadDraft(), []);
+  const [kategori, setKategori] = useState<string>(() => draft?.kategori || "2 Ons");
   const [rows, setRows] = useState<InputRow[]>(() => {
-    const draft = loadDraft();
-    if (draft) {
-      const maxId = Math.max(...draft.map(r => r.id), 0);
+    if (draft?.rows) {
+      const maxId = Math.max(...draft.rows.map(r => r.id), 0);
       getNextId.counter = maxId;
-      return [...draft, { id: getNextId(), kode: "", qty: "", status: "idle" as const }];
+      return [...draft.rows, { id: getNextId(), kode: "", qty: "", status: "idle" as const }];
     }
     getNextId.counter = 0;
     return [{ id: getNextId(), kode: "", qty: "", status: "idle" as const }];
@@ -75,19 +85,25 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
   const kodeRefs = useRef<Map<number, HTMLInputElement>>(new Map());
   const qtyRefs = useRef<Map<number, HTMLInputElement>>(new Map());
 
-
-  // Auto-save draft to localStorage
   useEffect(() => {
-    saveDraft(rows);
-  }, [rows]);
+    saveDraft(rows, kategori);
+  }, [rows, kategori]);
 
+  // Build product lookup: for selected kategori, map BASE code → product
+  // e.g. kategori="5 Ons" → "BLCK" maps to product "BLCK 5 Ons"
+  // For "2 Ons", base code IS the product kode (e.g. "BLCK")
   const productKodeSet = useMemo(() => {
     const set = new Map<string, ProductWithDetails>();
     for (const p of products) {
+      if (p.kategori !== kategori) continue;
+      // Extract base code by stripping category suffix
+      const baseKode = p.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|18 GRAM)$/i, "");
+      set.set(baseKode, p);
+      // Also allow full kode match
       set.set(p.kode.toUpperCase(), p);
     }
     return set;
-  }, [products]);
+  }, [products, kategori]);
 
   const findProduct = useCallback(
     (kode: string) => productKodeSet.get(kode.toUpperCase()),
@@ -101,6 +117,14 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
     },
     [findProduct]
   );
+
+  // Re-validate all rows when kategori changes
+  useEffect(() => {
+    setRows(prev => prev.map(r => ({
+      ...r,
+      status: r.kode.trim() ? (findProduct(r.kode) ? "valid" : "invalid") : "idle",
+    })));
+  }, [kategori, findProduct]);
 
   const updateRow = (id: number, field: "kode" | "qty", value: string) => {
     setRows((prev) =>
@@ -135,7 +159,6 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
     });
   };
 
-  // On kode blur: if valid, auto-focus qty
   const handleKodeBlur = (row: InputRow) => {
     const status = validateKode(row.kode);
     if (status === "valid") {
@@ -143,10 +166,8 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
     }
   };
 
-  // On qty blur: if valid kode + qty filled, auto-add new row
   const handleQtyBlur = (row: InputRow) => {
     if (row.status === "valid" && row.qty.trim() && parseInt(row.qty) >= 0) {
-      // Check if this is the last row
       setRows((prev) => {
         const idx = prev.findIndex((r) => r.id === row.id);
         if (idx === prev.length - 1) {
@@ -159,7 +180,6 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
     }
   };
 
-  // Keyboard support (desktop)
   const handleKodeKeyDown = (e: React.KeyboardEvent, row: InputRow) => {
     if (e.key === "Enter" && row.status === "valid") {
       e.preventDefault();
@@ -198,17 +218,19 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
   useImperativeHandle(ref, () => ({ handleOcrResult }), [handleOcrResult]);
 
   const buildParsed = (): ParsedOpnameItem[] => {
-    const grouped = new Map<string, number[]>();
+    const grouped = new Map<string, { stacks: number[]; productId: string }>();
     for (const row of rows) {
       if (row.status !== "valid" || !row.qty.trim()) continue;
-      const kode = row.kode.toUpperCase().replace(/^0+/, "") || "0";
+      const product = findProduct(row.kode);
+      if (!product) continue;
+      const fullKode = product.kode.toUpperCase();
       const qty = parseInt(row.qty, 10);
       if (qty < 0) continue;
-      if (!grouped.has(kode)) grouped.set(kode, []);
-      grouped.get(kode)!.push(qty);
+      if (!grouped.has(fullKode)) grouped.set(fullKode, { stacks: [], productId: product.id });
+      grouped.get(fullKode)!.stacks.push(qty);
     }
     const result: ParsedOpnameItem[] = [];
-    for (const [kode, stacks] of grouped) {
+    for (const [kode, { stacks }] of grouped) {
       const sorted = [...stacks].sort((a, b) => a - b);
       result.push({ kode, stacks: sorted, total: sorted.reduce((s, v) => s + v, 0) });
     }
@@ -227,11 +249,22 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
     setParsed([]);
     setShowPreview(false);
     localStorage.removeItem(DRAFT_KEY);
+    localStorage.removeItem(DRAFT_KAT_KEY);
   };
 
+  // For findProduct in preview, use full kode from parsed (already resolved)
+  const findProductByFullKode = useCallback(
+    (kode: string) => {
+      return (products || []).find(p => p.kode.toUpperCase() === kode.toUpperCase());
+    },
+    [products]
+  );
+
   const validRows = rows.filter((r) => r.status === "valid" && r.qty.trim() && parseInt(r.qty) >= 0);
-  const validItems = parsed.filter((item) => findProduct(item.kode));
-  const invalidItems = parsed.filter((item) => !findProduct(item.kode));
+  const validItems = parsed.filter((item) => findProductByFullKode(item.kode));
+  const invalidItems = parsed.filter((item) => !findProductByFullKode(item.kode));
+
+  const qtyLabel = kategori === "18 Gram" ? "Pack" : "Qty";
 
   return (
     <Card className="rounded-2xl shadow-md border-0 overflow-hidden">
@@ -242,64 +275,90 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 pt-4">
+        {/* Category tabs */}
+        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+          {KATEGORI_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => !showPreview && setKategori(opt.value)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all min-h-[36px] ${
+                kategori === opt.value
+                  ? "bg-warning text-warning-foreground shadow-sm"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+              } ${showPreview ? "opacity-60 cursor-not-allowed" : ""}`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
         {!showPreview ? (
           <>
             {/* Rows */}
             <div className="max-h-[60vh] overflow-y-auto space-y-2 -mx-1 px-1">
-              {rows.map((row) => (
-                <div key={row.id} className="flex gap-2 items-center">
-                  <div className="relative flex-1">
-                    <Input
-                      ref={(el) => {
-                        if (el) kodeRefs.current.set(row.id, el);
-                        else kodeRefs.current.delete(row.id);
-                      }}
-                      value={row.kode}
-                      onChange={(e) => updateRow(row.id, "kode", e.target.value.toUpperCase())}
-                      onBlur={() => handleKodeBlur(row)}
-                      onKeyDown={(e) => handleKodeKeyDown(e, row)}
-                      placeholder="Kode"
-                      className={`font-mono text-sm pr-7 ${
-                        row.status === "invalid"
-                          ? "border-destructive focus-visible:ring-destructive/30"
-                          : row.status === "valid"
-                          ? "border-success focus-visible:ring-success/30"
-                          : ""
-                      }`}
-                      autoComplete="off"
-                    />
-                    {row.status === "valid" && (
-                      <CheckCircle2 className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-success" />
-                    )}
-                    {row.status === "invalid" && (
-                      <X className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-destructive" />
+              {rows.map((row) => {
+                const matched = row.status === "valid" ? findProduct(row.kode) : null;
+                return (
+                  <div key={row.id} className="space-y-0.5">
+                    <div className="flex gap-2 items-center">
+                      <div className="relative flex-1">
+                        <Input
+                          ref={(el) => {
+                            if (el) kodeRefs.current.set(row.id, el);
+                            else kodeRefs.current.delete(row.id);
+                          }}
+                          value={row.kode}
+                          onChange={(e) => updateRow(row.id, "kode", e.target.value.toUpperCase())}
+                          onBlur={() => handleKodeBlur(row)}
+                          onKeyDown={(e) => handleKodeKeyDown(e, row)}
+                          placeholder="Kode"
+                          className={`font-mono text-sm pr-7 ${
+                            row.status === "invalid"
+                              ? "border-destructive focus-visible:ring-destructive/30"
+                              : row.status === "valid"
+                              ? "border-success focus-visible:ring-success/30"
+                              : ""
+                          }`}
+                          autoComplete="off"
+                        />
+                        {row.status === "valid" && (
+                          <CheckCircle2 className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-success" />
+                        )}
+                        {row.status === "invalid" && (
+                          <X className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-destructive" />
+                        )}
+                      </div>
+                      <Input
+                        ref={(el) => {
+                          if (el) qtyRefs.current.set(row.id, el);
+                          else qtyRefs.current.delete(row.id);
+                        }}
+                        type="number"
+                        inputMode="numeric"
+                        value={row.qty}
+                        onChange={(e) => updateRow(row.id, "qty", e.target.value)}
+                        onBlur={() => handleQtyBlur(row)}
+                        onKeyDown={(e) => handleQtyKeyDown(e, row)}
+                        placeholder={qtyLabel}
+                        className="font-mono text-sm w-20 shrink-0 tabular-nums"
+                        autoComplete="off"
+                      />
+                      <button
+                        type="button"
+                        className="shrink-0 h-[44px] w-[44px] flex items-center justify-center text-muted-foreground active:text-destructive"
+                        onClick={() => removeRow(row.id)}
+                        tabIndex={-1}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {matched && (
+                      <p className="text-[10px] text-muted-foreground pl-1 truncate">{matched.nama}</p>
                     )}
                   </div>
-                  <Input
-                    ref={(el) => {
-                      if (el) qtyRefs.current.set(row.id, el);
-                      else qtyRefs.current.delete(row.id);
-                    }}
-                    type="number"
-                    inputMode="numeric"
-                    value={row.qty}
-                    onChange={(e) => updateRow(row.id, "qty", e.target.value)}
-                    onBlur={() => handleQtyBlur(row)}
-                    onKeyDown={(e) => handleQtyKeyDown(e, row)}
-                    placeholder="Qty"
-                    className="font-mono text-sm w-20 shrink-0 tabular-nums"
-                    autoComplete="off"
-                  />
-                  <button
-                    type="button"
-                    className="shrink-0 h-[44px] w-[44px] flex items-center justify-center text-muted-foreground active:text-destructive"
-                    onClick={() => removeRow(row.id)}
-                    tabIndex={-1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <button
@@ -312,7 +371,7 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
 
             {validRows.length > 0 && (
               <p className="text-xs text-muted-foreground text-center tabular-nums">
-                {validRows.length} baris siap
+                {validRows.length} baris siap • {kategori}
               </p>
             )}
 
@@ -326,6 +385,10 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
           </>
         ) : (
           <>
+            <div className="text-xs text-muted-foreground text-center">
+              Kategori: <span className="font-semibold text-foreground">{kategori}</span>
+            </div>
+
             {invalidItems.length > 0 && (
               <div className="bg-destructive/10 text-destructive p-3 rounded-lg text-sm">
                 <div className="flex items-center gap-2 font-medium mb-1">
@@ -342,9 +405,10 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
             {validItems.length > 0 && (
               <div className="space-y-2">
                 {validItems.map((item) => {
-                  const product = findProduct(item.kode)!;
+                  const product = findProductByFullKode(item.kode)!;
                   const stokSistem = product.stock?.jumlah ?? 0;
                   const selisih = item.total - stokSistem;
+                  const unitLabel = product.kategori === "18 Gram" ? "pack" : "pcs";
                   return (
                     <div
                       key={item.kode}
@@ -359,7 +423,7 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
                         <span className={`text-sm font-bold tabular-nums ${
                           selisih === 0 ? "text-success" : "text-destructive"
                         }`}>
-                          {selisih > 0 ? "+" : ""}{selisih}{selisih === 0 && " ✓"}
+                          {selisih > 0 ? "+" : ""}{selisih} {unitLabel}{selisih === 0 && " ✓"}
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground truncate">{product.nama}</p>
@@ -382,7 +446,7 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
               </span>
               <Badge variant="secondary" className="bg-success/10 text-success text-[10px]">
                 <CheckCircle2 className="h-3 w-3 mr-1" />
-                {validItems.filter((i) => i.total === (findProduct(i.kode)?.stock?.jumlah ?? 0)).length} sesuai
+                {validItems.filter((i) => i.total === (findProductByFullKode(i.kode)?.stock?.jumlah ?? 0)).length} sesuai
               </Badge>
             </div>
 
