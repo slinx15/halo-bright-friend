@@ -179,9 +179,10 @@ const Nota = () => {
             size="sm"
             className="rounded-xl gap-1.5 text-success border-success hover:bg-success/10"
             onClick={handleShareWA}
+            disabled={isSharing}
           >
             <Share2 className="h-4 w-4" />
-            WhatsApp
+            {isSharing ? "Memproses..." : "WhatsApp"}
           </Button>
         </div>
 
