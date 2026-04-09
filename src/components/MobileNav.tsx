@@ -28,7 +28,7 @@ const primaryNav = [
   { icon: LayoutDashboard, label: "Home", path: "/" },
   { icon: PackagePlus, label: "Masuk", path: "/masuk" },
   { icon: PackageMinus, label: "Jual", path: "/keluar" },
-  { icon: Package, label: "Stok", path: "/stok" },
+  { icon: Package, label: "Stok", path: "/stok?kategori=2%20Ons", activePath: "/stok" },
   { icon: BarChart3, label: "Analisa", path: "/analisa" },
 ];
 
@@ -111,10 +111,12 @@ const MobileNav = () => {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-border/10 shadow-[0_-4px_30px_rgba(0,0,0,0.15)] pb-[env(safe-area-inset-bottom)]">
         <div className="flex justify-around items-end px-2 pt-1.5 pb-1">
           {primaryNav.map((item) => {
-            const active = location.pathname === item.path;
+            const active = item.activePath
+              ? location.pathname === item.activePath
+              : location.pathname === item.path;
             return (
               <button
-                key={item.path}
+                key={item.label}
                 onClick={() => navigate(item.path)}
                 className={cn(
                   "relative flex flex-col items-center justify-center gap-0.5 flex-1 min-h-[52px] rounded-2xl transition-all duration-200 native-press",
