@@ -43,13 +43,24 @@ export interface MissedCard {
   pending_qty?: number;
 }
 
+export interface OtherItem {
+  kode: string;
+  nama: string;
+  kategori: string;
+  qty: number;
+  harga_modal: number;
+  cost: number;
+}
+
 export interface ReviewResult {
   score: number;
   summary: string;
   cards: ReviewCard[];
   missed: MissedCard[];
+  other_items?: OtherItem[];
   unknown_codes: string[];
   total_cost: number;
+  total_cost_other?: number;
   budget_tambah: number;
   budget_missed: number;
   budget_total: number;
