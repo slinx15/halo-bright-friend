@@ -1950,7 +1950,7 @@ const Analisa = () => {
           </Tabs>
         </TabsContent>
 
-        {/* ══════════ TOKO (grouped: Toko + Pelanggan) ══════════ */}
+        {/* Toko content merged into Insight tab below */}
         <TabsContent value="toko" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Tabs defaultValue="top-toko" className="w-full">
             <TabsList className="w-full grid grid-cols-2 h-9 rounded-xl bg-muted/50">
