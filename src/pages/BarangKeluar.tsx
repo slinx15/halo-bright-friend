@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,24 +12,34 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { PackageMinus, Send, Clock, Store, Hash, ChevronDown, Zap, FileText, CheckCircle2, DollarSign, CalendarIcon, Trash2, Search } from "lucide-react";
+import { PackageMinus, Send, Clock, Store, ChevronDown, CheckCircle2, DollarSign, CalendarIcon, Trash2, Search, Plus } from "lucide-react";
 import { formatDate, formatNumber, formatRupiah } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { OcrUpload } from "@/components/OcrUpload";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { deductFromStacks } from "@/lib/tumpukanUtils";
-import { BulkKeluarInput, type BulkKeluarItem, type BulkKeluarInputHandle } from "@/components/keluar/BulkKeluarInput";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TransactionSkeleton } from "@/components/LoadingSkeletons";
 import { getAuthHeaders } from "@/lib/authHeaders";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
+interface LineItem {
+  kode: string;
+  qtyPesan: number;
+  qtyKirim: number;
+  hargaType: string;
+  customHarga?: number;
+  toko: string;
+  productId?: string;
+  productKode?: string;
+  productName?: string;
+}
 
 const BarangKeluar = () => {
   const { user, role } = useAuth();
@@ -38,59 +48,72 @@ const BarangKeluar = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const bulkRef = useRef<BulkKeluarInputHandle>(null);
-  const [activeTab, setActiveTab] = useState("bulk");
 
-  // Single mode state
-  const [kode, setKode] = useState("");
-  const [singleKategori, setSingleKategori] = useState("2 Ons");
-  const [qtyPesan, setQtyPesan] = useState(0);
-  const [qtyKirim, setQtyKirim] = useState(0);
-  const [hargaType, setHargaType] = useState("normal");
+  // Multi-row input state
+  const [items, setItems] = useState<LineItem[]>([{ kode: "", qtyPesan: 0, qtyKirim: 0, hargaType: "normal", toko: "" }]);
+  const [globalToko, setGlobalToko] = useState("");
   const [catatan, setCatatan] = useState("");
-  const [toko, setToko] = useState("");
   const [tanggal, setTanggal] = useState<Date | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
-
-  // Bulk mode state
-  const [bulkToko, setBulkToko] = useState("");
-  const [bulkCatatan, setBulkCatatan] = useState("");
-  const [bulkTanggal, setBulkTanggal] = useState<Date | undefined>(undefined);
-  const [bulkSubmitting, setBulkSubmitting] = useState(false);
 
   // Search/filter state for history
   const [historySearch, setHistorySearch] = useState("");
   const [historyDateFilter, setHistoryDateFilter] = useState<Date | undefined>(undefined);
 
-  // Single mode: find product by base code within selected kategori
-  const singleFilteredProducts = useMemo(() => {
-    return (products || []).filter(p => p.kategori === singleKategori);
-  }, [products, singleKategori]);
-
-  const matched = useMemo(() => {
-    if (!kode.trim()) return undefined;
-    const k = kode.toUpperCase().trim();
-    // Try exact match first
-    let found = singleFilteredProducts.find(p => p.kode.toUpperCase() === k);
+  // Auto-detect: search ALL products by kode (exact, base code, or nama)
+  const findProduct = (input: string) => {
+    if (!input.trim() || !products) return undefined;
+    const k = input.toUpperCase().trim();
+    // Exact kode match
+    let found = products.find(p => p.kode.toUpperCase() === k);
     if (found) return found;
-    // Try base code match (strip suffix)
-    found = singleFilteredProducts.find(p => {
+    // Match by nama
+    found = products.find(p => p.nama.toUpperCase() === k);
+    if (found) return found;
+    // Base code match: if input matches a base code and there's exactly one in default category (2 Ons)
+    const baseMatches = products.filter(p => {
       const base = p.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|18 GRAM)$/i, "");
       return base === k;
     });
-    return found;
-  }, [kode, singleFilteredProducts]);
+    if (baseMatches.length === 1) return baseMatches[0];
+    // Prefer 2 Ons if ambiguous
+    const twoOns = baseMatches.find(p => p.kategori === "2 Ons");
+    if (twoOns) return twoOns;
+    return baseMatches[0];
+  };
 
-  const hargaSatuan = matched?.prices
-    ? hargaType === "grosir2" ? matched.prices.harga_grosir2 : hargaType === "grosir" ? matched.prices.harga_grosir : matched.prices.harga_normal
-    : 0;
-  const totalHarga = hargaSatuan * qtyKirim;
-  const stokTersedia = matched?.stock?.jumlah ?? 0;
-  const currentStacks = (matched?.stock?.tumpukan_detail as number[]) ?? [];
+  const updateItem = (index: number, field: keyof LineItem, value: any) => {
+    setItems(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      if (field === "kode") {
+        const found = findProduct(String(value));
+        updated[index].productId = found?.id;
+        updated[index].productKode = found?.kode;
+        updated[index].productName = found?.nama;
+      }
+      return updated;
+    });
+  };
 
-  const previewStacks = qtyKirim > 0 && qtyKirim <= stokTersedia
-    ? deductFromStacks(currentStacks, qtyKirim)
-    : currentStacks;
+  const addLine = () => setItems(prev => [...prev, { kode: "", qtyPesan: 0, qtyKirim: 0, hargaType: "normal", toko: "" }]);
+  const removeLine = (i: number) => setItems(prev => prev.filter((_, idx) => idx !== i));
+
+  const getMatchedProduct = (item: LineItem) => products?.find(p => p.id === item.productId);
+
+  const getPrice = (item: LineItem) => {
+    const p = getMatchedProduct(item);
+    if (!p?.prices) return 0;
+    if (item.hargaType === "custom") return item.customHarga ?? 0;
+    if (item.hargaType === "grosir2") return p.prices.harga_grosir2;
+    if (item.hargaType === "grosir") return p.prices.harga_grosir;
+    return p.prices.harga_normal;
+  };
+
+  const getUnitLabel = (item: LineItem) => {
+    const p = getMatchedProduct(item);
+    return p?.kategori === "18 Gram" ? "pack" : "pcs";
+  };
 
   const { data: history } = useQuery({
     queryKey: ["stock_out_history"],
@@ -105,7 +128,7 @@ const BarangKeluar = () => {
     },
   });
 
-  // Today's stats from history (use local date, not UTC)
+  // Today's stats
   const todayLocal = new Date();
   const todayStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, "0")}-${String(todayLocal.getDate()).padStart(2, "0")}`;
   const todayItems = history?.filter((h: any) => {
@@ -120,7 +143,7 @@ const BarangKeluar = () => {
   const filteredHistory = useMemo(() => {
     if (!history) return [];
     return history.filter((h: any) => {
-      const matchSearch = !historySearch || 
+      const matchSearch = !historySearch ||
         h.products?.kode?.toLowerCase().includes(historySearch.toLowerCase()) ||
         h.products?.nama?.toLowerCase().includes(historySearch.toLowerCase()) ||
         h.toko?.toLowerCase().includes(historySearch.toLowerCase());
@@ -133,72 +156,13 @@ const BarangKeluar = () => {
     });
   }, [history, historySearch, historyDateFilter]);
 
-  const handleSubmit = async () => {
-    if (!matched) {
-      toast({ title: "Error", description: "Produk tidak ditemukan", variant: "destructive" });
-      return;
-    }
-    if (qtyKirim <= 0) {
-      toast({ title: "Error", description: "Qty kirim harus > 0", variant: "destructive" });
-      return;
-    }
-    if (qtyKirim > stokTersedia) {
-      toast({ title: "Error", description: `Stok tidak cukup (tersedia: ${stokTersedia})`, variant: "destructive" });
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const headers = await getAuthHeaders();
-      const outRes = await fetch(`${SUPABASE_URL}/rest/v1/stock_out`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          product_id: matched.id,
-          qty_pesan: qtyPesan,
-          qty_kirim: qtyKirim,
-          harga_type: hargaType,
-          harga_satuan: hargaSatuan,
-          total_harga: totalHarga,
-          catatan: catatan || null,
-          toko: toko.trim() || "",
-          user_id: user!.id,
-          ...(tanggal ? { created_at: new Date(tanggal.getFullYear(), tanggal.getMonth(), tanggal.getDate(), 12, 0, 0).toISOString() } : {}),
-        }),
-      });
-      if (!outRes.ok) throw new Error(await outRes.text());
-
-      const newStacks = deductFromStacks(currentStacks, qtyKirim);
-      const stockRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/stock?product_id=eq.${matched.id}`,
-        {
-          method: "PATCH",
-          headers,
-          body: JSON.stringify({
-            jumlah: stokTersedia - qtyKirim,
-            tumpukan_detail: newStacks,
-          }),
-        }
-      );
-      if (!stockRes.ok) throw new Error(await stockRes.text());
-
-      toast({ title: "Berhasil", description: `${matched.kode} keluar ${qtyKirim} ${singleKategori === "18 Gram" ? "pack" : "pcs"}` });
-      setKode(""); setQtyPesan(0); setQtyKirim(0); setCatatan(""); setToko(""); setTanggal(undefined);
-      queryClient.invalidateQueries({ queryKey: ["stock_out_history"] });
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    }
-    setSubmitting(false);
-  };
-
   const fetchWithRetry = async (url: string, options: RequestInit, retries = 2): Promise<Response> => {
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        const res = await fetch(url, options);
-        return res;
+        return await fetch(url, options);
       } catch (err) {
         if (attempt < retries) {
-          await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+          await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
           continue;
         }
         throw err;
@@ -207,20 +171,25 @@ const BarangKeluar = () => {
     throw new Error("Max retries reached");
   };
 
-  const handleBulkSubmit = async (items: BulkKeluarItem[]) => {
-    setBulkSubmitting(true);
+  const handleSubmit = async () => {
+    const validItems = items.filter(i => i.productId && i.qtyKirim > 0);
+    if (validItems.length === 0) {
+      toast({ title: "Error", description: "Tidak ada item valid", variant: "destructive" });
+      return;
+    }
+
+    setSubmitting(true);
     const headers = await getAuthHeaders();
     let successCount = 0;
     const errors: string[] = [];
 
-    // Track live stock per product to handle duplicate product codes correctly
+    // Track live stock per product for duplicate handling
     const liveStock = new Map<string, { jumlah: number; stacks: number[] }>();
 
-    for (const item of items) {
+    for (const item of validItems) {
       try {
-        const product = item.product!;
+        const product = getMatchedProduct(item)!;
 
-        // Get live stock: use tracked value if already processed, otherwise from cache
         if (!liveStock.has(product.id)) {
           liveStock.set(product.id, {
             jumlah: product.stock?.jumlah ?? 0,
@@ -230,30 +199,30 @@ const BarangKeluar = () => {
         const currentStock = liveStock.get(product.id)!;
 
         if (item.qtyKirim > currentStock.jumlah) {
-          errors.push(`${item.kode}: Stok tidak cukup (sisa ${currentStock.jumlah})`);
+          errors.push(`${product.kode}: Stok tidak cukup (sisa ${currentStock.jumlah})`);
           continue;
         }
 
-        const price = item.hargaType === "custom"
-          ? (item.customHarga ?? 0)
-          : product.prices
-            ? item.hargaType === "grosir2" ? product.prices.harga_grosir2 : item.hargaType === "grosir" ? product.prices.harga_grosir : product.prices.harga_normal
-            : 0;
+        const price = getPrice(item);
+        const tokoName = item.toko.trim() || globalToko.trim() || "";
+
         const outRes = await fetchWithRetry(`${SUPABASE_URL}/rest/v1/stock_out`, {
           method: "POST", headers,
           body: JSON.stringify({
-            product_id: product.id, qty_pesan: item.qtyPesan, qty_kirim: item.qtyKirim,
-            harga_type: item.hargaType, harga_satuan: price, total_harga: price * item.qtyKirim,
-            catatan: bulkCatatan || null, toko: bulkToko.trim() || "", user_id: user!.id,
-            ...(bulkTanggal ? { created_at: new Date(bulkTanggal.getFullYear(), bulkTanggal.getMonth(), bulkTanggal.getDate(), 12, 0, 0).toISOString() } : {}),
+            product_id: product.id,
+            qty_pesan: item.qtyPesan,
+            qty_kirim: item.qtyKirim,
+            harga_type: item.hargaType === "custom" ? "custom" : item.hargaType,
+            harga_satuan: price,
+            total_harga: price * item.qtyKirim,
+            catatan: catatan || null,
+            toko: tokoName,
+            user_id: user!.id,
+            ...(tanggal ? { created_at: new Date(tanggal.getFullYear(), tanggal.getMonth(), tanggal.getDate(), 12, 0, 0).toISOString() } : {}),
           }),
         });
-        if (!outRes.ok) {
-          errors.push(`${item.kode}: ${await outRes.text()}`);
-          continue;
-        }
+        if (!outRes.ok) { errors.push(`${product.kode}: ${await outRes.text()}`); continue; }
 
-        // Deduct from tracked live stock
         const newStacks = deductFromStacks(currentStock.stacks, item.qtyKirim);
         const newJumlah = currentStock.jumlah - item.qtyKirim;
 
@@ -261,38 +230,54 @@ const BarangKeluar = () => {
           `${SUPABASE_URL}/rest/v1/stock?product_id=eq.${product.id}`,
           { method: "PATCH", headers, body: JSON.stringify({ jumlah: newJumlah, tumpukan_detail: newStacks }) }
         );
-        if (!stockRes.ok) {
-          errors.push(`${item.kode} (stok): ${await stockRes.text()}`);
-          continue;
-        }
+        if (!stockRes.ok) { errors.push(`${product.kode} (stok): ${await stockRes.text()}`); continue; }
 
-        // Update tracked stock for next item with same product
         currentStock.jumlah = newJumlah;
         currentStock.stacks = newStacks;
-
         successCount++;
       } catch (err: any) {
         errors.push(`${item.kode}: ${err.message}`);
       }
     }
+
     if (errors.length > 0) {
-      toast({ title: "Sebagian Gagal", description: `${successCount} berhasil, ${errors.length} gagal: ${errors[0]}`, variant: "destructive" });
+      toast({ title: `${successCount} berhasil, ${errors.length} gagal`, description: errors[0], variant: "destructive" });
     } else {
       toast({ title: "Berhasil", description: `${successCount} item berhasil disimpan` });
     }
     if (successCount > 0) {
-      setBulkToko(""); setBulkCatatan(""); setBulkTanggal(undefined);
+      setItems([{ kode: "", qtyPesan: 0, qtyKirim: 0, hargaType: "normal", toko: "" }]);
+      setGlobalToko(""); setCatatan(""); setTanggal(undefined);
       queryClient.invalidateQueries({ queryKey: ["stock_out_history"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     }
-    setBulkSubmitting(false);
+    setSubmitting(false);
+  };
+
+  const handleOcrResult = (ocrItems: any[]) => {
+    const newItems: LineItem[] = ocrItems.map((o: any) => {
+      const found = findProduct(o.kode || "");
+      return {
+        kode: (o.kode || "").toUpperCase(),
+        qtyPesan: o.qty_pesan || 0,
+        qtyKirim: o.qty_kirim || o.qty || 0,
+        hargaType: o.harga_type || "normal",
+        toko: "",
+        productId: found?.id,
+        productKode: found?.kode,
+        productName: found?.nama,
+      };
+    });
+    setItems(prev => {
+      const existing = prev.filter(i => i.kode.trim());
+      return [...existing, ...newItems];
+    });
   };
 
   const handleDeleteTransaction = async (item: any) => {
     setDeletingId(item.id);
     try {
       const headers = await getAuthHeaders();
-      // Restore stock first
       const stockRes = await fetch(
         `${SUPABASE_URL}/rest/v1/stock?product_id=eq.${item.product_id}`,
         { headers: { ...headers, Prefer: "return=representation" } }
@@ -302,27 +287,14 @@ const BarangKeluar = () => {
         if (stockData.length > 0) {
           const currentStock = stockData[0].jumlah ?? 0;
           const currentStacks = (stockData[0].tumpukan_detail as number[]) ?? [];
-          const restoredStacks = currentStacks.length > 0
-            ? [...currentStacks, item.qty_kirim]
-            : currentStacks;
+          const restoredStacks = currentStacks.length > 0 ? [...currentStacks, item.qty_kirim] : currentStacks;
           await fetch(
             `${SUPABASE_URL}/rest/v1/stock?product_id=eq.${item.product_id}`,
-            {
-              method: "PATCH",
-              headers,
-              body: JSON.stringify({
-                jumlah: currentStock + item.qty_kirim,
-                tumpukan_detail: restoredStacks,
-              }),
-            }
+            { method: "PATCH", headers, body: JSON.stringify({ jumlah: currentStock + item.qty_kirim, tumpukan_detail: restoredStacks }) }
           );
         }
       }
-      // Delete the stock_out record
-      const delRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/stock_out?id=eq.${item.id}`,
-        { method: "DELETE", headers }
-      );
+      const delRes = await fetch(`${SUPABASE_URL}/rest/v1/stock_out?id=eq.${item.id}`, { method: "DELETE", headers });
       if (!delRes.ok) throw new Error(await delRes.text());
       toast({ title: "Berhasil", description: `Transaksi ${item.products?.kode} dihapus, stok dikembalikan +${item.qty_kirim}` });
       queryClient.invalidateQueries({ queryKey: ["stock_out_history"] });
@@ -333,9 +305,13 @@ const BarangKeluar = () => {
     setDeletingId(null);
   };
 
+  const validCount = items.filter(i => i.productId && i.qtyKirim > 0).length;
+  const totalQty = items.filter(i => i.productId && i.qtyKirim > 0).reduce((s, i) => s + i.qtyKirim, 0);
+  const totalRevenue = items.filter(i => i.productId && i.qtyKirim > 0).reduce((s, i) => s + getPrice(i) * i.qtyKirim, 0);
+
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*:nth-child(5)]:![animation-delay:200ms] [&>*]:[animation-fill-mode:both]">
-      {/* ── Premium Header ── */}
+      {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3.5">
           <div className="p-3 rounded-2xl bg-destructive/10 shadow-sm">
@@ -346,16 +322,10 @@ const BarangKeluar = () => {
             <p className="text-muted-foreground text-xs font-medium">Catat penjualan / pengiriman</p>
           </div>
         </div>
-        <OcrUpload
-          mode="keluar"
-          onResult={(items) => {
-            setActiveTab("bulk");
-            setTimeout(() => bulkRef.current?.handleOcrResult(items), 100);
-          }}
-        />
+        <OcrUpload mode="keluar" onResult={handleOcrResult} />
       </div>
 
-      {/* ── Quick KPI Strip ── */}
+      {/* ── KPI Strip ── */}
       <div className="grid grid-cols-3 gap-2.5">
         <div className="card-premium bg-destructive/5 p-3 text-center">
           <p className="text-2xl font-extrabold text-destructive tabular-nums">{todayItems.length}</p>
@@ -371,165 +341,196 @@ const BarangKeluar = () => {
         </div>
       </div>
 
-      {/* ── Tab Input ── */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 rounded-xl h-12 p-1 bg-muted/60">
-          <TabsTrigger value="single" className="rounded-lg font-semibold text-sm data-[state=active]:shadow-sm min-h-[40px]">
-            <FileText className="h-4 w-4 mr-1.5" /> Satuan
-          </TabsTrigger>
-          <TabsTrigger value="bulk" className="rounded-lg font-semibold text-sm data-[state=active]:shadow-sm min-h-[40px]">
-            <Zap className="h-4 w-4 mr-1.5" /> Input Cepat
-          </TabsTrigger>
-        </TabsList>
+      {/* ── Input Card ── */}
+      <Card className="card-premium overflow-hidden">
+        <CardHeader className="pb-3 bg-gradient-to-r from-destructive/5 to-transparent">
+          <CardTitle className="text-base font-bold flex items-center gap-2">
+            <PackageMinus className="h-4 w-4 text-destructive" />
+            Input Barang Keluar
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 pt-4">
+          {/* Global: Toko + Tanggal */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <Label className="text-xs font-semibold text-muted-foreground">Nama Toko / Pelanggan</Label>
+              <Input value={globalToko} onChange={e => setGlobalToko(e.target.value)} placeholder="Nama toko..." className="rounded-lg mt-1" />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold text-muted-foreground">Tanggal (opsional)</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-lg mt-1", !tanggal && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {tanggal ? format(tanggal, "dd MMM yyyy", { locale: localeId }) : "Hari ini"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={tanggal} onSelect={setTanggal} initialFocus className="p-3 pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+              {tanggal && <button onClick={() => setTanggal(undefined)} className="text-[10px] text-primary mt-0.5 hover:underline">Reset ke hari ini</button>}
+            </div>
+            <div>
+              <Label className="text-xs font-semibold text-muted-foreground">Catatan (opsional)</Label>
+              <Textarea value={catatan} onChange={e => setCatatan(e.target.value)} placeholder="Catatan..." rows={1} className="rounded-lg mt-1" />
+            </div>
+          </div>
 
-        <TabsContent value="single">
-          <Card className="card-premium overflow-hidden">
-            <CardHeader className="pb-3 bg-gradient-to-r from-destructive/5 to-transparent">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                <PackageMinus className="h-4 w-4 text-destructive" />
-                Input Barang Keluar
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-4">
-              {/* Category tabs */}
-              <div className="flex gap-1.5 overflow-x-auto pb-1">
-                {[
-                  { value: "2 Ons", label: "2 Ons" },
-                  { value: "3 Ons", label: "3 Ons" },
-                  { value: "5 Ons", label: "5 Ons" },
-                  { value: "18 Gram", label: "18 Gram" },
-                ].map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => { setSingleKategori(opt.value); setKode(""); }}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all min-h-[36px] ${
-                      singleKategori === opt.value
-                        ? "bg-destructive text-destructive-foreground shadow-sm"
-                        : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
+          {/* Item rows */}
+          {items.map((item, i) => {
+            const matched = getMatchedProduct(item);
+            const stok = matched?.stock?.jumlah ?? 0;
+            const currentStacks = (matched?.stock?.tumpukan_detail as number[]) ?? [];
+            const overStock = matched && item.qtyKirim > stok;
+            const price = getPrice(item);
+            const total = price * item.qtyKirim;
+            const kategori = matched?.kategori;
+            const unitLabel = kategori === "18 Gram" ? "pack" : "pcs";
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs font-semibold text-muted-foreground">Kode Produk</Label>
-                  <Input placeholder="Kode..." value={kode} onChange={(e) => setKode(e.target.value.toUpperCase())} list="product-codes-out" className="rounded-lg mt-1" />
-                  <datalist id="product-codes-out">
-                    {singleFilteredProducts.map((p) => <option key={p.id} value={p.kode} />)}
-                  </datalist>
-                  {matched && (
-                    <p className="text-xs text-success mt-1 font-medium flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3" /> {matched.nama} — Stok: <span className="font-bold tabular-nums">{stokTersedia}</span>
-                    </p>
-                  )}
-                  {kode && !matched && <p className="text-xs text-destructive mt-1 font-medium">✗ Produk tidak ditemukan</p>}
-                </div>
-                <div>
-                  <Label className="text-xs font-semibold text-muted-foreground">Tipe Harga</Label>
-                  <Select value={hargaType} onValueChange={setHargaType}>
-                    <SelectTrigger className="rounded-lg mt-1 min-h-[44px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="normal">Normal {matched?.prices ? `(${formatRupiah(matched.prices.harga_normal)})` : ""}</SelectItem>
-                      <SelectItem value="grosir">Grosir {matched?.prices ? `(${formatRupiah(matched.prices.harga_grosir)})` : ""}</SelectItem>
-                      <SelectItem value="grosir2">Grosir 2 {matched?.prices ? `(${formatRupiah(matched.prices.harga_grosir2)})` : ""}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs font-semibold text-muted-foreground">Qty Pesan</Label>
-                  <Input type="text" inputMode="numeric" value={qtyPesan === 0 ? "" : qtyPesan} onChange={(e) => setQtyPesan(e.target.value === "" ? 0 : parseInt(e.target.value) || 0)} placeholder="0" className="rounded-lg mt-1 tabular-nums font-bold text-base" />
-                </div>
-                <div>
-                  <Label className="text-xs font-semibold text-muted-foreground">Qty Kirim</Label>
-                  <Input type="text" inputMode="numeric" value={qtyKirim === 0 ? "" : qtyKirim} onChange={(e) => setQtyKirim(e.target.value === "" ? 0 : parseInt(e.target.value) || 0)} placeholder="0" className="rounded-lg mt-1 tabular-nums font-bold text-base" />
-                </div>
-              </div>
-
-              {matched && currentStacks.length > 0 && (
-                <div className="bg-muted/40 rounded-xl p-3 space-y-2">
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="text-muted-foreground font-medium">Tumpukan sekarang:</span>
-                    <TumpukanBadges stacks={currentStacks} kode={matched.kode} compact />
-                  </div>
-                  {qtyKirim > 0 && qtyKirim <= stokTersedia && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="text-foreground font-bold">Setelah keluar:</span>
-                      <TumpukanBadges stacks={previewStacks} kode={matched.kode} compact />
-                      <Badge variant="secondary" className="text-[10px] rounded-full px-2">= {previewStacks.reduce((s, v) => s + v, 0)}</Badge>
-                    </div>
-                  )}
-                  {qtyKirim > stokTersedia && <p className="text-xs text-destructive font-bold">⚠️ Stok tidak cukup!</p>}
-                </div>
-              )}
-
-              {matched && qtyKirim > 0 && qtyKirim <= stokTersedia && (
-                <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-3.5 space-y-1.5">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Harga Satuan</span>
-                    <span className="font-semibold tabular-nums">{formatRupiah(hargaSatuan)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" /> Total</span>
-                    <span className="font-extrabold text-primary tabular-nums text-base">{formatRupiah(totalHarga)}</span>
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label className="text-xs font-semibold text-muted-foreground">Nama Toko / Pelanggan</Label>
-                  <Input value={toko} onChange={(e) => setToko(e.target.value)} placeholder="Nama toko..." className="rounded-lg mt-1" />
-                </div>
-                <div>
-                  <Label className="text-xs font-semibold text-muted-foreground">Tanggal (opsional)</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-lg mt-1", !tanggal && "text-muted-foreground")}>
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {tanggal ? format(tanggal, "dd MMM yyyy", { locale: localeId }) : "Hari ini"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={tanggal} onSelect={setTanggal} initialFocus className="p-3 pointer-events-auto" />
-                    </PopoverContent>
-                  </Popover>
-                  {tanggal && <button onClick={() => setTanggal(undefined)} className="text-[10px] text-primary mt-0.5 hover:underline">Reset ke hari ini</button>}
-                </div>
-                <div>
-                  <Label className="text-xs font-semibold text-muted-foreground">Catatan (opsional)</Label>
-                  <Textarea value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder="Catatan..." rows={2} className="rounded-lg mt-1" />
-                </div>
-              </div>
-              <Button
-                onClick={handleSubmit}
-                disabled={submitting || !matched}
-                className="w-full rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-destructive hover:bg-destructive/90"
+            return (
+              <div
+                key={i}
+                className={cn(
+                  "rounded-xl border p-3 space-y-2 transition-all duration-200",
+                  !item.productId && item.kode ? "border-destructive/30 bg-destructive/[0.03]" :
+                  overStock ? "border-warning/30 bg-warning/[0.03]" :
+                  item.productId ? "border-success/30 bg-success/[0.03] shadow-sm" :
+                  "border-border/60 hover:border-border"
+                )}
               >
-                <Send className="h-5 w-5 mr-2" /> {submitting ? "Menyimpan..." : "Simpan Barang Keluar"}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                {/* Row 1: Kode + Delete */}
+                <div className="flex gap-2 items-center">
+                  <div className="flex-1 min-w-0">
+                    <Input
+                      placeholder="Ketik kode produk..."
+                      value={item.kode}
+                      onChange={e => updateItem(i, "kode", e.target.value.toUpperCase())}
+                      list="product-codes-out"
+                      className="rounded-lg font-mono"
+                    />
+                  </div>
+                  {items.length > 1 && (
+                    <Button variant="ghost" size="icon" onClick={() => removeLine(i)} className="shrink-0 text-destructive hover:bg-destructive/10 rounded-lg h-10 w-10">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
 
-        <TabsContent value="bulk">
-          <BulkKeluarInput
-            ref={bulkRef}
-            products={products ?? []}
-            onSubmit={handleBulkSubmit}
-            submitting={bulkSubmitting}
-            toko={bulkToko}
-            setToko={setBulkToko}
-            catatan={bulkCatatan}
-            setCatatan={setBulkCatatan}
-            tanggal={bulkTanggal}
-            setTanggal={setBulkTanggal}
-          />
-        </TabsContent>
-      </Tabs>
+                {/* Product info */}
+                {matched && (
+                  <div className="flex items-center justify-between text-xs">
+                    <p className="text-success font-medium flex items-center gap-1 truncate">
+                      <CheckCircle2 className="h-3 w-3 shrink-0" /> {matched.nama}
+                      {kategori && kategori !== "2 Ons" && (
+                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0 ml-1">{kategori}</Badge>
+                      )}
+                    </p>
+                    <span className={cn("font-bold tabular-nums", overStock ? "text-destructive" : "text-muted-foreground")}>
+                      Stok: {formatNumber(stok)}
+                    </span>
+                  </div>
+                )}
+                {item.kode && !item.productId && (
+                  <p className="text-xs text-destructive font-medium">✗ Produk tidak ditemukan</p>
+                )}
+
+                {/* Row 2: Qty + Harga */}
+                {matched && (
+                  <div className="flex items-end gap-2">
+                    <div className="w-20">
+                      <label className="text-[9px] font-semibold text-muted-foreground uppercase">Pesan</label>
+                      <Input
+                        type="text" inputMode="numeric"
+                        className="h-9 text-sm mt-0.5 text-center font-bold"
+                        value={item.qtyPesan === 0 ? "" : item.qtyPesan}
+                        onChange={e => updateItem(i, "qtyPesan", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="w-20">
+                      <label className="text-[9px] font-semibold text-muted-foreground uppercase">Kirim ({unitLabel})</label>
+                      <Input
+                        type="text" inputMode="numeric"
+                        className="h-9 text-sm mt-0.5 text-center font-bold"
+                        value={item.qtyKirim === 0 ? "" : item.qtyKirim}
+                        onChange={e => updateItem(i, "qtyKirim", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <label className="text-[9px] font-semibold text-muted-foreground uppercase">Harga</label>
+                      <Select value={item.hargaType} onValueChange={v => updateItem(i, "hargaType", v)}>
+                        <SelectTrigger className="h-9 text-xs mt-0.5"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="normal">Normal {matched.prices ? `(${formatRupiah(matched.prices.harga_normal)})` : ""}</SelectItem>
+                          <SelectItem value="grosir">Grosir {matched.prices ? `(${formatRupiah(matched.prices.harga_grosir)})` : ""}</SelectItem>
+                          {matched.prices?.harga_grosir2 ? <SelectItem value="grosir2">Grosir 2 ({formatRupiah(matched.prices.harga_grosir2)})</SelectItem> : null}
+                          <SelectItem value="custom">✏️ Custom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+
+                {/* Custom harga input */}
+                {item.hargaType === "custom" && matched && (
+                  <div className="flex items-center gap-2">
+                    <Label className="text-[10px] text-muted-foreground shrink-0">Harga custom:</Label>
+                    <Input
+                      type="text" inputMode="numeric"
+                      className="h-8 text-xs text-right font-bold flex-1"
+                      placeholder="Rp ..."
+                      value={item.customHarga === undefined || item.customHarga === 0 ? "" : item.customHarga}
+                      onChange={e => updateItem(i, "customHarga", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
+                    />
+                  </div>
+                )}
+
+                {/* Total + stacks */}
+                {matched && item.qtyKirim > 0 && !overStock && (
+                  <div className="flex items-center justify-between text-xs">
+                    {currentStacks.length > 0 && (
+                      <TumpukanBadges stacks={deductFromStacks(currentStacks, item.qtyKirim)} kode={matched.kode} compact />
+                    )}
+                    <span className="text-sm font-bold text-primary tabular-nums ml-auto">
+                      {formatRupiah(total)}
+                    </span>
+                  </div>
+                )}
+                {overStock && <p className="text-xs text-destructive font-bold">⚠️ Stok tidak cukup!</p>}
+              </div>
+            );
+          })}
+
+          <datalist id="product-codes-out">
+            {products?.map(p => <option key={p.id} value={p.kode} label={`${p.kode} — ${p.nama}`} />)}
+          </datalist>
+
+          <Button variant="outline" size="sm" onClick={addLine} className="rounded-xl transition-all duration-150 active:scale-95 min-h-[44px]">
+            <Plus className="h-4 w-4 mr-1" /> Tambah Baris
+          </Button>
+
+          {/* Summary */}
+          {validCount > 0 && (
+            <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-3 space-y-1">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{validCount} item · {formatNumber(totalQty)} {items.some(i => getMatchedProduct(i)?.kategori === "18 Gram") ? "unit" : "pcs"}</span>
+                <span className="font-extrabold text-primary tabular-nums">{formatRupiah(totalRevenue)}</span>
+              </div>
+            </div>
+          )}
+
+          <Button
+            onClick={handleSubmit}
+            disabled={submitting || validCount === 0}
+            className="w-full rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-destructive hover:bg-destructive/90"
+          >
+            <Send className="h-5 w-5 mr-2" />
+            {submitting ? "Menyimpan..." : `Simpan Barang Keluar${validCount > 0 ? ` (${validCount} item)` : ""}`}
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* ── Riwayat ── */}
       <Card className="card-premium">
@@ -551,16 +552,10 @@ const BarangKeluar = () => {
           </CardHeader>
           <CollapsibleContent>
             <CardContent className="space-y-3">
-              {/* Search & Filter */}
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Cari kode, nama, toko..."
-                    value={historySearch}
-                    onChange={(e) => setHistorySearch(e.target.value)}
-                    className="pl-9 rounded-xl h-10"
-                  />
+                  <Input placeholder="Cari kode, nama, toko..." value={historySearch} onChange={e => setHistorySearch(e.target.value)} className="pl-9 rounded-xl h-10" />
                 </div>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -575,9 +570,7 @@ const BarangKeluar = () => {
               </div>
               {historyDateFilter && (
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-xs rounded-full">
-                    {format(historyDateFilter, "dd MMM yyyy", { locale: localeId })}
-                  </Badge>
+                  <Badge variant="secondary" className="text-xs rounded-full">{format(historyDateFilter, "dd MMM yyyy", { locale: localeId })}</Badge>
                   <button onClick={() => setHistoryDateFilter(undefined)} className="text-[10px] text-primary hover:underline">Reset</button>
                 </div>
               )}
