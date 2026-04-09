@@ -1,10 +1,12 @@
 // Tumpukan (stack) utility functions
 // Standard products: max stack 25
-// BLCK & WHT: max stack 50
+// BLCK & WHT (2 Ons): max stack 50
+// 5 Ons products: max stack 32
 
 const SPECIAL_CODES = ["BLCK", "WHT"];
 
-export function getMaxStack(kode: string): number {
+export function getMaxStack(kode: string, kategori?: string): number {
+  if (kategori === "5 Ons") return 32;
   return SPECIAL_CODES.includes(kode.toUpperCase()) ? 50 : 25;
 }
 
