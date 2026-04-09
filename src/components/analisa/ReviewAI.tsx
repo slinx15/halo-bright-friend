@@ -148,7 +148,19 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
     });
   }
 
-  return items;
+  // Deduplicate: merge items with same kode by summing qty
+  const merged = new Map<string, ReviewItem>();
+  for (const item of items) {
+    const key = item.kode.toUpperCase();
+    const existing = merged.get(key);
+    if (existing) {
+      existing.qty += item.qty;
+    } else {
+      merged.set(key, { ...item });
+    }
+  }
+
+  return Array.from(merged.values());
 }
 
 export default function ReviewAI() {
