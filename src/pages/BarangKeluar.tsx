@@ -43,6 +43,7 @@ const BarangKeluar = () => {
 
   // Single mode state
   const [kode, setKode] = useState("");
+  const [singleKategori, setSingleKategori] = useState("2 Ons");
   const [qtyPesan, setQtyPesan] = useState(0);
   const [qtyKirim, setQtyKirim] = useState(0);
   const [hargaType, setHargaType] = useState("normal");
@@ -61,7 +62,25 @@ const BarangKeluar = () => {
   const [historySearch, setHistorySearch] = useState("");
   const [historyDateFilter, setHistoryDateFilter] = useState<Date | undefined>(undefined);
 
-  const matched = products?.find((p) => p.kode.toUpperCase() === kode.toUpperCase());
+  // Single mode: find product by base code within selected kategori
+  const singleFilteredProducts = useMemo(() => {
+    return (products || []).filter(p => p.kategori === singleKategori);
+  }, [products, singleKategori]);
+
+  const matched = useMemo(() => {
+    if (!kode.trim()) return undefined;
+    const k = kode.toUpperCase().trim();
+    // Try exact match first
+    let found = singleFilteredProducts.find(p => p.kode.toUpperCase() === k);
+    if (found) return found;
+    // Try base code match (strip suffix)
+    found = singleFilteredProducts.find(p => {
+      const base = p.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|18 GRAM)$/i, "");
+      return base === k;
+    });
+    return found;
+  }, [kode, singleFilteredProducts]);
+
   const hargaSatuan = matched?.prices
     ? hargaType === "grosir2" ? matched.prices.harga_grosir2 : hargaType === "grosir" ? matched.prices.harga_grosir : matched.prices.harga_normal
     : 0;
