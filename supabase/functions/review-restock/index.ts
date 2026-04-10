@@ -55,14 +55,31 @@ function computeWMAVelocity(sales: SaleRecord[], productId: string) {
   const totalDays = p1Days + p2Days; const totalQty = p1Total + p2Total; const minDays = 7;
   const vel1 = p1Days > 0 ? p1Total / Math.max(RULES.WMA_PERIOD1_DAYS, minDays) : 0;
   const vel2 = p2Days > 0 ? p2Total / Math.max(30 - RULES.WMA_PERIOD1_DAYS, minDays) : 0;
+  
   let velocity: number;
   if (totalDays >= 7) { velocity = vel1 * RULES.WMA_PERIOD1_WEIGHT + vel2 * RULES.WMA_PERIOD2_WEIGHT; }
   else if (totalDays > 0) { velocity = totalQty / minDays; }
   else { velocity = 0; }
-  if (totalDays > 0 && totalDays < 3) velocity /= (3 / totalDays);
-  if (totalDays === 1 && velocity > 20) velocity *= 0.5;
-  if (totalDays > 0 && totalDays < 7 && totalQty >= 20) velocity *= 0.55;
-  return { velocity: Math.round(velocity * 100) / 100, totalQty, salesDays: totalDays };
+
+  // Layer 1: Maturity dampening (exact match stockAnalyticsEngine)
+  let adjustedVelocity = velocity;
+  const isImmature = totalDays > 0 && totalDays < MATURITY_CONFIG.minSalesDays;
+  if (isImmature) {
+    const maturityFactor = MATURITY_CONFIG.minSalesDays / totalDays;
+    adjustedVelocity = velocity / maturityFactor;
+  }
+  // Hard guard for extreme 1-day noise
+  if (totalDays === 1 && velocity > 20) {
+    adjustedVelocity = Math.min(adjustedVelocity, velocity * 0.5);
+  }
+  // Layer 2: Hard maturity cap for immature data (< 7 days with enough sales)
+  const isHardImmature = totalDays > 0 && totalDays < HARD_MATURITY_CONFIG.immatureDaysThreshold;
+  const hasEnoughSales = totalQty >= HARD_MATURITY_CONFIG.minSalesForCap;
+  if (isHardImmature && hasEnoughSales) {
+    adjustedVelocity = adjustedVelocity * HARD_MATURITY_CONFIG.velocityCapFactor;
+  }
+
+  return { velocity: Math.round(adjustedVelocity * 100) / 100, totalQty, salesDays: totalDays };
 }
 
 type Verdict = "kurang" | "pas" | "lebih" | "ok" | "unknown";
