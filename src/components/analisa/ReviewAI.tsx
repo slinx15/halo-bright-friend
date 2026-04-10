@@ -75,8 +75,8 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
     if (isHeader) continue;
 
     // Try to extract: everything before the last number = kode, last number = qty
-    const matchGeneral = line.match(/^(.+?)[.\s]*[\s=\-:]+\s*(\d+)\s*(?:pcs|pc|buah|pack)?$/i);
-    const matchQtyFirst = line.match(/^(\d+)\s*(?:pcs|pc|buah|pack)?\s+([A-Za-z][A-Za-z0-9\-\/\s]*)\s*$/i);
+    const matchGeneral = line.match(/^(.+?)[.\s]*[\s=\-:]+\s*(\d+)\s*(?:pcs|pc|buah|pack|pak)?$/i);
+    const matchQtyFirst = line.match(/^(\d+)\s*(?:pcs|pc|buah|pack|pak)?\s+([A-Za-z][A-Za-z0-9\-\/\s]*)\s*$/i);
 
     const match = matchGeneral || matchQtyFirst;
     if (!match) continue;
