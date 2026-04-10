@@ -180,13 +180,15 @@ atau [] jika tidak ada yang perlu diingat.`;
 
     // ─── Fetch business data ───
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
-    const [productsRes, stockOutRes] = await Promise.all([
+    const [productsRes, stockOutRes, stockInRes] = await Promise.all([
       supabase.from("products").select("id, kode, nama, kategori, stock(jumlah, tumpukan_detail), prices(harga_modal, harga_normal, harga_grosir, harga_grosir2)").eq("is_active", true),
       supabase.from("stock_out").select("product_id, qty_kirim, qty_pesan, total_harga, harga_satuan, harga_type, toko, created_at").gte("created_at", cutoff.toISOString()).order("created_at", { ascending: false }).limit(5000),
+      supabase.from("stock_in").select("product_id, qty, catatan, created_at").gte("created_at", cutoff.toISOString()).order("created_at", { ascending: false }).limit(2000),
     ]);
 
     const rawProducts = productsRes.data || [];
     const stockOut = stockOutRes.data || [];
+    const stockIn = stockInRes.data || [];
     const allProducts: ProductData[] = rawProducts.map((p: any) => {
       const stk = Array.isArray(p.stock) ? p.stock[0] : p.stock;
       const prc = Array.isArray(p.prices) ? p.prices[0] : p.prices;
@@ -432,6 +434,35 @@ ${todayTrxCount} transaksi | ${todayPcs} pcs | ${todayTokoCount} toko
 Omzet: Rp ${todayOmzet.toLocaleString("id-ID")} | Profit: Rp ${todayProfit.toLocaleString("id-ID")} (margin ${todayMarginPct}%)
 ${todayTokoCount > 0 ? `Detail per toko:\n${todayTokoDetail}` : "Belum ada penjualan hari ini."}`;
 
+    // ─── Stock In (Barang Masuk) Analysis ───
+    const todayStockIn = stockIn.filter((s: any) => {
+      const wibDate = new Date(new Date(s.created_at).getTime() + WIB_OFFSET);
+      return wibDate.toISOString().slice(0, 10) === todayWibStr;
+    });
+    const todayStockInQty = todayStockIn.reduce((s: number, r: any) => s + (r.qty || 0), 0);
+    const todayStockInCount = todayStockIn.length;
+    const todayStockInDetail = todayStockIn.map((s: any) => {
+      const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
+      return `${prod?.kode || "?"}(${prod?.nama || "?"}): +${s.qty} pcs${s.catatan ? ` [${s.catatan}]` : ""}`;
+    }).join("\n");
+
+    // Stock In per date (last 30 days)
+    const stockInByDate: Record<string, { qty: number; count: number; items: string[] }> = {};
+    for (const s of stockIn) {
+      const wibDate = new Date(new Date(s.created_at).getTime() + WIB_OFFSET);
+      const dateKey = wibDate.toISOString().slice(0, 10);
+      if (!stockInByDate[dateKey]) stockInByDate[dateKey] = { qty: 0, count: 0, items: [] };
+      stockInByDate[dateKey].qty += s.qty || 0;
+      stockInByDate[dateKey].count += 1;
+      const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
+      stockInByDate[dateKey].items.push(`${prod?.kode || "?"}=+${s.qty}`);
+    }
+    const stockInBlock = `📦 BARANG MASUK HARI INI (${todayWibStr}, WIB):
+${todayStockInCount > 0 ? `${todayStockInCount} entri | Total +${todayStockInQty} pcs\nDetail:\n${todayStockInDetail}` : "Belum ada barang masuk hari ini."}
+
+BARANG MASUK 7 HARI TERAKHIR:
+${Object.entries(stockInByDate).sort(([a], [b]) => b.localeCompare(a)).slice(0, 7).map(([date, d]) => `${date}: +${d.qty} pcs (${d.count} entri) [${d.items.slice(0, 10).join(",")}${d.items.length > 10 ? ` +${d.items.length - 10} lainnya` : ""}]`).join("\n") || "Tidak ada data"}`;
+
     // ─── Knowledge Modules ───
     const KNOWLEDGE_MODULES: Record<string, { keywords: string[]; content: string }> = {
       industri: {
@@ -609,6 +640,8 @@ ${memoryBlock}
 
 ═══ ${todayBlock} ═══
 
+═══ ${stockInBlock} ═══
+
 ═══ DATA TOKO BOSS (REAL-TIME, STOK & ANALISA = HANYA 2 ONS) ═══
 ${products.length} produk 2 Ons aktif | Total semua ukuran: ${allSizeProducts.length} produk | Omzet 7 hari: Rp ${totalOmzet7d.toLocaleString("id-ID")} (${totalPcs7d} pcs)
 KONTEKS UKURAN: 2 Ons=stok di rumah, 3 Ons/5 Ons/18 Gram=pesan dulu ke supplier. 3 Ons hanya Hitam & Putih.
@@ -665,6 +698,8 @@ ${memoryBlock}
 
 ═══ ${todayBlock} ═══
 
+═══ ${stockInBlock} ═══
+
 ═══ DATA TOKO (STOK & ANALISA = HANYA 2 ONS) ═══
 ${products.length} produk 2 Ons aktif, stok total ${products.reduce((s, p) => s + p._stok, 0)} pcs | ${products.filter(p => p._stok === 0).length} stok kosong | ${critical.length} DARURAT(1-2 hari) | ${warning.length} MENIPIS(3-4 hari) | ${bestSellers.length} best seller(≥5/hari) | Perlu order: ${needRestock.length} produk, ${totalRestockQty} pcs, ~Rp ${totalRestockCost.toLocaleString("id-ID")}
 Total semua ukuran: ${allSizeProducts.length} produk (termasuk 3 Ons, 5 Ons, 18 Gram)
@@ -703,6 +738,7 @@ ${allProductsList}
 - Bahasa santai kayak WA sama partner bisnis. SELALU pakai data untuk stok/penjualan, jangan ngarang. Saran bisnis boleh dari knowledge, jelaskan logika. Emoji 😊, bold+list. Tanggapi curhat ANTUSIAS+masukan KONKRET. Gunakan memory("Kemarin boss bilang X..."). JANGAN istilah teknis(velocity,DOS,WMA,anomaly,threshold,engine). Luar keahlian→jujur+sarankan profesional. Selalu kasih next step konkret.
 - KRITIS: Kalau boss tanya data penjualan per pelanggan per tanggal, gunakan DETAIL PENJUALAN PER PELANGGAN PER TANGGAL di atas. JANGAN mengarang angka. Kalau data tidak ada di context, bilang "data tidak tersedia" daripada menebak.
 - KRITIS: Hitung total qty dan omzet dari item-item yang tertulis, JANGAN mengalikan atau menambahkan angka sembarangan.
+- KRITIS: Kalau boss tanya "barang masuk hari ini", "stok masuk", "total masuk", gunakan data BARANG MASUK HARI INI di atas. Data ini dari tabel stock_in (barang yang diterima/ditambah ke gudang), BUKAN dari stock_out.
 - KRITIS: Kalau boss tanya "penjualan hari ini", "omzet hari ini", "profit hari ini", atau "berapa toko hari ini", gunakan data PENJUALAN HARI INI di atas. Data ini sudah dihitung pakai timezone WIB.`;
 
     const systemPrompt = research_mode ? researchSystemPrompt : normalSystemPrompt;
