@@ -340,6 +340,15 @@ const Dashboard = () => {
   const profitHariIni = omzetHariIni - modalHariIni;
   const marginPct = omzetHariIni > 0 ? Math.round((profitHariIni / omzetHariIni) * 100) : 0;
 
+  // Stock In today
+  const stockInPcsHariIni = todayStockIn?.reduce((s, r) => s + r.qty, 0) ?? 0;
+  const stockInEntries = todayStockIn?.length ?? 0;
+  const stockInCostHariIni = todayStockIn?.reduce((s, r) => {
+    const product = allProducts?.find(p => p.id === r.product_id);
+    const modal = product?.prices?.harga_modal ?? 0;
+    return s + (r.qty * modal);
+  }, 0) ?? 0;
+
   const chartData = (() => {
     // Convert UTC timestamp to WIB (UTC+7) date string to avoid timezone mismatch
     const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
