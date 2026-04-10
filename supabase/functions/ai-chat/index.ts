@@ -180,9 +180,10 @@ atau [] jika tidak ada yang perlu diingat.`;
 
     // ─── Fetch business data ───
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
-    const [productsRes, stockOutRes] = await Promise.all([
+    const [productsRes, stockOutRes, stockInRes] = await Promise.all([
       supabase.from("products").select("id, kode, nama, kategori, stock(jumlah, tumpukan_detail), prices(harga_modal, harga_normal, harga_grosir, harga_grosir2)").eq("is_active", true),
       supabase.from("stock_out").select("product_id, qty_kirim, qty_pesan, total_harga, harga_satuan, harga_type, toko, created_at").gte("created_at", cutoff.toISOString()).order("created_at", { ascending: false }).limit(5000),
+      supabase.from("stock_in").select("product_id, qty, catatan, created_at").gte("created_at", cutoff.toISOString()).order("created_at", { ascending: false }).limit(2000),
     ]);
 
     const rawProducts = productsRes.data || [];
