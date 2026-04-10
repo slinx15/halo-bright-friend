@@ -298,6 +298,20 @@ const Dashboard = () => {
     refetchInterval: 30000,
   });
 
+  const { data: todayStockIn } = useQuery({
+    queryKey: ["dashboard_today_stock_in", todayWibStr],
+    queryFn: async () => {
+      const headers = await getAuthHeaders();
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/stock_in?select=product_id,qty,created_at&created_at=gte.${todayStartUtc.toISOString()}&created_at=lt.${tomorrowStartUtc.toISOString()}&order=created_at.desc`,
+        { headers }
+      );
+      if (!res.ok) throw new Error(await res.text());
+      return res.json() as Promise<{ product_id: string; qty: number; created_at: string }[]>;
+    },
+    refetchInterval: 30000,
+  });
+
   const sevenDaysAgoUtc = new Date(todayStartUtc.getTime() - 6 * 86400000);
 
   const { data: weekSales } = useQuery({
