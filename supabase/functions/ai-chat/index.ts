@@ -434,7 +434,36 @@ ${todayTrxCount} transaksi | ${todayPcs} pcs | ${todayTokoCount} toko
 Omzet: Rp ${todayOmzet.toLocaleString("id-ID")} | Profit: Rp ${todayProfit.toLocaleString("id-ID")} (margin ${todayMarginPct}%)
 ${todayTokoCount > 0 ? `Detail per toko:\n${todayTokoDetail}` : "Belum ada penjualan hari ini."}`;
 
-    // ─── Knowledge Modules ───
+    // ─── Stock In (Barang Masuk) Analysis ───
+    const todayStockIn = stockIn.filter((s: any) => {
+      const wibDate = new Date(new Date(s.created_at).getTime() + WIB_OFFSET);
+      return wibDate.toISOString().slice(0, 10) === todayWibStr;
+    });
+    const todayStockInQty = todayStockIn.reduce((s: number, r: any) => s + (r.qty || 0), 0);
+    const todayStockInCount = todayStockIn.length;
+    const todayStockInDetail = todayStockIn.map((s: any) => {
+      const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
+      return `${prod?.kode || "?"}(${prod?.nama || "?"}): +${s.qty} pcs${s.catatan ? ` [${s.catatan}]` : ""}`;
+    }).join("\n");
+
+    // Stock In per date (last 30 days)
+    const stockInByDate: Record<string, { qty: number; count: number; items: string[] }> = {};
+    for (const s of stockIn) {
+      const wibDate = new Date(new Date(s.created_at).getTime() + WIB_OFFSET);
+      const dateKey = wibDate.toISOString().slice(0, 10);
+      if (!stockInByDate[dateKey]) stockInByDate[dateKey] = { qty: 0, count: 0, items: [] };
+      stockInByDate[dateKey].qty += s.qty || 0;
+      stockInByDate[dateKey].count += 1;
+      const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
+      stockInByDate[dateKey].items.push(`${prod?.kode || "?"}=+${s.qty}`);
+    }
+    const stockInBlock = `📦 BARANG MASUK HARI INI (${todayWibStr}, WIB):
+${todayStockInCount > 0 ? `${todayStockInCount} entri | Total +${todayStockInQty} pcs\nDetail:\n${todayStockInDetail}` : "Belum ada barang masuk hari ini."}
+
+BARANG MASUK 7 HARI TERAKHIR:
+${Object.entries(stockInByDate).sort(([a], [b]) => b.localeCompare(a)).slice(0, 7).map(([date, d]) => `${date}: +${d.qty} pcs (${d.count} entri) [${d.items.slice(0, 10).join(",")}${d.items.length > 10 ? ` +${d.items.length - 10} lainnya` : ""}]`).join("\n") || "Tidak ada data"}`;
+
+
     const KNOWLEDGE_MODULES: Record<string, { keywords: string[]; content: string }> = {
       industri: {
         keywords: ["benang", "obras", "craft", "jenis", "supplier", "margin", "musim", "ramai", "sepi", "konveksi", "tailor", "crafter", "polyester", "cotton", "bordir", "rajut", "sulam"],
