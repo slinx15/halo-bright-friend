@@ -463,8 +463,7 @@ ${todayStockInCount > 0 ? `${todayStockInCount} entri | Total +${todayStockInQty
 BARANG MASUK 7 HARI TERAKHIR:
 ${Object.entries(stockInByDate).sort(([a], [b]) => b.localeCompare(a)).slice(0, 7).map(([date, d]) => `${date}: +${d.qty} pcs (${d.count} entri) [${d.items.slice(0, 10).join(",")}${d.items.length > 10 ? ` +${d.items.length - 10} lainnya` : ""}]`).join("\n") || "Tidak ada data"}`;
 
-═══ ${stockInBlock} ═══
-
+    // ─── Knowledge Modules ───
     const KNOWLEDGE_MODULES: Record<string, { keywords: string[]; content: string }> = {
       industri: {
         keywords: ["benang", "obras", "craft", "jenis", "supplier", "margin", "musim", "ramai", "sepi", "konveksi", "tailor", "crafter", "polyester", "cotton", "bordir", "rajut", "sulam"],
