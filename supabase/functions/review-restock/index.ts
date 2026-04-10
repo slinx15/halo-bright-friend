@@ -14,6 +14,18 @@ const RULES = {
   ANOMALY_MULTIPLIER: 3, LEAD_TIME_DAYS: 3,
   BESTSELLER_VELOCITY: 5, SLOWMOVER_VELOCITY: 2,
   CRITICAL_DAYS: 2, WARNING_DAYS: 4, ATTENTION_DAYS: 7,
+  NEW_PRODUCT_WAIT_DAYS: 7, NEW_PRODUCT_DEFAULT_VEL: 1,
+};
+
+const MATURITY_CONFIG = {
+  minSalesDays: 3,
+  divisorFloor: 7,
+};
+
+const HARD_MATURITY_CONFIG = {
+  immatureDaysThreshold: 7,
+  velocityCapFactor: 0.55,
+  minSalesForCap: 20,
 };
 
 const COLOR_BLACK = ["BLK", "BLCK", "HITAM", "BLACK"];
