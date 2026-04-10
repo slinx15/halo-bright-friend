@@ -1,4 +1,4 @@
-import { Package, PackagePlus, PackageMinus, ClipboardCheck, AlertTriangle, TrendingUp, TrendingDown, DollarSign, ShoppingCart, BarChart3, AlertCircle, PackageX, ArrowUpRight, ArrowDownRight, Sparkles } from "lucide-react";
+import { Package, PackagePlus, PackageMinus, ClipboardCheck, AlertTriangle, TrendingUp, TrendingDown, DollarSign, ShoppingCart, BarChart3, AlertCircle, PackageX, ArrowUpRight, ArrowDownRight, Sparkles, ArrowDown } from "lucide-react";
 import { DashboardSkeleton } from "@/components/LoadingSkeletons";
 import { AiInsightsCard } from "@/components/AiInsightsCard";
 import { CriticalStockAlert } from "@/components/CriticalStockAlert";
@@ -298,6 +298,20 @@ const Dashboard = () => {
     refetchInterval: 30000,
   });
 
+  const { data: todayStockIn } = useQuery({
+    queryKey: ["dashboard_today_stock_in", todayWibStr],
+    queryFn: async () => {
+      const headers = await getAuthHeaders();
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/stock_in?select=product_id,qty,created_at&created_at=gte.${todayStartUtc.toISOString()}&created_at=lt.${tomorrowStartUtc.toISOString()}&order=created_at.desc`,
+        { headers }
+      );
+      if (!res.ok) throw new Error(await res.text());
+      return res.json() as Promise<{ product_id: string; qty: number; created_at: string }[]>;
+    },
+    refetchInterval: 30000,
+  });
+
   const sevenDaysAgoUtc = new Date(todayStartUtc.getTime() - 6 * 86400000);
 
   const { data: weekSales } = useQuery({
@@ -325,6 +339,15 @@ const Dashboard = () => {
   }, 0) ?? 0;
   const profitHariIni = omzetHariIni - modalHariIni;
   const marginPct = omzetHariIni > 0 ? Math.round((profitHariIni / omzetHariIni) * 100) : 0;
+
+  // Stock In today
+  const stockInPcsHariIni = todayStockIn?.reduce((s, r) => s + r.qty, 0) ?? 0;
+  const stockInEntries = todayStockIn?.length ?? 0;
+  const stockInCostHariIni = todayStockIn?.reduce((s, r) => {
+    const product = allProducts?.find(p => p.id === r.product_id);
+    const modal = product?.prices?.harga_modal ?? 0;
+    return s + (r.qty * modal);
+  }, 0) ?? 0;
 
   const chartData = (() => {
     // Convert UTC timestamp to WIB (UTC+7) date string to avoid timezone mismatch
@@ -393,7 +416,32 @@ const Dashboard = () => {
         <HeroKpi omzet={omzetHariIni} profit={profitHariIni} pcs={pcsHariIni} margin={marginPct} />
       </div>
 
-      {/* 4. Chart + Stok Rendah */}
+      {/* 3.5 Barang Masuk Hari Ini */}
+      <div className="animate-fade-in" style={{ animationDelay: "175ms", animationFillMode: "both" }}>
+        <Card className="card-premium">
+          <CardContent className="p-3.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-primary/10">
+                  <PackagePlus className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted-foreground font-medium">Barang Masuk Hari Ini</p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-lg font-extrabold tracking-tight tabular-nums">{formatNumber(stockInPcsHariIni)} pcs</p>
+                    <span className="text-[11px] text-muted-foreground">({stockInEntries} entri)</span>
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] text-muted-foreground font-medium">Total Modal</p>
+                <p className="text-sm font-bold tabular-nums text-primary">{formatRupiah(stockInCostHariIni)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 animate-fade-in" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
         <Card className="md:col-span-2 card-premium">
           <CardHeader className="pb-2">
