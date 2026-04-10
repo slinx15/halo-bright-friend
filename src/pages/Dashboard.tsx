@@ -416,7 +416,32 @@ const Dashboard = () => {
         <HeroKpi omzet={omzetHariIni} profit={profitHariIni} pcs={pcsHariIni} margin={marginPct} />
       </div>
 
-      {/* 4. Chart + Stok Rendah */}
+      {/* 3.5 Barang Masuk Hari Ini */}
+      <div className="animate-fade-in" style={{ animationDelay: "175ms", animationFillMode: "both" }}>
+        <Card className="card-premium">
+          <CardContent className="p-3.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-primary/10">
+                  <PackagePlus className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted-foreground font-medium">Barang Masuk Hari Ini</p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-lg font-extrabold tracking-tight tabular-nums">{formatNumber(stockInPcsHariIni)} pcs</p>
+                    <span className="text-[11px] text-muted-foreground">({stockInEntries} entri)</span>
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] text-muted-foreground font-medium">Total Modal</p>
+                <p className="text-sm font-bold tabular-nums text-primary">{formatRupiah(stockInCostHariIni)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 animate-fade-in" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
         <Card className="md:col-span-2 card-premium">
           <CardHeader className="pb-2">
