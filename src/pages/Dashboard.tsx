@@ -1,4 +1,4 @@
-import { Package, PackagePlus, PackageMinus, ClipboardCheck, AlertTriangle, TrendingUp, TrendingDown, DollarSign, ShoppingCart, BarChart3, AlertCircle, PackageX, ArrowUpRight, ArrowDownRight, Sparkles } from "lucide-react";
+import { Package, PackagePlus, PackageMinus, ClipboardCheck, AlertTriangle, TrendingUp, TrendingDown, DollarSign, ShoppingCart, BarChart3, AlertCircle, PackageX, ArrowUpRight, ArrowDownRight, Sparkles, ArrowDown } from "lucide-react";
 import { DashboardSkeleton } from "@/components/LoadingSkeletons";
 import { AiInsightsCard } from "@/components/AiInsightsCard";
 import { CriticalStockAlert } from "@/components/CriticalStockAlert";
