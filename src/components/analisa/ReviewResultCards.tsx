@@ -384,26 +384,11 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
               Rincian Budget
             </div>
             <div className="space-y-2 text-sm">
+              {/* Section 1: What user actually ordered */}
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Pesanan 2 Ons</span>
                 <span className="font-bold tabular-nums text-base">{formatRupiah(total_cost)}</span>
               </div>
-              {(budget_tambah || 0) > 0 && (
-                <div className="flex items-center justify-between text-orange-600 dark:text-orange-400">
-                  <span className="flex items-center gap-1.5">
-                    <CirclePlus className="h-3.5 w-3.5" /> Tambahan 2 Ons
-                  </span>
-                  <span className="font-bold tabular-nums text-base">+{formatRupiah(budget_tambah)}</span>
-                </div>
-              )}
-              {(budget_missed || 0) > 0 && (
-                <div className="flex items-center justify-between text-destructive">
-                  <span className="flex items-center gap-1.5">
-                    <CircleAlert className="h-3.5 w-3.5" /> Belum dipesan
-                  </span>
-                  <span className="font-bold tabular-nums text-base">+{formatRupiah(budget_missed)}</span>
-                </div>
-              )}
               {total_cost_other > 0 && (
                 <div className="flex items-center justify-between text-purple-600 dark:text-purple-400">
                   <span className="flex items-center gap-1.5">
@@ -412,12 +397,38 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
                   <span className="font-bold tabular-nums text-base">+{formatRupiah(total_cost_other)}</span>
                 </div>
               )}
-              {hasBudgetExtra && (
+              {/* Total Pesanan Saya */}
+              <div className="border-t border-border/50 my-1.5" />
+              <div className="flex items-center justify-between font-extrabold">
+                <span className="text-base">💰 Total Pesanan Saya</span>
+                <span className="tabular-nums text-primary text-xl">{formatRupiah(total_cost + total_cost_other)}</span>
+              </div>
+
+              {/* Section 2: AI recommendations (if any) */}
+              {((budget_tambah || 0) > 0 || (budget_missed || 0) > 0) && (
                 <>
+                  <div className="border-t border-dashed border-border/50 my-2" />
+                  <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Saran Tambahan</div>
+                  {(budget_tambah || 0) > 0 && (
+                    <div className="flex items-center justify-between text-orange-600 dark:text-orange-400">
+                      <span className="flex items-center gap-1.5">
+                        <CirclePlus className="h-3.5 w-3.5" /> Tambahan 2 Ons
+                      </span>
+                      <span className="font-bold tabular-nums text-base">+{formatRupiah(budget_tambah)}</span>
+                    </div>
+                  )}
+                  {(budget_missed || 0) > 0 && (
+                    <div className="flex items-center justify-between text-destructive">
+                      <span className="flex items-center gap-1.5">
+                        <CircleAlert className="h-3.5 w-3.5" /> Belum dipesan
+                      </span>
+                      <span className="font-bold tabular-nums text-base">+{formatRupiah(budget_missed)}</span>
+                    </div>
+                  )}
                   <div className="border-t border-border/50 my-1.5" />
-                  <div className="flex items-center justify-between font-extrabold">
-                    <span className="text-base">Total Semua</span>
-                    <span className="tabular-nums text-primary text-xl">{formatRupiah(budget_total || total_cost)}</span>
+                  <div className="flex items-center justify-between font-extrabold text-muted-foreground">
+                    <span className="text-sm">Grand Total (jika ditambah)</span>
+                    <span className="tabular-nums text-base">{formatRupiah(budget_total || total_cost)}</span>
                   </div>
                 </>
               )}
