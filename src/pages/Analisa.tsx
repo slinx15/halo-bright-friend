@@ -1616,7 +1616,7 @@ const Analisa = () => {
                         </p>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 );
               })
             )}
