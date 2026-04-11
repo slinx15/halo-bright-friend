@@ -61,6 +61,39 @@ const BarangKeluar = () => {
   const [historySearch, setHistorySearch] = useState("");
   const [historyDateFilter, setHistoryDateFilter] = useState<Date | undefined>(undefined);
 
+  // Set Harga Sekaligus state
+  const [hargaDialogOpen, setHargaDialogOpen] = useState(false);
+  const [customWarnaHarga, setCustomWarnaHarga] = useState<number>(0);
+  const [customWhtHarga, setCustomWhtHarga] = useState<number>(0);
+  const [customBlckHarga, setCustomBlckHarga] = useState<number>(0);
+
+  // Categorize items for bulk price setting
+  const validItemsForHarga = useMemo(() => items.filter(i => i.productId), [items]);
+  const warnaItems = useMemo(() => validItemsForHarga.filter(i => {
+    const k = (i.productKode || i.kode).toUpperCase();
+    return !k.includes("WHT") && !k.includes("BLCK") && !k.includes("BLK");
+  }), [validItemsForHarga]);
+  const whtItems = useMemo(() => validItemsForHarga.filter(i => (i.productKode || i.kode).toUpperCase().includes("WHT")), [validItemsForHarga]);
+  const blckItems = useMemo(() => validItemsForHarga.filter(i => {
+    const k = (i.productKode || i.kode).toUpperCase();
+    return k.includes("BLCK") || k.includes("BLK");
+  }), [validItemsForHarga]);
+
+  const applyBulkHarga = useCallback((filter: (k: string) => boolean, type: string, customHarga?: number) => {
+    setItems(prev => prev.map(item => {
+      if (!item.productId) return item;
+      const k = (item.productKode || item.kode).toUpperCase();
+      if (!filter(k)) return item;
+      if (type === "custom" && customHarga && customHarga > 0) {
+        return { ...item, hargaType: "custom", customHarga };
+      }
+      if (type !== "custom") {
+        return { ...item, hargaType: type };
+      }
+      return item;
+    }));
+  }, []);
+
   // Auto-detect: search ALL products by kode (exact, base code, or nama)
   const findProduct = (input: string) => {
     if (!input.trim() || !products) return undefined;
