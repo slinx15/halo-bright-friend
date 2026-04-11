@@ -449,7 +449,7 @@ ${todayTokoCount > 0 ? `Detail per toko:\n${todayTokoDetail}` : "Belum ada penju
     }).join("\n");
 
     // Stock In per date (last 30 days)
-    const stockInByDate: Record<string, { qty: number; count: number; items: string[] }> = {};
+    const stockInByDate: Record<string, { qty: number; count: number; totalModal: number; items: string[] }> = {};
     for (const s of stockIn) {
       const wibDate = new Date(new Date(s.created_at).getTime() + WIB_OFFSET);
       const dateKey = wibDate.toISOString().slice(0, 10);
@@ -461,11 +461,15 @@ ${todayTokoCount > 0 ? `Detail per toko:\n${todayTokoDetail}` : "Belum ada penju
       stockInByDate[dateKey].totalModal += modal * (s.qty || 0);
       stockInByDate[dateKey].items.push(`${prod?.kode || "?"}=+${s.qty}(@Rp${modal.toLocaleString("id-ID")})`);
     }
+    const todayStockInTotalModal = todayStockIn.reduce((s: number, r: any) => {
+      const prod = allSizeProducts.find((p: any) => p.id === r.product_id);
+      return s + ((prod?._hargaModal ?? 0) * (r.qty || 0));
+    }, 0);
     const stockInBlock = `📦 BARANG MASUK HARI INI (${todayWibStr}, WIB):
-${todayStockInCount > 0 ? `${todayStockInCount} entri | Total +${todayStockInQty} pcs\nDetail:\n${todayStockInDetail}` : "Belum ada barang masuk hari ini."}
+${todayStockInCount > 0 ? `${todayStockInCount} entri | Total +${todayStockInQty} pcs | Total modal: Rp ${todayStockInTotalModal.toLocaleString("id-ID")}\nDetail:\n${todayStockInDetail}` : "Belum ada barang masuk hari ini."}
 
 BARANG MASUK 7 HARI TERAKHIR:
-${Object.entries(stockInByDate).sort(([a], [b]) => b.localeCompare(a)).slice(0, 7).map(([date, d]) => `${date}: +${d.qty} pcs (${d.count} entri) [${d.items.slice(0, 10).join(",")}${d.items.length > 10 ? ` +${d.items.length - 10} lainnya` : ""}]`).join("\n") || "Tidak ada data"}`;
+${Object.entries(stockInByDate).sort(([a], [b]) => b.localeCompare(a)).slice(0, 7).map(([date, d]) => `${date}: +${d.qty} pcs (${d.count} entri), modal Rp ${d.totalModal.toLocaleString("id-ID")} [${d.items.slice(0, 10).join(",")}${d.items.length > 10 ? ` +${d.items.length - 10} lainnya` : ""}]`).join("\n") || "Tidak ada data"}`;
 
     // ─── Knowledge Modules ───
     const KNOWLEDGE_MODULES: Record<string, { keywords: string[]; content: string }> = {
