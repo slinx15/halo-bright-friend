@@ -2235,6 +2235,14 @@ const Analisa = () => {
           </Tabs>
         </TabsContent>
       </Tabs>
+
+      <ProductDetailDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        item={selectedProduct}
+        trendInfo={selectedProduct ? trendData[selectedProduct.productId] : null}
+        lastSaleDate={selectedProduct ? lastSaleDates[selectedProduct.productId] : null}
+      />
     </div>
   );
 };
