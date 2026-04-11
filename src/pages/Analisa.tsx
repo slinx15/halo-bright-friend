@@ -1198,6 +1198,8 @@ const Analisa = () => {
   const [restockPage, setRestockPage] = useState(1);
   const [budgetAmount, setBudgetAmount] = useState<number>(2000000);
   const [budgetDays, setBudgetDays] = useState<number>(3);
+  const [selectedProduct, setSelectedProduct] = useState<ProductAnalysis | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const isMobile = useIsMobile();
   const RESTOCK_PAGE_SIZE = 30;
 
