@@ -21,7 +21,8 @@ import {
   Plus, Send, Loader2, Lock
 } from "lucide-react";
 import { useSalesAnalysis } from "@/hooks/useSalesAnalysis";
-import { analyzeAllProducts, getStatusCounts, RULES, type DosStatus, type ProductAnalysis, isBlackWhiteCode } from "@/lib/stockAnalyticsEngine";
+import { analyzeAllProducts, getStatusCounts, calculateTrendData, RULES, type DosStatus, type ProductAnalysis, isBlackWhiteCode } from "@/lib/stockAnalyticsEngine";
+import { ProductDetailDrawer } from "@/components/analisa/ProductDetailDrawer";
 import { ReviewResultCards, type ReviewResult } from "@/components/analisa/ReviewResultCards";
 import {
   calcTrend, calcDeadStock, calcLowStock,
@@ -1197,6 +1198,8 @@ const Analisa = () => {
   const [restockPage, setRestockPage] = useState(1);
   const [budgetAmount, setBudgetAmount] = useState<number>(2000000);
   const [budgetDays, setBudgetDays] = useState<number>(3);
+  const [selectedProduct, setSelectedProduct] = useState<ProductAnalysis | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const isMobile = useIsMobile();
   const RESTOCK_PAGE_SIZE = 30;
 
@@ -1204,6 +1207,28 @@ const Analisa = () => {
     if (!products.length) return [];
     return analyzeAllProducts(products, stockOutData);
   }, [products, stockOutData]);
+
+  // Trend data for drawer
+  const trendData = useMemo(() => {
+    if (!products.length) return {};
+    return calculateTrendData(stockOutData, products);
+  }, [products, stockOutData]);
+
+  // Last sale date per product
+  const lastSaleDates = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const s of stockOutData) {
+      if (!map[s.product_id] || s.created_at > map[s.product_id]) {
+        map[s.product_id] = s.created_at;
+      }
+    }
+    return map;
+  }, [stockOutData]);
+
+  const openProductDrawer = useCallback((item: ProductAnalysis) => {
+    setSelectedProduct(item);
+    setDrawerOpen(true);
+  }, []);
 
   const counts = useMemo(() => getStatusCounts(analyses), [analyses]);
 
@@ -1450,8 +1475,9 @@ const Analisa = () => {
                       return (
                         <TableRow
                           key={a.productId}
-                          className={`relative ${PRIORITY_ROW_BG[priority]} animate-fade-in`}
+                          className={`relative cursor-pointer hover:bg-muted/50 ${PRIORITY_ROW_BG[priority]} animate-fade-in`}
                           style={{ animationDelay: `${Math.min(i * 20, 200)}ms`, animationFillMode: "both" }}
+                          onClick={() => openProductDrawer(a)}
                         >
                           {/* Priority Bar */}
                           <td className="w-0 p-0 relative">
@@ -1538,9 +1564,10 @@ const Analisa = () => {
                   a.dosStatus === "ATTENTION" ? "border-l-[3px] border-l-accent border-border/60" : "border-l-[3px] border-l-success border-border/60";
 
                 return (
-                  <div
+                  <button
                     key={a.productId}
-                    className={`rounded-xl border bg-card p-3.5 transition-all active:scale-[0.99] w-full ${ringClass} ${PRIORITY_ROW_BG[priority]} animate-fade-in`}
+                    onClick={() => openProductDrawer(a)}
+                    className={`rounded-xl border bg-card p-3.5 transition-all active:scale-[0.99] w-full text-left ${ringClass} ${PRIORITY_ROW_BG[priority]} animate-fade-in`}
                     style={{ animationDelay: `${Math.min(idx * 30, 300)}ms`, animationFillMode: "both" }}
                   >
                     <div className="flex items-center justify-between mb-2.5">
@@ -1590,7 +1617,7 @@ const Analisa = () => {
                         </p>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 );
               })
             )}
@@ -2209,6 +2236,14 @@ const Analisa = () => {
           </Tabs>
         </TabsContent>
       </Tabs>
+
+      <ProductDetailDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        item={selectedProduct}
+        trendInfo={selectedProduct ? trendData[selectedProduct.productId] : null}
+        lastSaleDate={selectedProduct ? lastSaleDates[selectedProduct.productId] : null}
+      />
     </div>
   );
 };
