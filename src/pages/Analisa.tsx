@@ -1563,9 +1563,10 @@ const Analisa = () => {
                   a.dosStatus === "ATTENTION" ? "border-l-[3px] border-l-accent border-border/60" : "border-l-[3px] border-l-success border-border/60";
 
                 return (
-                  <div
+                  <button
                     key={a.productId}
-                    className={`rounded-xl border bg-card p-3.5 transition-all active:scale-[0.99] w-full ${ringClass} ${PRIORITY_ROW_BG[priority]} animate-fade-in`}
+                    onClick={() => openProductDrawer(a)}
+                    className={`rounded-xl border bg-card p-3.5 transition-all active:scale-[0.99] w-full text-left ${ringClass} ${PRIORITY_ROW_BG[priority]} animate-fade-in`}
                     style={{ animationDelay: `${Math.min(idx * 30, 300)}ms`, animationFillMode: "both" }}
                   >
                     <div className="flex items-center justify-between mb-2.5">
