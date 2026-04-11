@@ -9,6 +9,7 @@ interface ProductDetailExpandProps {
   item: ProductAnalysis | null;
   trendInfo?: TrendInfo | null;
   lastSaleDate?: string | null;
+  lastBuyer?: string | null;
 }
 
 const STATUS_INFO: Record<string, { label: string; color: string; desc: string }> = {
