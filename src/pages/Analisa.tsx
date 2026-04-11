@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -1195,7 +1195,8 @@ const Analisa = () => {
   const { products, stockOutData, isLoading } = useSalesAnalysis();
   const [filter, setFilter] = useState<FilterChip>("ALL");
   const [filterKey, setFilterKey] = useState(0);
-  const [restockPage, setRestockPage] = useState(1);
+  const [visibleCount, setVisibleCount] = useState(30);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
   const [budgetAmount, setBudgetAmount] = useState<number>(2000000);
   const [budgetDays, setBudgetDays] = useState<number>(3);
   const [selectedProduct, setSelectedProduct] = useState<ProductAnalysis | null>(null);
