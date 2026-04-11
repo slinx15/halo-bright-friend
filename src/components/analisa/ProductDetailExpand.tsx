@@ -204,12 +204,23 @@ export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDa
                   : undefined}
               />
 
-              <InfoRow
-                icon={<ShoppingCart className="h-4 w-4" />}
-                label="Terakhir Laku"
-                value={formatLastSale(lastSaleDate)}
-                sub={lastBuyer ? `Dibeli oleh: ${lastBuyer}` : undefined}
-              />
+              <div className="rounded-2xl border border-border/50 p-4 space-y-1.5">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <ShoppingCart className="h-4 w-4" />
+                  <span className="text-[11px] font-medium uppercase tracking-wider">Terakhir Laku</span>
+                </div>
+                <p className="text-sm font-bold">{formatLastSale(lastSaleDate)}</p>
+                {lastDayBuyers && lastDayBuyers.length > 0 && (
+                  <div className="space-y-1 pt-1">
+                    {lastDayBuyers.filter(b => b.toko).map((b, i) => (
+                      <div key={i} className="flex items-center justify-between text-[12px]">
+                        <span className="text-muted-foreground">🏪 {b.toko}</span>
+                        <span className="font-semibold tabular-nums">{b.qty} pcs</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div className="rounded-2xl border border-border/50 p-4 space-y-2">
                 <div className="flex items-center gap-1.5 text-muted-foreground">
