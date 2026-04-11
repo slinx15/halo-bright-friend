@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -1195,13 +1195,14 @@ const Analisa = () => {
   const { products, stockOutData, isLoading } = useSalesAnalysis();
   const [filter, setFilter] = useState<FilterChip>("ALL");
   const [filterKey, setFilterKey] = useState(0);
-  const [restockPage, setRestockPage] = useState(1);
+  const [visibleCount, setVisibleCount] = useState(30);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
   const [budgetAmount, setBudgetAmount] = useState<number>(2000000);
   const [budgetDays, setBudgetDays] = useState<number>(3);
   const [selectedProduct, setSelectedProduct] = useState<ProductAnalysis | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const isMobile = useIsMobile();
-  const RESTOCK_PAGE_SIZE = 30;
+  
 
   const analyses = useMemo(() => {
     if (!products.length) return [];
@@ -1255,12 +1256,31 @@ const Analisa = () => {
     return [...base].sort((a, b) => PRIORITY_ORDER[getPriorityLevel(a.dosStatus)] - PRIORITY_ORDER[getPriorityLevel(b.dosStatus)]);
   }, [analyses, filter]);
 
-  const restockTotalPages = Math.max(1, Math.ceil(filtered.length / RESTOCK_PAGE_SIZE));
-  const restockCurrentPage = Math.min(restockPage, restockTotalPages);
   const paginatedFiltered = useMemo(() =>
-    filtered.slice((restockCurrentPage - 1) * RESTOCK_PAGE_SIZE, restockCurrentPage * RESTOCK_PAGE_SIZE),
-    [filtered, restockCurrentPage, RESTOCK_PAGE_SIZE]
+    filtered.slice(0, visibleCount),
+    [filtered, visibleCount]
   );
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && visibleCount < filtered.length) {
+          setVisibleCount(v => Math.min(v + 30, filtered.length));
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [visibleCount, filtered.length]);
+
+  // Reset visible count when filter changes
+  useEffect(() => {
+    setVisibleCount(30);
+  }, [filter]);
 
   // Action Summary computed values
   const criticalCount = counts.critical;
@@ -1444,7 +1464,7 @@ const Analisa = () => {
               return (
                 <button
                   key={chip.key}
-                  onClick={() => { setFilter(chip.key); setFilterKey(k => k + 1); setRestockPage(1); }}
+                  onClick={() => { setFilter(chip.key); setFilterKey(k => k + 1); setVisibleCount(30); }}
                   className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all duration-200 ${
                     isActive
                       ? `${chip.activeClass} shadow-sm`
@@ -1485,7 +1505,7 @@ const Analisa = () => {
                   </TableHeader>
                   <TableBody>
                     {paginatedFiltered.map((a, i) => {
-                      const globalIdx = (restockCurrentPage - 1) * RESTOCK_PAGE_SIZE + i;
+                      const globalIdx = i;
                       const badge = STATUS_BADGE[a.dosStatus];
                       const velPerCycle = a.velocity * RULES.DISPLAY_CYCLE_DAYS;
                       const priority = getPriorityLevel(a.dosStatus);
@@ -1572,7 +1592,7 @@ const Analisa = () => {
               </div>
             ) : (
               paginatedFiltered.map((a, idx) => {
-                const globalIdx = (restockCurrentPage - 1) * RESTOCK_PAGE_SIZE + idx;
+                const globalIdx = idx;
                 const badge = STATUS_BADGE[a.dosStatus];
                 const priority = getPriorityLevel(a.dosStatus);
                 const isZeroStock = a.currentStock === 0;
@@ -1641,36 +1661,17 @@ const Analisa = () => {
             )}
           </div>
 
-          {/* Restock Pagination Controls */}
-          {restockTotalPages > 1 && (
-            <div className="flex items-center justify-between py-3 border-t">
-              <p className="text-xs text-muted-foreground">
-                {(restockCurrentPage - 1) * RESTOCK_PAGE_SIZE + 1}–{Math.min(restockCurrentPage * RESTOCK_PAGE_SIZE, filtered.length)} dari {filtered.length}
-              </p>
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 rounded-lg"
-                  disabled={restockCurrentPage <= 1}
-                  onClick={() => setRestockPage(p => p - 1)}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-xs font-semibold px-2 tabular-nums">
-                  {restockCurrentPage}/{restockTotalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 rounded-lg"
-                  disabled={restockCurrentPage >= restockTotalPages}
-                  onClick={() => setRestockPage(p => p + 1)}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+          {/* Infinite scroll sentinel */}
+          {visibleCount < filtered.length && (
+            <div ref={loadMoreRef} className="flex items-center justify-center py-6">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-xs text-muted-foreground">Memuat lagi...</span>
             </div>
+          )}
+          {visibleCount >= filtered.length && filtered.length > 0 && (
+            <p className="text-center text-xs text-muted-foreground py-3">
+              Menampilkan semua {filtered.length} produk
+            </p>
           )}
 
           <Card className="border-0 shadow-sm p-5 space-y-4 animate-fade-in" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
