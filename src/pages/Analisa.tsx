@@ -1505,7 +1505,7 @@ const Analisa = () => {
                   </TableHeader>
                   <TableBody>
                     {paginatedFiltered.map((a, i) => {
-                      const globalIdx = (restockCurrentPage - 1) * RESTOCK_PAGE_SIZE + i;
+                      const globalIdx = i;
                       const badge = STATUS_BADGE[a.dosStatus];
                       const velPerCycle = a.velocity * RULES.DISPLAY_CYCLE_DAYS;
                       const priority = getPriorityLevel(a.dosStatus);
@@ -1592,7 +1592,7 @@ const Analisa = () => {
               </div>
             ) : (
               paginatedFiltered.map((a, idx) => {
-                const globalIdx = (restockCurrentPage - 1) * RESTOCK_PAGE_SIZE + idx;
+                const globalIdx = idx;
                 const badge = STATUS_BADGE[a.dosStatus];
                 const priority = getPriorityLevel(a.dosStatus);
                 const isZeroStock = a.currentStock === 0;
@@ -1661,36 +1661,17 @@ const Analisa = () => {
             )}
           </div>
 
-          {/* Restock Pagination Controls */}
-          {restockTotalPages > 1 && (
-            <div className="flex items-center justify-between py-3 border-t">
-              <p className="text-xs text-muted-foreground">
-                {(restockCurrentPage - 1) * RESTOCK_PAGE_SIZE + 1}–{Math.min(restockCurrentPage * RESTOCK_PAGE_SIZE, filtered.length)} dari {filtered.length}
-              </p>
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 rounded-lg"
-                  disabled={restockCurrentPage <= 1}
-                  onClick={() => setRestockPage(p => p - 1)}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-xs font-semibold px-2 tabular-nums">
-                  {restockCurrentPage}/{restockTotalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 rounded-lg"
-                  disabled={restockCurrentPage >= restockTotalPages}
-                  onClick={() => setRestockPage(p => p + 1)}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+          {/* Infinite scroll sentinel */}
+          {visibleCount < filtered.length && (
+            <div ref={loadMoreRef} className="flex items-center justify-center py-6">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-xs text-muted-foreground">Memuat lagi...</span>
             </div>
+          )}
+          {visibleCount >= filtered.length && filtered.length > 0 && (
+            <p className="text-center text-xs text-muted-foreground py-3">
+              Menampilkan semua {filtered.length} produk
+            </p>
           )}
 
           <Card className="border-0 shadow-sm p-5 space-y-4 animate-fade-in" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
