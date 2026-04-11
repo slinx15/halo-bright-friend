@@ -21,7 +21,8 @@ import {
   Plus, Send, Loader2, Lock
 } from "lucide-react";
 import { useSalesAnalysis } from "@/hooks/useSalesAnalysis";
-import { analyzeAllProducts, getStatusCounts, RULES, type DosStatus, type ProductAnalysis, isBlackWhiteCode } from "@/lib/stockAnalyticsEngine";
+import { analyzeAllProducts, getStatusCounts, calculateTrendData, RULES, type DosStatus, type ProductAnalysis, isBlackWhiteCode } from "@/lib/stockAnalyticsEngine";
+import { ProductDetailDrawer } from "@/components/analisa/ProductDetailDrawer";
 import { ReviewResultCards, type ReviewResult } from "@/components/analisa/ReviewResultCards";
 import {
   calcTrend, calcDeadStock, calcLowStock,
