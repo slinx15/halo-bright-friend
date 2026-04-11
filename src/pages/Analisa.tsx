@@ -1475,8 +1475,9 @@ const Analisa = () => {
                       return (
                         <TableRow
                           key={a.productId}
-                          className={`relative ${PRIORITY_ROW_BG[priority]} animate-fade-in`}
+                          className={`relative cursor-pointer hover:bg-muted/50 ${PRIORITY_ROW_BG[priority]} animate-fade-in`}
                           style={{ animationDelay: `${Math.min(i * 20, 200)}ms`, animationFillMode: "both" }}
+                          onClick={() => openProductDrawer(a)}
                         >
                           {/* Priority Bar */}
                           <td className="w-0 p-0 relative">
