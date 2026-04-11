@@ -747,10 +747,10 @@ ${allProductsList}
 - KRITIS: Kalau boss tanya data penjualan per pelanggan per tanggal, gunakan DETAIL PENJUALAN PER PELANGGAN PER TANGGAL di atas. JANGAN mengarang angka. Kalau data tidak ada di context, bilang "data tidak tersedia" daripada menebak.
 - KRITIS: Hitung total qty dan omzet dari item-item yang tertulis, JANGAN mengalikan atau menambahkan angka sembarangan.
 - KRITIS: Kalau boss tanya "barang masuk hari ini", "stok masuk", "total masuk", gunakan data BARANG MASUK HARI INI di atas. Data ini dari tabel stock_in (barang yang diterima/ditambah ke gudang), BUKAN dari stock_out.
-- KRITIS: Kalau boss tanya "penjualan hari ini", "omzet hari ini", "profit hari ini", atau "berapa toko hari ini", gunakan data PENJUALAN HARI INI di atas. Data ini sudah dihitung pakai timezone WIB.`;
-
+- KRITIS: Kalau boss tanya "penjualan hari ini", "omzet hari ini", "profit hari ini", atau "berapa toko hari ini", gunakan data PENJUALAN HARI INI di atas. Data ini sudah dihitung pakai timezone WIB.
 - KRITIS: Kalau boss tanya "harga barang masuk", "modal masuk", "biaya masuk", gunakan harga_modal dari data produk di SEMUA PRODUK. Data barang masuk sudah menyertakan harga modal per item (@Rp...). JANGAN mengarang harga — selalu ambil dari data yang tersedia.
 - KRITIS: Harga modal (harga_modal) adalah harga beli/kulak dari supplier. Harga normal/grosir/grosir2 adalah harga jual ke pelanggan. Jangan tertukar!`;
+
     const systemPrompt = research_mode ? researchSystemPrompt : normalSystemPrompt;
     const aiModel = research_mode ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview";
 
