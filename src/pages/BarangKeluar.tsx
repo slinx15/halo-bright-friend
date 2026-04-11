@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,10 +14,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { PackageMinus, Send, Clock, Store, ChevronDown, CheckCircle2, DollarSign, CalendarIcon, Trash2, Search, Plus } from "lucide-react";
+import { PackageMinus, Send, Clock, Store, ChevronDown, CheckCircle2, DollarSign, CalendarIcon, Trash2, Search, Plus, SlidersHorizontal } from "lucide-react";
 import { formatDate, formatNumber, formatRupiah } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { OcrUpload } from "@/components/OcrUpload";
@@ -59,6 +60,39 @@ const BarangKeluar = () => {
   // Search/filter state for history
   const [historySearch, setHistorySearch] = useState("");
   const [historyDateFilter, setHistoryDateFilter] = useState<Date | undefined>(undefined);
+
+  // Set Harga Sekaligus state
+  const [hargaDialogOpen, setHargaDialogOpen] = useState(false);
+  const [customWarnaHarga, setCustomWarnaHarga] = useState<number>(0);
+  const [customWhtHarga, setCustomWhtHarga] = useState<number>(0);
+  const [customBlckHarga, setCustomBlckHarga] = useState<number>(0);
+
+  // Categorize items for bulk price setting
+  const validItemsForHarga = useMemo(() => items.filter(i => i.productId), [items]);
+  const warnaItems = useMemo(() => validItemsForHarga.filter(i => {
+    const k = (i.productKode || i.kode).toUpperCase();
+    return !k.includes("WHT") && !k.includes("BLCK") && !k.includes("BLK");
+  }), [validItemsForHarga]);
+  const whtItems = useMemo(() => validItemsForHarga.filter(i => (i.productKode || i.kode).toUpperCase().includes("WHT")), [validItemsForHarga]);
+  const blckItems = useMemo(() => validItemsForHarga.filter(i => {
+    const k = (i.productKode || i.kode).toUpperCase();
+    return k.includes("BLCK") || k.includes("BLK");
+  }), [validItemsForHarga]);
+
+  const applyBulkHarga = useCallback((filter: (k: string) => boolean, type: string, customHarga?: number) => {
+    setItems(prev => prev.map(item => {
+      if (!item.productId) return item;
+      const k = (item.productKode || item.kode).toUpperCase();
+      if (!filter(k)) return item;
+      if (type === "custom" && customHarga && customHarga > 0) {
+        return { ...item, hargaType: "custom", customHarga };
+      }
+      if (type !== "custom") {
+        return { ...item, hargaType: type };
+      }
+      return item;
+    }));
+  }, []);
 
   // Auto-detect: search ALL products by kode (exact, base code, or nama)
   const findProduct = (input: string) => {
@@ -376,6 +410,106 @@ const BarangKeluar = () => {
               <Textarea value={catatan} onChange={e => setCatatan(e.target.value)} placeholder="Catatan..." rows={1} className="rounded-lg mt-1" />
             </div>
           </div>
+
+          {/* Set Harga Sekaligus */}
+          {validItemsForHarga.length > 0 && (
+            <Dialog open={hargaDialogOpen} onOpenChange={setHargaDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="w-full rounded-xl min-h-[40px] gap-2 text-sm font-semibold">
+                  <SlidersHorizontal className="h-4 w-4" />
+                  Set Harga Sekaligus
+                  <Badge variant="secondary" className="text-[10px] ml-auto">{validItemsForHarga.length} item</Badge>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="rounded-2xl">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-base">
+                    <SlidersHorizontal className="h-4 w-4" />
+                    Set Harga Sekaligus
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  {warnaItems.length > 0 && (
+                    <div>
+                      <label className="text-xs text-muted-foreground font-medium">🎨 Warna ({warnaItems.length} item)</label>
+                      <Select onValueChange={(v) => {
+                        const filter = (k: string) => !k.includes("WHT") && !k.includes("BLCK") && !k.includes("BLK");
+                        if (v === "custom") {
+                          if (customWarnaHarga > 0) applyBulkHarga(filter, "custom", customWarnaHarga);
+                        } else {
+                          applyBulkHarga(filter, v);
+                        }
+                      }}>
+                        <SelectTrigger className="h-11 text-sm mt-1"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="normal">Normal</SelectItem>
+                          <SelectItem value="grosir">Grosir</SelectItem>
+                          <SelectItem value="grosir2">Grosir 2</SelectItem>
+                          <SelectItem value="custom">✏️ Custom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <Input type="text" inputMode="numeric" className="h-9 text-sm flex-1" placeholder="Custom /pcs" value={customWarnaHarga || ""} onChange={(e) => setCustomWarnaHarga(parseInt(e.target.value) || 0)} />
+                        <Button size="sm" variant="secondary" className="h-9 text-xs shrink-0" disabled={!customWarnaHarga} onClick={() => {
+                          const filter = (k: string) => !k.includes("WHT") && !k.includes("BLCK") && !k.includes("BLK");
+                          applyBulkHarga(filter, "custom", customWarnaHarga);
+                        }}>Terapkan</Button>
+                      </div>
+                    </div>
+                  )}
+                  {whtItems.length > 0 && (
+                    <div>
+                      <label className="text-xs text-muted-foreground font-medium">⬜ WHT ({whtItems.length} item)</label>
+                      <Select onValueChange={(v) => {
+                        const filter = (k: string) => k.includes("WHT");
+                        if (v === "custom") {
+                          if (customWhtHarga > 0) applyBulkHarga(filter, "custom", customWhtHarga);
+                        } else {
+                          applyBulkHarga(filter, v);
+                        }
+                      }}>
+                        <SelectTrigger className="h-11 text-sm mt-1"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="normal">Normal</SelectItem>
+                          <SelectItem value="grosir">Grosir</SelectItem>
+                          <SelectItem value="custom">✏️ Custom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <Input type="text" inputMode="numeric" className="h-9 text-sm flex-1" placeholder="Custom /pcs" value={customWhtHarga || ""} onChange={(e) => setCustomWhtHarga(parseInt(e.target.value) || 0)} />
+                        <Button size="sm" variant="secondary" className="h-9 text-xs shrink-0" disabled={!customWhtHarga} onClick={() => applyBulkHarga((k) => k.includes("WHT"), "custom", customWhtHarga)}>Terapkan</Button>
+                      </div>
+                    </div>
+                  )}
+                  {blckItems.length > 0 && (
+                    <div>
+                      <label className="text-xs text-muted-foreground font-medium">⬛ BLCK ({blckItems.length} item)</label>
+                      <Select onValueChange={(v) => {
+                        const filter = (k: string) => k.includes("BLCK") || k.includes("BLK");
+                        if (v === "custom") {
+                          if (customBlckHarga > 0) applyBulkHarga(filter, "custom", customBlckHarga);
+                        } else {
+                          applyBulkHarga(filter, v);
+                        }
+                      }}>
+                        <SelectTrigger className="h-11 text-sm mt-1"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="normal">Normal</SelectItem>
+                          <SelectItem value="grosir">Grosir</SelectItem>
+                          <SelectItem value="custom">✏️ Custom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <Input type="text" inputMode="numeric" className="h-9 text-sm flex-1" placeholder="Custom /pcs" value={customBlckHarga || ""} onChange={(e) => setCustomBlckHarga(parseInt(e.target.value) || 0)} />
+                        <Button size="sm" variant="secondary" className="h-9 text-xs shrink-0" disabled={!customBlckHarga} onClick={() => applyBulkHarga((k) => k.includes("BLCK") || k.includes("BLK"), "custom", customBlckHarga)}>Terapkan</Button>
+                      </div>
+                    </div>
+                  )}
+                  <Button className="w-full rounded-xl" onClick={() => setHargaDialogOpen(false)}>Selesai</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
 
           {/* Item rows */}
           {items.map((item, i) => {
