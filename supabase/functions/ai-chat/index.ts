@@ -443,25 +443,33 @@ ${todayTokoCount > 0 ? `Detail per toko:\n${todayTokoDetail}` : "Belum ada penju
     const todayStockInCount = todayStockIn.length;
     const todayStockInDetail = todayStockIn.map((s: any) => {
       const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
-      return `${prod?.kode || "?"}(${prod?.nama || "?"}): +${s.qty} pcs${s.catatan ? ` [${s.catatan}]` : ""}`;
+      const modal = prod ? prod._hargaModal : 0;
+      const totalModal = modal * (s.qty || 0);
+      return `${prod?.kode || "?"}(${prod?.nama || "?"}): +${s.qty} pcs, modal @Rp ${modal.toLocaleString("id-ID")} = Rp ${totalModal.toLocaleString("id-ID")}${s.catatan ? ` [${s.catatan}]` : ""}`;
     }).join("\n");
 
     // Stock In per date (last 30 days)
-    const stockInByDate: Record<string, { qty: number; count: number; items: string[] }> = {};
+    const stockInByDate: Record<string, { qty: number; count: number; totalModal: number; items: string[] }> = {};
     for (const s of stockIn) {
       const wibDate = new Date(new Date(s.created_at).getTime() + WIB_OFFSET);
       const dateKey = wibDate.toISOString().slice(0, 10);
-      if (!stockInByDate[dateKey]) stockInByDate[dateKey] = { qty: 0, count: 0, items: [] };
+      if (!stockInByDate[dateKey]) stockInByDate[dateKey] = { qty: 0, count: 0, totalModal: 0, items: [] };
+      const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
+      const modal = prod ? prod._hargaModal : 0;
       stockInByDate[dateKey].qty += s.qty || 0;
       stockInByDate[dateKey].count += 1;
-      const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
-      stockInByDate[dateKey].items.push(`${prod?.kode || "?"}=+${s.qty}`);
+      stockInByDate[dateKey].totalModal += modal * (s.qty || 0);
+      stockInByDate[dateKey].items.push(`${prod?.kode || "?"}=+${s.qty}(@Rp${modal.toLocaleString("id-ID")})`);
     }
+    const todayStockInTotalModal = todayStockIn.reduce((s: number, r: any) => {
+      const prod = allSizeProducts.find((p: any) => p.id === r.product_id);
+      return s + ((prod?._hargaModal ?? 0) * (r.qty || 0));
+    }, 0);
     const stockInBlock = `📦 BARANG MASUK HARI INI (${todayWibStr}, WIB):
-${todayStockInCount > 0 ? `${todayStockInCount} entri | Total +${todayStockInQty} pcs\nDetail:\n${todayStockInDetail}` : "Belum ada barang masuk hari ini."}
+${todayStockInCount > 0 ? `${todayStockInCount} entri | Total +${todayStockInQty} pcs | Total modal: Rp ${todayStockInTotalModal.toLocaleString("id-ID")}\nDetail:\n${todayStockInDetail}` : "Belum ada barang masuk hari ini."}
 
 BARANG MASUK 7 HARI TERAKHIR:
-${Object.entries(stockInByDate).sort(([a], [b]) => b.localeCompare(a)).slice(0, 7).map(([date, d]) => `${date}: +${d.qty} pcs (${d.count} entri) [${d.items.slice(0, 10).join(",")}${d.items.length > 10 ? ` +${d.items.length - 10} lainnya` : ""}]`).join("\n") || "Tidak ada data"}`;
+${Object.entries(stockInByDate).sort(([a], [b]) => b.localeCompare(a)).slice(0, 7).map(([date, d]) => `${date}: +${d.qty} pcs (${d.count} entri), modal Rp ${d.totalModal.toLocaleString("id-ID")} [${d.items.slice(0, 10).join(",")}${d.items.length > 10 ? ` +${d.items.length - 10} lainnya` : ""}]`).join("\n") || "Tidak ada data"}`;
 
     // ─── Knowledge Modules ───
     const KNOWLEDGE_MODULES: Record<string, { keywords: string[]; content: string }> = {
@@ -739,7 +747,9 @@ ${allProductsList}
 - KRITIS: Kalau boss tanya data penjualan per pelanggan per tanggal, gunakan DETAIL PENJUALAN PER PELANGGAN PER TANGGAL di atas. JANGAN mengarang angka. Kalau data tidak ada di context, bilang "data tidak tersedia" daripada menebak.
 - KRITIS: Hitung total qty dan omzet dari item-item yang tertulis, JANGAN mengalikan atau menambahkan angka sembarangan.
 - KRITIS: Kalau boss tanya "barang masuk hari ini", "stok masuk", "total masuk", gunakan data BARANG MASUK HARI INI di atas. Data ini dari tabel stock_in (barang yang diterima/ditambah ke gudang), BUKAN dari stock_out.
-- KRITIS: Kalau boss tanya "penjualan hari ini", "omzet hari ini", "profit hari ini", atau "berapa toko hari ini", gunakan data PENJUALAN HARI INI di atas. Data ini sudah dihitung pakai timezone WIB.`;
+- KRITIS: Kalau boss tanya "penjualan hari ini", "omzet hari ini", "profit hari ini", atau "berapa toko hari ini", gunakan data PENJUALAN HARI INI di atas. Data ini sudah dihitung pakai timezone WIB.
+- KRITIS: Kalau boss tanya "harga barang masuk", "modal masuk", "biaya masuk", gunakan harga_modal dari data produk di SEMUA PRODUK. Data barang masuk sudah menyertakan harga modal per item (@Rp...). JANGAN mengarang harga — selalu ambil dari data yang tersedia.
+- KRITIS: Harga modal (harga_modal) adalah harga beli/kulak dari supplier. Harga normal/grosir/grosir2 adalah harga jual ke pelanggan. Jangan tertukar!`;
 
     const systemPrompt = research_mode ? researchSystemPrompt : normalSystemPrompt;
     const aiModel = research_mode ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview";
