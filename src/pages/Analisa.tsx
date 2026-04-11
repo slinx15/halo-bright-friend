@@ -1256,12 +1256,31 @@ const Analisa = () => {
     return [...base].sort((a, b) => PRIORITY_ORDER[getPriorityLevel(a.dosStatus)] - PRIORITY_ORDER[getPriorityLevel(b.dosStatus)]);
   }, [analyses, filter]);
 
-  const restockTotalPages = Math.max(1, Math.ceil(filtered.length / RESTOCK_PAGE_SIZE));
-  const restockCurrentPage = Math.min(restockPage, restockTotalPages);
   const paginatedFiltered = useMemo(() =>
-    filtered.slice((restockCurrentPage - 1) * RESTOCK_PAGE_SIZE, restockCurrentPage * RESTOCK_PAGE_SIZE),
-    [filtered, restockCurrentPage, RESTOCK_PAGE_SIZE]
+    filtered.slice(0, visibleCount),
+    [filtered, visibleCount]
   );
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && visibleCount < filtered.length) {
+          setVisibleCount(v => Math.min(v + 30, filtered.length));
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [visibleCount, filtered.length]);
+
+  // Reset visible count when filter changes
+  useEffect(() => {
+    setVisibleCount(30);
+  }, [filter]);
 
   // Action Summary computed values
   const criticalCount = counts.critical;
