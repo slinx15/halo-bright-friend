@@ -65,7 +65,7 @@ function formatLastSale(dateStr: string | null | undefined): string {
 }
 
 export function ProductDetailDrawer({ open, onOpenChange, item, trendInfo, lastSaleDate }: ProductDetailDrawerProps) {
-  if (!item) return null;
+  if (!item || !open) return null;
 
   const status = STATUS_INFO[item.dosStatus] || STATUS_INFO.SAFE;
   const trend = formatTrendNatural(trendInfo?.change ?? 0);
