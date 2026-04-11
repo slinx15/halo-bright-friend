@@ -208,6 +208,7 @@ export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDa
                 icon={<ShoppingCart className="h-4 w-4" />}
                 label="Terakhir Laku"
                 value={formatLastSale(lastSaleDate)}
+                sub={lastBuyer ? `Dibeli oleh: ${lastBuyer}` : undefined}
               />
 
               <div className="rounded-2xl border border-border/50 p-4 space-y-2">
