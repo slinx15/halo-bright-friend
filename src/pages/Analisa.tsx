@@ -1214,17 +1214,33 @@ const Analisa = () => {
     return calculateTrendData(stockOutData, products);
   }, [products, stockOutData]);
 
-  // Last sale date & last buyer per product
-  const { lastSaleDates, lastBuyers } = useMemo(() => {
+  // Last sale date & last day buyers per product
+  const { lastSaleDates, lastDayBuyers } = useMemo(() => {
     const dateMap: Record<string, string> = {};
-    const buyerMap: Record<string, string> = {};
+    // First pass: find last sale date per product
     for (const s of stockOutData) {
       if (!dateMap[s.product_id] || s.created_at > dateMap[s.product_id]) {
         dateMap[s.product_id] = s.created_at;
-        buyerMap[s.product_id] = (s as any).toko || "";
       }
     }
-    return { lastSaleDates: dateMap, lastBuyers: buyerMap };
+    // Second pass: collect all buyers on the last sale day
+    const buyersMap: Record<string, { toko: string; qty: number }[]> = {};
+    for (const s of stockOutData) {
+      const lastDate = dateMap[s.product_id];
+      if (!lastDate) continue;
+      // Compare date only (first 10 chars: YYYY-MM-DD)
+      if (s.created_at.slice(0, 10) === lastDate.slice(0, 10)) {
+        if (!buyersMap[s.product_id]) buyersMap[s.product_id] = [];
+        const toko = (s as any).toko || "";
+        const existing = buyersMap[s.product_id].find(b => b.toko === toko);
+        if (existing) {
+          existing.qty += (s as any).qty_kirim || 0;
+        } else {
+          buyersMap[s.product_id].push({ toko, qty: (s as any).qty_kirim || 0 });
+        }
+      }
+    }
+    return { lastSaleDates: dateMap, lastDayBuyers: buyersMap };
   }, [stockOutData]);
 
   const openProductDrawer = useCallback((item: ProductAnalysis) => {
@@ -2245,7 +2261,7 @@ const Analisa = () => {
         item={selectedProduct}
         trendInfo={selectedProduct ? trendData[selectedProduct.productId] : null}
         lastSaleDate={selectedProduct ? lastSaleDates[selectedProduct.productId] : null}
-        lastBuyer={selectedProduct ? lastBuyers[selectedProduct.productId] : null}
+        lastDayBuyers={selectedProduct ? lastDayBuyers[selectedProduct.productId] : null}
       />
     </div>
   );
