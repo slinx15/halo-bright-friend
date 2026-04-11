@@ -1464,7 +1464,7 @@ const Analisa = () => {
               return (
                 <button
                   key={chip.key}
-                  onClick={() => { setFilter(chip.key); setFilterKey(k => k + 1); setRestockPage(1); }}
+                  onClick={() => { setFilter(chip.key); setFilterKey(k => k + 1); setVisibleCount(30); }}
                   className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all duration-200 ${
                     isActive
                       ? `${chip.activeClass} shadow-sm`
