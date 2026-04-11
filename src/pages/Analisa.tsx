@@ -1208,6 +1208,28 @@ const Analisa = () => {
     return analyzeAllProducts(products, stockOutData);
   }, [products, stockOutData]);
 
+  // Trend data for drawer
+  const trendData = useMemo(() => {
+    if (!products.length) return {};
+    return calculateTrendData(stockOutData, products);
+  }, [products, stockOutData]);
+
+  // Last sale date per product
+  const lastSaleDates = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const s of stockOutData) {
+      if (!map[s.product_id] || s.created_at > map[s.product_id]) {
+        map[s.product_id] = s.created_at;
+      }
+    }
+    return map;
+  }, [stockOutData]);
+
+  const openProductDrawer = useCallback((item: ProductAnalysis) => {
+    setSelectedProduct(item);
+    setDrawerOpen(true);
+  }, []);
+
   const counts = useMemo(() => getStatusCounts(analyses), [analyses]);
 
   const filtered = useMemo(() => {
