@@ -63,7 +63,7 @@ function formatLastSale(dateStr: string | null | undefined): string {
   return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDate, lastBuyer }: ProductDetailExpandProps) {
+export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDate, lastDayBuyers }: ProductDetailExpandProps) {
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Lock body scroll when open
