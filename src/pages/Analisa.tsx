@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { useSalesAnalysis } from "@/hooks/useSalesAnalysis";
 import { analyzeAllProducts, getStatusCounts, calculateTrendData, RULES, type DosStatus, type ProductAnalysis, isBlackWhiteCode } from "@/lib/stockAnalyticsEngine";
-import { ProductDetailDrawer } from "@/components/analisa/ProductDetailDrawer";
+import { ProductDetailExpand } from "@/components/analisa/ProductDetailExpand";
 import { ReviewResultCards, type ReviewResult } from "@/components/analisa/ReviewResultCards";
 import {
   calcTrend, calcDeadStock, calcLowStock,
@@ -2237,9 +2237,9 @@ const Analisa = () => {
         </TabsContent>
       </Tabs>
 
-      <ProductDetailDrawer
+      <ProductDetailExpand
         open={drawerOpen}
-        onOpenChange={setDrawerOpen}
+        onClose={() => setDrawerOpen(false)}
         item={selectedProduct}
         trendInfo={selectedProduct ? trendData[selectedProduct.productId] : null}
         lastSaleDate={selectedProduct ? lastSaleDates[selectedProduct.productId] : null}
