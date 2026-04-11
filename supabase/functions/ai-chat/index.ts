@@ -443,7 +443,9 @@ ${todayTokoCount > 0 ? `Detail per toko:\n${todayTokoDetail}` : "Belum ada penju
     const todayStockInCount = todayStockIn.length;
     const todayStockInDetail = todayStockIn.map((s: any) => {
       const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
-      return `${prod?.kode || "?"}(${prod?.nama || "?"}): +${s.qty} pcs${s.catatan ? ` [${s.catatan}]` : ""}`;
+      const modal = prod ? prod._hargaModal : 0;
+      const totalModal = modal * (s.qty || 0);
+      return `${prod?.kode || "?"}(${prod?.nama || "?"}): +${s.qty} pcs, modal @Rp ${modal.toLocaleString("id-ID")} = Rp ${totalModal.toLocaleString("id-ID")}${s.catatan ? ` [${s.catatan}]` : ""}`;
     }).join("\n");
 
     // Stock In per date (last 30 days)
