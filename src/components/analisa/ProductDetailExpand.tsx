@@ -9,6 +9,7 @@ interface ProductDetailExpandProps {
   item: ProductAnalysis | null;
   trendInfo?: TrendInfo | null;
   lastSaleDate?: string | null;
+  lastBuyer?: string | null;
 }
 
 const STATUS_INFO: Record<string, { label: string; color: string; desc: string }> = {
@@ -62,7 +63,7 @@ function formatLastSale(dateStr: string | null | undefined): string {
   return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDate }: ProductDetailExpandProps) {
+export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDate, lastBuyer }: ProductDetailExpandProps) {
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Lock body scroll when open
@@ -207,6 +208,7 @@ export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDa
                 icon={<ShoppingCart className="h-4 w-4" />}
                 label="Terakhir Laku"
                 value={formatLastSale(lastSaleDate)}
+                sub={lastBuyer ? `Dibeli oleh: ${lastBuyer}` : undefined}
               />
 
               <div className="rounded-2xl border border-border/50 p-4 space-y-2">

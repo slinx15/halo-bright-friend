@@ -1214,15 +1214,17 @@ const Analisa = () => {
     return calculateTrendData(stockOutData, products);
   }, [products, stockOutData]);
 
-  // Last sale date per product
-  const lastSaleDates = useMemo(() => {
-    const map: Record<string, string> = {};
+  // Last sale date & last buyer per product
+  const { lastSaleDates, lastBuyers } = useMemo(() => {
+    const dateMap: Record<string, string> = {};
+    const buyerMap: Record<string, string> = {};
     for (const s of stockOutData) {
-      if (!map[s.product_id] || s.created_at > map[s.product_id]) {
-        map[s.product_id] = s.created_at;
+      if (!dateMap[s.product_id] || s.created_at > dateMap[s.product_id]) {
+        dateMap[s.product_id] = s.created_at;
+        buyerMap[s.product_id] = (s as any).toko || "";
       }
     }
-    return map;
+    return { lastSaleDates: dateMap, lastBuyers: buyerMap };
   }, [stockOutData]);
 
   const openProductDrawer = useCallback((item: ProductAnalysis) => {
@@ -2243,6 +2245,7 @@ const Analisa = () => {
         item={selectedProduct}
         trendInfo={selectedProduct ? trendData[selectedProduct.productId] : null}
         lastSaleDate={selectedProduct ? lastSaleDates[selectedProduct.productId] : null}
+        lastBuyer={selectedProduct ? lastBuyers[selectedProduct.productId] : null}
       />
     </div>
   );
