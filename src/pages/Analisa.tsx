@@ -2237,9 +2237,9 @@ const Analisa = () => {
         </TabsContent>
       </Tabs>
 
-      <ProductDetailDrawer
+      <ProductDetailExpand
         open={drawerOpen}
-        onOpenChange={setDrawerOpen}
+        onClose={() => setDrawerOpen(false)}
         item={selectedProduct}
         trendInfo={selectedProduct ? trendData[selectedProduct.productId] : null}
         lastSaleDate={selectedProduct ? lastSaleDates[selectedProduct.productId] : null}
