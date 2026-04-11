@@ -1202,7 +1202,7 @@ const Analisa = () => {
   const [selectedProduct, setSelectedProduct] = useState<ProductAnalysis | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const isMobile = useIsMobile();
-  const RESTOCK_PAGE_SIZE = 30;
+  
 
   const analyses = useMemo(() => {
     if (!products.length) return [];
