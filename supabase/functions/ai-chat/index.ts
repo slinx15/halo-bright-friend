@@ -453,11 +453,13 @@ ${todayTokoCount > 0 ? `Detail per toko:\n${todayTokoDetail}` : "Belum ada penju
     for (const s of stockIn) {
       const wibDate = new Date(new Date(s.created_at).getTime() + WIB_OFFSET);
       const dateKey = wibDate.toISOString().slice(0, 10);
-      if (!stockInByDate[dateKey]) stockInByDate[dateKey] = { qty: 0, count: 0, items: [] };
+      if (!stockInByDate[dateKey]) stockInByDate[dateKey] = { qty: 0, count: 0, totalModal: 0, items: [] };
+      const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
+      const modal = prod ? prod._hargaModal : 0;
       stockInByDate[dateKey].qty += s.qty || 0;
       stockInByDate[dateKey].count += 1;
-      const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
-      stockInByDate[dateKey].items.push(`${prod?.kode || "?"}=+${s.qty}`);
+      stockInByDate[dateKey].totalModal += modal * (s.qty || 0);
+      stockInByDate[dateKey].items.push(`${prod?.kode || "?"}=+${s.qty}(@Rp${modal.toLocaleString("id-ID")})`);
     }
     const stockInBlock = `📦 BARANG MASUK HARI INI (${todayWibStr}, WIB):
 ${todayStockInCount > 0 ? `${todayStockInCount} entri | Total +${todayStockInQty} pcs\nDetail:\n${todayStockInDetail}` : "Belum ada barang masuk hari ini."}
