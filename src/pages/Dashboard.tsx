@@ -271,6 +271,7 @@ function QuickActions() {
 // ── Main Dashboard ────────────────────────────────────────────────
 const Dashboard = () => {
   const { data: allProducts, isLoading } = useProducts();
+  useStockNotifications();
   // Dashboard hanya menampilkan produk 2 Ons (stok fisik di rumah)
   const products = allProducts?.filter(p => p.kategori === "2 Ons");
 
