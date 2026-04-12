@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 
 import { getAuthHeaders } from "@/lib/authHeaders";
+import { logActivity } from "@/lib/activityLogger";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -79,6 +80,11 @@ const Opname = () => {
         if (!stockRes.ok) throw new Error(await stockRes.text());
       }
       toast({ title: "Bulk Opname Selesai", description: `${stockUpserts.length} produk berhasil di-update` });
+      const selisihItems = items.filter(i => {
+        const p = products?.find(pr => pr.kode.toUpperCase() === i.kode.toUpperCase());
+        return p && i.total !== (p.stock?.jumlah ?? 0);
+      });
+      logActivity("opname", `Opname ${stockUpserts.length} produk${selisihItems.length > 0 ? `, ${selisihItems.length} selisih` : ""}`, { count: stockUpserts.length, selisih: selisihItems.length });
       queryClient.invalidateQueries({ queryKey: ["opname_history"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch (err: any) {

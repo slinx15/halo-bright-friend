@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Package, PackagePlus, PackageMinus, ClipboardCheck, AlertTriangle, TrendingUp, TrendingDown, DollarSign, ShoppingCart, BarChart3, AlertCircle, PackageX, ArrowUpRight, ArrowDownRight, Sparkles, ArrowDown } from "lucide-react";
 import { DashboardSkeleton } from "@/components/LoadingSkeletons";
 import { AiInsightsCard } from "@/components/AiInsightsCard";
@@ -13,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 
 import { getAuthHeaders } from "@/lib/authHeaders";
+import { useStockNotifications, requestNotificationPermission } from "@/hooks/useStockNotifications";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -270,6 +272,7 @@ function QuickActions() {
 // ── Main Dashboard ────────────────────────────────────────────────
 const Dashboard = () => {
   const { data: allProducts, isLoading } = useProducts();
+  useStockNotifications();
   // Dashboard hanya menampilkan produk 2 Ons (stok fisik di rumah)
   const products = allProducts?.filter(p => p.kategori === "2 Ons");
 
@@ -283,6 +286,9 @@ const Dashboard = () => {
   const todayWibStr = `${nowWib.getUTCFullYear()}-${String(nowWib.getUTCMonth() + 1).padStart(2, "0")}-${String(nowWib.getUTCDate()).padStart(2, "0")}`;
   const todayStartUtc = new Date(todayWibStr + "T00:00:00+07:00");
   const tomorrowStartUtc = new Date(todayStartUtc.getTime() + 86400000);
+
+  // Request notification permission on first visit
+  useEffect(() => { requestNotificationPermission(); }, []);
 
   const { data: todaySales } = useQuery({
     queryKey: ["dashboard_today_sales", todayWibStr],

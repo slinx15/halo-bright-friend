@@ -21,6 +21,7 @@ import {
   LogOut,
   Moon,
   Sun,
+  History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +41,7 @@ const secondaryNav = [
   { icon: FileUp, label: "Import & Export", path: "/import-histori", adminOnly: false },
   { icon: Bot, label: "AI Assistant", path: "/ai", adminOnly: false },
   { icon: Users, label: "Kelola User", path: "/users", adminOnly: true },
+  { icon: History, label: "Log Aktivitas", path: "/log", adminOnly: true },
 ];
 
 const MobileNav = () => {

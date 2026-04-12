@@ -24,6 +24,7 @@ import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { splitIntoStacks, addStacks } from "@/lib/tumpukanUtils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TransactionSkeleton } from "@/components/LoadingSkeletons";
+import { logActivity } from "@/lib/activityLogger";
 
 interface LineItem {
   kode: string;
@@ -160,6 +161,8 @@ const BarangMasuk = () => {
       toast({ title: `${successCount} berhasil, ${errors.length} gagal`, description: errors.join("; "), variant: "destructive" });
     } else {
       toast({ title: "Berhasil", description: `${validItems.length} item masuk tercatat` });
+      const summary = validItems.map(i => `${i.productKode || i.kode} x${i.qty}`).join(", ");
+      logActivity("stock_in", `Barang masuk: ${summary}`, { items: validItems.map(i => ({ kode: i.productKode || i.kode, qty: i.qty })) });
     }
     setItems([{ kode: "", qty: 1 }]);
     setCatatan("");

@@ -27,6 +27,7 @@ import { deductFromStacks } from "@/lib/tumpukanUtils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TransactionSkeleton } from "@/components/LoadingSkeletons";
 import { getAuthHeaders } from "@/lib/authHeaders";
+import { logActivity } from "@/lib/activityLogger";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -278,6 +279,8 @@ const BarangKeluar = () => {
       toast({ title: `${successCount} berhasil, ${errors.length} gagal`, description: errors[0], variant: "destructive" });
     } else {
       toast({ title: "Berhasil", description: `${successCount} item berhasil disimpan` });
+      const summary = validItems.map(i => `${i.kode} x${i.qtyKirim}`).join(", ");
+      logActivity("stock_out", `Barang keluar: ${summary}`, { toko: globalToko, items: validItems.map(i => ({ kode: i.kode, qty: i.qtyKirim })) });
     }
     if (successCount > 0) {
       setItems([{ kode: "", qtyPesan: 0, qtyKirim: 0, hargaType: "normal", toko: "" }]);
@@ -331,6 +334,7 @@ const BarangKeluar = () => {
       const delRes = await fetch(`${SUPABASE_URL}/rest/v1/stock_out?id=eq.${item.id}`, { method: "DELETE", headers });
       if (!delRes.ok) throw new Error(await delRes.text());
       toast({ title: "Berhasil", description: `Transaksi ${item.products?.kode} dihapus, stok dikembalikan +${item.qty_kirim}` });
+      logActivity("stock_out_delete", `Hapus transaksi ${item.products?.kode} x${item.qty_kirim}`, { kode: item.products?.kode, qty: item.qty_kirim });
       queryClient.invalidateQueries({ queryKey: ["stock_out_history"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch (err: any) {
