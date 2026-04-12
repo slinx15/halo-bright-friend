@@ -10,6 +10,8 @@ interface ProductDetailExpandProps {
   trendInfo?: TrendInfo | null;
   lastSaleDate?: string | null;
   lastDayBuyers?: { toko: string; qty: number }[] | null;
+  prevSaleDate?: string | null;
+  prevDayBuyers?: { toko: string; qty: number }[] | null;
 }
 
 const STATUS_INFO: Record<string, { label: string; color: string; desc: string }> = {
