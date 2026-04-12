@@ -455,6 +455,118 @@ export default function Laporan() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* ═══════════ TAB PROFIT ═══════════ */}
+          <TabsContent value="profit" className="space-y-4 mt-0">
+            {/* Hero Profit Card */}
+            <div className={cn(
+              "relative overflow-hidden rounded-xl px-4 py-3 text-white shadow-md",
+              profitSummary.totalProfit >= 0
+                ? "bg-gradient-to-r from-success to-success/80"
+                : "bg-gradient-to-r from-destructive to-destructive/80"
+            )}>
+              <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full -translate-y-6 translate-x-6" />
+              <div className="relative z-10">
+                <p className="text-[10px] font-semibold uppercase tracking-wider opacity-80">Profit Bulan Ini</p>
+                <p className="text-xl font-extrabold tracking-tight">{formatRupiah(profitSummary.totalProfit)}</p>
+                <div className="flex items-center gap-3 mt-1 text-[10px] opacity-80">
+                  <span>Omzet: {formatRupiah(profitSummary.totalOmzet)}</span>
+                  <span>Modal: {formatRupiah(profitSummary.totalModal)}</span>
+                  <span>Margin: {profitSummary.margin.toFixed(1)}%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Profit per Minggu */}
+            {profitSummary.byWeek.length > 0 && (
+              <Card className="rounded-2xl border-0 shadow-md overflow-hidden">
+                <CardHeader className="pb-1 pt-4 px-4">
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    Per Minggu
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="divide-y divide-border/30">
+                    {profitSummary.byWeek.map((w) => {
+                      const maxProfit = Math.max(...profitSummary.byWeek.map(x => Math.abs(x.profit)), 1);
+                      const pct = (Math.abs(w.profit) / maxProfit) * 100;
+                      return (
+                        <div key={w.week} className="px-4 py-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-semibold">{w.weekLabel}</p>
+                              <p className="text-[10px] text-muted-foreground">
+                                Omzet {formatRupiah(w.omzet)} · Modal {formatRupiah(w.modal)}
+                              </p>
+                            </div>
+                            <span className={cn(
+                              "text-sm font-extrabold tabular-nums",
+                              w.profit >= 0 ? "text-success" : "text-destructive"
+                            )}>
+                              {w.profit >= 0 ? "+" : ""}{formatRupiah(w.profit)}
+                            </span>
+                          </div>
+                          <div className="mt-1.5 h-1.5 rounded-full bg-muted/40 overflow-hidden">
+                            <div
+                              className={cn("h-full rounded-full transition-all duration-500", w.profit >= 0 ? "bg-success/50" : "bg-destructive/50")}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Profit per Hari */}
+            {profitSummary.byDate.length > 0 && (
+              <Card className="rounded-2xl border-0 shadow-md overflow-hidden">
+                <CardHeader className="pb-1 pt-4 px-4">
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    Per Hari
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 max-h-[420px] overflow-y-auto">
+                  <div className="divide-y divide-border/30">
+                    {profitSummary.byDate.map((d) => {
+                      const maxProfit = Math.max(...profitSummary.byDate.map(x => Math.abs(x.profit)), 1);
+                      const pct = (Math.abs(d.profit) / maxProfit) * 100;
+                      return (
+                        <div key={d.date} className="px-4 py-2.5">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-semibold">
+                                {format(new Date(d.date), "EEE, dd MMM", { locale: localeId })}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">
+                                Omzet {formatRupiah(d.omzet)} · Modal {formatRupiah(d.modal)}
+                              </p>
+                            </div>
+                            <span className={cn(
+                              "text-sm font-extrabold tabular-nums",
+                              d.profit >= 0 ? "text-success" : "text-destructive"
+                            )}>
+                              {d.profit >= 0 ? "+" : ""}{formatRupiah(d.profit)}
+                            </span>
+                          </div>
+                          <div className="mt-1 h-1 rounded-full bg-muted/40 overflow-hidden">
+                            <div
+                              className={cn("h-full rounded-full", d.profit >= 0 ? "bg-success/40" : "bg-destructive/40")}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
         </Tabs>
       )}
     </div>
