@@ -223,7 +223,7 @@ atau [] jika tidak ada yang perlu diingat.`;
 
     // ─── Per-Customer Per-Date Breakdown (accurate answers) ───
     const WIB_OFFSET = 7 * 3600000;
-    const tokoDateSales: Record<string, Record<string, { pcs: number; kirim: number; omzet: number; items: { kode: string; qty: number; kirim: number }[] }>> = {};
+    const tokoDateSales: Record<string, Record<string, { pcs: number; kirim: number; omzet: number; items: { kode: string; qty: number; kirim: number; hargaSatuan: number; hargaType: string; totalHarga: number }[] }>> = {};
     for (const s of stockOut) {
       const toko = (s.toko ?? "").trim() || "Tanpa nama";
       const wibDate = new Date(new Date(s.created_at).getTime() + WIB_OFFSET);
@@ -235,7 +235,7 @@ atau [] jika tidak ada yang perlu diingat.`;
       td.kirim += s.qty_kirim;
       td.omzet += s.total_harga || 0;
       const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
-      td.items.push({ kode: prod?.kode || "?", qty: s.qty_pesan, kirim: s.qty_kirim });
+      td.items.push({ kode: prod?.kode || "?", qty: s.qty_pesan, kirim: s.qty_kirim, hargaSatuan: s.harga_satuan || 0, hargaType: s.harga_type || "normal", totalHarga: s.total_harga || 0 });
     }
     // Format: compact but accurate
     const tokoDateBlock = Object.entries(tokoDateSales)
