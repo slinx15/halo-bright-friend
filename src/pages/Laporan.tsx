@@ -134,6 +134,49 @@ export default function Laporan() {
     return { totalTx, totalQty, totalModal, byProduct };
   }, [stockInData]);
 
+  const profitSummary = useMemo(() => {
+    if (!salesData) return { totalOmzet: 0, totalModal: 0, totalProfit: 0, margin: 0, byDate: [], byWeek: [] };
+    
+    const dateMap = new Map<string, { date: string; omzet: number; modal: number }>();
+    salesData.forEach((r: any) => {
+      const d = format(toWIB(r.created_at), "yyyy-MM-dd");
+      const hargaModal = r.products?.prices?.[0]?.harga_modal || r.products?.prices?.harga_modal || 0;
+      const modalItem = hargaModal * (r.qty_kirim || 0);
+      const existing = dateMap.get(d) || { date: d, omzet: 0, modal: 0 };
+      existing.omzet += r.total_harga || 0;
+      existing.modal += modalItem;
+      dateMap.set(d, existing);
+    });
+    
+    const byDate = Array.from(dateMap.values())
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .map(d => ({ ...d, profit: d.omzet - d.modal }));
+    
+    const totalOmzet = byDate.reduce((s, d) => s + d.omzet, 0);
+    const totalModal = byDate.reduce((s, d) => s + d.modal, 0);
+    const totalProfit = totalOmzet - totalModal;
+    const margin = totalOmzet > 0 ? (totalProfit / totalOmzet) * 100 : 0;
+    
+    // Group by week
+    const weekMap = new Map<string, { week: string; weekLabel: string; omzet: number; modal: number }>();
+    byDate.forEach(d => {
+      const dt = new Date(d.date);
+      const weekStart = new Date(dt);
+      weekStart.setDate(dt.getDate() - dt.getDay());
+      const weekKey = format(weekStart, "yyyy-MM-dd");
+      const weekLabel = `${format(weekStart, "dd MMM", { locale: localeId })} - ${format(new Date(weekStart.getTime() + 6 * 86400000), "dd MMM", { locale: localeId })}`;
+      const existing = weekMap.get(weekKey) || { week: weekKey, weekLabel, omzet: 0, modal: 0 };
+      existing.omzet += d.omzet;
+      existing.modal += d.modal;
+      weekMap.set(weekKey, existing);
+    });
+    const byWeek = Array.from(weekMap.values())
+      .sort((a, b) => b.week.localeCompare(a.week))
+      .map(w => ({ ...w, profit: w.omzet - w.modal }));
+    
+    return { totalOmzet, totalModal, totalProfit, margin, byDate, byWeek };
+  }, [salesData]);
+
   const isLoading = salesLoading || stockInLoading;
   const isCurrentMonth = monthOffset === 0;
   const monthLabel = format(currentMonth, "MMMM yyyy", { locale: localeId });
