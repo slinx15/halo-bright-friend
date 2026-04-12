@@ -48,11 +48,37 @@ const Stok = () => {
   const isMobile = useIsMobile();
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  const exportStokToExcel = () => {
+    if (!products || products.length === 0) return;
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const rows = products.map((p) => ({
+      Kode: p.kode,
+      Nama: p.nama,
+      Kategori: p.kategori || "",
+      Stok: p.stock?.jumlah ?? 0,
+      Tumpukan: p.stock?.tumpukan || "",
+      "Harga Modal": p.prices?.harga_modal ?? 0,
+      "Harga Normal": p.prices?.harga_normal ?? 0,
+      "Harga Grosir": p.prices?.harga_grosir ?? 0,
+      "Harga Grosir 2": p.prices?.harga_grosir2 ?? 0,
+      "Nilai Stok": (p.stock?.jumlah ?? 0) * (p.prices?.harga_modal ?? 0),
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    // Auto-fit column widths
+    ws["!cols"] = Object.keys(rows[0]).map((key) => ({
+      wch: Math.max(key.length, ...rows.map((r) => String((r as any)[key]).length)) + 2,
+    }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Stok");
+    XLSX.writeFile(wb, `backup-stok-${dateStr}.xlsx`);
+    toast({ title: "✅ Export berhasil", description: `File backup-stok-${dateStr}.xlsx telah diunduh` });
+  };
+
   const handleResetStock = async () => {
     setResetting(true);
     try {
       const headers = await getAuthHeaders();
-      // Reset all stock to 0
       const res = await fetch(`${SUPABASE_URL}/rest/v1/stock?id=neq.00000000-0000-0000-0000-000000000000`, {
         method: "PATCH",
         headers,
