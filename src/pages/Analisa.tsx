@@ -1683,9 +1683,16 @@ const Analisa = () => {
             </div>
           )}
           {visibleCount >= filtered.length && filtered.length > 0 && (
-            <p className="text-center text-xs text-muted-foreground py-3">
-              Menampilkan semua {filtered.length} produk
-            </p>
+            <div className="text-center py-3 space-y-0.5">
+              <p className="text-xs text-muted-foreground">
+                Menampilkan semua {filtered.length} produk
+              </p>
+              {products.length > analyses.length && (
+                <p className="text-[10px] text-muted-foreground/60">
+                  {products.length - analyses.length} produk disembunyikan (stok habis &amp; jarang laku)
+                </p>
+              )}
+            </div>
           )}
 
           <Card className="border-0 shadow-sm p-5 space-y-4 animate-fade-in" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
