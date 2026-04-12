@@ -22,6 +22,7 @@ import {
   Moon,
   Sun,
   History,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +38,7 @@ const secondaryNav = [
   { icon: FileText, label: "Nota Jual", path: "/nota", adminOnly: false },
   { icon: ClipboardCheck, label: "Opname", path: "/opname", adminOnly: false },
   { icon: FileBarChart, label: "Laporan Bulanan", path: "/laporan", adminOnly: false },
+  { icon: Wallet, label: "Dashboard Keuangan", path: "/keuangan", adminOnly: false },
   { icon: Settings, label: "Produk", path: "/produk", adminOnly: false },
   { icon: FileUp, label: "Import & Export", path: "/import-histori", adminOnly: false },
   { icon: Bot, label: "AI Assistant", path: "/ai", adminOnly: false },
