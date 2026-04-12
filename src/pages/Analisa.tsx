@@ -2277,6 +2277,8 @@ const Analisa = () => {
         trendInfo={selectedProduct ? trendData[selectedProduct.productId] : null}
         lastSaleDate={selectedProduct ? lastSaleDates[selectedProduct.productId] : null}
         lastDayBuyers={selectedProduct ? lastDayBuyers[selectedProduct.productId] : null}
+        prevSaleDate={selectedProduct ? prevSaleDates[selectedProduct.productId] : null}
+        prevDayBuyers={selectedProduct ? prevDayBuyers[selectedProduct.productId] : null}
       />
     </div>
   );
