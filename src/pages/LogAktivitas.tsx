@@ -102,7 +102,7 @@ const LogAktivitas = () => {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Log Aktivitas" icon={History} subtitle="Riwayat semua perubahan data" />
+      <PageHeader title="Log Aktivitas" icon={History} iconColor="text-primary" iconBg="bg-primary/10" subtitle="Riwayat semua perubahan data" />
 
       {/* Filters */}
       <div className="flex gap-2">
