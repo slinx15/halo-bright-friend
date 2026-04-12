@@ -243,7 +243,7 @@ atau [] jika tidak ada yang perlu diingat.`;
       .slice(0, 20)
       .map(([toko, dates]) => {
         const dateLines = Object.entries(dates).sort(([a], [b]) => b.localeCompare(a)).map(([date, d]) => {
-          const topItems = d.items.sort((a, b) => b.qty - a.qty).slice(0, 10).map(i => `${i.kode}=${i.qty}`).join(",");
+          const topItems = d.items.sort((a, b) => b.qty - a.qty).slice(0, 10).map(i => `${i.kode}=${i.qty}pcs@Rp${i.hargaSatuan.toLocaleString("id-ID")}(${i.hargaType})`).join(",");
           const moreCount = d.items.length > 10 ? ` +${d.items.length - 10} lainnya` : "";
           return `  ${date}: pesan ${d.pcs} kirim ${d.kirim} pcs, Rp ${d.omzet.toLocaleString("id-ID")} [${topItems}${moreCount}]`;
         }).join("\n");
