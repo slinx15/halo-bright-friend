@@ -286,7 +286,9 @@ const Dashboard = () => {
   const todayStartUtc = new Date(todayWibStr + "T00:00:00+07:00");
   const tomorrowStartUtc = new Date(todayStartUtc.getTime() + 86400000);
 
-  const { data: todaySales } = useQuery({
+  // Request notification permission on first visit
+  useEffect(() => { requestNotificationPermission(); }, []);
+
     queryKey: ["dashboard_today_sales", todayWibStr],
     queryFn: async () => {
       const headers = await getAuthHeaders();
