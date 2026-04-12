@@ -19,9 +19,10 @@ export function useStockNotifications() {
     if (lastNotif && Date.now() - Number(lastNotif) < COOLDOWN_MS) return;
 
     // Find products with 0 stock that have prices (meaning they're active selling items)
+    // Hanya tampilkan untuk kategori 2 Ons (stok fisik utama)
     const criticalItems = products.filter(p => {
       const stok = p.stock?.jumlah ?? 0;
-      return stok === 0 && p.prices && p.prices.harga_normal > 0;
+      return stok === 0 && p.prices && p.prices.harga_normal > 0 && p.kategori === "2 Ons";
     });
 
     if (criticalItems.length === 0) return;
