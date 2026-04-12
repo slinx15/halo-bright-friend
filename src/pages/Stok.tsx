@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Package, Search, AlertTriangle, TrendingUp, BoxIcon, ShieldAlert, Loader2, Trash2 } from "lucide-react";
+import { Package, Search, AlertTriangle, TrendingUp, BoxIcon, ShieldAlert, Loader2, Trash2, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 import { formatNumber, formatRupiah, getStockStatus, getStockStatusColor } from "@/lib/formatters";
 import { StokSkeleton } from "@/components/LoadingSkeletons";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
@@ -47,11 +48,37 @@ const Stok = () => {
   const isMobile = useIsMobile();
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  const exportStokToExcel = () => {
+    if (!products || products.length === 0) return;
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const rows = products.map((p) => ({
+      Kode: p.kode,
+      Nama: p.nama,
+      Kategori: p.kategori || "",
+      Stok: p.stock?.jumlah ?? 0,
+      Tumpukan: p.stock?.tumpukan || "",
+      "Harga Modal": p.prices?.harga_modal ?? 0,
+      "Harga Normal": p.prices?.harga_normal ?? 0,
+      "Harga Grosir": p.prices?.harga_grosir ?? 0,
+      "Harga Grosir 2": p.prices?.harga_grosir2 ?? 0,
+      "Nilai Stok": (p.stock?.jumlah ?? 0) * (p.prices?.harga_modal ?? 0),
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    // Auto-fit column widths
+    ws["!cols"] = Object.keys(rows[0]).map((key) => ({
+      wch: Math.max(key.length, ...rows.map((r) => String((r as any)[key]).length)) + 2,
+    }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Stok");
+    XLSX.writeFile(wb, `backup-stok-${dateStr}.xlsx`);
+    toast({ title: "✅ Export berhasil", description: `File backup-stok-${dateStr}.xlsx telah diunduh` });
+  };
+
   const handleResetStock = async () => {
     setResetting(true);
     try {
       const headers = await getAuthHeaders();
-      // Reset all stock to 0
       const res = await fetch(`${SUPABASE_URL}/rest/v1/stock?id=neq.00000000-0000-0000-0000-000000000000`, {
         method: "PATCH",
         headers,
@@ -160,9 +187,18 @@ const Stok = () => {
               <AlertTriangle className="h-5 w-5" /> Reset Semua Stok
             </DialogTitle>
             <DialogDescription>
-              Semua jumlah stok akan di-set ke <strong>0</strong> dan data tumpukan akan dihapus. Aksi ini tidak bisa di-undo. Yakin lanjutkan?
+              Semua jumlah stok akan di-set ke <strong>0</strong> dan data tumpukan akan dihapus. Aksi ini tidak bisa di-undo.
             </DialogDescription>
           </DialogHeader>
+          <div className="rounded-xl border border-warning/30 bg-warning/5 p-3 flex items-start gap-2.5">
+            <Download className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium">Disarankan export backup dulu sebelum reset</p>
+              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={exportStokToExcel}>
+                <Download className="h-3.5 w-3.5 mr-1.5" /> Download Backup Excel
+              </Button>
+            </div>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowResetDialog(false)} disabled={resetting}>Batal</Button>
             <Button variant="destructive" onClick={handleResetStock} disabled={resetting}>
