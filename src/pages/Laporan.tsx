@@ -229,14 +229,18 @@ export default function Laporan() {
         </div>
       ) : (
         <Tabs defaultValue="penjualan" className="space-y-4">
-          <TabsList className="w-full grid grid-cols-2 rounded-2xl h-12 p-1 bg-muted/60">
-            <TabsTrigger value="penjualan" className="rounded-xl gap-2 text-sm font-bold data-[state=active]:shadow-md transition-all">
-              <PackageMinus className="h-4 w-4" />
+          <TabsList className="w-full grid grid-cols-3 rounded-2xl h-12 p-1 bg-muted/60">
+            <TabsTrigger value="penjualan" className="rounded-xl gap-1.5 text-xs font-bold data-[state=active]:shadow-md transition-all">
+              <PackageMinus className="h-3.5 w-3.5" />
               Penjualan
             </TabsTrigger>
-            <TabsTrigger value="masuk" className="rounded-xl gap-2 text-sm font-bold data-[state=active]:shadow-md transition-all">
-              <PackagePlus className="h-4 w-4" />
-              Barang Masuk
+            <TabsTrigger value="profit" className="rounded-xl gap-1.5 text-xs font-bold data-[state=active]:shadow-md transition-all">
+              <TrendingUp className="h-3.5 w-3.5" />
+              Profit
+            </TabsTrigger>
+            <TabsTrigger value="masuk" className="rounded-xl gap-1.5 text-xs font-bold data-[state=active]:shadow-md transition-all">
+              <PackagePlus className="h-3.5 w-3.5" />
+              Masuk
             </TabsTrigger>
           </TabsList>
 
