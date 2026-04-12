@@ -16,6 +16,7 @@ import {
   Users,
   FileBarChart,
   FileText,
+  History,
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,7 @@ const navItems = [
   { icon: FileUp, label: "Import Histori", path: "/import-histori", group: "laporan" },
   { icon: Bot, label: "AI Assistant", path: "/ai", group: "laporan" },
   { icon: Users, label: "Kelola User", path: "/users", group: "admin" },
+  { icon: History, label: "Log Aktivitas", path: "/log", group: "admin" },
 ];
 
 const groups = [
