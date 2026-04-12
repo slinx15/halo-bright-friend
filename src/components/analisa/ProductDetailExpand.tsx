@@ -254,6 +254,28 @@ export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDa
   );
 }
 
+function SaleDateBlock({ label, dateStr, buyers }: { label: string; dateStr?: string | null; buyers?: { toko: string; qty: number }[] | null }) {
+  return (
+    <div className="rounded-2xl border border-border/50 p-4 space-y-1.5">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        <ShoppingCart className="h-4 w-4" />
+        <span className="text-[11px] font-medium uppercase tracking-wider">{label}</span>
+      </div>
+      <p className="text-sm font-bold">{formatLastSale(dateStr)}</p>
+      {buyers && buyers.length > 0 && (
+        <div className="space-y-1 pt-1">
+          {buyers.filter(b => b.toko).map((b, i) => (
+            <div key={i} className="flex items-center justify-between text-[12px]">
+              <span className="text-muted-foreground">🏪 {b.toko}</span>
+              <span className="font-semibold tabular-nums">{b.qty} pcs</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function InfoRow({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
   return (
     <div className="rounded-2xl border border-border/50 p-4 space-y-1.5">
