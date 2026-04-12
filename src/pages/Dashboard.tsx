@@ -289,6 +289,7 @@ const Dashboard = () => {
   // Request notification permission on first visit
   useEffect(() => { requestNotificationPermission(); }, []);
 
+  const { data: todaySales } = useQuery({
     queryKey: ["dashboard_today_sales", todayWibStr],
     queryFn: async () => {
       const headers = await getAuthHeaders();
