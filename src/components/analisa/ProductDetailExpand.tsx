@@ -10,6 +10,8 @@ interface ProductDetailExpandProps {
   trendInfo?: TrendInfo | null;
   lastSaleDate?: string | null;
   lastDayBuyers?: { toko: string; qty: number }[] | null;
+  prevSaleDate?: string | null;
+  prevDayBuyers?: { toko: string; qty: number }[] | null;
 }
 
 const STATUS_INFO: Record<string, { label: string; color: string; desc: string }> = {
@@ -63,7 +65,7 @@ function formatLastSale(dateStr: string | null | undefined): string {
   return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDate, lastDayBuyers }: ProductDetailExpandProps) {
+export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDate, lastDayBuyers, prevSaleDate, prevDayBuyers }: ProductDetailExpandProps) {
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Lock body scroll when open
@@ -204,23 +206,19 @@ export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDa
                   : undefined}
               />
 
-              <div className="rounded-2xl border border-border/50 p-4 space-y-1.5">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <ShoppingCart className="h-4 w-4" />
-                  <span className="text-[11px] font-medium uppercase tracking-wider">Terakhir Laku</span>
-                </div>
-                <p className="text-sm font-bold">{formatLastSale(lastSaleDate)}</p>
-                {lastDayBuyers && lastDayBuyers.length > 0 && (
-                  <div className="space-y-1 pt-1">
-                    {lastDayBuyers.filter(b => b.toko).map((b, i) => (
-                      <div key={i} className="flex items-center justify-between text-[12px]">
-                        <span className="text-muted-foreground">🏪 {b.toko}</span>
-                        <span className="font-semibold tabular-nums">{b.qty} pcs</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <SaleDateBlock
+                label="Terakhir Laku"
+                dateStr={lastSaleDate}
+                buyers={lastDayBuyers}
+              />
+
+              {prevSaleDate && (
+                <SaleDateBlock
+                  label="Sebelumnya"
+                  dateStr={prevSaleDate}
+                  buyers={prevDayBuyers}
+                />
+              )}
 
               <div className="rounded-2xl border border-border/50 p-4 space-y-2">
                 <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -253,6 +251,28 @@ export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDa
         </div>
       </div>
     </>
+  );
+}
+
+function SaleDateBlock({ label, dateStr, buyers }: { label: string; dateStr?: string | null; buyers?: { toko: string; qty: number }[] | null }) {
+  return (
+    <div className="rounded-2xl border border-border/50 p-4 space-y-1.5">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        <ShoppingCart className="h-4 w-4" />
+        <span className="text-[11px] font-medium uppercase tracking-wider">{label}</span>
+      </div>
+      <p className="text-sm font-bold">{formatLastSale(dateStr)}</p>
+      {buyers && buyers.length > 0 && (
+        <div className="space-y-1 pt-1">
+          {buyers.filter(b => b.toko).map((b, i) => (
+            <div key={i} className="flex items-center justify-between text-[12px]">
+              <span className="text-muted-foreground">🏪 {b.toko}</span>
+              <span className="font-semibold tabular-nums">{b.qty} pcs</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
