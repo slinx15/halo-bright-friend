@@ -49,7 +49,7 @@ export default function Laporan() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stock_out")
-        .select("*, products(kode, nama, kategori)")
+        .select("*, products(kode, nama, kategori, prices(harga_modal))")
         .gte("created_at", startISO)
         .lte("created_at", endISO)
         .order("created_at", { ascending: false });
