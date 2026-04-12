@@ -1215,33 +1215,47 @@ const Analisa = () => {
     return calculateTrendData(stockOutData, products);
   }, [products, stockOutData]);
 
-  // Last sale date & last day buyers per product
-  const { lastSaleDates, lastDayBuyers } = useMemo(() => {
-    const dateMap: Record<string, string> = {};
-    // First pass: find last sale date per product
+  // Last sale date & previous sale date + buyers per product
+  const { lastSaleDates, lastDayBuyers, prevSaleDates, prevDayBuyers } = useMemo(() => {
+    // Collect all unique sale dates per product
+    const datesPerProduct: Record<string, Set<string>> = {};
     for (const s of stockOutData) {
-      if (!dateMap[s.product_id] || s.created_at > dateMap[s.product_id]) {
-        dateMap[s.product_id] = s.created_at;
-      }
+      if (!datesPerProduct[s.product_id]) datesPerProduct[s.product_id] = new Set();
+      datesPerProduct[s.product_id].add(s.created_at.slice(0, 10));
     }
-    // Second pass: collect all buyers on the last sale day
-    const buyersMap: Record<string, { toko: string; qty: number }[]> = {};
-    for (const s of stockOutData) {
-      const lastDate = dateMap[s.product_id];
-      if (!lastDate) continue;
-      // Compare date only (first 10 chars: YYYY-MM-DD)
-      if (s.created_at.slice(0, 10) === lastDate.slice(0, 10)) {
-        if (!buyersMap[s.product_id]) buyersMap[s.product_id] = [];
-        const toko = (s as any).toko || "";
-        const existing = buyersMap[s.product_id].find(b => b.toko === toko);
-        if (existing) {
-          existing.qty += (s as any).qty_kirim || 0;
-        } else {
-          buyersMap[s.product_id].push({ toko, qty: (s as any).qty_kirim || 0 });
+    // Get last and previous dates
+    const dateMap: Record<string, string> = {};
+    const prevDateMap: Record<string, string> = {};
+    for (const [pid, dates] of Object.entries(datesPerProduct)) {
+      const sorted = Array.from(dates).sort((a, b) => b.localeCompare(a));
+      if (sorted[0]) dateMap[pid] = sorted[0];
+      if (sorted[1]) prevDateMap[pid] = sorted[1];
+    }
+    // Collect buyers for a given date
+    function collectBuyers(targetDates: Record<string, string>) {
+      const buyersMap: Record<string, { toko: string; qty: number }[]> = {};
+      for (const s of stockOutData) {
+        const targetDate = targetDates[s.product_id];
+        if (!targetDate) continue;
+        if (s.created_at.slice(0, 10) === targetDate) {
+          if (!buyersMap[s.product_id]) buyersMap[s.product_id] = [];
+          const toko = (s as any).toko || "";
+          const existing = buyersMap[s.product_id].find(b => b.toko === toko);
+          if (existing) {
+            existing.qty += (s as any).qty_kirim || 0;
+          } else {
+            buyersMap[s.product_id].push({ toko, qty: (s as any).qty_kirim || 0 });
+          }
         }
       }
+      return buyersMap;
     }
-    return { lastSaleDates: dateMap, lastDayBuyers: buyersMap };
+    return {
+      lastSaleDates: dateMap,
+      lastDayBuyers: collectBuyers(dateMap),
+      prevSaleDates: prevDateMap,
+      prevDayBuyers: collectBuyers(prevDateMap),
+    };
   }, [stockOutData]);
 
   const openProductDrawer = useCallback((item: ProductAnalysis) => {
