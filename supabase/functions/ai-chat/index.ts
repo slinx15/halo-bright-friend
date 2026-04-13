@@ -263,10 +263,10 @@ atau [] jika tidak ada yang perlu diingat.`;
     const hourBuckets: Record<number, number> = {};
     for (let i = 0; i < 24; i++) hourBuckets[i] = 0;
     for (const s of stockOut) {
-      const d = new Date(s.created_at);
-      dayBuckets[d.getDay()].pcs += s.qty_kirim;
-      dayBuckets[d.getDay()].dates.add(s.created_at.slice(0, 10));
-      hourBuckets[d.getHours()] += s.qty_kirim;
+      const d = new Date(new Date(s.created_at).getTime() + WIB_OFFSET);
+      dayBuckets[d.getUTCDay()].pcs += s.qty_kirim;
+      dayBuckets[d.getUTCDay()].dates.add(d.toISOString().slice(0, 10));
+      hourBuckets[d.getUTCHours()] += s.qty_kirim;
     }
     const hariRamaiData = Object.entries(dayBuckets).map(([i, d]) => {
       const weeks = d.dates.size || 1;
