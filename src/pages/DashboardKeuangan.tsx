@@ -1,19 +1,17 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { subDays, format, startOfDay, differenceInDays } from "date-fns";
+import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { PageHeader } from "@/components/PageHeader";
 import { formatRupiah, formatNumber } from "@/lib/formatters";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useProducts } from "@/hooks/useProducts";
 import { cn } from "@/lib/utils";
 import {
   DollarSign,
   TrendingUp,
-  TrendingDown,
   Wallet,
   PiggyBank,
   BarChart3,
@@ -35,8 +33,18 @@ import {
 } from "recharts";
 
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 type PeriodKey = "7d" | "14d" | "30d";
+
+type DailyPoint = {
+  date: string;
+  label: string;
+  omzet: number;
+  modal: number;
+  profit: number;
+  qty: number;
+};
 
 const periods: { key: PeriodKey; label: string; days: number }[] = [
   { key: "7d", label: "7 Hari", days: 7 },
@@ -44,125 +52,128 @@ const periods: { key: PeriodKey; label: string; days: number }[] = [
   { key: "30d", label: "30 Hari", days: 30 },
 ];
 
+const getWibDateKey = (value: Date | string | number) =>
+  new Date(new Date(value).getTime() + WIB_OFFSET_MS).toISOString().slice(0, 10);
+
+const getDisplayDate = (dateKey: string) => {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day, 12));
+};
+
+const getWibRange = (days: number) => {
+  const nowShiftedMs = Date.now() + WIB_OFFSET_MS;
+  const todayShiftedStartMs = Math.floor(nowShiftedMs / DAY_MS) * DAY_MS;
+  const startShiftedMs = todayShiftedStartMs - (days - 1) * DAY_MS;
+
+  return {
+    startISO: new Date(startShiftedMs - WIB_OFFSET_MS).toISOString(),
+    endISO: new Date(todayShiftedStartMs + DAY_MS - WIB_OFFSET_MS).toISOString(),
+    prevStartISO: new Date(startShiftedMs - days * DAY_MS - WIB_OFFSET_MS).toISOString(),
+    prevEndISO: new Date(startShiftedMs - WIB_OFFSET_MS).toISOString(),
+    dateKeys: Array.from({ length: days }, (_, index) =>
+      new Date(startShiftedMs + index * DAY_MS).toISOString().slice(0, 10)
+    ),
+  };
+};
+
 export default function DashboardKeuangan() {
   const isMobile = useIsMobile();
   const [period, setPeriod] = useState<PeriodKey>("30d");
   const days = periods.find((p) => p.key === period)!.days;
 
-  const startDate = useMemo(() => subDays(new Date(), days), [days]);
-  const startISO = useMemo(
-    () => new Date(startDate.getTime() - WIB_OFFSET_MS).toISOString(),
-    [startDate]
+  const { startISO, endISO, prevStartISO, prevEndISO, dateKeys } = useMemo(
+    () => getWibRange(days),
+    [days]
   );
 
-  // Fetch stock_out with prices
-  const { data: salesData, isLoading } = useQuery({
-    queryKey: ["keuangan-sales", period],
+  const { data: allProducts, isLoading: isProductsLoading } = useProducts();
+
+  const modalByProductId = useMemo(() => {
+    const map: Record<string, number> = {};
+    allProducts?.forEach((product) => {
+      map[product.id] = product.prices?.harga_modal ?? 0;
+    });
+    return map;
+  }, [allProducts]);
+
+  const { data: salesData, isLoading: isSalesLoading } = useQuery({
+    queryKey: ["keuangan-sales", period, startISO, endISO],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stock_out")
-        .select("created_at, qty_kirim, harga_satuan, total_harga, product_id")
+        .select("created_at, qty_kirim, total_harga, product_id")
         .gte("created_at", startISO)
+        .lt("created_at", endISO)
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data ?? [];
     },
   });
 
-  const { data: pricesMap } = useQuery({
-    queryKey: ["keuangan-prices"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("prices")
-        .select("product_id, harga_modal");
-      if (error) throw error;
-      const map: Record<string, number> = {};
-      data?.forEach((p) => {
-        map[p.product_id] = p.harga_modal;
-      });
-      return map;
-    },
-  });
-
-  // Previous period for comparison
-  const prevStartISO = useMemo(
-    () =>
-      new Date(
-        subDays(startDate, days).getTime() - WIB_OFFSET_MS
-      ).toISOString(),
-    [startDate, days]
-  );
-
   const { data: prevSalesData } = useQuery({
-    queryKey: ["keuangan-prev-sales", period],
+    queryKey: ["keuangan-prev-sales", period, prevStartISO, prevEndISO],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stock_out")
         .select("created_at, qty_kirim, total_harga, product_id")
         .gte("created_at", prevStartISO)
-        .lt("created_at", startISO);
+        .lt("created_at", prevEndISO);
       if (error) throw error;
       return data ?? [];
     },
   });
 
-  // Calculate daily data
-  const dailyData = useMemo(() => {
-    if (!salesData || !pricesMap) return [];
+  const dailyData = useMemo<DailyPoint[]>(() => {
     const map = new Map<
       string,
       { omzet: number; modal: number; profit: number; qty: number }
     >();
 
-    // Initialize all days
-    for (let i = 0; i < days; i++) {
-      const d = format(subDays(new Date(), days - 1 - i), "yyyy-MM-dd");
-      map.set(d, { omzet: 0, modal: 0, profit: 0, qty: 0 });
-    }
+    dateKeys.forEach((dateKey) => {
+      map.set(dateKey, { omzet: 0, modal: 0, profit: 0, qty: 0 });
+    });
 
-    salesData.forEach((s) => {
-      const wib = new Date(new Date(s.created_at).getTime() + WIB_OFFSET_MS);
-      const key = format(wib, "yyyy-MM-dd");
+    salesData?.forEach((sale) => {
+      const key = getWibDateKey(sale.created_at);
       const entry = map.get(key);
       if (!entry) return;
-      const omzet = s.total_harga;
-      const modal = (pricesMap[s.product_id] ?? 0) * s.qty_kirim;
+
+      const omzet = sale.total_harga;
+      const modal = (modalByProductId[sale.product_id] ?? 0) * sale.qty_kirim;
+
       entry.omzet += omzet;
       entry.modal += modal;
       entry.profit += omzet - modal;
-      entry.qty += s.qty_kirim;
+      entry.qty += sale.qty_kirim;
     });
 
-    return Array.from(map.entries()).map(([date, v]) => ({
-      date,
-      label: format(new Date(date), "dd MMM", { locale: localeId }),
-      ...v,
+    return dateKeys.map((dateKey) => ({
+      date: dateKey,
+      label: format(getDisplayDate(dateKey), "dd MMM", { locale: localeId }),
+      ...(map.get(dateKey) ?? { omzet: 0, modal: 0, profit: 0, qty: 0 }),
     }));
-  }, [salesData, pricesMap, days]);
+  }, [dateKeys, modalByProductId, salesData]);
 
-  // Totals
   const totals = useMemo(() => {
-    const t = { omzet: 0, modal: 0, profit: 0, qty: 0 };
-    dailyData.forEach((d) => {
-      t.omzet += d.omzet;
-      t.modal += d.modal;
-      t.profit += d.profit;
-      t.qty += d.qty;
+    const total = { omzet: 0, modal: 0, profit: 0, qty: 0 };
+    dailyData.forEach((day) => {
+      total.omzet += day.omzet;
+      total.modal += day.modal;
+      total.profit += day.profit;
+      total.qty += day.qty;
     });
-    return t;
+    return total;
   }, [dailyData]);
 
-  // Previous period totals
   const prevTotals = useMemo(() => {
-    const t = { omzet: 0, modal: 0, profit: 0 };
-    if (!prevSalesData || !pricesMap) return t;
-    prevSalesData.forEach((s) => {
-      t.omzet += s.total_harga;
-      t.modal += (pricesMap[s.product_id] ?? 0) * s.qty_kirim;
+    const total = { omzet: 0, modal: 0, profit: 0 };
+    prevSalesData?.forEach((sale) => {
+      total.omzet += sale.total_harga;
+      total.modal += (modalByProductId[sale.product_id] ?? 0) * sale.qty_kirim;
     });
-    t.profit = t.omzet - t.modal;
-    return t;
-  }, [prevSalesData, pricesMap]);
+    total.profit = total.omzet - total.modal;
+    return total;
+  }, [modalByProductId, prevSalesData]);
 
   const margin = totals.omzet > 0 ? (totals.profit / totals.omzet) * 100 : 0;
 
@@ -174,19 +185,17 @@ export default function DashboardKeuangan() {
   const omzetChange = pctChange(totals.omzet, prevTotals.omzet);
   const profitChange = pctChange(totals.profit, prevTotals.profit);
 
-  // Best day
   const bestDay = useMemo(() => {
     if (dailyData.length === 0) return null;
-    return dailyData.reduce((best, d) => (d.profit > best.profit ? d : best), dailyData[0]);
+    return dailyData.reduce((best, day) => (day.profit > best.profit ? day : best), dailyData[0]);
   }, [dailyData]);
 
-  // Average daily
   const avgDaily = totals.omzet / Math.max(days, 1);
 
-  const formatCompact = (v: number) => {
-    if (Math.abs(v) >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}jt`;
-    if (Math.abs(v) >= 1_000) return `${(v / 1_000).toFixed(0)}rb`;
-    return String(v);
+  const formatCompact = (value: number) => {
+    if (Math.abs(value) >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}jt`;
+    if (Math.abs(value) >= 1_000) return `${(value / 1_000).toFixed(0)}rb`;
+    return String(value);
   };
 
   const customTooltip = ({ active, payload, label }: any) => {
@@ -194,21 +203,21 @@ export default function DashboardKeuangan() {
     return (
       <div className="bg-popover/95 backdrop-blur-md border border-border rounded-xl p-3 shadow-lg text-xs space-y-1">
         <p className="font-bold text-foreground">{label}</p>
-        {payload.map((p: any) => (
-          <div key={p.dataKey} className="flex items-center gap-2">
+        {payload.map((item: any) => (
+          <div key={item.dataKey} className="flex items-center gap-2">
             <div
               className="w-2.5 h-2.5 rounded-full"
-              style={{ backgroundColor: p.color }}
+              style={{ backgroundColor: item.color }}
             />
-            <span className="text-muted-foreground capitalize">{p.dataKey}:</span>
-            <span className="font-bold text-foreground">{formatRupiah(p.value)}</span>
+            <span className="text-muted-foreground capitalize">{item.dataKey}:</span>
+            <span className="font-bold text-foreground">{formatRupiah(item.value)}</span>
           </div>
         ))}
       </div>
     );
   };
 
-  if (isLoading) {
+  if (isSalesLoading || isProductsLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
@@ -217,8 +226,7 @@ export default function DashboardKeuangan() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full">
-      {/* Header */}
+    <div className="min-h-full w-full max-w-[1400px] mx-auto space-y-5 p-4 pb-[calc(9rem+env(safe-area-inset-bottom))] md:p-6 md:pb-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3.5">
           <div className="p-3 rounded-2xl bg-primary/10 shadow-sm">
@@ -235,28 +243,25 @@ export default function DashboardKeuangan() {
         </div>
       </div>
 
-      {/* Period Selector */}
       <div className="flex items-center gap-2">
         <Calendar className="h-4 w-4 text-muted-foreground" />
-        {periods.map((p) => (
+        {periods.map((periodOption) => (
           <button
-            key={p.key}
-            onClick={() => setPeriod(p.key)}
+            key={periodOption.key}
+            onClick={() => setPeriod(periodOption.key)}
             className={cn(
               "rounded-xl px-3.5 py-2 text-xs font-bold transition-all duration-200",
-              period === p.key
+              period === periodOption.key
                 ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
                 : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
           >
-            {p.label}
+            {periodOption.label}
           </button>
         ))}
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-        {/* Omzet */}
         <div className="card-premium bg-primary/5 p-3.5">
           <div className="flex items-center gap-2 mb-1.5">
             <DollarSign className="h-4 w-4 text-primary" />
@@ -286,7 +291,6 @@ export default function DashboardKeuangan() {
           </div>
         </div>
 
-        {/* Modal */}
         <div className="card-premium bg-warning/5 p-3.5">
           <div className="flex items-center gap-2 mb-1.5">
             <PiggyBank className="h-4 w-4 text-warning" />
@@ -302,7 +306,6 @@ export default function DashboardKeuangan() {
           </p>
         </div>
 
-        {/* Profit */}
         <div className="card-premium bg-success/5 p-3.5">
           <div className="flex items-center gap-2 mb-1.5">
             <TrendingUp className="h-4 w-4 text-success" />
@@ -336,7 +339,6 @@ export default function DashboardKeuangan() {
           </div>
         </div>
 
-        {/* Margin */}
         <div className="card-premium bg-accent/30 p-3.5">
           <div className="flex items-center gap-2 mb-1.5">
             <BarChart3 className="h-4 w-4 text-primary" />
@@ -353,14 +355,13 @@ export default function DashboardKeuangan() {
         </div>
       </div>
 
-      {/* Main Chart - Area */}
       <Card className="rounded-2xl shadow-md border-0 overflow-hidden">
         <CardHeader className="pb-2 bg-gradient-to-r from-primary/5 to-transparent">
           <CardTitle className="text-base font-bold flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-primary" />
             Tren Keuangan
             <Badge variant="secondary" className="text-[10px] rounded-full px-2.5">
-              {periods.find((p) => p.key === period)?.label}
+              {periods.find((item) => item.key === period)?.label}
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -413,7 +414,6 @@ export default function DashboardKeuangan() {
         </CardContent>
       </Card>
 
-      {/* Bar Chart - Modal vs Profit */}
       <Card className="rounded-2xl shadow-md border-0 overflow-hidden">
         <CardHeader className="pb-2 bg-gradient-to-r from-warning/5 to-transparent">
           <CardTitle className="text-base font-bold flex items-center gap-2">
@@ -457,7 +457,6 @@ export default function DashboardKeuangan() {
         </CardContent>
       </Card>
 
-      {/* Best Day */}
       {bestDay && bestDay.profit > 0 && (
         <Card className="rounded-2xl shadow-md border-0 bg-gradient-to-r from-success/10 to-primary/5 p-4">
           <div className="flex items-center gap-3">
@@ -466,16 +465,15 @@ export default function DashboardKeuangan() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground font-medium">
-                Hari Terbaik ({periods.find((p) => p.key === period)?.label} terakhir)
+                Hari Terbaik ({periods.find((item) => item.key === period)?.label} terakhir)
               </p>
               <p className="font-extrabold text-foreground">
-                {format(new Date(bestDay.date), "EEEE, dd MMMM yyyy", {
+                {format(getDisplayDate(bestDay.date), "EEEE, dd MMMM yyyy", {
                   locale: localeId,
                 })}
               </p>
               <p className="text-sm font-bold text-success">
-                Profit {formatRupiah(bestDay.profit)} dari omzet{" "}
-                {formatRupiah(bestDay.omzet)}
+                Profit {formatRupiah(bestDay.profit)} dari omzet {formatRupiah(bestDay.omzet)}
               </p>
             </div>
           </div>
