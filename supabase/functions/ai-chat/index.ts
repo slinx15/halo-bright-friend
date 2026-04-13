@@ -675,6 +675,8 @@ ${memoryBlock}
 
 ═══ ${todayBlock} ═══
 
+═══ ${dailyFinancialsBlock} ═══
+
 ═══ ${stockInBlock} ═══
 
 ═══ DATA TOKO BOSS (REAL-TIME, STOK & ANALISA = HANYA 2 ONS) ═══
@@ -732,6 +734,8 @@ ${knowledgeBlock}
 ${memoryBlock}
 
 ═══ ${todayBlock} ═══
+
+═══ ${dailyFinancialsBlock} ═══
 
 ═══ ${stockInBlock} ═══
 
