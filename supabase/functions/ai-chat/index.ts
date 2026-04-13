@@ -434,6 +434,33 @@ ${todayTrxCount} transaksi | ${todayPcs} pcs | ${todayTokoCount} toko
 Omzet: Rp ${todayOmzet.toLocaleString("id-ID")} | Profit: Rp ${todayProfit.toLocaleString("id-ID")} (margin ${todayMarginPct}%)
 ${todayTokoCount > 0 ? `Detail per toko:\n${todayTokoDetail}` : "Belum ada penjualan hari ini."}`;
 
+
+    // ─── Pre-computed Daily Financial Summary (30 days, WIB) ───
+    const dailyFinancials: Record<string, { omzet: number; profit: number; pcs: number; kirim: number; trx: number; tokoSet: Set<string> }> = {};
+    for (const s of stockOut) {
+      const wibDate = new Date(new Date(s.created_at).getTime() + WIB_OFFSET);
+      const dateKey = wibDate.toISOString().slice(0, 10);
+      if (!dailyFinancials[dateKey]) dailyFinancials[dateKey] = { omzet: 0, profit: 0, pcs: 0, kirim: 0, trx: 0, tokoSet: new Set() };
+      const df = dailyFinancials[dateKey];
+      df.omzet += s.total_harga || 0;
+      df.pcs += s.qty_pesan || 0;
+      df.kirim += s.qty_kirim || 0;
+      df.trx += 1;
+      const toko = (s.toko ?? "").trim();
+      if (toko) df.tokoSet.add(toko.toUpperCase());
+      const prod = allSizeProducts.find((p: any) => p.id === s.product_id);
+      const modal = prod ? prod._hargaModal * (s.qty_kirim || 0) : 0;
+      df.profit += (s.total_harga || 0) - modal;
+    }
+    const dailyFinancialsBlock = `📅 RINGKASAN KEUANGAN HARIAN (sudah dihitung, JANGAN hitung ulang — gunakan angka ini langsung):\n` +
+      Object.entries(dailyFinancials)
+        .sort(([a], [b]) => b.localeCompare(a))
+        .map(([date, d]) => {
+          const marginPct = d.omzet > 0 ? Math.round((d.profit / d.omzet) * 100) : 0;
+          return `${date}: Omzet Rp ${d.omzet.toLocaleString("id-ID")} | Profit Rp ${d.profit.toLocaleString("id-ID")} (margin ${marginPct}%) | ${d.kirim} pcs kirim | ${d.trx} trx | ${d.tokoSet.size} toko`;
+        })
+        .join("\n");
+
     // ─── Stock In (Barang Masuk) Analysis ───
     const todayStockIn = stockIn.filter((s: any) => {
       const wibDate = new Date(new Date(s.created_at).getTime() + WIB_OFFSET);
