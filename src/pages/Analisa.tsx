@@ -1217,11 +1217,13 @@ const Analisa = () => {
 
   // Last sale date & previous sale date + buyers per product
   const { lastSaleDates, lastDayBuyers, prevSaleDates, prevDayBuyers } = useMemo(() => {
+    const WIB_OFFSET = 7 * 3600000;
+    const toWibDateKey = (iso: string) => new Date(new Date(iso).getTime() + WIB_OFFSET).toISOString().slice(0, 10);
     // Collect all unique sale dates per product
     const datesPerProduct: Record<string, Set<string>> = {};
     for (const s of stockOutData) {
       if (!datesPerProduct[s.product_id]) datesPerProduct[s.product_id] = new Set();
-      datesPerProduct[s.product_id].add(s.created_at.slice(0, 10));
+      datesPerProduct[s.product_id].add(toWibDateKey(s.created_at));
     }
     // Get last and previous dates
     const dateMap: Record<string, string> = {};
@@ -1237,7 +1239,7 @@ const Analisa = () => {
       for (const s of stockOutData) {
         const targetDate = targetDates[s.product_id];
         if (!targetDate) continue;
-        if (s.created_at.slice(0, 10) === targetDate) {
+        if (toWibDateKey(s.created_at) === targetDate) {
           if (!buyersMap[s.product_id]) buyersMap[s.product_id] = [];
           const toko = (s as any).toko || "";
           const existing = buyersMap[s.product_id].find(b => b.toko === toko);
@@ -1314,7 +1316,8 @@ const Analisa = () => {
       if (new Date(s.created_at) < thirtyAgo) continue;
       if (!salesMap[s.product_id]) salesMap[s.product_id] = { qty: 0, days: new Set() };
       salesMap[s.product_id].qty += s.qty_kirim;
-      salesMap[s.product_id].days.add(s.created_at.slice(0, 10));
+      const wibDate = new Date(new Date(s.created_at).getTime() + 7 * 3600000);
+      salesMap[s.product_id].days.add(wibDate.toISOString().slice(0, 10));
     }
     return analyses
       .filter(a => {
