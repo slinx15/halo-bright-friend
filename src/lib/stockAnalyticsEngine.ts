@@ -161,10 +161,12 @@ function today(): Date {
 // ─── WMA Velocity (EXACT bot parity) ─────────────────────
 
 function buildDailySalesMap(sales: StockOutRecord[], productId: string): Record<string, number> {
+  const WIB_OFFSET = 7 * 3600000;
   const map: Record<string, number> = {};
   for (const s of sales) {
     if (s.product_id !== productId) continue;
-    const key = s.created_at.slice(0, 10);
+    const wibDate = new Date(new Date(s.created_at).getTime() + WIB_OFFSET);
+    const key = wibDate.toISOString().slice(0, 10);
     map[key] = (map[key] ?? 0) + s.qty_pesan;
   }
   return map;
