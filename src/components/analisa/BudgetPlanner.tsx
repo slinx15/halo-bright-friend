@@ -59,17 +59,27 @@ function buildBudgetItemsForPeriode(
   const allCards = result.cards;
   
   allCards.forEach(c => {
-    const needed = Math.ceil(c.velocity * periodeDays);
+    const isBW = isBlackWhiteCode(c.kode);
+    const batch = getBatchSize(c.kode);
+    const safety = getSafetyDays(c.kode);
+    const minOrder = isBW ? batch : RULES.MIN_ORDER_PER_CODE;
+    // Engine parity: target = periodeDays + safety + lead time
+    const targetDays = periodeDays + safety + RULES.LEAD_TIME_DAYS;
+    const targetStock = Math.ceil(c.velocity * targetDays);
     const currentStock = c.stok;
-    let shortfall = Math.max(0, needed - currentStock);
+    let shortfall = Math.max(0, targetStock - currentStock);
     
     if (shortfall <= 0) return;
 
+    // Batch rounding (engine parity)
+    shortfall = Math.max(minOrder, roundUpToBatch(shortfall, batch));
+
     const pendingQty = pendingMap.get(c.kode.toUpperCase()) || 0;
     const adjustedShortfall = Math.max(0, shortfall - pendingQty);
+    // Re-round after pending deduction
+    const finalQty = adjustedShortfall > 0 ? Math.max(minOrder, roundUpToBatch(adjustedShortfall, batch)) : 0;
     
-    if (adjustedShortfall <= 0 && pendingQty > 0) {
-      // Item is covered by pending order — show but mark as pending
+    if (finalQty <= 0 && pendingQty > 0) {
       items.push({
         id: `tambah-${c.kode}`,
         kode: c.kode,
@@ -88,14 +98,16 @@ function buildBudgetItemsForPeriode(
       return;
     }
 
+    if (finalQty <= 0) return;
+
     items.push({
       id: `tambah-${c.kode}`,
       kode: c.kode,
       nama: c.nama,
       dos: c.dos,
       velocity: c.velocity,
-      qty: adjustedShortfall,
-      cost: adjustedShortfall * c.harga_modal,
+      qty: finalQty,
+      cost: finalQty * c.harga_modal,
       type: "tambah",
       is_bestseller: c.is_bestseller,
       harga_modal: c.harga_modal,
