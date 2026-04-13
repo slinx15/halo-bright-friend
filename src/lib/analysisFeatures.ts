@@ -130,13 +130,14 @@ export function calcTopSellers(
   const thirtyAgo = new Date(t.getTime() - 30 * 86400000);
   const wmaData = calculateWMAVelocity(sales, products);
 
-  // Sum sales per product
+  const WIB_OFFSET = 7 * 3600000;
   const salesMap: Record<string, { qty: number; days: Set<string> }> = {};
   for (const s of sales) {
     if (new Date(s.created_at) < thirtyAgo) continue;
     if (!salesMap[s.product_id]) salesMap[s.product_id] = { qty: 0, days: new Set() };
     salesMap[s.product_id].qty += s.qty_kirim;
-    salesMap[s.product_id].days.add(s.created_at.slice(0, 10));
+    const wibDate = new Date(new Date(s.created_at).getTime() + WIB_OFFSET);
+    salesMap[s.product_id].days.add(wibDate.toISOString().slice(0, 10));
   }
 
   const items: TopSellerItem[] = [];
@@ -371,7 +372,8 @@ export function calcTokoAnalysis(
     const td = tokoData[toko];
     td.totalQty += s.qty_kirim;
     td.transaksiCount++;
-    td.dates.add(s.created_at.slice(0, 10));
+    const wibDate = new Date(new Date(s.created_at).getTime() + 7 * 3600000);
+    td.dates.add(wibDate.toISOString().slice(0, 10));
 
     const p = productMap.get(s.product_id);
     const hargaJual = p?.prices?.harga_normal ?? 0;
