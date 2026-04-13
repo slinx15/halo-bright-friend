@@ -359,7 +359,8 @@ export default function BudgetPlanner({ result, alreadySent, onSelectedItemsChan
             </div>
           )}
           <p className="text-[10px] text-muted-foreground">
-            Beli stok untuk <strong>{periodeDays} hari</strong> ke depan berdasarkan kecepatan jual
+            Beli stok untuk <strong>{periodeDays} hari</strong> + safety + lead time berdasarkan kecepatan jual
+          </p>
           </p>
         </div>
 
