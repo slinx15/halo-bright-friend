@@ -4,7 +4,22 @@ import { Badge } from "@/components/ui/badge";
 import { Wallet, Check, AlertTriangle, Flame, Plus, PackageX, Clock, CalendarRange, Loader2 } from "lucide-react";
 import { formatRupiah, formatNumber } from "@/lib/formatters";
 import { supabase } from "@/integrations/supabase/client";
+import { RULES, isBlackWhiteCode } from "@/lib/stockAnalyticsEngine";
 import type { ReviewCard, MissedCard, ReviewResult } from "./ReviewResultCards";
+
+// Engine-parity helpers
+function getBatchSize(kode: string): number {
+  return isBlackWhiteCode(kode) ? RULES.BATCH_BW : RULES.BATCH;
+}
+
+function getSafetyDays(kode: string): number {
+  return isBlackWhiteCode(kode) ? RULES.SAFETY_BW : RULES.SAFETY_STOCK;
+}
+
+function roundUpToBatch(qty: number, batch: number): number {
+  if (qty <= 0) return 0;
+  return Math.ceil(qty / batch) * batch;
+}
 
 interface BudgetItem {
   id: string;
