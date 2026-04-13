@@ -4,7 +4,22 @@ import { Badge } from "@/components/ui/badge";
 import { Wallet, Check, AlertTriangle, Flame, Plus, PackageX, Clock, CalendarRange, Loader2 } from "lucide-react";
 import { formatRupiah, formatNumber } from "@/lib/formatters";
 import { supabase } from "@/integrations/supabase/client";
+import { RULES, isBlackWhiteCode } from "@/lib/stockAnalyticsEngine";
 import type { ReviewCard, MissedCard, ReviewResult } from "./ReviewResultCards";
+
+// Engine-parity helpers
+function getBatchSize(kode: string): number {
+  return isBlackWhiteCode(kode) ? RULES.BATCH_BW : RULES.BATCH;
+}
+
+function getSafetyDays(kode: string): number {
+  return isBlackWhiteCode(kode) ? RULES.SAFETY_BW : RULES.SAFETY_STOCK;
+}
+
+function roundUpToBatch(qty: number, batch: number): number {
+  if (qty <= 0) return 0;
+  return Math.ceil(qty / batch) * batch;
+}
 
 interface BudgetItem {
   id: string;
@@ -44,17 +59,27 @@ function buildBudgetItemsForPeriode(
   const allCards = result.cards;
   
   allCards.forEach(c => {
-    const needed = Math.ceil(c.velocity * periodeDays);
+    const isBW = isBlackWhiteCode(c.kode);
+    const batch = getBatchSize(c.kode);
+    const safety = getSafetyDays(c.kode);
+    const minOrder = isBW ? batch : RULES.MIN_ORDER_PER_CODE;
+    // Engine parity: target = periodeDays + safety + lead time
+    const targetDays = periodeDays + safety + RULES.LEAD_TIME_DAYS;
+    const targetStock = Math.ceil(c.velocity * targetDays);
     const currentStock = c.stok;
-    let shortfall = Math.max(0, needed - currentStock);
+    let shortfall = Math.max(0, targetStock - currentStock);
     
     if (shortfall <= 0) return;
 
+    // Batch rounding (engine parity)
+    shortfall = Math.max(minOrder, roundUpToBatch(shortfall, batch));
+
     const pendingQty = pendingMap.get(c.kode.toUpperCase()) || 0;
     const adjustedShortfall = Math.max(0, shortfall - pendingQty);
+    // Re-round after pending deduction
+    const finalQty = adjustedShortfall > 0 ? Math.max(minOrder, roundUpToBatch(adjustedShortfall, batch)) : 0;
     
-    if (adjustedShortfall <= 0 && pendingQty > 0) {
-      // Item is covered by pending order — show but mark as pending
+    if (finalQty <= 0 && pendingQty > 0) {
       items.push({
         id: `tambah-${c.kode}`,
         kode: c.kode,
@@ -73,14 +98,16 @@ function buildBudgetItemsForPeriode(
       return;
     }
 
+    if (finalQty <= 0) return;
+
     items.push({
       id: `tambah-${c.kode}`,
       kode: c.kode,
       nama: c.nama,
       dos: c.dos,
       velocity: c.velocity,
-      qty: adjustedShortfall,
-      cost: adjustedShortfall * c.harga_modal,
+      qty: finalQty,
+      cost: finalQty * c.harga_modal,
       type: "tambah",
       is_bestseller: c.is_bestseller,
       harga_modal: c.harga_modal,
@@ -92,16 +119,25 @@ function buildBudgetItemsForPeriode(
 
   // Missed items — products not in the order but critically low
   result.missed.forEach(m => {
-    const needed = Math.ceil(m.velocity * periodeDays);
+    const isBW = isBlackWhiteCode(m.kode);
+    const batch = getBatchSize(m.kode);
+    const safety = getSafetyDays(m.kode);
+    const minOrder = isBW ? batch : RULES.MIN_ORDER_PER_CODE;
+    const targetDays = periodeDays + safety + RULES.LEAD_TIME_DAYS;
+    const targetStock = Math.ceil(m.velocity * targetDays);
     const currentStock = m.stok;
-    let shortfall = Math.max(0, needed - currentStock);
+    let shortfall = Math.max(0, targetStock - currentStock);
     
     if (shortfall <= 0) return;
 
+    // Batch rounding (engine parity)
+    shortfall = Math.max(minOrder, roundUpToBatch(shortfall, batch));
+
     const pendingQty = pendingMap.get(m.kode.toUpperCase()) || 0;
     const adjustedShortfall = Math.max(0, shortfall - pendingQty);
+    const finalQty = adjustedShortfall > 0 ? Math.max(minOrder, roundUpToBatch(adjustedShortfall, batch)) : 0;
 
-    if (adjustedShortfall <= 0 && pendingQty > 0) {
+    if (finalQty <= 0 && pendingQty > 0) {
       items.push({
         id: `missed-${m.kode}`,
         kode: m.kode,
@@ -119,14 +155,16 @@ function buildBudgetItemsForPeriode(
       return;
     }
 
+    if (finalQty <= 0) return;
+
     items.push({
       id: `missed-${m.kode}`,
       kode: m.kode,
       nama: m.nama,
       dos: m.dos,
       velocity: m.velocity,
-      qty: adjustedShortfall,
-      cost: adjustedShortfall * m.harga_modal,
+      qty: finalQty,
+      cost: finalQty * m.harga_modal,
       type: "missed",
       harga_modal: m.harga_modal,
       priority: m.dos <= 1 ? -1 : m.dos,
@@ -321,7 +359,7 @@ export default function BudgetPlanner({ result, alreadySent, onSelectedItemsChan
             </div>
           )}
           <p className="text-[10px] text-muted-foreground">
-            Beli stok untuk <strong>{periodeDays} hari</strong> ke depan berdasarkan kecepatan jual
+            Beli stok untuk <strong>{periodeDays} hari</strong> + safety + lead time berdasarkan kecepatan jual
           </p>
         </div>
 
