@@ -119,16 +119,25 @@ function buildBudgetItemsForPeriode(
 
   // Missed items — products not in the order but critically low
   result.missed.forEach(m => {
-    const needed = Math.ceil(m.velocity * periodeDays);
+    const isBW = isBlackWhiteCode(m.kode);
+    const batch = getBatchSize(m.kode);
+    const safety = getSafetyDays(m.kode);
+    const minOrder = isBW ? batch : RULES.MIN_ORDER_PER_CODE;
+    const targetDays = periodeDays + safety + RULES.LEAD_TIME_DAYS;
+    const targetStock = Math.ceil(m.velocity * targetDays);
     const currentStock = m.stok;
-    let shortfall = Math.max(0, needed - currentStock);
+    let shortfall = Math.max(0, targetStock - currentStock);
     
     if (shortfall <= 0) return;
 
+    // Batch rounding (engine parity)
+    shortfall = Math.max(minOrder, roundUpToBatch(shortfall, batch));
+
     const pendingQty = pendingMap.get(m.kode.toUpperCase()) || 0;
     const adjustedShortfall = Math.max(0, shortfall - pendingQty);
+    const finalQty = adjustedShortfall > 0 ? Math.max(minOrder, roundUpToBatch(adjustedShortfall, batch)) : 0;
 
-    if (adjustedShortfall <= 0 && pendingQty > 0) {
+    if (finalQty <= 0 && pendingQty > 0) {
       items.push({
         id: `missed-${m.kode}`,
         kode: m.kode,
@@ -146,14 +155,16 @@ function buildBudgetItemsForPeriode(
       return;
     }
 
+    if (finalQty <= 0) return;
+
     items.push({
       id: `missed-${m.kode}`,
       kode: m.kode,
       nama: m.nama,
       dos: m.dos,
       velocity: m.velocity,
-      qty: adjustedShortfall,
-      cost: adjustedShortfall * m.harga_modal,
+      qty: finalQty,
+      cost: finalQty * m.harga_modal,
       type: "missed",
       harga_modal: m.harga_modal,
       priority: m.dos <= 1 ? -1 : m.dos,
