@@ -37,7 +37,12 @@ function computeWMAVelocity(sales: SaleRecord[], productId: string) {
   const period1Start = new Date(now.getTime() - RULES.WMA_PERIOD1_DAYS * 86400000);
   const period2Start = new Date(now.getTime() - 30 * 86400000);
   const dailySales: Record<string, number> = {};
-  for (const s of sales) { if (s.product_id !== productId) continue; const key = s.created_at.slice(0, 10); dailySales[key] = (dailySales[key] ?? 0) + s.qty_pesan; }
+  for (const s of sales) {
+    if (s.product_id !== productId) continue;
+    const wibDate = new Date(new Date(s.created_at).getTime() + 7 * 3600000);
+    const key = wibDate.toISOString().slice(0, 10);
+    dailySales[key] = (dailySales[key] ?? 0) + s.qty_pesan;
+  }
   const allQty = Object.values(dailySales);
   const avgDaily = allQty.length > 0 ? allQty.reduce((a, b) => a + b, 0) / allQty.length : 0;
   const anomalyThreshold = avgDaily * RULES.ANOMALY_MULTIPLIER;
