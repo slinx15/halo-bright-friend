@@ -202,8 +202,9 @@ function buildBudgetEstimateFromAnalyses(
     const isBW = isBlackWhiteCode(item.kode);
     const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
     const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
-    const safetyDays = isBW ? RULES.SAFETY_BW : RULES.SAFETY_STOCK;
-    const effectiveDays = targetDays + safetyDays + RULES.LEAD_TIME_DAYS;
+
+    // Pure target days — no safety/lead time added (those are for restock engine only)
+    const effectiveDays = targetDays;
 
     const neededStock = Math.ceil(item.velocity * effectiveDays);
     const deficit = neededStock - item.currentStock;
