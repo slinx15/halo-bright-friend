@@ -614,7 +614,7 @@ function BudgetPlanner({
     return { items: today.items, totalCost: today.totalCost, remaining: today.remaining };
   }, [periodePerDay]);
 
-  const usedPct = mode === "budget" && budgetAmount > 0 ? Math.round((budgetRecommendations.totalCost / budgetAmount) * 100) : 0;
+  const usedPct = mode === "budget" && budgetAmount > 0 ? Math.round((budgetRecommendations.cost / budgetAmount) * 100) : 0;
   const pendingCount = pendingItems.length;
 
   return (
@@ -734,7 +734,7 @@ function BudgetPlanner({
           <div className="grid grid-cols-3 gap-2.5">
             <div className="rounded-xl bg-primary/8 border border-primary/15 p-3">
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Terpakai</p>
-              <p className="text-base font-extrabold text-primary tabular-nums truncate">{formatRp(budgetRecommendations.totalCost)}</p>
+              <p className="text-base font-extrabold text-primary tabular-nums truncate">{formatRp(budgetRecommendations.cost)}</p>
               <p className="text-[10px] text-muted-foreground">{usedPct}% budget</p>
             </div>
             <div className="rounded-xl bg-success/8 border border-success/15 p-3">
@@ -744,7 +744,7 @@ function BudgetPlanner({
             </div>
             <div className="rounded-xl bg-muted/60 border border-border p-3">
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Produk</p>
-              <p className="text-base font-extrabold">{budgetRecommendations.items.length}</p>
+              <p className="text-base font-extrabold">{budgetRecommendations.items}</p>
               <p className="text-[10px] text-muted-foreground">item restock</p>
             </div>
           </div>
@@ -755,7 +755,7 @@ function BudgetPlanner({
 
 
           {/* Budget recommendation list */}
-          {budgetRecommendations.items.length > 0 ? (
+          {budgetRecommendations.details.length > 0 ? (
             <Card className="border-0 shadow-sm overflow-hidden">
               <div className="px-4 py-3 bg-muted/30 border-b flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary" />
@@ -763,7 +763,7 @@ function BudgetPlanner({
                 <span className="text-xs text-muted-foreground ml-auto">Urut prioritas</span>
               </div>
               <div className="p-3 space-y-2">
-                {budgetRecommendations.items.map((r, i) => (
+                {budgetRecommendations.details.map((r, i) => (
                   <div
                     key={r.item.productId}
                     className={`rounded-xl border p-3 space-y-1.5 ${
