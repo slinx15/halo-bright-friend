@@ -20,8 +20,10 @@ interface ColorTrendItem {
   totalMonth: number;
 }
 
+const WIB_OFFSET = 7 * 3600000;
+
 function getWeekKey(dateStr: string): string {
-  const d = new Date(dateStr);
+  const d = new Date(new Date(dateStr).getTime() + WIB_OFFSET);
   const dayOfYear = Math.floor((d.getTime() - new Date(d.getFullYear(), 0, 0).getTime()) / 86400000);
   const weekNum = Math.ceil(dayOfYear / 7);
   return `${d.getFullYear()}-W${weekNum}`;
@@ -31,8 +33,8 @@ function calcColorTrends(
   products: ProductWithDetails[],
   sales: StockOutRecord[]
 ): ColorTrendItem[] {
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
+  const nowWib = new Date(Date.now() + WIB_OFFSET);
+  const now = new Date(Date.UTC(nowWib.getUTCFullYear(), nowWib.getUTCMonth(), nowWib.getUTCDate()));
 
   const thisWeekStart = new Date(now.getTime() - 7 * 86400000);
   const lastWeekStart = new Date(now.getTime() - 14 * 86400000);
@@ -45,7 +47,7 @@ function calcColorTrends(
   const data: Record<string, { tw: number; lw: number; tw2: number; month: number }> = {};
 
   for (const s of sales) {
-    const d = new Date(s.created_at);
+    const d = new Date(new Date(s.created_at).getTime() + WIB_OFFSET);
     if (d < monthStart) continue;
     const pid = s.product_id;
     if (!data[pid]) data[pid] = { tw: 0, lw: 0, tw2: 0, month: 0 };

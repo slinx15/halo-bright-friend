@@ -22,12 +22,14 @@ interface CustomerData {
   favoriteProducts: string[];
 }
 
+const WIB_OFFSET = 7 * 3600000;
+
 function calcRepeatCustomers(
   sales: StockOutRecord[],
   products: ProductWithDetails[]
 ): CustomerData[] {
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
+  const nowWib = new Date(Date.now() + WIB_OFFSET);
+  const now = new Date(Date.UTC(nowWib.getUTCFullYear(), nowWib.getUTCMonth(), nowWib.getUTCDate()));
 
   const productMap = new Map(products.map(p => [p.id, p]));
 
@@ -56,7 +58,7 @@ function calcRepeatCustomers(
     const harga = product?.prices?.harga_normal ?? 0;
     t.nilai += s.qty_kirim * harga;
 
-    t.dates.push(new Date(s.created_at));
+    t.dates.push(new Date(new Date(s.created_at).getTime() + WIB_OFFSET));
 
     const kode = product?.kode ?? s.product_id;
     t.produkMap[kode] = (t.produkMap[kode] ?? 0) + s.qty_kirim;
