@@ -1201,6 +1201,7 @@ const Analisa = () => {
   const [budgetDays, setBudgetDays] = useState<number>(3);
   const [selectedProduct, setSelectedProduct] = useState<ProductAnalysis | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [expandedBudgetDays, setExpandedBudgetDays] = useState<number | null>(null);
   const isMobile = useIsMobile();
   
 
