@@ -26,7 +26,7 @@ import { ProductDetailExpand } from "@/components/analisa/ProductDetailExpand";
 import { ReviewResultCards, type ReviewResult } from "@/components/analisa/ReviewResultCards";
 import {
   calcTrend, calcDeadStock, calcLowStock,
-  calcPredictions, calcProfit, calcTokoAnalysis, calcBudgetEstimates, calcStats,
+  calcPredictions, calcProfit, calcTokoAnalysis, calcStats,
 } from "@/lib/analysisFeatures";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AnalisaSkeleton } from "@/components/LoadingSkeletons";
@@ -126,7 +126,7 @@ function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementTyp
 // ─── Budget Planner Component ─────────────────────────────
 
 const BUDGET_PRESETS = [1000000, 2000000, 3000000, 5000000, 10000000];
-const DAYS_PRESETS = [3, 5, 7, 14];
+const DAYS_PRESETS = [4, 7, 14, 21, 30];
 const PLAN_DAYS_PRESETS = [2, 3, 5, 7];
 
 function formatRupiahInput(value: number): string {
@@ -148,6 +148,149 @@ interface RestockPlan {
   start_date: string;
   status: string;
   coverage_days: number;
+}
+
+interface BudgetEstimateDetail {
+  kode: string;
+  productId: string;
+  qty: number;
+  unitPrice: number;
+  cost: number;
+  stok: number;
+  velocity: number;
+  daysLeft: number;
+  isBestSeller: boolean;
+  reason: string;
+}
+
+interface BudgetEstimateSummary {
+  days: number;
+  cost: number;
+  items: number;
+  qty: number;
+  details: BudgetEstimateDetail[];
+  remaining: number;
+}
+
+function buildBudgetEstimateFromAnalyses(
+  analyses: ProductAnalysis[],
+  targetDays: number,
+  budgetCap: number = Number.POSITIVE_INFINITY,
+): BudgetEstimateSummary {
+  type Candidate = {
+    item: ProductAnalysis;
+    idealQty: number;
+    idealCost: number;
+    reason: string;
+    batch: number;
+    minOrder: number;
+  };
+
+  type Pick = {
+    item: ProductAnalysis;
+    qty: number;
+    cost: number;
+  };
+
+  const sorted = [...analyses]
+    .filter((a) => a.velocity > 0)
+    .sort((a, b) => b.combinedScore - a.combinedScore);
+
+  const candidates: Candidate[] = [];
+
+  for (const item of sorted) {
+    const isBW = isBlackWhiteCode(item.kode);
+    const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
+    const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
+    const safetyDays = isBW ? RULES.SAFETY_BW : RULES.SAFETY_STOCK;
+    const effectiveDays = targetDays + safetyDays + RULES.LEAD_TIME_DAYS;
+
+    const neededStock = Math.ceil(item.velocity * effectiveDays);
+    const deficit = neededStock - item.currentStock;
+    if (deficit <= 0) continue;
+
+    let qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
+
+    const maxReasonableStock = Math.ceil(item.velocity * (effectiveDays + 3));
+    const projectedStock = item.currentStock + qty;
+    if (projectedStock > maxReasonableStock && qty > 0) {
+      const allowedNeed = maxReasonableStock - item.currentStock;
+      qty = Math.max(0, Math.ceil(allowedNeed / batch) * batch);
+    }
+
+    if (qty < minOrder) continue;
+
+    const cost = qty * item.unitPrice;
+    const reason = item.isStockOut
+      ? "🚨 Stok kosong"
+      : item.daysOfStock <= RULES.CRITICAL_DAYS
+        ? "🔴 Kritis"
+        : item.daysOfStock <= RULES.WARNING_DAYS
+          ? "🟠 Segera habis"
+          : "📦 Perlu restock";
+
+    candidates.push({ item, idealQty: qty, idealCost: cost, reason, batch, minOrder });
+  }
+
+  const picks: Pick[] = [];
+  let remaining = budgetCap;
+  const totalIdealCost = candidates.reduce((sum, c) => sum + c.idealCost, 0);
+
+  if (!Number.isFinite(budgetCap) || totalIdealCost <= budgetCap) {
+    for (const c of candidates) {
+      picks.push({ item: c.item, qty: c.idealQty, cost: c.idealCost });
+      if (Number.isFinite(budgetCap)) remaining -= c.idealCost;
+    }
+  } else {
+    const tier1 = candidates.filter(c => c.item.isStockOut || c.item.daysOfStock <= RULES.CRITICAL_DAYS);
+    const tier2 = candidates.filter(c => !tier1.includes(c) && c.item.isBestSeller);
+    const tier3 = candidates.filter(c => !tier1.includes(c) && !tier2.includes(c));
+
+    for (const tier of [tier1, tier2, tier3]) {
+      for (const c of tier) {
+        if (remaining <= 0) break;
+
+        let qty = c.idealQty;
+        let cost = c.idealCost;
+
+        if (cost > remaining) {
+          qty = Math.floor(Math.floor(remaining / c.item.unitPrice) / c.batch) * c.batch;
+          if (qty < c.minOrder) continue;
+          cost = qty * c.item.unitPrice;
+        }
+
+        picks.push({ item: c.item, qty, cost });
+        remaining -= cost;
+      }
+    }
+  }
+
+  const details = picks
+    .map((pick) => ({
+      kode: pick.item.kode,
+      productId: pick.item.productId,
+      qty: pick.qty,
+      unitPrice: pick.item.unitPrice,
+      cost: pick.cost,
+      stok: pick.item.currentStock,
+      velocity: pick.item.velocity,
+      daysLeft: pick.item.daysOfStock,
+      isBestSeller: pick.item.isBestSeller,
+      reason: candidates.find((candidate) => candidate.item.productId === pick.item.productId)?.reason ?? "📦 Perlu restock",
+    }))
+    .sort((a, b) => a.daysLeft - b.daysLeft);
+
+  const totalCost = picks.reduce((sum, pick) => sum + pick.cost, 0);
+  const totalQty = picks.reduce((sum, pick) => sum + pick.qty, 0);
+
+  return {
+    days: targetDays,
+    cost: totalCost,
+    items: picks.length,
+    qty: totalQty,
+    details,
+    remaining: Number.isFinite(budgetCap) ? Math.max(remaining, 0) : 0,
+  };
 }
 
 function usePendingRestock() {
@@ -358,64 +501,10 @@ function BudgetPlanner({
   }, [activePlan, pendingItems, analyses]);
 
   // ─── Budget Mode Recommendations ───
-  // ─── Budget Mode: NO pending deduction, pure calculation ───
-  const budgetRecommendations = useMemo(() => {
-    const sorted = [...analyses]
-      .filter(a => a.velocity > 0)
-      .sort((a, b) => b.combinedScore - a.combinedScore);
-
-    type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string };
-    const result: RecItem[] = [];
-    let remaining = budgetAmount;
-
-    const candidates: { item: ProductAnalysis; idealQty: number; idealCost: number; reason: string; batch: number; minOrder: number }[] = [];
-
-    for (const item of sorted) {
-      const neededStock = Math.ceil(item.velocity * budgetDays);
-      const deficit = neededStock - item.currentStock;
-      if (deficit <= 0) continue;
-
-      const isBW = isBlackWhiteCode(item.kode);
-      const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
-      const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
-      const qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
-      const cost = qty * item.unitPrice;
-      const reason = item.daysOfStock <= RULES.CRITICAL_DAYS ? "🔴 Kritis" :
-        item.daysOfStock <= RULES.WARNING_DAYS ? "🟠 Segera habis" :
-        item.isStockOut ? "🚨 Stok kosong" : "📦 Perlu restock";
-      candidates.push({ item, idealQty: qty, idealCost: cost, reason, batch, minOrder });
-    }
-
-    const totalIdealCost = candidates.reduce((s, c) => s + c.idealCost, 0);
-
-    if (totalIdealCost <= budgetAmount) {
-      for (const c of candidates) {
-        result.push({ item: c.item, qty: c.idealQty, cost: c.idealCost, reason: c.reason });
-        remaining -= c.idealCost;
-      }
-    } else {
-      const tier1 = candidates.filter(c => c.item.isStockOut || c.item.daysOfStock <= RULES.CRITICAL_DAYS);
-      const tier2 = candidates.filter(c => !tier1.includes(c) && c.item.isBestSeller);
-      const tier3 = candidates.filter(c => !tier1.includes(c) && !tier2.includes(c));
-
-      for (const tier of [tier1, tier2, tier3]) {
-        for (const c of tier) {
-          if (remaining <= 0) break;
-          let qty = c.idealQty;
-          let cost = c.idealCost;
-          if (cost > remaining) {
-            qty = Math.floor(Math.floor(remaining / c.item.unitPrice) / c.batch) * c.batch;
-            if (qty < c.minOrder) continue;
-            cost = qty * c.item.unitPrice;
-          }
-          result.push({ item: c.item, qty, cost, reason: c.reason });
-          remaining -= cost;
-        }
-      }
-    }
-
-    return { items: result, totalCost: budgetAmount - remaining, remaining };
-  }, [analyses, budgetAmount, budgetDays]);
+  const budgetRecommendations = useMemo(
+    () => buildBudgetEstimateFromAnalyses(analyses, budgetDays, budgetAmount),
+    [analyses, budgetAmount, budgetDays]
+  );
 
   // ─── Periode Mode: Same logic as Budget Mode, split across plan days ───
   type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string; pendingQty?: number; simStock?: number; simDaysLeft?: number };
@@ -527,7 +616,7 @@ function BudgetPlanner({
     return { items: today.items, totalCost: today.totalCost, remaining: today.remaining };
   }, [periodePerDay]);
 
-  const usedPct = mode === "budget" && budgetAmount > 0 ? Math.round((budgetRecommendations.totalCost / budgetAmount) * 100) : 0;
+  const usedPct = mode === "budget" && budgetAmount > 0 ? Math.round((budgetRecommendations.cost / budgetAmount) * 100) : 0;
   const pendingCount = pendingItems.length;
 
   return (
@@ -647,7 +736,7 @@ function BudgetPlanner({
           <div className="grid grid-cols-3 gap-2.5">
             <div className="rounded-xl bg-primary/8 border border-primary/15 p-3">
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Terpakai</p>
-              <p className="text-base font-extrabold text-primary tabular-nums truncate">{formatRp(budgetRecommendations.totalCost)}</p>
+              <p className="text-base font-extrabold text-primary tabular-nums truncate">{formatRp(budgetRecommendations.cost)}</p>
               <p className="text-[10px] text-muted-foreground">{usedPct}% budget</p>
             </div>
             <div className="rounded-xl bg-success/8 border border-success/15 p-3">
@@ -657,7 +746,7 @@ function BudgetPlanner({
             </div>
             <div className="rounded-xl bg-muted/60 border border-border p-3">
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Produk</p>
-              <p className="text-base font-extrabold">{budgetRecommendations.items.length}</p>
+              <p className="text-base font-extrabold">{budgetRecommendations.items}</p>
               <p className="text-[10px] text-muted-foreground">item restock</p>
             </div>
           </div>
@@ -668,7 +757,7 @@ function BudgetPlanner({
 
 
           {/* Budget recommendation list */}
-          {budgetRecommendations.items.length > 0 ? (
+          {budgetRecommendations.details.length > 0 ? (
             <Card className="border-0 shadow-sm overflow-hidden">
               <div className="px-4 py-3 bg-muted/30 border-b flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary" />
@@ -676,20 +765,20 @@ function BudgetPlanner({
                 <span className="text-xs text-muted-foreground ml-auto">Urut prioritas</span>
               </div>
               <div className="p-3 space-y-2">
-                {budgetRecommendations.items.map((r, i) => (
+                {budgetRecommendations.details.map((r, i) => (
                   <div
-                    key={r.item.productId}
+                    key={r.productId}
                     className={`rounded-xl border p-3 space-y-1.5 ${
-                      r.item.currentStock === 0 ? "border-l-[3px] border-l-destructive border-border/60" :
-                      r.item.daysOfStock <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60 border-border/60" :
+                      r.stok === 0 ? "border-l-[3px] border-l-destructive border-border/60" :
+                      r.daysLeft <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60 border-border/60" :
                       "border-border/60"
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="text-xs text-muted-foreground font-mono">#{i + 1}</span>
-                        <span className="font-bold text-sm">{r.item.kode}</span>
-                        {r.item.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
+                        <span className="font-bold text-sm">{r.kode}</span>
+                        {r.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
                       </div>
                       <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
                         {r.qty}
@@ -698,13 +787,13 @@ function BudgetPlanner({
                     <div className="grid grid-cols-3 gap-2 text-[11px]">
                       <div>
                         <span className="text-muted-foreground">Stok</span>
-                        <p className={`font-semibold tabular-nums ${r.item.currentStock === 0 ? "text-destructive" : ""}`}>{r.item.currentStock}</p>
+                        <p className={`font-semibold tabular-nums ${r.stok === 0 ? "text-destructive" : ""}`}>{r.stok}</p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Sisa</span>
                         <p className={`font-bold tabular-nums ${
-                          r.item.daysOfStock <= 2 ? "text-destructive" : r.item.daysOfStock <= 4 ? "text-warning" : ""
-                        }`}>{formatDaysLeft(r.item.daysOfStock)}</p>
+                          r.daysLeft <= 2 ? "text-destructive" : r.daysLeft <= 4 ? "text-warning" : ""
+                        }`}>{formatDaysLeft(r.daysLeft)}</p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Biaya</span>
@@ -1198,7 +1287,7 @@ const Analisa = () => {
   const [visibleCount, setVisibleCount] = useState(30);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const [budgetAmount, setBudgetAmount] = useState<number>(2000000);
-  const [budgetDays, setBudgetDays] = useState<number>(3);
+  const [budgetDays, setBudgetDays] = useState<number>(4);
   const [selectedProduct, setSelectedProduct] = useState<ProductAnalysis | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [expandedBudgetDays, setExpandedBudgetDays] = useState<number | null>(null);
@@ -1343,7 +1432,7 @@ const Analisa = () => {
   const predictions = useMemo(() => calcPredictions(products, stockOutData), [products, stockOutData]);
   const profitItems = useMemo(() => calcProfit(products, stockOutData), [products, stockOutData]);
   const tokoItems = useMemo(() => calcTokoAnalysis(products, stockOutData), [products, stockOutData]);
-  const budgetEstimates = useMemo(() => calcBudgetEstimates(products, stockOutData), [products, stockOutData]);
+  const budgetEstimates = useMemo(() => DAYS_PRESETS.map((days) => buildBudgetEstimateFromAnalyses(analyses, days)), [analyses]);
   const stats = useMemo(() => calcStats(products, stockOutData), [products, stockOutData]);
 
   if (isLoading) {
