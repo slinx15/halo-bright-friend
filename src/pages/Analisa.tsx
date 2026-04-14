@@ -160,6 +160,7 @@ interface BudgetEstimateDetail {
   velocity: number;
   daysLeft: number;
   isBestSeller: boolean;
+  reason: string;
 }
 
 interface BudgetEstimateSummary {
@@ -275,6 +276,7 @@ function buildBudgetEstimateFromAnalyses(
       velocity: pick.item.velocity,
       daysLeft: pick.item.daysOfStock,
       isBestSeller: pick.item.isBestSeller,
+      reason: candidates.find((candidate) => candidate.item.productId === pick.item.productId)?.reason ?? "📦 Perlu restock",
     }))
     .sort((a, b) => a.daysLeft - b.daysLeft);
 
@@ -765,18 +767,18 @@ function BudgetPlanner({
               <div className="p-3 space-y-2">
                 {budgetRecommendations.details.map((r, i) => (
                   <div
-                    key={r.item.productId}
+                    key={r.productId}
                     className={`rounded-xl border p-3 space-y-1.5 ${
-                      r.item.currentStock === 0 ? "border-l-[3px] border-l-destructive border-border/60" :
-                      r.item.daysOfStock <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60 border-border/60" :
+                      r.stok === 0 ? "border-l-[3px] border-l-destructive border-border/60" :
+                      r.daysLeft <= RULES.CRITICAL_DAYS ? "border-l-[3px] border-l-destructive/60 border-border/60" :
                       "border-border/60"
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="text-xs text-muted-foreground font-mono">#{i + 1}</span>
-                        <span className="font-bold text-sm">{r.item.kode}</span>
-                        {r.item.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
+                        <span className="font-bold text-sm">{r.kode}</span>
+                        {r.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
                       </div>
                       <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
                         {r.qty}
@@ -785,13 +787,13 @@ function BudgetPlanner({
                     <div className="grid grid-cols-3 gap-2 text-[11px]">
                       <div>
                         <span className="text-muted-foreground">Stok</span>
-                        <p className={`font-semibold tabular-nums ${r.item.currentStock === 0 ? "text-destructive" : ""}`}>{r.item.currentStock}</p>
+                        <p className={`font-semibold tabular-nums ${r.stok === 0 ? "text-destructive" : ""}`}>{r.stok}</p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Sisa</span>
                         <p className={`font-bold tabular-nums ${
-                          r.item.daysOfStock <= 2 ? "text-destructive" : r.item.daysOfStock <= 4 ? "text-warning" : ""
-                        }`}>{formatDaysLeft(r.item.daysOfStock)}</p>
+                          r.daysLeft <= 2 ? "text-destructive" : r.daysLeft <= 4 ? "text-warning" : ""
+                        }`}>{formatDaysLeft(r.daysLeft)}</p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Biaya</span>
