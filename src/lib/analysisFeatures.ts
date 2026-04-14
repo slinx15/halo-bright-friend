@@ -86,11 +86,24 @@ export interface TokoItem {
   favorit: string[];
 }
 
+export interface BudgetEstimateItem {
+  kode: string;
+  productId: string;
+  qty: number;
+  unitPrice: number;
+  cost: number;
+  stok: number;
+  velocity: number;
+  daysLeft: number;
+  isBestSeller: boolean;
+}
+
 export interface BudgetEstimate {
   days: number;
   cost: number;
   items: number;
   qty: number;
+  details: BudgetEstimateItem[];
 }
 
 export interface StatsData {
@@ -418,26 +431,57 @@ export function calcBudgetEstimates(
     let totalCost = 0;
     let totalItems = 0;
     let totalQty = 0;
+    const details: BudgetEstimateItem[] = [];
 
     for (const p of products) {
       const stok = p.stock?.jumlah ?? 0;
       const vel = wmaData[p.id]?.adjustedVelocity ?? 0;
       if (vel <= 0) continue;
 
+      const isBW = isBlackWhiteCode(p.kode);
+      const batchSize = isBW ? RULES.BATCH_BW : RULES.BATCH;
+      const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
+
       const targetStock = Math.ceil(vel * targetDays);
       const butuh = targetStock - stok;
       if (butuh <= 0) continue;
 
-      const batchSize = RULES.BATCH;
-      const qtyToBuy = Math.ceil(butuh / batchSize) * batchSize;
-      const price = getHargaModal(p);
+      const qtyToBuy = Math.max(minOrder, Math.ceil(butuh / batchSize) * batchSize);
 
-      totalCost += qtyToBuy * price;
+      // Safety clamp — same as engine
+      const maxReasonable = Math.ceil(vel * (targetDays + 3));
+      const projected = stok + qtyToBuy;
+      let finalQty = qtyToBuy;
+      if (projected > maxReasonable && finalQty > 0) {
+        const allowed = maxReasonable - stok;
+        finalQty = Math.max(0, Math.ceil(allowed / batchSize) * batchSize);
+      }
+      if (finalQty < minOrder) continue;
+
+      const price = getHargaModal(p);
+      const cost = finalQty * price;
+      const daysLeft = vel > 0 ? stok / vel : 999;
+
+      totalCost += cost;
       totalItems++;
-      totalQty += qtyToBuy;
+      totalQty += finalQty;
+      details.push({
+        kode: p.kode,
+        productId: p.id,
+        qty: finalQty,
+        unitPrice: price,
+        cost,
+        stok,
+        velocity: vel,
+        daysLeft,
+        isBestSeller: vel >= RULES.BESTSELLER_VELOCITY,
+      });
     }
 
-    return { days: targetDays, cost: totalCost, items: totalItems, qty: totalQty };
+    // Sort by urgency (lowest daysLeft first)
+    details.sort((a, b) => a.daysLeft - b.daysLeft);
+
+    return { days: targetDays, cost: totalCost, items: totalItems, qty: totalQty, details };
   });
 }
 
