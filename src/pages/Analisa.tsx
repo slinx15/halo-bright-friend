@@ -2146,11 +2146,48 @@ const Analisa = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                   {budgetEstimates.map((e) => {
                     const label = e.days === 4 ? "1 siklus" : e.days === 7 ? "1 minggu" : e.days === 14 ? "2 minggu" : e.days === 21 ? "3 minggu" : "1 bulan";
+                    const isExpanded = expandedBudgetDays === e.days;
                     return (
-                      <div key={e.days} className="p-4 rounded-xl bg-muted/30 space-y-1">
-                        <p className="text-xs text-muted-foreground">{e.days} hari · {label}</p>
-                        <p className="text-lg font-bold tabular-nums">{formatRp(e.cost)}</p>
-                        <p className="text-[11px] text-muted-foreground">{e.items} item · {e.qty} pcs</p>
+                      <div key={e.days} className="space-y-0">
+                        <button
+                          onClick={() => setExpandedBudgetDays(isExpanded ? null : e.days)}
+                          className={`w-full text-left p-4 rounded-xl space-y-1 transition-colors ${
+                            isExpanded ? "bg-primary/10 ring-1 ring-primary/30" : "bg-muted/30 hover:bg-muted/50"
+                          }`}
+                        >
+                          <p className="text-xs text-muted-foreground">{e.days} hari · {label}</p>
+                          <p className="text-lg font-bold tabular-nums">{formatRp(e.cost)}</p>
+                          <p className="text-[11px] text-muted-foreground">{e.items} item · {e.qty} pcs · <span className="underline">Lihat daftar ▾</span></p>
+                        </button>
+                        {isExpanded && (
+                          <div className="mt-2 rounded-lg border bg-background p-2 space-y-1 max-h-[400px] overflow-y-auto">
+                            <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 text-[10px] text-muted-foreground font-medium px-1 pb-1 border-b">
+                              <span>Kode</span>
+                              <span className="text-right">Stok</span>
+                              <span className="text-right">Beli</span>
+                              <span className="text-right">Biaya</span>
+                            </div>
+                            {e.details.map((d) => (
+                              <div key={d.productId} className={`grid grid-cols-[1fr_auto_auto_auto] gap-x-2 items-center text-xs px-1 py-1 rounded ${
+                                d.daysLeft <= RULES.CRITICAL_DAYS ? "bg-destructive/10" : d.isBestSeller ? "bg-primary/5" : ""
+                              }`}>
+                                <span className="font-mono text-[11px] truncate flex items-center gap-1">
+                                  {d.daysLeft <= RULES.CRITICAL_DAYS ? "🔴" : d.isBestSeller ? "⭐" : ""}
+                                  {d.kode}
+                                </span>
+                                <span className={`text-right tabular-nums ${d.stok === 0 ? "text-destructive font-bold" : d.stok <= 5 ? "text-warning" : ""}`}>{d.stok}</span>
+                                <span className="text-right tabular-nums font-semibold">{d.qty}</span>
+                                <span className="text-right tabular-nums text-muted-foreground">{formatRp(d.cost)}</span>
+                              </div>
+                            ))}
+                            <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 text-xs font-bold px-1 pt-1 border-t">
+                              <span>Total</span>
+                              <span></span>
+                              <span className="text-right tabular-nums">{e.qty}</span>
+                              <span className="text-right tabular-nums">{formatRp(e.cost)}</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
