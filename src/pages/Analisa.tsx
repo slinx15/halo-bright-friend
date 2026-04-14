@@ -26,7 +26,7 @@ import { ProductDetailExpand } from "@/components/analisa/ProductDetailExpand";
 import { ReviewResultCards, type ReviewResult } from "@/components/analisa/ReviewResultCards";
 import {
   calcTrend, calcDeadStock, calcLowStock,
-  calcPredictions, calcProfit, calcTokoAnalysis, calcBudgetEstimates, calcStats,
+  calcPredictions, calcProfit, calcTokoAnalysis, calcStats,
 } from "@/lib/analysisFeatures";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AnalisaSkeleton } from "@/components/LoadingSkeletons";
@@ -126,7 +126,7 @@ function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementTyp
 // ─── Budget Planner Component ─────────────────────────────
 
 const BUDGET_PRESETS = [1000000, 2000000, 3000000, 5000000, 10000000];
-const DAYS_PRESETS = [3, 5, 7, 14];
+const DAYS_PRESETS = [4, 7, 14, 21, 30];
 const PLAN_DAYS_PRESETS = [2, 3, 5, 7];
 
 function formatRupiahInput(value: number): string {
@@ -148,6 +148,147 @@ interface RestockPlan {
   start_date: string;
   status: string;
   coverage_days: number;
+}
+
+interface BudgetEstimateDetail {
+  kode: string;
+  productId: string;
+  qty: number;
+  unitPrice: number;
+  cost: number;
+  stok: number;
+  velocity: number;
+  daysLeft: number;
+  isBestSeller: boolean;
+}
+
+interface BudgetEstimateSummary {
+  days: number;
+  cost: number;
+  items: number;
+  qty: number;
+  details: BudgetEstimateDetail[];
+  remaining: number;
+}
+
+function buildBudgetEstimateFromAnalyses(
+  analyses: ProductAnalysis[],
+  targetDays: number,
+  budgetCap: number = Number.POSITIVE_INFINITY,
+): BudgetEstimateSummary {
+  type Candidate = {
+    item: ProductAnalysis;
+    idealQty: number;
+    idealCost: number;
+    reason: string;
+    batch: number;
+    minOrder: number;
+  };
+
+  type Pick = {
+    item: ProductAnalysis;
+    qty: number;
+    cost: number;
+  };
+
+  const sorted = [...analyses]
+    .filter((a) => a.velocity > 0)
+    .sort((a, b) => b.combinedScore - a.combinedScore);
+
+  const candidates: Candidate[] = [];
+
+  for (const item of sorted) {
+    const isBW = isBlackWhiteCode(item.kode);
+    const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
+    const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
+    const safetyDays = isBW ? RULES.SAFETY_BW : RULES.SAFETY_STOCK;
+    const effectiveDays = targetDays + safetyDays + RULES.LEAD_TIME_DAYS;
+
+    const neededStock = Math.ceil(item.velocity * effectiveDays);
+    const deficit = neededStock - item.currentStock;
+    if (deficit <= 0) continue;
+
+    let qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
+
+    const maxReasonableStock = Math.ceil(item.velocity * (effectiveDays + 3));
+    const projectedStock = item.currentStock + qty;
+    if (projectedStock > maxReasonableStock && qty > 0) {
+      const allowedNeed = maxReasonableStock - item.currentStock;
+      qty = Math.max(0, Math.ceil(allowedNeed / batch) * batch);
+    }
+
+    if (qty < minOrder) continue;
+
+    const cost = qty * item.unitPrice;
+    const reason = item.isStockOut
+      ? "🚨 Stok kosong"
+      : item.daysOfStock <= RULES.CRITICAL_DAYS
+        ? "🔴 Kritis"
+        : item.daysOfStock <= RULES.WARNING_DAYS
+          ? "🟠 Segera habis"
+          : "📦 Perlu restock";
+
+    candidates.push({ item, idealQty: qty, idealCost: cost, reason, batch, minOrder });
+  }
+
+  const picks: Pick[] = [];
+  let remaining = budgetCap;
+  const totalIdealCost = candidates.reduce((sum, c) => sum + c.idealCost, 0);
+
+  if (!Number.isFinite(budgetCap) || totalIdealCost <= budgetCap) {
+    for (const c of candidates) {
+      picks.push({ item: c.item, qty: c.idealQty, cost: c.idealCost });
+      if (Number.isFinite(budgetCap)) remaining -= c.idealCost;
+    }
+  } else {
+    const tier1 = candidates.filter(c => c.item.isStockOut || c.item.daysOfStock <= RULES.CRITICAL_DAYS);
+    const tier2 = candidates.filter(c => !tier1.includes(c) && c.item.isBestSeller);
+    const tier3 = candidates.filter(c => !tier1.includes(c) && !tier2.includes(c));
+
+    for (const tier of [tier1, tier2, tier3]) {
+      for (const c of tier) {
+        if (remaining <= 0) break;
+
+        let qty = c.idealQty;
+        let cost = c.idealCost;
+
+        if (cost > remaining) {
+          qty = Math.floor(Math.floor(remaining / c.item.unitPrice) / c.batch) * c.batch;
+          if (qty < c.minOrder) continue;
+          cost = qty * c.item.unitPrice;
+        }
+
+        picks.push({ item: c.item, qty, cost });
+        remaining -= cost;
+      }
+    }
+  }
+
+  const details = picks
+    .map((pick) => ({
+      kode: pick.item.kode,
+      productId: pick.item.productId,
+      qty: pick.qty,
+      unitPrice: pick.item.unitPrice,
+      cost: pick.cost,
+      stok: pick.item.currentStock,
+      velocity: pick.item.velocity,
+      daysLeft: pick.item.daysOfStock,
+      isBestSeller: pick.item.isBestSeller,
+    }))
+    .sort((a, b) => a.daysLeft - b.daysLeft);
+
+  const totalCost = picks.reduce((sum, pick) => sum + pick.cost, 0);
+  const totalQty = picks.reduce((sum, pick) => sum + pick.qty, 0);
+
+  return {
+    days: targetDays,
+    cost: totalCost,
+    items: picks.length,
+    qty: totalQty,
+    details,
+    remaining: Number.isFinite(budgetCap) ? Math.max(remaining, 0) : 0,
+  };
 }
 
 function usePendingRestock() {
@@ -358,64 +499,10 @@ function BudgetPlanner({
   }, [activePlan, pendingItems, analyses]);
 
   // ─── Budget Mode Recommendations ───
-  // ─── Budget Mode: NO pending deduction, pure calculation ───
-  const budgetRecommendations = useMemo(() => {
-    const sorted = [...analyses]
-      .filter(a => a.velocity > 0)
-      .sort((a, b) => b.combinedScore - a.combinedScore);
-
-    type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string };
-    const result: RecItem[] = [];
-    let remaining = budgetAmount;
-
-    const candidates: { item: ProductAnalysis; idealQty: number; idealCost: number; reason: string; batch: number; minOrder: number }[] = [];
-
-    for (const item of sorted) {
-      const neededStock = Math.ceil(item.velocity * budgetDays);
-      const deficit = neededStock - item.currentStock;
-      if (deficit <= 0) continue;
-
-      const isBW = isBlackWhiteCode(item.kode);
-      const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
-      const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
-      const qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
-      const cost = qty * item.unitPrice;
-      const reason = item.daysOfStock <= RULES.CRITICAL_DAYS ? "🔴 Kritis" :
-        item.daysOfStock <= RULES.WARNING_DAYS ? "🟠 Segera habis" :
-        item.isStockOut ? "🚨 Stok kosong" : "📦 Perlu restock";
-      candidates.push({ item, idealQty: qty, idealCost: cost, reason, batch, minOrder });
-    }
-
-    const totalIdealCost = candidates.reduce((s, c) => s + c.idealCost, 0);
-
-    if (totalIdealCost <= budgetAmount) {
-      for (const c of candidates) {
-        result.push({ item: c.item, qty: c.idealQty, cost: c.idealCost, reason: c.reason });
-        remaining -= c.idealCost;
-      }
-    } else {
-      const tier1 = candidates.filter(c => c.item.isStockOut || c.item.daysOfStock <= RULES.CRITICAL_DAYS);
-      const tier2 = candidates.filter(c => !tier1.includes(c) && c.item.isBestSeller);
-      const tier3 = candidates.filter(c => !tier1.includes(c) && !tier2.includes(c));
-
-      for (const tier of [tier1, tier2, tier3]) {
-        for (const c of tier) {
-          if (remaining <= 0) break;
-          let qty = c.idealQty;
-          let cost = c.idealCost;
-          if (cost > remaining) {
-            qty = Math.floor(Math.floor(remaining / c.item.unitPrice) / c.batch) * c.batch;
-            if (qty < c.minOrder) continue;
-            cost = qty * c.item.unitPrice;
-          }
-          result.push({ item: c.item, qty, cost, reason: c.reason });
-          remaining -= cost;
-        }
-      }
-    }
-
-    return { items: result, totalCost: budgetAmount - remaining, remaining };
-  }, [analyses, budgetAmount, budgetDays]);
+  const budgetRecommendations = useMemo(
+    () => buildBudgetEstimateFromAnalyses(analyses, budgetDays, budgetAmount),
+    [analyses, budgetAmount, budgetDays]
+  );
 
   // ─── Periode Mode: Same logic as Budget Mode, split across plan days ───
   type RecItem = { item: ProductAnalysis; qty: number; cost: number; reason: string; pendingQty?: number; simStock?: number; simDaysLeft?: number };
@@ -1198,7 +1285,7 @@ const Analisa = () => {
   const [visibleCount, setVisibleCount] = useState(30);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const [budgetAmount, setBudgetAmount] = useState<number>(2000000);
-  const [budgetDays, setBudgetDays] = useState<number>(3);
+  const [budgetDays, setBudgetDays] = useState<number>(4);
   const [selectedProduct, setSelectedProduct] = useState<ProductAnalysis | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [expandedBudgetDays, setExpandedBudgetDays] = useState<number | null>(null);
@@ -1343,7 +1430,7 @@ const Analisa = () => {
   const predictions = useMemo(() => calcPredictions(products, stockOutData), [products, stockOutData]);
   const profitItems = useMemo(() => calcProfit(products, stockOutData), [products, stockOutData]);
   const tokoItems = useMemo(() => calcTokoAnalysis(products, stockOutData), [products, stockOutData]);
-  const budgetEstimates = useMemo(() => calcBudgetEstimates(products, stockOutData), [products, stockOutData]);
+  const budgetEstimates = useMemo(() => DAYS_PRESETS.map((days) => buildBudgetEstimateFromAnalyses(analyses, days)), [analyses]);
   const stats = useMemo(() => calcStats(products, stockOutData), [products, stockOutData]);
 
   if (isLoading) {
