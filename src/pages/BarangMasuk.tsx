@@ -412,7 +412,10 @@ const BarangMasuk = () => {
               {filteredHistory.length > 0 && (() => {
                 const grouped: Record<string, { qty: number; cost: number }> = {};
                 filteredHistory.forEach((h: any) => {
-                  const dateKey = h.created_at ? format(new Date(h.created_at), "yyyy-MM-dd") : "unknown";
+                  // Convert to WIB (+7) for correct date grouping
+                  const utc = new Date(h.created_at);
+                  const wib = new Date(utc.getTime() + 7 * 60 * 60 * 1000);
+                  const dateKey = h.created_at ? format(wib, "yyyy-MM-dd") : "unknown";
                   const modal = h.products?.prices?.[0]?.harga_modal || h.products?.prices?.harga_modal || 0;
                   const itemCost = modal * (h.qty || 0);
                   if (!grouped[dateKey]) grouped[dateKey] = { qty: 0, cost: 0 };
