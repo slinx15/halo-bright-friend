@@ -343,8 +343,7 @@ const BarangMasuk = () => {
             <Send className="h-4 w-4 mr-2" />
             {submitting ? "Menyimpan..." : `Simpan Barang Masuk${validCount > 0 ? ` (${validCount} item)` : ""}`}
           </Button>
-        </CardContent>
-      </Card>
+      </div>
 
       {/* ── Riwayat ── */}
       <Card className="shadow-sm">
