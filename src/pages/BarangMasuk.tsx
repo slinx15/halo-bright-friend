@@ -188,7 +188,7 @@ const BarangMasuk = () => {
   }, [history, historySearch, historyDateFilter]);
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto w-full">
+    <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full">
       {/* ── Header ── */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -220,30 +220,25 @@ const BarangMasuk = () => {
       </div>
 
       {/* ── KPI Strip ── */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="rounded-xl border border-border/50 bg-card p-2.5 text-center">
-          <p className="text-xl font-bold text-success tabular-nums">{items.length}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mt-0.5">Baris</p>
+      <div className="flex items-center justify-around py-2">
+        <div className="text-center">
+          <p className="text-2xl font-bold text-success tabular-nums">{items.length}</p>
+          <p className="text-[10px] text-muted-foreground font-medium">Baris</p>
         </div>
-        <div className="rounded-xl border border-border/50 bg-card p-2.5 text-center">
-          <p className="text-xl font-bold text-primary tabular-nums">{validCount}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mt-0.5">Valid</p>
+        <div className="w-px h-8 bg-border/60" />
+        <div className="text-center">
+          <p className="text-2xl font-bold text-primary tabular-nums">{validCount}</p>
+          <p className="text-[10px] text-muted-foreground font-medium">Valid</p>
         </div>
-        <div className="rounded-xl border border-border/50 bg-card p-2.5 text-center">
-          <p className="text-xl font-bold text-foreground tabular-nums">{formatNumber(totalQty)}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mt-0.5">Total</p>
+        <div className="w-px h-8 bg-border/60" />
+        <div className="text-center">
+          <p className="text-2xl font-bold text-foreground tabular-nums">{formatNumber(totalQty)}</p>
+          <p className="text-[10px] text-muted-foreground font-medium">Total</p>
         </div>
       </div>
 
-      {/* ── Input Card ── */}
-      <Card className="overflow-hidden shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-bold flex items-center gap-2">
-            <Box className="h-3.5 w-3.5 text-success" />
-            Input Barang Masuk
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 pt-2">
+      {/* ── Input Section ── */}
+      <div className="space-y-3">
           {items.map((item, i) => {
             const matchedProduct = products?.find((p) => p.id === item.productId);
             const currentStacks = (matchedProduct?.stock?.tumpukan_detail as number[]) ?? [];
@@ -348,32 +343,28 @@ const BarangMasuk = () => {
             <Send className="h-4 w-4 mr-2" />
             {submitting ? "Menyimpan..." : `Simpan Barang Masuk${validCount > 0 ? ` (${validCount} item)` : ""}`}
           </Button>
-        </CardContent>
-      </Card>
+      </div>
 
       {/* ── Riwayat ── */}
-      <Card className="shadow-sm">
-        <Collapsible defaultOpen>
-          <CardHeader className="pb-1">
-            <CollapsibleTrigger asChild>
-              <button className="flex items-center justify-between w-full text-left min-h-[44px]">
-                <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                  Riwayat Barang Masuk
-                </CardTitle>
-                <div className="flex items-center gap-2">
-                  {history && history.length > 0 && (
-                    <Badge variant="secondary" className="text-[10px] rounded-full px-2 font-semibold">
-                      {history.length} entri
-                    </Badge>
-                  )}
-                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
-                </div>
-              </button>
-            </CollapsibleTrigger>
-          </CardHeader>
-          <CollapsibleContent>
-            <CardContent className="space-y-2.5 pt-1">
+      <Collapsible defaultOpen>
+        <CollapsibleTrigger asChild>
+          <button className="flex items-center justify-between w-full text-left min-h-[44px] py-2">
+            <h2 className="text-sm font-bold flex items-center gap-2">
+              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+              Riwayat Barang Masuk
+            </h2>
+            <div className="flex items-center gap-2">
+              {history && history.length > 0 && (
+                <Badge variant="secondary" className="text-[10px] rounded-full px-2 font-semibold">
+                  {history.length} entri
+                </Badge>
+              )}
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+            </div>
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="space-y-3 pt-2">
               {/* Search & Filter */}
               <div className="flex gap-2">
                 <div className="relative flex-1">
@@ -551,10 +542,9 @@ const BarangMasuk = () => {
                   </Table>
                 </div>
               )}
-            </CardContent>
-          </CollapsibleContent>
-        </Collapsible>
-      </Card>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 };
