@@ -333,11 +333,7 @@ const Stok = () => {
                         "[&>div]:bg-success"
                       }`}
                     />
-                    <div className="grid grid-cols-4 gap-2 text-[11px]">
-                      <div>
-                        <span className="text-muted-foreground">Modal</span>
-                        <p className="font-semibold tabular-nums">{p.prices ? formatRupiah(p.prices.harga_modal) : "-"}</p>
-                      </div>
+                    <div className="grid grid-cols-3 gap-2 text-[11px]">
                       <div>
                         <span className="text-muted-foreground">Normal</span>
                         <p className="font-semibold tabular-nums">{p.prices ? formatRupiah(p.prices.harga_normal) : "-"}</p>
@@ -369,7 +365,6 @@ const Stok = () => {
                     <TableHead className="font-bold">Nama</TableHead>
                     <TableHead className="text-right font-bold">Stok</TableHead>
                     <TableHead className="font-bold">Tumpukan</TableHead>
-                    <TableHead className="text-right font-bold">Modal</TableHead>
                      <TableHead className="text-right font-bold">Normal</TableHead>
                     <TableHead className="text-right font-bold">Grosir</TableHead>
                     <TableHead className="text-right font-bold">Grosir 2</TableHead>
@@ -392,7 +387,6 @@ const Stok = () => {
                         <TableCell className="text-sm">{p.nama}</TableCell>
                         <TableCell className="text-right font-extrabold tabular-nums text-base">{formatNumber(jumlah)}</TableCell>
                         <TableCell><TumpukanBadges stacks={stacks} kode={p.kode} /></TableCell>
-                        <TableCell className="text-right text-sm tabular-nums text-muted-foreground">{p.prices ? formatRupiah(p.prices.harga_modal) : "-"}</TableCell>
                         <TableCell className="text-right text-sm tabular-nums">{p.prices ? formatRupiah(p.prices.harga_normal) : "-"}</TableCell>
                         <TableCell className="text-right text-sm tabular-nums">{p.prices ? formatRupiah(p.prices.harga_grosir) : "-"}</TableCell>
                         <TableCell className="text-right text-sm tabular-nums">{p.prices ? formatRupiah(p.prices.harga_grosir2) : "-"}</TableCell>
