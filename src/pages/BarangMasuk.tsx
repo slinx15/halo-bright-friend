@@ -346,28 +346,25 @@ const BarangMasuk = () => {
       </div>
 
       {/* ── Riwayat ── */}
-      <Card className="shadow-sm">
-        <Collapsible defaultOpen>
-          <CardHeader className="pb-1">
-            <CollapsibleTrigger asChild>
-              <button className="flex items-center justify-between w-full text-left min-h-[44px]">
-                <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                  Riwayat Barang Masuk
-                </CardTitle>
-                <div className="flex items-center gap-2">
-                  {history && history.length > 0 && (
-                    <Badge variant="secondary" className="text-[10px] rounded-full px-2 font-semibold">
-                      {history.length} entri
-                    </Badge>
-                  )}
-                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
-                </div>
-              </button>
-            </CollapsibleTrigger>
-          </CardHeader>
-          <CollapsibleContent>
-            <CardContent className="space-y-2.5 pt-1">
+      <Collapsible defaultOpen>
+        <CollapsibleTrigger asChild>
+          <button className="flex items-center justify-between w-full text-left min-h-[44px] py-2">
+            <h2 className="text-sm font-bold flex items-center gap-2">
+              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+              Riwayat Barang Masuk
+            </h2>
+            <div className="flex items-center gap-2">
+              {history && history.length > 0 && (
+                <Badge variant="secondary" className="text-[10px] rounded-full px-2 font-semibold">
+                  {history.length} entri
+                </Badge>
+              )}
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+            </div>
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="space-y-3 pt-2">
               {/* Search & Filter */}
               <div className="flex gap-2">
                 <div className="relative flex-1">
