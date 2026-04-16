@@ -117,7 +117,8 @@ export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDa
       >
         <div
           ref={contentRef}
-          className={`flex-1 bg-background overflow-y-auto overscroll-contain rounded-t-[20px] mt-6 sm:mt-4 sm:mx-auto sm:max-w-lg sm:rounded-2xl sm:mb-4 shadow-2xl`}
+          className={`flex-1 bg-background overflow-y-auto overscroll-contain rounded-t-[20px] mt-6 pb-safe sm:mt-4 sm:mx-auto sm:max-w-lg sm:rounded-2xl sm:mb-4 shadow-2xl`}
+          style={{ maxHeight: "calc(100dvh - 24px)" }}
         >
           {/* Hero header with gradient */}
           <div className={`relative bg-gradient-to-b ${statusGradient} px-5 pt-5 pb-4`}>
