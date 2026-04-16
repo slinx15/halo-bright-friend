@@ -19,7 +19,7 @@ export function CriticalStockAlert() {
     if (!products || !stockOutData) return [];
     const analysis = analyzeAllProducts(products, stockOutData);
     return analysis
-      .filter((a) => a.dosStatus === "CRITICAL" && (a.velocity > 0 || a.currentStock === 0))
+      .filter((a) => a.dosStatus === "CRITICAL")
       .sort((a, b) => a.daysOfStock - b.daysOfStock)
       .slice(0, 6);
   }, [products, stockOutData]);

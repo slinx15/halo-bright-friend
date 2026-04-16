@@ -398,9 +398,10 @@ export function analyzeAllProducts(
     const isSlowMover = velocity < RULES.SLOWMOVER_VELOCITY;
     const isStockOut = currentStock === 0;
 
-    if (isStockOut && isSlowMover) {
-      continue;
-    }
+    // CATATAN: Sebelumnya semua produk stok habis + slow mover di-skip total
+    // sehingga produk seperti kode 2204 (stok 0) tidak muncul di Critical.
+    // Sekarang produk stok habis SELALU dimasukkan agar user dapat peringatan.
+    // Yang di-skip hanya slow mover yang masih punya stok (tidak urgent).
 
     // Days of stock
     const daysOfStock = velocity > 0 ? currentStock / velocity : (currentStock > 0 ? 999 : 0);
