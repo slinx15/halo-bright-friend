@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { formatRupiah } from "@/lib/formatters";
 import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,7 +52,7 @@ const BarangMasuk = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stock_in")
-        .select("*, products(kode, nama)")
+        .select("*, products(kode, nama, prices(harga_modal))")
         .order("created_at", { ascending: false })
         .order("id", { ascending: false })
         .limit(50);
@@ -409,33 +410,55 @@ const BarangMasuk = () => {
 
               {/* ── Rekap Total per Tanggal ── */}
               {filteredHistory.length > 0 && (() => {
-                const grouped: Record<string, number> = {};
+                const grouped: Record<string, { qty: number; cost: number }> = {};
                 filteredHistory.forEach((h: any) => {
                   const dateKey = h.created_at ? format(new Date(h.created_at), "yyyy-MM-dd") : "unknown";
-                  grouped[dateKey] = (grouped[dateKey] || 0) + (h.qty || 0);
+                  const modal = h.products?.prices?.[0]?.harga_modal || h.products?.prices?.harga_modal || 0;
+                  const itemCost = modal * (h.qty || 0);
+                  if (!grouped[dateKey]) grouped[dateKey] = { qty: 0, cost: 0 };
+                  grouped[dateKey].qty += (h.qty || 0);
+                  grouped[dateKey].cost += itemCost;
                 });
                 const sortedDates = Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0]));
-                const grandTotal = sortedDates.reduce((s, [, v]) => s + v, 0);
+                const grandTotalQty = sortedDates.reduce((s, [, v]) => s + v.qty, 0);
+                const grandTotalCost = sortedDates.reduce((s, [, v]) => s + v.cost, 0);
                 return (
                   <div className="rounded-xl border border-success/20 bg-success/[0.03] p-3.5 space-y-2">
                     <p className="text-xs font-bold text-success uppercase tracking-wider flex items-center gap-1.5">
                       <Package className="h-3.5 w-3.5" /> Rekap Barang Masuk
                     </p>
-                    <div className="space-y-1">
-                      {sortedDates.map(([date, total]) => (
-                        <div key={date} className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground font-medium">
+                    <div className="space-y-1.5">
+                      {sortedDates.map(([date, { qty, cost }]) => (
+                        <div key={date} className="flex items-center justify-between text-sm gap-2">
+                          <span className="text-muted-foreground font-medium shrink-0">
                             {format(new Date(date), "dd MMM yyyy", { locale: localeId })}
                           </span>
-                          <span className="font-extrabold text-success tabular-nums">+{formatNumber(total)} unit</span>
+                          <div className="flex items-center gap-3">
+                            <span className="font-extrabold text-success tabular-nums">+{formatNumber(qty)} unit</span>
+                            {cost > 0 && (
+                              <span className="font-bold text-primary tabular-nums text-xs bg-primary/10 px-2 py-0.5 rounded-full">
+                                {formatRupiah(cost)}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
                     {sortedDates.length > 1 && (
-                      <div className="flex items-center justify-between text-sm border-t border-success/15 pt-2 mt-1">
+                      <div className="flex items-center justify-between text-sm border-t border-success/15 pt-2 mt-1 gap-2">
                         <span className="font-bold text-foreground">Grand Total</span>
-                        <span className="font-extrabold text-lg text-success tabular-nums">+{formatNumber(grandTotal)} unit</span>
+                        <div className="flex items-center gap-3">
+                          <span className="font-extrabold text-lg text-success tabular-nums">+{formatNumber(grandTotalQty)} unit</span>
+                          {grandTotalCost > 0 && (
+                            <span className="font-extrabold text-primary tabular-nums bg-primary/10 px-2.5 py-0.5 rounded-full">
+                              {formatRupiah(grandTotalCost)}
+                            </span>
+                          )}
+                        </div>
                       </div>
+                    )}
+                    {grandTotalCost === 0 && (
+                      <p className="text-[10px] text-muted-foreground italic">* Biaya belum tersedia karena harga modal belum diset</p>
                     )}
                   </div>
                 );
