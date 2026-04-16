@@ -46,6 +46,7 @@ const BarangMasuk = () => {
   const isMobile = useIsMobile();
   const [historySearch, setHistorySearch] = useState("");
   const [historyDateFilter, setHistoryDateFilter] = useState<Date | undefined>(undefined);
+  const [expandedDate, setExpandedDate] = useState<string | null>(null);
 
   const { data: history } = useQuery({
     queryKey: ["stock_in_history"],
