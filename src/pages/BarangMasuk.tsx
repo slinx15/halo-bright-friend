@@ -188,57 +188,62 @@ const BarangMasuk = () => {
   }, [history, historySearch, historyDateFilter]);
 
   return (
-    <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full">
-      {/* ── Header Card ── */}
-      <Card className="rounded-2xl border-border/50 shadow-sm">
-        <CardContent className="p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-success/10">
-                <PackagePlus className="h-5 w-5 text-success" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold tracking-tight">Barang Masuk</h1>
-                <p className="text-muted-foreground text-[11px]">Catat barang masuk ke gudang</p>
-              </div>
-            </div>
-            <OcrUpload
-              mode="masuk"
-              onResult={(ocrItems) => {
-                const newItems: LineItem[] = ocrItems.map((o: any) => {
-                  const found = products?.find((p) => p.kode.toUpperCase() === (o.kode || "").toUpperCase());
-                  return {
-                    kode: (o.kode || "").toUpperCase(),
-                    qty: o.qty || 1,
-                    productName: found?.nama || o.nama,
-                    productId: found?.id,
-                    productKode: found?.kode,
-                  };
-                });
-                setItems(newItems.length > 0 ? newItems : [{ kode: "", qty: 1 }]);
-                if (ocrItems[0]?.catatan) setCatatan(ocrItems[0].catatan);
-              }}
-            />
+    <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*:nth-child(5)]:![animation-delay:200ms] [&>*]:[animation-fill-mode:both]">
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 rounded-2xl bg-success/10 shadow-sm">
+            <PackagePlus className="h-6 w-6 text-success" />
           </div>
-          <div className="grid grid-cols-3 divide-x divide-border/50">
-            <div className="text-center py-1">
-              <p className="text-2xl font-bold text-success tabular-nums">{items.length}</p>
-              <p className="text-[10px] text-muted-foreground font-medium">Baris</p>
-            </div>
-            <div className="text-center py-1">
-              <p className="text-2xl font-bold text-primary tabular-nums">{validCount}</p>
-              <p className="text-[10px] text-muted-foreground font-medium">Valid</p>
-            </div>
-            <div className="text-center py-1">
-              <p className="text-2xl font-bold text-foreground tabular-nums">{formatNumber(totalQty)}</p>
-              <p className="text-[10px] text-muted-foreground font-medium">Total</p>
-            </div>
+          <div className="space-y-0.5">
+            <h1 className="text-xl font-extrabold tracking-tight leading-tight">Barang Masuk</h1>
+            <p className="text-muted-foreground text-xs font-medium">Catat barang masuk ke gudang</p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <OcrUpload
+          mode="masuk"
+          onResult={(ocrItems) => {
+            const newItems: LineItem[] = ocrItems.map((o: any) => {
+              const found = products?.find((p) => p.kode.toUpperCase() === (o.kode || "").toUpperCase());
+              return {
+                kode: (o.kode || "").toUpperCase(),
+                qty: o.qty || 1,
+                productName: found?.nama || o.nama,
+                productId: found?.id,
+                productKode: found?.kode,
+              };
+            });
+            setItems(newItems.length > 0 ? newItems : [{ kode: "", qty: 1 }]);
+            if (ocrItems[0]?.catatan) setCatatan(ocrItems[0].catatan);
+          }}
+        />
+      </div>
 
-      {/* ── Input Section ── */}
-      <div className="space-y-3">
+      {/* ── KPI Strip ── */}
+      <div className="grid grid-cols-3 gap-2.5">
+        <div className="card-premium bg-success/5 p-3 text-center">
+          <p className="text-2xl font-extrabold text-success tabular-nums">{items.length}</p>
+          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Baris</p>
+        </div>
+        <div className="card-premium bg-primary/5 p-3 text-center">
+          <p className="text-2xl font-extrabold text-primary tabular-nums">{validCount}</p>
+          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Valid</p>
+        </div>
+        <div className="card-premium bg-muted/30 p-3 text-center">
+          <p className="text-2xl font-extrabold text-foreground tabular-nums">{formatNumber(totalQty)}</p>
+          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Total</p>
+        </div>
+      </div>
+
+      {/* ── Input Card ── */}
+      <Card className="card-premium overflow-hidden">
+        <CardHeader className="pb-3 bg-gradient-to-r from-success/5 to-transparent">
+          <CardTitle className="text-base font-bold flex items-center gap-2">
+            <PackagePlus className="h-4 w-4 text-success" />
+            Input Barang Masuk
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 pt-4">
           {items.map((item, i) => {
             const matchedProduct = products?.find((p) => p.id === item.productId);
             const currentStacks = (matchedProduct?.stock?.tumpukan_detail as number[]) ?? [];
@@ -252,50 +257,53 @@ const BarangMasuk = () => {
             return (
               <div
                 key={i}
-                className={`rounded-lg border p-3 space-y-2 transition-colors ${
+                className={cn(
+                  "rounded-xl border p-3 space-y-2 transition-all duration-200",
                   item.productId
-                    ? "border-success/30 bg-success/[0.03]"
+                    ? "border-success/30 bg-success/[0.03] shadow-sm"
                     : item.kode && !item.productId
                     ? "border-destructive/30 bg-destructive/[0.03]"
-                    : "border-border/50"
-                }`}
+                    : "border-border/60 hover:border-border"
+                )}
               >
-                <div className="flex gap-2 items-end">
+                <div className="flex gap-2 items-center">
                   <div className="flex-1 min-w-0">
-                    <Label className="text-[11px] font-medium text-muted-foreground">Kode Produk</Label>
                     <Input
-                      placeholder="Kode..."
+                      placeholder="Ketik kode produk..."
                       value={item.kode}
                       onChange={(e) => updateItem(i, "kode", e.target.value.toUpperCase())}
                       list="product-codes"
-                      className="rounded-lg mt-1"
+                      className="rounded-lg font-mono"
                     />
-                    {item.productName && (
-                      <p className="text-[11px] text-success mt-1 font-medium flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" /> {item.productName}
-                      </p>
-                    )}
-                    {item.kode && !item.productId && (
-                      <p className="text-[11px] text-destructive mt-1 font-medium">✗ Tidak ditemukan</p>
-                    )}
                   </div>
                   <div className="w-20">
-                    <Label className="text-[11px] font-medium text-muted-foreground">{matchedProduct?.kategori === "18 Gram" ? "Pack" : "Qty"}</Label>
                     <Input
                       type="text"
                       inputMode="numeric"
                       value={item.qty === 0 ? "" : item.qty}
                       onChange={(e) => updateItem(i, "qty", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
                       placeholder="0"
-                      className="rounded-lg mt-1 text-center font-bold text-base"
+                      className="rounded-lg text-center font-bold text-base"
                     />
                   </div>
                   {items.length > 1 && (
-                    <Button variant="ghost" size="icon" onClick={() => removeLine(i)} className="shrink-0 text-destructive hover:bg-destructive/10 rounded-lg min-h-[44px] min-w-[44px]">
+                    <Button variant="ghost" size="icon" onClick={() => removeLine(i)} className="shrink-0 text-destructive hover:bg-destructive/10 rounded-lg h-10 w-10">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
                 </div>
+                {/* Product info */}
+                {item.productName && (
+                  <p className="text-xs text-success font-medium flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3 shrink-0" /> {item.productName}
+                    {matchedProduct?.kategori && matchedProduct.kategori !== "2 Ons" && (
+                      <Badge variant="secondary" className="text-[9px] px-1.5 py-0 ml-1">{matchedProduct.kategori}</Badge>
+                    )}
+                  </p>
+                )}
+                {item.kode && !item.productId && (
+                  <p className="text-xs text-destructive font-medium">✗ Produk tidak ditemukan</p>
+                )}
                 {/* Stack preview */}
                 {item.productId && item.qty > 0 && (
                   <div className="bg-muted/30 rounded-md p-2 space-y-1">
@@ -326,54 +334,54 @@ const BarangMasuk = () => {
             {products?.map((p) => <option key={p.id} value={p.nama} label={`${p.kode} — ${p.nama}`} />)}
           </datalist>
 
-          <Button variant="outline" size="sm" onClick={addLine} className="rounded-lg min-h-[44px] w-full border-dashed">
+          <Button variant="outline" size="sm" onClick={addLine} className="rounded-xl transition-all duration-150 active:scale-95 min-h-[44px]">
             <Plus className="h-4 w-4 mr-1" /> Tambah Baris
           </Button>
 
           <div>
-            <Label className="text-[11px] font-medium text-muted-foreground">Catatan (opsional)</Label>
+            <Label className="text-xs font-semibold text-muted-foreground">Catatan (opsional)</Label>
             <Textarea value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder="Catatan..." rows={2} className="rounded-lg mt-1" />
           </div>
 
           <Button
             onClick={handleSubmit}
             disabled={submitting || validCount === 0}
-            className="w-full rounded-xl h-11 text-sm font-bold bg-success hover:bg-success/90 shadow-sm"
+            className="w-full rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-success hover:bg-success/90"
           >
-            <Send className="h-4 w-4 mr-2" />
+            <Send className="h-5 w-5 mr-2" />
             {submitting ? "Menyimpan..." : `Simpan Barang Masuk${validCount > 0 ? ` (${validCount} item)` : ""}`}
           </Button>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* ── Riwayat ── */}
-      <Collapsible defaultOpen>
-        <CollapsibleTrigger asChild>
-          <button className="flex items-center justify-between w-full text-left min-h-[44px] py-2">
-            <h2 className="text-sm font-bold flex items-center gap-2">
-              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-              Riwayat Barang Masuk
-            </h2>
-            <div className="flex items-center gap-2">
-              {history && history.length > 0 && (
-                <Badge variant="secondary" className="text-[10px] rounded-full px-2 font-semibold">
-                  {history.length} entri
-                </Badge>
-              )}
-              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
-            </div>
-          </button>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <div className="space-y-3 pt-2">
-              {/* Search & Filter */}
+      <Card className="card-premium">
+        <Collapsible defaultOpen>
+          <CardHeader className="pb-2">
+            <CollapsibleTrigger asChild>
+              <button className="flex items-center justify-between w-full text-left min-h-[44px]">
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" /> Riwayat Barang Masuk
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  {history && history.length > 0 && (
+                    <Badge variant="secondary" className="text-[10px] rounded-full px-2.5 font-bold">{history.length}</Badge>
+                  )}
+                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+                </div>
+              </button>
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent className="space-y-3">
               <div className="flex gap-2">
                 <div className="relative flex-1">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Cari kode, nama..."
                     value={historySearch}
                     onChange={(e) => setHistorySearch(e.target.value)}
-                    className="pl-8 rounded-lg h-9 text-sm"
+                    className="pl-9 rounded-xl h-10"
                   />
                 </div>
                 <Popover>
@@ -389,9 +397,7 @@ const BarangMasuk = () => {
               </div>
               {historyDateFilter && (
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-xs rounded-full">
-                    {format(historyDateFilter, "dd MMM yyyy", { locale: localeId })}
-                  </Badge>
+                  <Badge variant="secondary" className="text-xs rounded-full">{format(historyDateFilter, "dd MMM yyyy", { locale: localeId })}</Badge>
                   <button onClick={() => setHistoryDateFilter(undefined)} className="text-[10px] text-primary hover:underline">Reset</button>
                 </div>
               )}
@@ -403,7 +409,6 @@ const BarangMasuk = () => {
               {filteredHistory.length > 0 && (() => {
                 const grouped: Record<string, { qty: number; cost: number; count: number }> = {};
                 filteredHistory.forEach((h: any) => {
-                  // Convert to WIB (+7) for correct date grouping
                   const utc = new Date(h.created_at);
                   const wib = new Date(utc.getTime() + 7 * 60 * 60 * 1000);
                   const dateKey = h.created_at ? format(wib, "yyyy-MM-dd") : "unknown";
@@ -418,7 +423,7 @@ const BarangMasuk = () => {
                 const grandTotalQty = sortedDates.reduce((s, [, v]) => s + v.qty, 0);
                 const grandTotalCost = sortedDates.reduce((s, [, v]) => s + v.cost, 0);
                 return (
-                  <div className="rounded-lg border border-border/60 bg-card p-3 space-y-1.5">
+                  <div className="rounded-xl border border-border/60 bg-card p-3 space-y-1.5">
                     <p className="text-[11px] font-bold text-success uppercase tracking-wider flex items-center gap-1.5">
                       <Package className="h-3 w-3" /> Rekap Barang Masuk
                     </p>
@@ -461,56 +466,51 @@ const BarangMasuk = () => {
               })()}
 
               {isMobile ? (
-              <div className="divide-y divide-border/30">
+                <div className="space-y-2.5">
                   {filteredHistory.length === 0 ? (
                     <div className="py-10 text-center">
-                      <Package className="h-10 w-10 text-muted-foreground/15 mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">{history?.length ? "Tidak ada hasil" : "Belum ada riwayat"}</p>
+                      <Package className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
+                      <p className="text-sm text-muted-foreground font-medium">{history?.length ? "Tidak ada hasil" : "Belum ada riwayat"}</p>
                     </div>
-                  ) : (
-                    filteredHistory.map((h: any) => (
-                      <div key={h.id} className="py-3 first:pt-0 last:pb-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0 space-y-0.5">
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono font-bold text-sm">{h.products?.kode}</span>
-                              <span className="text-xs text-muted-foreground truncate">{h.products?.nama}</span>
-                            </div>
-                            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-2.5 w-2.5" />
-                                {formatDate(h.created_at)}
-                              </span>
-                              {h.tumpukan && (
-                                <span className="flex items-center gap-1">
-                                  <Hash className="h-2.5 w-2.5" />
-                                  {h.tumpukan}
-                                </span>
-                              )}
-                            </div>
-                            {h.catatan && (
-                              <p className="text-[11px] text-muted-foreground/70 italic mt-0.5">{h.catatan}</p>
-                            )}
-                          </div>
-                          <Badge className="rounded-full text-xs font-bold px-2.5 py-0.5 bg-success/10 text-success border-0 shrink-0">
-                            +{formatNumber(h.qty)}
-                          </Badge>
+                  ) : filteredHistory.map((h: any) => (
+                    <div key={h.id} className="rounded-xl border border-border/60 p-3.5 space-y-2 transition-all duration-150 active:scale-[0.98] bg-card">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-mono font-bold text-sm">{h.products?.kode}</span>
+                          <span className="text-xs text-muted-foreground truncate">{h.products?.nama}</span>
                         </div>
+                        <Badge className="rounded-full text-xs font-extrabold px-2.5 bg-success/15 text-success border-0">
+                          +{formatNumber(h.qty)}
+                        </Badge>
                       </div>
-                    ))
-                  )}
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
+                        {h.tumpukan && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Tumpukan</span>
+                            <span className="font-medium">{h.tumpukan}</span>
+                          </div>
+                        )}
+                        {h.catatan && (
+                          <div className="col-span-2 text-muted-foreground italic">{h.catatan}</div>
+                        )}
+                      </div>
+                      <div className="flex items-center text-[11px] text-muted-foreground gap-1">
+                        <Clock className="h-3 w-3" /> {formatDate(h.created_at)}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/30">
-                        <TableHead className="font-semibold text-xs">Waktu</TableHead>
-                        <TableHead className="font-semibold text-xs">Kode</TableHead>
-                        <TableHead className="font-semibold text-xs">Nama</TableHead>
-                        <TableHead className="text-right font-semibold text-xs">Qty</TableHead>
-                        <TableHead className="font-semibold text-xs">Tumpukan</TableHead>
-                        <TableHead className="font-semibold text-xs">Catatan</TableHead>
+                        <TableHead className="font-bold">Waktu</TableHead>
+                        <TableHead className="font-bold">Kode</TableHead>
+                        <TableHead className="font-bold">Nama</TableHead>
+                        <TableHead className="text-right font-bold">Qty</TableHead>
+                        <TableHead className="font-bold">Tumpukan</TableHead>
+                        <TableHead className="font-bold">Catatan</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -530,18 +530,17 @@ const BarangMasuk = () => {
                       ))}
                       {filteredHistory.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                            {history?.length ? "Tidak ada hasil" : "Belum ada riwayat"}
-                          </TableCell>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground py-10">{history?.length ? "Tidak ada hasil" : "Belum ada riwayat"}</TableCell>
                         </TableRow>
                       )}
                     </TableBody>
                   </Table>
                 </div>
               )}
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
+            </CardContent>
+          </CollapsibleContent>
+        </Collapsible>
+      </Card>
     </div>
   );
 };
