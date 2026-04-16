@@ -55,7 +55,7 @@ const BarangMasuk = () => {
         .select("*, products(kode, nama, prices(harga_modal))")
         .order("created_at", { ascending: false })
         .order("id", { ascending: false })
-        .limit(50);
+        .limit(500);
       if (error) throw error;
       return data;
     },
