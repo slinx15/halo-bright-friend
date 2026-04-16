@@ -213,6 +213,23 @@ const BarangKeluar = () => {
       return;
     }
 
+    // Validasi wajib: Toko, Tanggal, Harga
+    const missingFields: string[] = [];
+    const tokoFilled = globalToko.trim() || validItems.every(i => i.toko.trim());
+    if (!tokoFilled) missingFields.push("Nama Toko");
+    if (!tanggal) missingFields.push("Tanggal");
+    const hasZeroPrice = validItems.some(i => getPrice(i) <= 0);
+    if (hasZeroPrice) missingFields.push("Harga (ada item dengan harga Rp 0)");
+
+    if (missingFields.length > 0) {
+      toast({
+        title: "⚠️ Data Belum Lengkap",
+        description: `Mohon isi: ${missingFields.join(", ")}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSubmitting(true);
     const headers = await getAuthHeaders();
     let successCount = 0;
