@@ -157,7 +157,7 @@ export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDa
           </div>
 
           {/* Content body */}
-          <div className="px-5 pb-8 space-y-4">
+          <div className="px-5 pb-32 space-y-4">
             {/* Status message */}
             <div className={`rounded-2xl border p-4 -mt-1 ${
               item.dosStatus === "CRITICAL" ? "bg-destructive/5 border-destructive/20" :
