@@ -333,11 +333,7 @@ const Stok = () => {
                         "[&>div]:bg-success"
                       }`}
                     />
-                    <div className="grid grid-cols-4 gap-2 text-[11px]">
-                      <div>
-                        <span className="text-muted-foreground">Modal</span>
-                        <p className="font-semibold tabular-nums">{p.prices ? formatRupiah(p.prices.harga_modal) : "-"}</p>
-                      </div>
+                    <div className="grid grid-cols-3 gap-2 text-[11px]">
                       <div>
                         <span className="text-muted-foreground">Normal</span>
                         <p className="font-semibold tabular-nums">{p.prices ? formatRupiah(p.prices.harga_normal) : "-"}</p>
