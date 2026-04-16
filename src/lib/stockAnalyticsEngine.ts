@@ -398,7 +398,9 @@ export function analyzeAllProducts(
     const isSlowMover = velocity < RULES.SLOWMOVER_VELOCITY;
     const isStockOut = currentStock === 0;
 
-    if (isStockOut && isSlowMover) {
+    // Skip HANYA jika stok habis & benar2 tidak pernah laku (velocity === 0).
+    // Kalau pernah laku tapi pelan (velocity > 0) → tetap tampil sebagai CRITICAL.
+    if (isStockOut && isSlowMover && velocity === 0) {
       continue;
     }
 
