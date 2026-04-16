@@ -169,15 +169,51 @@ export function ProductDetailDrawer({ open, onOpenChange, item, trendInfo, lastS
           </div>
 
           {/* Saran restock */}
-          {item.recommendedQty > 0 && (
-            <div className="rounded-xl bg-primary/5 border border-primary/20 p-3.5 space-y-1.5">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-primary">💡 Saran Beli</p>
-              <p className="text-lg font-black text-primary">{item.recommendedQty} pcs</p>
-              <p className="text-[11px] text-muted-foreground">
-                Estimasi biaya: {formatRp(item.cost)} · Target stok {item.targetDays} hari
-              </p>
-            </div>
-          )}
+          {item.recommendedQty > 0 && (() => {
+            const isUrgent = item.dosStatus === "CRITICAL" || item.dosStatus === "WARNING" || item.daysOfStock <= 3;
+            const urgencyLabel = item.dosStatus === "CRITICAL" ? "🚨 DARURAT" : item.dosStatus === "WARNING" ? "⚠️ SEGERA" : item.daysOfStock <= 3 ? "⚠️ SEGERA" : "📋 BISA DITUNDA";
+            const urgencyColor = isUrgent ? "bg-destructive/10 border-destructive/30" : "bg-primary/5 border-primary/20";
+            const urgencyTextColor = isUrgent ? "text-destructive" : "text-primary";
+
+            const reasons: string[] = [];
+            if (item.currentStock === 0) {
+              reasons.push("Stok sudah habis total");
+            } else if (item.daysOfStock <= 1) {
+              reasons.push(`Stok hanya cukup ${item.daysOfStock < 1 ? "kurang dari 1 hari" : "1 hari"} lagi`);
+            } else if (item.daysOfStock <= 3) {
+              reasons.push(`Stok hanya bertahan ± ${Math.round(item.daysOfStock)} hari lagi`);
+            } else {
+              reasons.push(`Stok masih cukup ± ${Math.round(item.daysOfStock)} hari`);
+            }
+            if (item.velocity > 0) reasons.push(`Terjual rata-rata ${item.velocity.toFixed(1)} pcs/hari`);
+            const trendChange = trendInfo?.change ?? item.trendChange ?? 0;
+            if (trendChange > 0.1) reasons.push(`Penjualan naik ${Math.round(trendChange * 100)}% minggu ini`);
+            else if (trendChange < -0.1) reasons.push(`Penjualan turun ${Math.abs(Math.round(trendChange * 100))}% minggu ini`);
+            if (item.isBestSeller) reasons.push("Produk best seller");
+
+            return (
+              <div className={`rounded-xl border p-3.5 space-y-2.5 ${urgencyColor}`}>
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] font-medium uppercase tracking-wider text-primary">💡 Saran Beli</p>
+                  <Badge className={`text-[10px] font-bold rounded-full px-2.5 border-0 ${isUrgent ? "bg-destructive/15 text-destructive" : "bg-success/15 text-success"}`}>
+                    {urgencyLabel}
+                  </Badge>
+                </div>
+                <p className={`text-lg font-black ${urgencyTextColor}`}>{item.recommendedQty} pcs</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Estimasi biaya: {formatRp(item.cost)} · Target stok {item.targetDays} hari
+                </p>
+                <div className="border-t border-border/40 pt-2 space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Alasan:</p>
+                  {reasons.map((r, i) => (
+                    <p key={i} className="text-[11px] text-foreground/80 flex items-start gap-1.5">
+                      <span className="shrink-0 mt-0.5">•</span> {r}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </DrawerContent>
     </Drawer>
