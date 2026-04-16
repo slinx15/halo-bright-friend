@@ -408,13 +408,15 @@ const BarangMasuk = () => {
 
               {/* ── Grouped by Date ── */}
               {filteredHistory.length > 0 && (() => {
-                const grouped: Record<string, { qty: number; count: number; items: any[] }> = {};
+                const grouped: Record<string, { qty: number; cost: number; count: number; items: any[] }> = {};
                 filteredHistory.forEach((h: any) => {
                   const utc = new Date(h.created_at);
                   const wib = new Date(utc.getTime() + 7 * 60 * 60 * 1000);
                   const dateKey = h.created_at ? format(wib, "yyyy-MM-dd") : "unknown";
-                  if (!grouped[dateKey]) grouped[dateKey] = { qty: 0, count: 0, items: [] };
+                  const modal = h.products?.prices?.[0]?.harga_modal || h.products?.prices?.harga_modal || 0;
+                  if (!grouped[dateKey]) grouped[dateKey] = { qty: 0, cost: 0, count: 0, items: [] };
                   grouped[dateKey].qty += (h.qty || 0);
+                  grouped[dateKey].cost += modal * (h.qty || 0);
                   grouped[dateKey].count += 1;
                   grouped[dateKey].items.push(h);
                 });
