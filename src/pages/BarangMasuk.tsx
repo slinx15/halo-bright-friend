@@ -408,20 +408,22 @@ const BarangMasuk = () => {
 
               {/* ── Grouped by Date ── */}
               {filteredHistory.length > 0 && (() => {
-                const grouped: Record<string, { qty: number; count: number; items: any[] }> = {};
+                const grouped: Record<string, { qty: number; cost: number; count: number; items: any[] }> = {};
                 filteredHistory.forEach((h: any) => {
                   const utc = new Date(h.created_at);
                   const wib = new Date(utc.getTime() + 7 * 60 * 60 * 1000);
                   const dateKey = h.created_at ? format(wib, "yyyy-MM-dd") : "unknown";
-                  if (!grouped[dateKey]) grouped[dateKey] = { qty: 0, count: 0, items: [] };
+                  const modal = h.products?.prices?.[0]?.harga_modal || h.products?.prices?.harga_modal || 0;
+                  if (!grouped[dateKey]) grouped[dateKey] = { qty: 0, cost: 0, count: 0, items: [] };
                   grouped[dateKey].qty += (h.qty || 0);
+                  grouped[dateKey].cost += modal * (h.qty || 0);
                   grouped[dateKey].count += 1;
                   grouped[dateKey].items.push(h);
                 });
                 const sortedDates = Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0]));
                 return (
                   <div className="space-y-2">
-                    {sortedDates.map(([date, { qty, count, items: dateItems }]) => {
+                    {sortedDates.map(([date, { qty, cost, count, items: dateItems }]) => {
                       const isOpen = expandedDate === date;
                       return (
                         <div key={date} className="rounded-xl border border-border/60 bg-card overflow-hidden transition-all duration-200">
@@ -435,7 +437,7 @@ const BarangMasuk = () => {
                               </div>
                               <div>
                                 <p className="text-sm font-bold text-foreground">{format(new Date(date), "dd MMM yyyy", { locale: localeId })}</p>
-                                <p className="text-[10px] text-muted-foreground">{count} transaksi</p>
+                                <p className="text-[10px] text-muted-foreground">{count} transaksi{cost > 0 ? ` · ${formatRupiah(cost)}` : ""}</p>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
