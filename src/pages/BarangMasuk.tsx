@@ -220,30 +220,25 @@ const BarangMasuk = () => {
       </div>
 
       {/* ── KPI Strip ── */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="rounded-xl border border-border/50 bg-card p-2.5 text-center">
-          <p className="text-xl font-bold text-success tabular-nums">{items.length}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mt-0.5">Baris</p>
+      <div className="flex items-center justify-around py-2">
+        <div className="text-center">
+          <p className="text-2xl font-bold text-success tabular-nums">{items.length}</p>
+          <p className="text-[10px] text-muted-foreground font-medium">Baris</p>
         </div>
-        <div className="rounded-xl border border-border/50 bg-card p-2.5 text-center">
-          <p className="text-xl font-bold text-primary tabular-nums">{validCount}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mt-0.5">Valid</p>
+        <div className="w-px h-8 bg-border/60" />
+        <div className="text-center">
+          <p className="text-2xl font-bold text-primary tabular-nums">{validCount}</p>
+          <p className="text-[10px] text-muted-foreground font-medium">Valid</p>
         </div>
-        <div className="rounded-xl border border-border/50 bg-card p-2.5 text-center">
-          <p className="text-xl font-bold text-foreground tabular-nums">{formatNumber(totalQty)}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mt-0.5">Total</p>
+        <div className="w-px h-8 bg-border/60" />
+        <div className="text-center">
+          <p className="text-2xl font-bold text-foreground tabular-nums">{formatNumber(totalQty)}</p>
+          <p className="text-[10px] text-muted-foreground font-medium">Total</p>
         </div>
       </div>
 
-      {/* ── Input Card ── */}
-      <Card className="overflow-hidden shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-bold flex items-center gap-2">
-            <Box className="h-3.5 w-3.5 text-success" />
-            Input Barang Masuk
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 pt-2">
+      {/* ── Input Section ── */}
+      <div className="space-y-3">
           {items.map((item, i) => {
             const matchedProduct = products?.find((p) => p.id === item.productId);
             const currentStacks = (matchedProduct?.stock?.tumpukan_detail as number[]) ?? [];
