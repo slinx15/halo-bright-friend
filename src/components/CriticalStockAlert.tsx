@@ -23,7 +23,7 @@ export function CriticalStockAlert() {
       .slice(0, 6);
   }, [products, stockOutData]);
 
-  const isLoading = prodLoading || salesLoading;
+  
 
   if (isLoading) {
     return (
