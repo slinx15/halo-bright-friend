@@ -117,8 +117,8 @@ export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDa
       >
         <div
           ref={contentRef}
-          className={`flex-1 bg-background overflow-y-auto overscroll-contain rounded-t-[20px] mt-6 pb-safe sm:mt-4 sm:mx-auto sm:max-w-lg sm:rounded-2xl sm:mb-4 shadow-2xl`}
-          style={{ maxHeight: "calc(100dvh - 24px)" }}
+          className={`flex-1 bg-background overflow-y-auto overscroll-contain rounded-t-[20px] mt-6 sm:mt-4 sm:mx-auto sm:max-w-lg sm:rounded-2xl sm:mb-4 shadow-2xl`}
+          style={{ maxHeight: "calc(100dvh - 24px)", WebkitOverflowScrolling: "touch" }}
         >
           {/* Hero header with gradient */}
           <div className={`relative bg-gradient-to-b ${statusGradient} px-5 pt-5 pb-4`}>
@@ -157,7 +157,7 @@ export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDa
           </div>
 
           {/* Content body */}
-          <div className="px-5 pb-8 space-y-4">
+          <div className="px-5 pb-32 space-y-4">
             {/* Status message */}
             <div className={`rounded-2xl border p-4 -mt-1 ${
               item.dosStatus === "CRITICAL" ? "bg-destructive/5 border-destructive/20" :
