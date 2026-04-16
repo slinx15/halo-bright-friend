@@ -437,7 +437,7 @@ const BarangMasuk = () => {
                               </div>
                               <div>
                                 <p className="text-sm font-bold text-foreground">{format(new Date(date), "dd MMM yyyy", { locale: localeId })}</p>
-                                <p className="text-[10px] text-muted-foreground">{count} transaksi</p>
+                                <p className="text-[10px] text-muted-foreground">{count} transaksi{cost > 0 ? ` · ${formatRupiah(cost)}` : ""}</p>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
