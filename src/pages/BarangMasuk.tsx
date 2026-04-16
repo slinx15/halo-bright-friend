@@ -542,10 +542,9 @@ const BarangMasuk = () => {
                   </Table>
                 </div>
               )}
-            </CardContent>
-          </CollapsibleContent>
-        </Collapsible>
-      </Card>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 };
