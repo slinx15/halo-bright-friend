@@ -461,9 +461,9 @@ const BarangMasuk = () => {
               })()}
 
               {isMobile ? (
-                <div className="space-y-1.5">
+              <div className="space-y-3">
                   {filteredHistory.length === 0 ? (
-                    <div className="py-8 text-center">
+                    <div className="py-10 text-center">
                       <Package className="h-10 w-10 text-muted-foreground/15 mx-auto mb-2" />
                       <p className="text-sm text-muted-foreground">{history?.length ? "Tidak ada hasil" : "Belum ada riwayat"}</p>
                     </div>
@@ -471,31 +471,31 @@ const BarangMasuk = () => {
                     filteredHistory.map((h: any) => (
                       <div
                         key={h.id}
-                        className="rounded-lg border border-border/40 p-2.5 space-y-1 bg-card"
+                        className="rounded-xl border border-border/50 p-4 space-y-2 bg-card"
                       >
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="font-mono font-bold text-[13px]">{h.products?.kode}</span>
-                            <span className="text-[11px] text-muted-foreground truncate">{h.products?.nama}</span>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-mono font-bold text-sm">{h.products?.kode}</span>
+                            <span className="text-xs text-muted-foreground truncate">{h.products?.nama}</span>
                           </div>
-                          <Badge className="rounded-full text-[11px] font-bold px-2 py-0 bg-success/10 text-success border-0">
+                          <Badge className="rounded-full text-xs font-bold px-2.5 py-0.5 bg-success/10 text-success border-0">
                             +{formatNumber(h.qty)}
                           </Badge>
                         </div>
-                        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-2.5 w-2.5" />
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                          <span className="flex items-center gap-1.5">
+                            <Clock className="h-3 w-3" />
                             {formatDate(h.created_at)}
                           </span>
                           {h.tumpukan && (
-                            <span className="flex items-center gap-0.5">
-                              <Hash className="h-2.5 w-2.5" />
+                            <span className="flex items-center gap-1">
+                              <Hash className="h-3 w-3" />
                               {h.tumpukan}
                             </span>
                           )}
                         </div>
                         {h.catatan && (
-                          <p className="text-[10px] text-muted-foreground italic bg-muted/30 rounded px-1.5 py-0.5">
+                          <p className="text-[11px] text-muted-foreground italic bg-muted/30 rounded-md px-2 py-1">
                             {h.catatan}
                           </p>
                         )}
