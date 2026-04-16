@@ -46,6 +46,7 @@ const BarangMasuk = () => {
   const isMobile = useIsMobile();
   const [historySearch, setHistorySearch] = useState("");
   const [historyDateFilter, setHistoryDateFilter] = useState<Date | undefined>(undefined);
+  const [expandedDate, setExpandedDate] = useState<string | null>(null);
 
   const { data: history } = useQuery({
     queryKey: ["stock_in_history"],
@@ -405,136 +406,71 @@ const BarangMasuk = () => {
                 <p className="text-xs text-muted-foreground">{filteredHistory.length} dari {history?.length} entri</p>
               )}
 
-              {/* ── Rekap Total per Tanggal ── */}
+              {/* ── Grouped by Date ── */}
               {filteredHistory.length > 0 && (() => {
-                const grouped: Record<string, { qty: number; cost: number; count: number }> = {};
+                const grouped: Record<string, { qty: number; count: number; items: any[] }> = {};
                 filteredHistory.forEach((h: any) => {
                   const utc = new Date(h.created_at);
                   const wib = new Date(utc.getTime() + 7 * 60 * 60 * 1000);
                   const dateKey = h.created_at ? format(wib, "yyyy-MM-dd") : "unknown";
-                  const modal = h.products?.prices?.[0]?.harga_modal || h.products?.prices?.harga_modal || 0;
-                  const itemCost = modal * (h.qty || 0);
-                  if (!grouped[dateKey]) grouped[dateKey] = { qty: 0, cost: 0, count: 0 };
+                  if (!grouped[dateKey]) grouped[dateKey] = { qty: 0, count: 0, items: [] };
                   grouped[dateKey].qty += (h.qty || 0);
-                  grouped[dateKey].cost += itemCost;
                   grouped[dateKey].count += 1;
+                  grouped[dateKey].items.push(h);
                 });
                 const sortedDates = Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0]));
-                const grandTotalQty = sortedDates.reduce((s, [, v]) => s + v.qty, 0);
-                const grandTotalCost = sortedDates.reduce((s, [, v]) => s + v.cost, 0);
                 return (
-                  <div className="rounded-xl border border-border/60 bg-card p-3 space-y-1.5">
-                    <p className="text-[11px] font-bold text-success uppercase tracking-wider flex items-center gap-1.5">
-                      <Package className="h-3 w-3" /> Rekap Barang Masuk
-                    </p>
-                    <div className="space-y-0.5">
-                      {sortedDates.map(([date, { qty, cost, count }]) => (
-                        <div key={date} className="flex items-center justify-between text-[13px] py-0.5">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-foreground font-medium">{format(new Date(date), "dd MMM", { locale: localeId })}</span>
-                            <span className="text-muted-foreground text-[10px]">({count}x)</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-success tabular-nums">+{formatNumber(qty)}</span>
-                            {cost > 0 && (
-                              <span className="font-medium text-primary tabular-nums text-[11px] bg-primary/10 px-1.5 py-0.5 rounded">
-                                {formatRupiah(cost)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {sortedDates.length > 1 && (
-                      <div className="flex items-center justify-between text-[13px] border-t border-border/40 pt-1.5 mt-1">
-                        <span className="font-bold text-foreground">Total</span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-success tabular-nums">+{formatNumber(grandTotalQty)}</span>
-                          {grandTotalCost > 0 && (
-                            <span className="font-semibold text-primary tabular-nums text-[11px] bg-primary/10 px-1.5 py-0.5 rounded">
-                              {formatRupiah(grandTotalCost)}
-                            </span>
+                  <div className="space-y-2">
+                    {sortedDates.map(([date, { qty, count, items: dateItems }]) => {
+                      const isOpen = expandedDate === date;
+                      return (
+                        <div key={date} className="rounded-xl border border-border/60 bg-card overflow-hidden transition-all duration-200">
+                          <button
+                            onClick={() => setExpandedDate(isOpen ? null : date)}
+                            className="flex items-center justify-between w-full p-3.5 text-left min-h-[44px] hover:bg-muted/30 transition-colors"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center">
+                                <Package className="h-4 w-4 text-success" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-bold text-foreground">{format(new Date(date), "dd MMM yyyy", { locale: localeId })}</p>
+                                <p className="text-[10px] text-muted-foreground">{count} transaksi</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge className="rounded-full text-xs font-extrabold px-2.5 bg-success/15 text-success border-0">
+                                +{formatNumber(qty)}
+                              </Badge>
+                              <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", isOpen && "rotate-180")} />
+                            </div>
+                          </button>
+                          {isOpen && (
+                            <div className="border-t border-border/40 px-3.5 pb-3 pt-2 space-y-2 animate-fade-in">
+                              {dateItems.map((h: any) => (
+                                <div key={h.id} className="flex items-center justify-between py-1.5">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className="font-mono font-bold text-xs">{h.products?.kode}</span>
+                                    <span className="text-[11px] text-muted-foreground truncate">{h.products?.nama}</span>
+                                  </div>
+                                  <Badge variant="secondary" className="rounded-full text-[11px] font-bold px-2 shrink-0">
+                                    +{formatNumber(h.qty)}
+                                  </Badge>
+                                </div>
+                              ))}
+                            </div>
                           )}
                         </div>
-                      </div>
-                    )}
-                    {grandTotalCost === 0 && (
-                      <p className="text-[10px] text-muted-foreground italic">* Harga modal belum diset</p>
-                    )}
+                      );
+                    })}
                   </div>
                 );
               })()}
 
-              {isMobile ? (
-                <div className="space-y-2.5">
-                  {filteredHistory.length === 0 ? (
-                    <div className="py-10 text-center">
-                      <Package className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
-                      <p className="text-sm text-muted-foreground font-medium">{history?.length ? "Tidak ada hasil" : "Belum ada riwayat"}</p>
-                    </div>
-                  ) : filteredHistory.map((h: any) => (
-                    <div key={h.id} className="rounded-xl border border-border/60 p-3.5 space-y-2 transition-all duration-150 active:scale-[0.98] bg-card">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="font-mono font-bold text-sm">{h.products?.kode}</span>
-                          <span className="text-xs text-muted-foreground truncate">{h.products?.nama}</span>
-                        </div>
-                        <Badge className="rounded-full text-xs font-extrabold px-2.5 bg-success/15 text-success border-0">
-                          +{formatNumber(h.qty)}
-                        </Badge>
-                      </div>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
-                        {h.tumpukan && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Tumpukan</span>
-                            <span className="font-medium">{h.tumpukan}</span>
-                          </div>
-                        )}
-                        {h.catatan && (
-                          <div className="col-span-2 text-muted-foreground italic">{h.catatan}</div>
-                        )}
-                      </div>
-                      <div className="flex items-center text-[11px] text-muted-foreground gap-1">
-                        <Clock className="h-3 w-3" /> {formatDate(h.created_at)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/30">
-                        <TableHead className="font-bold">Waktu</TableHead>
-                        <TableHead className="font-bold">Kode</TableHead>
-                        <TableHead className="font-bold">Nama</TableHead>
-                        <TableHead className="text-right font-bold">Qty</TableHead>
-                        <TableHead className="font-bold">Tumpukan</TableHead>
-                        <TableHead className="font-bold">Catatan</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredHistory.map((h: any, idx: number) => (
-                        <TableRow key={h.id} className={idx % 2 === 0 ? "" : "bg-muted/15"}>
-                          <TableCell className="text-xs text-muted-foreground">{formatDate(h.created_at)}</TableCell>
-                          <TableCell className="font-mono font-bold text-sm">{h.products?.kode}</TableCell>
-                          <TableCell className="text-sm">{h.products?.nama}</TableCell>
-                          <TableCell className="text-right">
-                            <Badge className="rounded-full bg-success/10 text-success border-0 font-bold text-xs">
-                              +{formatNumber(h.qty)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{h.tumpukan || "-"}</TableCell>
-                          <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{h.catatan || "-"}</TableCell>
-                        </TableRow>
-                      ))}
-                      {filteredHistory.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center text-muted-foreground py-10">{history?.length ? "Tidak ada hasil" : "Belum ada riwayat"}</TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+              {filteredHistory.length === 0 && (
+                <div className="py-10 text-center">
+                  <Package className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground font-medium">{history?.length ? "Tidak ada hasil" : "Belum ada riwayat"}</p>
                 </div>
               )}
             </CardContent>
