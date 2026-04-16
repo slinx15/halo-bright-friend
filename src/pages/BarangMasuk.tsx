@@ -188,7 +188,7 @@ const BarangMasuk = () => {
   }, [history, historySearch, historyDateFilter]);
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto w-full">
+    <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full">
       {/* ── Header ── */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
