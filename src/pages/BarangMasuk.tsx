@@ -464,41 +464,13 @@ const BarangMasuk = () => {
                       );
                     })}
                   </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/30">
-                        <TableHead className="font-bold">Waktu</TableHead>
-                        <TableHead className="font-bold">Kode</TableHead>
-                        <TableHead className="font-bold">Nama</TableHead>
-                        <TableHead className="text-right font-bold">Qty</TableHead>
-                        <TableHead className="font-bold">Tumpukan</TableHead>
-                        <TableHead className="font-bold">Catatan</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredHistory.map((h: any, idx: number) => (
-                        <TableRow key={h.id} className={idx % 2 === 0 ? "" : "bg-muted/15"}>
-                          <TableCell className="text-xs text-muted-foreground">{formatDate(h.created_at)}</TableCell>
-                          <TableCell className="font-mono font-bold text-sm">{h.products?.kode}</TableCell>
-                          <TableCell className="text-sm">{h.products?.nama}</TableCell>
-                          <TableCell className="text-right">
-                            <Badge className="rounded-full bg-success/10 text-success border-0 font-bold text-xs">
-                              +{formatNumber(h.qty)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{h.tumpukan || "-"}</TableCell>
-                          <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{h.catatan || "-"}</TableCell>
-                        </TableRow>
-                      ))}
-                      {filteredHistory.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center text-muted-foreground py-10">{history?.length ? "Tidak ada hasil" : "Belum ada riwayat"}</TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                );
+              })()}
+
+              {filteredHistory.length === 0 && (
+                <div className="py-10 text-center">
+                  <Package className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground font-medium">{history?.length ? "Tidak ada hasil" : "Belum ada riwayat"}</p>
                 </div>
               )}
             </CardContent>
