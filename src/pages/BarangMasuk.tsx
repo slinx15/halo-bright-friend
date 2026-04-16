@@ -461,7 +461,7 @@ const BarangMasuk = () => {
               })()}
 
               {isMobile ? (
-              <div className="space-y-3">
+              <div className="divide-y divide-border/30">
                   {filteredHistory.length === 0 ? (
                     <div className="py-10 text-center">
                       <Package className="h-10 w-10 text-muted-foreground/15 mx-auto mb-2" />
@@ -469,36 +469,33 @@ const BarangMasuk = () => {
                     </div>
                   ) : (
                     filteredHistory.map((h: any) => (
-                      <div
-                        key={h.id}
-                        className="rounded-xl border border-border/50 p-4 space-y-2 bg-card"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="font-mono font-bold text-sm">{h.products?.kode}</span>
-                            <span className="text-xs text-muted-foreground truncate">{h.products?.nama}</span>
+                      <div key={h.id} className="py-3 first:pt-0 last:pb-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-bold text-sm">{h.products?.kode}</span>
+                              <span className="text-xs text-muted-foreground truncate">{h.products?.nama}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-2.5 w-2.5" />
+                                {formatDate(h.created_at)}
+                              </span>
+                              {h.tumpukan && (
+                                <span className="flex items-center gap-1">
+                                  <Hash className="h-2.5 w-2.5" />
+                                  {h.tumpukan}
+                                </span>
+                              )}
+                            </div>
+                            {h.catatan && (
+                              <p className="text-[11px] text-muted-foreground/70 italic mt-0.5">{h.catatan}</p>
+                            )}
                           </div>
-                          <Badge className="rounded-full text-xs font-bold px-2.5 py-0.5 bg-success/10 text-success border-0">
+                          <Badge className="rounded-full text-xs font-bold px-2.5 py-0.5 bg-success/10 text-success border-0 shrink-0">
                             +{formatNumber(h.qty)}
                           </Badge>
                         </div>
-                        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                          <span className="flex items-center gap-1.5">
-                            <Clock className="h-3 w-3" />
-                            {formatDate(h.created_at)}
-                          </span>
-                          {h.tumpukan && (
-                            <span className="flex items-center gap-1">
-                              <Hash className="h-3 w-3" />
-                              {h.tumpukan}
-                            </span>
-                          )}
-                        </div>
-                        {h.catatan && (
-                          <p className="text-[11px] text-muted-foreground italic bg-muted/30 rounded-md px-2 py-1">
-                            {h.catatan}
-                          </p>
-                        )}
                       </div>
                     ))
                   )}
