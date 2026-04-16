@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, TrendingDown, Clock, ArrowRight, Flame } from "lucide-react";
-import { useProducts } from "@/hooks/useProducts";
 import { useSalesAnalysis } from "@/hooks/useSalesAnalysis";
 import { analyzeAllProducts, type ProductAnalysis } from "@/lib/stockAnalyticsEngine";
 import { formatNumber } from "@/lib/formatters";
@@ -12,11 +11,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function CriticalStockAlert() {
   const navigate = useNavigate();
-  const { data: products, isLoading: prodLoading } = useProducts();
-  const { stockOutData, isLoading: salesLoading } = useSalesAnalysis();
+  // Konsisten dengan halaman Analisa: hanya produk kategori "2 Ons"
+  const { products, stockOutData, isLoading } = useSalesAnalysis();
 
   const criticalItems = useMemo(() => {
-    if (!products || !stockOutData) return [];
+    if (!products?.length || !stockOutData) return [];
     const analysis = analyzeAllProducts(products, stockOutData);
     return analysis
       .filter((a) => a.dosStatus === "CRITICAL")
@@ -24,7 +23,7 @@ export function CriticalStockAlert() {
       .slice(0, 6);
   }, [products, stockOutData]);
 
-  const isLoading = prodLoading || salesLoading;
+  
 
   if (isLoading) {
     return (
