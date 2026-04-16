@@ -423,7 +423,7 @@ const BarangMasuk = () => {
                 const sortedDates = Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0]));
                 return (
                   <div className="space-y-2">
-                    {sortedDates.map(([date, { qty, count, items: dateItems }]) => {
+                    {sortedDates.map(([date, { qty, cost, count, items: dateItems }]) => {
                       const isOpen = expandedDate === date;
                       return (
                         <div key={date} className="rounded-xl border border-border/60 bg-card overflow-hidden transition-all duration-200">
