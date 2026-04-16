@@ -406,6 +406,41 @@ const BarangMasuk = () => {
               {filteredHistory.length !== (history?.length ?? 0) && (
                 <p className="text-xs text-muted-foreground">{filteredHistory.length} dari {history?.length} entri</p>
               )}
+
+              {/* ── Rekap Total per Tanggal ── */}
+              {filteredHistory.length > 0 && (() => {
+                const grouped: Record<string, number> = {};
+                filteredHistory.forEach((h: any) => {
+                  const dateKey = h.created_at ? format(new Date(h.created_at), "yyyy-MM-dd") : "unknown";
+                  grouped[dateKey] = (grouped[dateKey] || 0) + (h.qty || 0);
+                });
+                const sortedDates = Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0]));
+                const grandTotal = sortedDates.reduce((s, [, v]) => s + v, 0);
+                return (
+                  <div className="rounded-xl border border-success/20 bg-success/[0.03] p-3.5 space-y-2">
+                    <p className="text-xs font-bold text-success uppercase tracking-wider flex items-center gap-1.5">
+                      <Package className="h-3.5 w-3.5" /> Rekap Barang Masuk
+                    </p>
+                    <div className="space-y-1">
+                      {sortedDates.map(([date, total]) => (
+                        <div key={date} className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground font-medium">
+                            {format(new Date(date), "dd MMM yyyy", { locale: localeId })}
+                          </span>
+                          <span className="font-extrabold text-success tabular-nums">+{formatNumber(total)} unit</span>
+                        </div>
+                      ))}
+                    </div>
+                    {sortedDates.length > 1 && (
+                      <div className="flex items-center justify-between text-sm border-t border-success/15 pt-2 mt-1">
+                        <span className="font-bold text-foreground">Grand Total</span>
+                        <span className="font-extrabold text-lg text-success tabular-nums">+{formatNumber(grandTotal)} unit</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
               {isMobile ? (
                 <div className="space-y-2.5">
                   {filteredHistory.length === 0 ? (
