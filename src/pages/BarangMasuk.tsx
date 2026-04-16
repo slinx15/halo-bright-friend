@@ -189,53 +189,53 @@ const BarangMasuk = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full">
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-success/10">
-            <PackagePlus className="h-5 w-5 text-success" />
+      {/* ── Header Card ── */}
+      <Card className="rounded-2xl border-border/50 shadow-sm">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-success/10">
+                <PackagePlus className="h-5 w-5 text-success" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold tracking-tight">Barang Masuk</h1>
+                <p className="text-muted-foreground text-[11px]">Catat barang masuk ke gudang</p>
+              </div>
+            </div>
+            <OcrUpload
+              mode="masuk"
+              onResult={(ocrItems) => {
+                const newItems: LineItem[] = ocrItems.map((o: any) => {
+                  const found = products?.find((p) => p.kode.toUpperCase() === (o.kode || "").toUpperCase());
+                  return {
+                    kode: (o.kode || "").toUpperCase(),
+                    qty: o.qty || 1,
+                    productName: found?.nama || o.nama,
+                    productId: found?.id,
+                    productKode: found?.kode,
+                  };
+                });
+                setItems(newItems.length > 0 ? newItems : [{ kode: "", qty: 1 }]);
+                if (ocrItems[0]?.catatan) setCatatan(ocrItems[0].catatan);
+              }}
+            />
           </div>
-          <div>
-            <h1 className="text-lg font-bold tracking-tight">Barang Masuk</h1>
-            <p className="text-muted-foreground text-[11px]">Catat barang masuk ke gudang</p>
+          <div className="grid grid-cols-3 divide-x divide-border/50">
+            <div className="text-center py-1">
+              <p className="text-2xl font-bold text-success tabular-nums">{items.length}</p>
+              <p className="text-[10px] text-muted-foreground font-medium">Baris</p>
+            </div>
+            <div className="text-center py-1">
+              <p className="text-2xl font-bold text-primary tabular-nums">{validCount}</p>
+              <p className="text-[10px] text-muted-foreground font-medium">Valid</p>
+            </div>
+            <div className="text-center py-1">
+              <p className="text-2xl font-bold text-foreground tabular-nums">{formatNumber(totalQty)}</p>
+              <p className="text-[10px] text-muted-foreground font-medium">Total</p>
+            </div>
           </div>
-        </div>
-        <OcrUpload
-          mode="masuk"
-          onResult={(ocrItems) => {
-            const newItems: LineItem[] = ocrItems.map((o: any) => {
-              const found = products?.find((p) => p.kode.toUpperCase() === (o.kode || "").toUpperCase());
-              return {
-                kode: (o.kode || "").toUpperCase(),
-                qty: o.qty || 1,
-                productName: found?.nama || o.nama,
-                productId: found?.id,
-                productKode: found?.kode,
-              };
-            });
-            setItems(newItems.length > 0 ? newItems : [{ kode: "", qty: 1 }]);
-            if (ocrItems[0]?.catatan) setCatatan(ocrItems[0].catatan);
-          }}
-        />
-      </div>
-
-      {/* ── KPI Strip ── */}
-      <div className="flex items-center justify-around py-2">
-        <div className="text-center">
-          <p className="text-2xl font-bold text-success tabular-nums">{items.length}</p>
-          <p className="text-[10px] text-muted-foreground font-medium">Baris</p>
-        </div>
-        <div className="w-px h-8 bg-border/60" />
-        <div className="text-center">
-          <p className="text-2xl font-bold text-primary tabular-nums">{validCount}</p>
-          <p className="text-[10px] text-muted-foreground font-medium">Valid</p>
-        </div>
-        <div className="w-px h-8 bg-border/60" />
-        <div className="text-center">
-          <p className="text-2xl font-bold text-foreground tabular-nums">{formatNumber(totalQty)}</p>
-          <p className="text-[10px] text-muted-foreground font-medium">Total</p>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* ── Input Section ── */}
       <div className="space-y-3">
