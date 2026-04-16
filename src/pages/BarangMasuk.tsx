@@ -181,8 +181,8 @@ const BarangMasuk = () => {
       const matchSearch = !historySearch || 
         h.products?.kode?.toLowerCase().includes(historySearch.toLowerCase()) ||
         h.products?.nama?.toLowerCase().includes(historySearch.toLowerCase());
-      const matchDate = !historyDateFilter || 
-        h.created_at?.startsWith(format(historyDateFilter, "yyyy-MM-dd"));
+      const wibDate = h.created_at ? (() => { const u = new Date(h.created_at); return format(new Date(u.getTime() + 7*60*60*1000), "yyyy-MM-dd"); })() : "";
+      const matchDate = !historyDateFilter || wibDate === format(historyDateFilter, "yyyy-MM-dd");
       return matchSearch && matchDate;
     });
   }, [history, historySearch, historyDateFilter]);
