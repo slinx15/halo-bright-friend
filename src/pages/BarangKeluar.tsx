@@ -81,6 +81,18 @@ const BarangKeluar = () => {
     return k.includes("BLCK") || k.includes("BLK");
   }), [validItemsForHarga]);
 
+  // Helper: format price label for bulk dropdown (single value if uniform, range if varies)
+  const getBulkPriceLabel = useCallback((itemList: LineItem[], priceKey: "harga_normal" | "harga_grosir" | "harga_grosir2") => {
+    const prices = itemList
+      .map(i => products?.find(p => p.id === i.productId)?.prices?.[priceKey] ?? 0)
+      .filter(p => p > 0);
+    if (prices.length === 0) return "";
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    if (min === max) return ` (${formatRupiah(min)})`;
+    return ` (${formatRupiah(min)} - ${formatRupiah(max)})`;
+  }, [products]);
+
   const applyBulkHarga = useCallback((filter: (k: string) => boolean, type: string, customHarga?: number) => {
     setItems(prev => prev.map(item => {
       if (!item.productId) return item;
@@ -464,9 +476,9 @@ const BarangKeluar = () => {
                       }}>
                         <SelectTrigger className="h-11 text-sm mt-1"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="normal">Normal</SelectItem>
-                          <SelectItem value="grosir">Grosir</SelectItem>
-                          <SelectItem value="grosir2">Grosir 2</SelectItem>
+                          <SelectItem value="normal">Normal{getBulkPriceLabel(warnaItems, "harga_normal")}</SelectItem>
+                          <SelectItem value="grosir">Grosir{getBulkPriceLabel(warnaItems, "harga_grosir")}</SelectItem>
+                          <SelectItem value="grosir2">Grosir 2{getBulkPriceLabel(warnaItems, "harga_grosir2")}</SelectItem>
                           <SelectItem value="custom">✏️ Custom</SelectItem>
                         </SelectContent>
                       </Select>
@@ -492,8 +504,8 @@ const BarangKeluar = () => {
                       }}>
                         <SelectTrigger className="h-11 text-sm mt-1"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="normal">Normal</SelectItem>
-                          <SelectItem value="grosir">Grosir</SelectItem>
+                          <SelectItem value="normal">Normal{getBulkPriceLabel(whtItems, "harga_normal")}</SelectItem>
+                          <SelectItem value="grosir">Grosir{getBulkPriceLabel(whtItems, "harga_grosir")}</SelectItem>
                           <SelectItem value="custom">✏️ Custom</SelectItem>
                         </SelectContent>
                       </Select>
@@ -516,8 +528,8 @@ const BarangKeluar = () => {
                       }}>
                         <SelectTrigger className="h-11 text-sm mt-1"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="normal">Normal</SelectItem>
-                          <SelectItem value="grosir">Grosir</SelectItem>
+                          <SelectItem value="normal">Normal{getBulkPriceLabel(blckItems, "harga_normal")}</SelectItem>
+                          <SelectItem value="grosir">Grosir{getBulkPriceLabel(blckItems, "harga_grosir")}</SelectItem>
                           <SelectItem value="custom">✏️ Custom</SelectItem>
                         </SelectContent>
                       </Select>
