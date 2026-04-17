@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+// Table imports removed — riwayat sekarang grouped per tanggal (collapsible)
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 import { OcrUpload } from "@/components/OcrUpload";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { deductFromStacks } from "@/lib/tumpukanUtils";
-import { useIsMobile } from "@/hooks/use-mobile";
+// useIsMobile no longer needed — riwayat tampilan unified (grouped per tanggal)
 import { TransactionSkeleton } from "@/components/LoadingSkeletons";
 import { getAuthHeaders } from "@/lib/authHeaders";
 import { logActivity } from "@/lib/activityLogger";
@@ -48,7 +48,7 @@ const BarangKeluar = () => {
   const { data: products } = useProducts();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const isMobile = useIsMobile();
+  // isMobile no longer used after riwayat unification
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Multi-row input state
