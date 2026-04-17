@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+// Table imports removed — riwayat sekarang grouped per tanggal (collapsible)
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 import { OcrUpload } from "@/components/OcrUpload";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { deductFromStacks } from "@/lib/tumpukanUtils";
-import { useIsMobile } from "@/hooks/use-mobile";
+// useIsMobile no longer needed — riwayat tampilan unified (grouped per tanggal)
 import { TransactionSkeleton } from "@/components/LoadingSkeletons";
 import { getAuthHeaders } from "@/lib/authHeaders";
 import { logActivity } from "@/lib/activityLogger";
@@ -48,7 +48,7 @@ const BarangKeluar = () => {
   const { data: products } = useProducts();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const isMobile = useIsMobile();
+  // isMobile no longer used after riwayat unification
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Multi-row input state
@@ -61,6 +61,7 @@ const BarangKeluar = () => {
   // Search/filter state for history
   const [historySearch, setHistorySearch] = useState("");
   const [historyDateFilter, setHistoryDateFilter] = useState<Date | undefined>(undefined);
+  const [expandedDate, setExpandedDate] = useState<string | null>(null);
 
   // Set Harga Sekaligus state
   const [hargaDialogOpen, setHargaDialogOpen] = useState(false);
@@ -155,7 +156,7 @@ const BarangKeluar = () => {
     queryFn: async () => {
       const headers = await getAuthHeaders("return=representation");
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/stock_out?select=*,products(kode,nama)&order=created_at.desc,id.desc&limit=50`,
+        `${SUPABASE_URL}/rest/v1/stock_out?select=*,products(kode,nama)&order=created_at.desc,id.desc&limit=500`,
         { headers }
       );
       if (!res.ok) throw new Error(await res.text());
@@ -732,133 +733,102 @@ const BarangKeluar = () => {
               {filteredHistory.length !== (history?.length ?? 0) && (
                 <p className="text-xs text-muted-foreground">{filteredHistory.length} dari {history?.length} transaksi</p>
               )}
-              {isMobile ? (
-                <div className="space-y-2.5">
-                  {filteredHistory.length === 0 ? (
-                    <div className="py-10 text-center">
-                      <PackageMinus className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
-                      <p className="text-sm text-muted-foreground font-medium">{history?.length ? "Tidak ada hasil" : "Belum ada riwayat"}</p>
-                    </div>
-                  ) : filteredHistory.map((h: any) => (
-                    <div key={h.id} className="rounded-xl border border-border/60 p-3.5 space-y-2 transition-all duration-150 active:scale-[0.98] bg-card">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="font-mono font-bold text-sm">{h.products?.kode}</span>
-                          <span className="text-xs text-muted-foreground truncate">{h.products?.nama}</span>
-                        </div>
-                        <Badge className="rounded-full text-xs font-extrabold px-2.5 bg-destructive/15 text-destructive border-0">
-                          -{formatNumber(h.qty_kirim)}
-                        </Badge>
-                      </div>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Pesan</span>
-                          <span className="font-semibold tabular-nums">{formatNumber(h.qty_pesan)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Total</span>
-                          <span className="font-bold text-primary tabular-nums">{formatRupiah(h.total_harga)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Harga</span>
-                          <span className="capitalize font-medium">{h.harga_type}</span>
-                        </div>
-                        {h.toko && (
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <Store className="h-3 w-3" /> {h.toko}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center text-[11px] text-muted-foreground gap-1">
-                          <Clock className="h-3 w-3" /> {formatDate(h.created_at)}
-                        </div>
-                        {role === "admin" && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" disabled={deletingId === h.id}>
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Hapus Transaksi?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  {h.products?.kode} — {formatNumber(h.qty_kirim)} pcs ({formatRupiah(h.total_harga)}). Stok akan dikembalikan.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Batal</AlertDialogCancel>
-                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDeleteTransaction(h)}>Hapus</AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/30">
-                        <TableHead className="font-bold">Waktu</TableHead>
-                        <TableHead className="font-bold">Kode</TableHead>
-                        <TableHead className="font-bold">Nama</TableHead>
-                        <TableHead className="font-bold">Toko</TableHead>
-                        <TableHead className="text-right font-bold">Pesan</TableHead>
-                        <TableHead className="text-right font-bold">Kirim</TableHead>
-                        <TableHead className="font-bold">Harga</TableHead>
-                        <TableHead className="text-right font-bold">Total</TableHead>
-                        {role === "admin" && <TableHead className="w-10"></TableHead>}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredHistory.map((h: any, idx: number) => (
-                        <TableRow key={h.id} className={idx % 2 === 0 ? "" : "bg-muted/15"}>
-                          <TableCell className="text-xs text-muted-foreground">{formatDate(h.created_at)}</TableCell>
-                          <TableCell className="font-mono font-bold text-sm">{h.products?.kode}</TableCell>
-                          <TableCell className="text-sm">{h.products?.nama}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{h.toko || "-"}</TableCell>
-                          <TableCell className="text-right tabular-nums">{formatNumber(h.qty_pesan)}</TableCell>
-                          <TableCell className="text-right">
-                            <Badge className="rounded-full bg-destructive/15 text-destructive border-0 font-bold">-{formatNumber(h.qty_kirim)}</Badge>
-                          </TableCell>
-                          <TableCell className="capitalize text-xs">{h.harga_type}</TableCell>
-                          <TableCell className="text-right font-bold tabular-nums">{formatRupiah(h.total_harga)}</TableCell>
-                          {role === "admin" && (
-                            <TableCell>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" disabled={deletingId === h.id}>
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Hapus Transaksi?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      {h.products?.kode} — {formatNumber(h.qty_kirim)} pcs ({formatRupiah(h.total_harga)}). Stok akan dikembalikan.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Batal</AlertDialogCancel>
-                                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDeleteTransaction(h)}>Hapus</AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </TableCell>
+
+              {/* ── Grouped by Date ── */}
+              {filteredHistory.length > 0 && (() => {
+                const grouped: Record<string, { qty: number; revenue: number; count: number; items: any[] }> = {};
+                filteredHistory.forEach((h: any) => {
+                  const utc = new Date(h.created_at);
+                  const wib = new Date(utc.getTime() + 7 * 60 * 60 * 1000);
+                  const dateKey = h.created_at ? format(wib, "yyyy-MM-dd") : "unknown";
+                  if (!grouped[dateKey]) grouped[dateKey] = { qty: 0, revenue: 0, count: 0, items: [] };
+                  grouped[dateKey].qty += (h.qty_kirim || 0);
+                  grouped[dateKey].revenue += (h.total_harga || 0);
+                  grouped[dateKey].count += 1;
+                  grouped[dateKey].items.push(h);
+                });
+                const sortedDates = Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0]));
+                return (
+                  <div className="space-y-2">
+                    {sortedDates.map(([date, { qty, revenue, count, items: dateItems }]) => {
+                      const isOpen = expandedDate === date;
+                      return (
+                        <div key={date} className="rounded-xl border border-border/60 bg-card overflow-hidden transition-all duration-200">
+                          <button
+                            onClick={() => setExpandedDate(isOpen ? null : date)}
+                            className="flex items-center justify-between w-full p-3.5 text-left min-h-[44px] hover:bg-muted/30 transition-colors"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center">
+                                <PackageMinus className="h-4 w-4 text-destructive" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-bold text-foreground">{format(new Date(date), "dd MMM yyyy", { locale: localeId })}</p>
+                                <p className="text-[10px] text-muted-foreground">{count} transaksi · {formatRupiah(revenue)}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge className="rounded-full text-xs font-extrabold px-2.5 bg-destructive/15 text-destructive border-0">
+                                -{formatNumber(qty)}
+                              </Badge>
+                              <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", isOpen && "rotate-180")} />
+                            </div>
+                          </button>
+                          {isOpen && (
+                            <div className="border-t border-border/40 px-3.5 pb-3 pt-2 space-y-2 animate-fade-in">
+                              {dateItems.map((h: any) => (
+                                <div key={h.id} className="flex items-center justify-between gap-2 py-1.5">
+                                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                                    <span className="font-mono font-bold text-xs shrink-0">{h.products?.kode}</span>
+                                    <span className="text-[11px] text-muted-foreground truncate">{h.products?.nama}</span>
+                                    {h.toko && (
+                                      <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 shrink-0">
+                                        <Store className="h-2.5 w-2.5" />{h.toko}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <span className="text-[10px] text-muted-foreground tabular-nums">{formatRupiah(h.total_harga)}</span>
+                                    <Badge variant="secondary" className="rounded-full text-[11px] font-bold px-2">
+                                      -{formatNumber(h.qty_kirim)}
+                                    </Badge>
+                                    {role === "admin" && (
+                                      <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                          <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" disabled={deletingId === h.id}>
+                                            <Trash2 className="h-3 w-3" />
+                                          </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>Hapus Transaksi?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              {h.products?.kode} — {formatNumber(h.qty_kirim)} pcs ({formatRupiah(h.total_harga)}). Stok akan dikembalikan.
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                                            <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDeleteTransaction(h)}>Hapus</AlertDialogAction>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           )}
-                        </TableRow>
-                      ))}
-                      {filteredHistory.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={role === "admin" ? 9 : 8} className="text-center text-muted-foreground py-10">{history?.length ? "Tidak ada hasil" : "Belum ada riwayat"}</TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+
+              {filteredHistory.length === 0 && (
+                <div className="py-10 text-center">
+                  <PackageMinus className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground font-medium">{history?.length ? "Tidak ada hasil" : "Belum ada riwayat"}</p>
                 </div>
               )}
             </CardContent>
