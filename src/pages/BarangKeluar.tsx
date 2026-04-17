@@ -476,9 +476,9 @@ const BarangKeluar = () => {
                       }}>
                         <SelectTrigger className="h-11 text-sm mt-1"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="normal">Normal</SelectItem>
-                          <SelectItem value="grosir">Grosir</SelectItem>
-                          <SelectItem value="grosir2">Grosir 2</SelectItem>
+                          <SelectItem value="normal">Normal{getBulkPriceLabel(warnaItems, "harga_normal")}</SelectItem>
+                          <SelectItem value="grosir">Grosir{getBulkPriceLabel(warnaItems, "harga_grosir")}</SelectItem>
+                          <SelectItem value="grosir2">Grosir 2{getBulkPriceLabel(warnaItems, "harga_grosir2")}</SelectItem>
                           <SelectItem value="custom">✏️ Custom</SelectItem>
                         </SelectContent>
                       </Select>
@@ -504,8 +504,8 @@ const BarangKeluar = () => {
                       }}>
                         <SelectTrigger className="h-11 text-sm mt-1"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="normal">Normal</SelectItem>
-                          <SelectItem value="grosir">Grosir</SelectItem>
+                          <SelectItem value="normal">Normal{getBulkPriceLabel(whtItems, "harga_normal")}</SelectItem>
+                          <SelectItem value="grosir">Grosir{getBulkPriceLabel(whtItems, "harga_grosir")}</SelectItem>
                           <SelectItem value="custom">✏️ Custom</SelectItem>
                         </SelectContent>
                       </Select>
@@ -528,8 +528,8 @@ const BarangKeluar = () => {
                       }}>
                         <SelectTrigger className="h-11 text-sm mt-1"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="normal">Normal</SelectItem>
-                          <SelectItem value="grosir">Grosir</SelectItem>
+                          <SelectItem value="normal">Normal{getBulkPriceLabel(blckItems, "harga_normal")}</SelectItem>
+                          <SelectItem value="grosir">Grosir{getBulkPriceLabel(blckItems, "harga_grosir")}</SelectItem>
                           <SelectItem value="custom">✏️ Custom</SelectItem>
                         </SelectContent>
                       </Select>
