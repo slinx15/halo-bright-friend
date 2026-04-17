@@ -42,6 +42,7 @@ const BarangMasuk = () => {
   const { toast } = useToast();
   const [items, setItems] = useState<LineItem[]>([{ kode: "", qty: 1 }]);
   const [catatan, setCatatan] = useState("");
+  const [tanggal, setTanggal] = useState<Date | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
   const isMobile = useIsMobile();
   const [historySearch, setHistorySearch] = useState("");
@@ -126,6 +127,7 @@ const BarangMasuk = () => {
           tumpukan: newStacks.join(","),
           catatan: catatan || null,
           user_id: user!.id,
+          ...(tanggal ? { created_at: new Date(tanggal.getFullYear(), tanggal.getMonth(), tanggal.getDate(), 12, 0, 0).toISOString() } : {}),
         }).then(r => { if (r.error) throw r.error; return r; })));
 
         const { data: existing } = await retryOp(() => Promise.resolve(supabase
@@ -168,6 +170,7 @@ const BarangMasuk = () => {
     }
     setItems([{ kode: "", qty: 1 }]);
     setCatatan("");
+    setTanggal(undefined);
     queryClient.invalidateQueries({ queryKey: ["stock_in_history"] });
     queryClient.invalidateQueries({ queryKey: ["products"] });
     setSubmitting(false);
@@ -339,9 +342,26 @@ const BarangMasuk = () => {
             <Plus className="h-4 w-4 mr-1" /> Tambah Baris
           </Button>
 
-          <div>
-            <Label className="text-xs font-semibold text-muted-foreground">Catatan (opsional)</Label>
-            <Textarea value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder="Catatan..." rows={2} className="rounded-lg mt-1" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs font-semibold text-muted-foreground">Tanggal (opsional)</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-lg mt-1", !tanggal && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {tanggal ? format(tanggal, "dd MMM yyyy", { locale: localeId }) : "Hari ini"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={tanggal} onSelect={setTanggal} initialFocus className="p-3 pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+              {tanggal && <button onClick={() => setTanggal(undefined)} className="text-[10px] text-primary mt-0.5 hover:underline">Reset ke hari ini</button>}
+            </div>
+            <div>
+              <Label className="text-xs font-semibold text-muted-foreground">Catatan (opsional)</Label>
+              <Textarea value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder="Catatan..." rows={2} className="rounded-lg mt-1" />
+            </div>
           </div>
 
           <Button
