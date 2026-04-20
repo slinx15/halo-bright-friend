@@ -97,17 +97,17 @@ const Opname = () => {
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*]:[animation-fill-mode:both]">
       {/* ── Premium Header ── */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3.5">
-          <div className="p-3 rounded-2xl bg-warning/10 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3.5 min-w-0">
+          <div className="p-3 rounded-2xl bg-warning/10 shadow-sm shrink-0">
             <ClipboardCheck className="h-6 w-6 text-warning" />
           </div>
-          <div className="space-y-0.5">
-            <h1 className="text-xl font-extrabold tracking-tight leading-tight">Stock Opname</h1>
+          <div className="space-y-0.5 min-w-0">
+            <h1 className="text-xl font-extrabold tracking-tight leading-tight whitespace-nowrap">Stock Opname</h1>
             <p className="text-muted-foreground text-xs font-medium">Rekonsiliasi stok sistem vs fisik</p>
           </div>
         </div>
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center justify-end sm:justify-start shrink-0">
           <VoiceOpnameInput onResult={(items) => bulkRef.current?.handleVoiceResult(items)} />
           <OcrUpload mode="opname" onResult={(items) => bulkRef.current?.handleOcrResult(items)} />
         </div>
