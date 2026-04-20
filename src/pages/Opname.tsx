@@ -18,6 +18,7 @@ import { ClipboardCheck, Clock, ChevronDown, CheckCircle2, AlertTriangle, ArrowU
 import { formatDate, formatNumber } from "@/lib/formatters";
 import { BulkOpnameInput, type BulkOpnameInputHandle } from "@/components/opname/BulkOpnameInput";
 import { OcrUpload } from "@/components/OcrUpload";
+import { VoiceOpnameInput } from "@/components/opname/VoiceOpnameInput";
 import type { ParsedOpnameItem } from "@/lib/opnameParser";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { OpnameSkeleton } from "@/components/LoadingSkeletons";
@@ -106,7 +107,10 @@ const Opname = () => {
             <p className="text-muted-foreground text-xs font-medium">Rekonsiliasi stok sistem vs fisik</p>
           </div>
         </div>
-        <OcrUpload mode="opname" onResult={(items) => bulkRef.current?.handleOcrResult(items)} />
+        <div className="flex gap-2 items-center">
+          <VoiceOpnameInput onResult={(items) => bulkRef.current?.handleVoiceResult(items)} />
+          <OcrUpload mode="opname" onResult={(items) => bulkRef.current?.handleOcrResult(items)} />
+        </div>
       </div>
 
       {/* ── KPI Strip ── */}

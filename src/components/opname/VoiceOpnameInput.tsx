@@ -325,7 +325,7 @@ export function VoiceOpnameInput({ onResult }: VoiceOpnameInputProps) {
                     <span className="text-muted-foreground truncate">
                       ✓ {item.productName}
                       {item.matchedKode && item.matchedKode !== item.kode && (
-                        <span className="ml-1 text-amber-600">(→ {item.matchedKode})</span>
+                        <span className="ml-1 text-warning">(→ {item.matchedKode})</span>
                       )}
                     </span>
                   ) : (
