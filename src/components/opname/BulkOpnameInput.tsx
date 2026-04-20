@@ -54,6 +54,7 @@ getNextId.counter = 0;
 
 export interface BulkOpnameInputHandle {
   handleOcrResult: (items: any[]) => void;
+  handleVoiceResult: (items: { kode: string; qty: number }[]) => void;
 }
 
 export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInputProps>(function BulkOpnameInput({ products, onSubmit, submitting }, ref) {
@@ -202,7 +203,24 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
     });
   }, [validateKode]);
 
-  useImperativeHandle(ref, () => ({ handleOcrResult }), [handleOcrResult]);
+  const handleVoiceResult = useCallback((voiceItems: { kode: string; qty: number }[]) => {
+    const newRows: InputRow[] = voiceItems
+      .map((item) => {
+        const kode = String(item.kode || "").toUpperCase();
+        const qty = String(item.qty ?? 0);
+        const status = validateKode(kode);
+        return { id: getNextId(), kode, qty, status };
+      })
+      .filter((r) => r.kode);
+
+    setRows((prev) => {
+      const existing = prev.filter((r) => r.kode.trim() || r.qty.trim());
+      const newId = getNextId();
+      return [...existing, ...newRows, { id: newId, kode: "", qty: "", status: "idle" as const }];
+    });
+  }, [validateKode]);
+
+  useImperativeHandle(ref, () => ({ handleOcrResult, handleVoiceResult }), [handleOcrResult, handleVoiceResult]);
 
   const buildParsed = (): ParsedOpnameItem[] => {
     const grouped = new Map<string, { stacks: number[]; productId: string }>();
