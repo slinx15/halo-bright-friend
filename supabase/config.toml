@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.public-stock]
 verify_jwt = false
+
+[functions.voice-opname]
+verify_jwt = false
