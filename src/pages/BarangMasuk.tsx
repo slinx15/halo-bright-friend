@@ -441,44 +441,41 @@ const BarangMasuk = () => {
                   grouped[dateKey].items.push(h);
                 });
                 const sortedDates = Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0]));
+                const visibleDates = sortedDates.slice(0, 5);
+                const hiddenCount = sortedDates.length - visibleDates.length;
                 return (
-                  <div className="space-y-2">
-                    {sortedDates.map(([date, { qty, cost, count, items: dateItems }]) => {
+                  <div className="space-y-3">
+                    {visibleDates.map(([date, { qty, cost, count, items: dateItems }]) => {
                       const isOpen = expandedDate === date;
                       return (
-                        <div key={date} className="rounded-xl border border-border/60 bg-card overflow-hidden transition-all duration-200">
+                        <div key={date} className="rounded-2xl border-2 border-border/60 bg-card overflow-hidden transition-all duration-200 shadow-sm hover:shadow-md">
                           <button
                             onClick={() => setExpandedDate(isOpen ? null : date)}
-                            className="flex items-center justify-between w-full p-3.5 text-left min-h-[44px] hover:bg-muted/30 transition-colors"
+                            className="flex items-center justify-between w-full p-4 text-left min-h-[64px] hover:bg-muted/30 transition-colors gap-3"
                           >
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center">
-                                <Package className="h-4 w-4 text-success" />
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <div className="w-11 h-11 rounded-xl bg-success/10 flex items-center justify-center shrink-0">
+                                <Package className="h-5 w-5 text-success" />
                               </div>
-                              <div>
+                              <div className="min-w-0 flex-1">
                                 <p className="text-sm font-bold text-foreground">{format(new Date(date), "dd MMM yyyy", { locale: localeId })}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {count} transaksi
-                                  {cost > 0 && <> · <span className="font-semibold text-foreground/80 tabular-nums">{formatRupiah(cost)}</span></>}
-                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5">{count} transaksi · +{formatNumber(qty)} pcs</p>
+                                {cost > 0 && (
+                                  <p className="text-base font-extrabold text-success tabular-nums mt-1">{formatRupiah(cost)}</p>
+                                )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Badge className="rounded-full text-xs font-extrabold px-2.5 bg-success/15 text-success border-0">
-                                +{formatNumber(qty)}
-                              </Badge>
-                              <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", isOpen && "rotate-180")} />
-                            </div>
+                            <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform duration-200 shrink-0", isOpen && "rotate-180")} />
                           </button>
                           {isOpen && (
-                            <div className="border-t border-border/40 px-3.5 pb-3 pt-2 space-y-2 animate-fade-in">
+                            <div className="border-t border-border/40 px-4 pb-3 pt-2.5 space-y-2 animate-fade-in">
                               {dateItems.map((h: any) => (
-                                <div key={h.id} className="flex items-center justify-between py-1.5">
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <span className="font-mono font-bold text-xs">{h.products?.kode}</span>
-                                    <span className="text-[11px] text-muted-foreground truncate">{h.products?.nama}</span>
+                                <div key={h.id} className="flex items-center justify-between gap-2 py-2 border-b border-border/20 last:border-0">
+                                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                                    <span className="font-mono font-bold text-sm">{h.products?.kode}</span>
+                                    <span className="text-xs text-muted-foreground truncate">{h.products?.nama}</span>
                                   </div>
-                                  <Badge variant="secondary" className="rounded-full text-[11px] font-bold px-2 shrink-0">
+                                  <Badge variant="secondary" className="rounded-full text-xs font-bold px-2 shrink-0">
                                     +{formatNumber(h.qty)}
                                   </Badge>
                                 </div>
@@ -488,6 +485,11 @@ const BarangMasuk = () => {
                         </div>
                       );
                     })}
+                    {hiddenCount > 0 && (
+                      <p className="text-xs text-center text-muted-foreground pt-1">
+                        Menampilkan 5 hari terbaru · {hiddenCount} hari lebih lama disembunyikan
+                      </p>
+                    )}
                   </div>
                 );
               })()}
