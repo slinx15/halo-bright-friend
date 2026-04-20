@@ -123,12 +123,10 @@ export function VoiceOpnameInput({ onResult }: VoiceOpnameInputProps) {
     setIsRecording(false);
   };
 
-  const processAudio = async (blob: Blob) => {
-    setIsProcessing(true);
+  const callVoiceApi = async (base64: string, mimeType: string, timeoutMs: number) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const base64 = await blobToBase64(blob);
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000);
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/voice-opname`,
         {
@@ -139,18 +137,53 @@ export function VoiceOpnameInput({ onResult }: VoiceOpnameInputProps) {
           },
           body: JSON.stringify({
             audio_base64: base64,
-            mime_type: blob.type,
+            mime_type: mimeType,
             master_codes: products?.map((p) => p.kode) || [],
           }),
           signal: controller.signal,
         }
       );
-      clearTimeout(timeoutId);
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || `HTTP ${res.status}`);
       }
-      const data = await res.json();
+      return await res.json();
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
+
+  const processAudio = async (blob: Blob) => {
+    setIsProcessing(true);
+    try {
+      const base64 = await blobToBase64(blob);
+      let data: any;
+      let lastErr: any = null;
+
+      // Try up to 2x (1 retry) on timeout / network / 5xx errors
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          data = await callVoiceApi(base64, blob.type, 60000);
+          lastErr = null;
+          break;
+        } catch (err: any) {
+          lastErr = err;
+          const isTimeout = err?.name === "AbortError";
+          const isNetwork = err?.message?.includes("Failed to fetch") || err?.message?.includes("NetworkError");
+          const isServerErr = /HTTP 5\d\d/.test(err?.message || "");
+          const retriable = isTimeout || isNetwork || isServerErr;
+          console.warn(`Voice attempt ${attempt} failed:`, err?.message, "retriable:", retriable);
+          if (attempt === 1 && retriable) {
+            toast({ title: "Mencoba ulang...", description: "Koneksi/AI lambat, coba sekali lagi" });
+            await new Promise((r) => setTimeout(r, 800));
+            continue;
+          }
+          throw err;
+        }
+      }
+
+      if (lastErr) throw lastErr;
+
       const rawItems: { kode: string; qty: number }[] = data?.items || [];
       if (rawItems.length === 0) {
         toast({
