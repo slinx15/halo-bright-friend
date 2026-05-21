@@ -76,13 +76,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Deduplicate by kode
+    // Deduplicate by kode + kategori. The same kode can exist in multiple sizes.
     const seen = new Set<string>();
     const deduped: BulkRow[] = [];
     for (const row of rows) {
       const code = row.kode.toUpperCase();
-      if (code && !seen.has(code)) {
-        seen.add(code);
+      const category = (row.kategori || "").trim();
+      const key = `${code}::${category.toUpperCase()}`;
+      if (code && !seen.has(key)) {
+        seen.add(key);
         deduped.push(row);
       }
     }

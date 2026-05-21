@@ -17,6 +17,7 @@ const ACTION_CONFIG: Record<string, { label: string; icon: React.ElementType; co
   stock_in: { label: "Barang Masuk", icon: PackagePlus, color: "bg-success/10 text-success border-success/20" },
   stock_out: { label: "Barang Keluar", icon: PackageMinus, color: "bg-primary/10 text-primary border-primary/20" },
   stock_out_delete: { label: "Hapus Transaksi", icon: PackageMinus, color: "bg-destructive/10 text-destructive border-destructive/20" },
+  stock_reset: { label: "Reset Stok", icon: Settings, color: "bg-destructive/10 text-destructive border-destructive/20" },
   opname: { label: "Opname", icon: ClipboardCheck, color: "bg-warning/10 text-warning border-warning/20" },
   product_edit: { label: "Edit Produk", icon: Settings, color: "bg-accent/10 text-accent-foreground border-accent/20" },
   price_edit: { label: "Edit Harga", icon: Settings, color: "bg-accent/10 text-accent-foreground border-accent/20" },
@@ -123,6 +124,7 @@ const LogAktivitas = () => {
             <SelectItem value="all">Semua</SelectItem>
             <SelectItem value="stock_in">Barang Masuk</SelectItem>
             <SelectItem value="stock_out">Barang Keluar</SelectItem>
+            <SelectItem value="stock_reset">Reset Stok</SelectItem>
             <SelectItem value="opname">Opname</SelectItem>
             <SelectItem value="product_edit">Edit Produk</SelectItem>
           </SelectContent>

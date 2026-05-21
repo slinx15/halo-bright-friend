@@ -8,12 +8,16 @@ import { Send, FileText, CheckCircle2, AlertTriangle, Plus, Trash2, X } from "lu
 import { formatNumber } from "@/lib/formatters";
 import type { ProductWithDetails } from "@/hooks/useProducts";
 import type { ParsedOpnameItem } from "@/lib/opnameParser";
+import { findProductMatch } from "@/lib/productMatcher";
 
 interface InputRow {
   id: number;
   kode: string;
   qty: string;
   status: "idle" | "valid" | "invalid";
+  productId?: string;
+  productKode?: string;
+  productKategori?: string | null;
 }
 
 interface BulkOpnameInputProps {
@@ -78,24 +82,9 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
     saveDraft(rows);
   }, [rows]);
 
-  // Auto-detect: search ALL products by kode (exact match, base code, or nama)
-  const productKodeSet = useMemo(() => {
-    const set = new Map<string, ProductWithDetails>();
-    for (const p of products) {
-      // Full kode
-      set.set(p.kode.toUpperCase(), p);
-      // Base code (strip category suffix) — only set if not already taken
-      const baseKode = p.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|18 GRAM)$/i, "");
-      if (!set.has(baseKode)) {
-        set.set(baseKode, p);
-      }
-    }
-    return set;
-  }, [products]);
-
   const findProduct = useCallback(
-    (kode: string) => productKodeSet.get(kode.toUpperCase().trim()),
-    [productKodeSet]
+    (kode: string, productId?: string, kategori?: string | null) => findProductMatch(products, { kode, productId, kategori }),
+    [products]
   );
 
   const validateKode = useCallback(
@@ -110,7 +99,7 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
   useEffect(() => {
     setRows(prev => prev.map(r => ({
       ...r,
-      status: r.kode.trim() ? (findProduct(r.kode) ? "valid" : "invalid") : "idle",
+      status: r.kode.trim() ? (findProduct(r.kode, r.productId, r.productKategori) ? "valid" : "invalid") : "idle",
     })));
   }, [findProduct]);
 
@@ -120,6 +109,9 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
         if (r.id !== id) return r;
         const updated = { ...r, [field]: value };
         if (field === "kode") {
+          updated.productId = undefined;
+          updated.productKode = undefined;
+          updated.productKategori = undefined;
           updated.status = validateKode(value);
         }
         return updated;
@@ -189,10 +181,19 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
   const handleOcrResult = useCallback((ocrItems: any[]) => {
     const newRows: InputRow[] = ocrItems
       .map((item) => {
-        const kode = String(item.kode || "").toUpperCase();
+        const product = findProductMatch(products, { productId: item.productId, kode: item.kode, kategori: item.kategori });
+        const kode = String(product?.kode || item.kode || "").toUpperCase();
         const qty = String(item.qty || item.stok_fisik || 0);
-        const status = validateKode(kode);
-        return { id: getNextId(), kode, qty, status };
+        const status: InputRow["status"] = product ? "valid" : validateKode(kode);
+        return {
+          id: getNextId(),
+          kode,
+          qty,
+          status,
+          productId: product?.id,
+          productKode: product?.kode,
+          productKategori: product?.kategori,
+        };
       })
       .filter((r) => r.kode);
 
@@ -201,15 +202,24 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
       const newId = getNextId();
       return [...existing, ...newRows, { id: newId, kode: "", qty: "", status: "idle" as const }];
     });
-  }, [validateKode]);
+  }, [products, validateKode]);
 
   const handleVoiceResult = useCallback((voiceItems: { kode: string; qty: number }[]) => {
     const newRows: InputRow[] = voiceItems
       .map((item) => {
-        const kode = String(item.kode || "").toUpperCase();
+        const product = findProductMatch(products, { kode: item.kode });
+        const kode = String(product?.kode || item.kode || "").toUpperCase();
         const qty = String(item.qty ?? 0);
-        const status = validateKode(kode);
-        return { id: getNextId(), kode, qty, status };
+        const status: InputRow["status"] = product ? "valid" : validateKode(kode);
+        return {
+          id: getNextId(),
+          kode,
+          qty,
+          status,
+          productId: product?.id,
+          productKode: product?.kode,
+          productKategori: product?.kategori,
+        };
       })
       .filter((r) => r.kode);
 
@@ -218,26 +228,27 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
       const newId = getNextId();
       return [...existing, ...newRows, { id: newId, kode: "", qty: "", status: "idle" as const }];
     });
-  }, [validateKode]);
+  }, [products, validateKode]);
 
   useImperativeHandle(ref, () => ({ handleOcrResult, handleVoiceResult }), [handleOcrResult, handleVoiceResult]);
 
   const buildParsed = (): ParsedOpnameItem[] => {
-    const grouped = new Map<string, { stacks: number[]; productId: string }>();
+    const grouped = new Map<string, { kode: string; stacks: number[]; productId: string; kategori: string | null }>();
     for (const row of rows) {
       if (row.status !== "valid" || !row.qty.trim()) continue;
-      const product = findProduct(row.kode);
+      const product = findProduct(row.kode, row.productId, row.productKategori);
       if (!product) continue;
-      const fullKode = product.kode.toUpperCase();
       const qty = parseInt(row.qty, 10);
       if (qty < 0) continue;
-      if (!grouped.has(fullKode)) grouped.set(fullKode, { stacks: [], productId: product.id });
-      grouped.get(fullKode)!.stacks.push(qty);
+      if (!grouped.has(product.id)) {
+        grouped.set(product.id, { kode: product.kode.toUpperCase(), stacks: [], productId: product.id, kategori: product.kategori });
+      }
+      grouped.get(product.id)!.stacks.push(qty);
     }
     const result: ParsedOpnameItem[] = [];
-    for (const [kode, { stacks }] of grouped) {
+    for (const [, { kode, stacks, productId, kategori }] of grouped) {
       const sorted = [...stacks].sort((a, b) => a - b);
-      result.push({ kode, stacks: sorted, total: sorted.reduce((s, v) => s + v, 0) });
+      result.push({ kode, productId, kategori, stacks: sorted, total: sorted.reduce((s, v) => s + v, 0) });
     }
     return result;
   };
@@ -256,16 +267,20 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
     localStorage.removeItem(DRAFT_KEY);
   };
 
-  const findProductByFullKode = useCallback(
-    (kode: string) => {
-      return (products || []).find(p => p.kode.toUpperCase() === kode.toUpperCase());
+  const findProductByParsedItem = useCallback(
+    (item: ParsedOpnameItem) => {
+      if (item.productId) {
+        const byId = (products || []).find(p => p.id === item.productId);
+        if (byId) return byId;
+      }
+      return findProductMatch(products, { kode: item.kode, kategori: item.kategori });
     },
     [products]
   );
 
   const validRows = rows.filter((r) => r.status === "valid" && r.qty.trim() && parseInt(r.qty) >= 0);
-  const validItems = parsed.filter((item) => findProductByFullKode(item.kode));
-  const invalidItems = parsed.filter((item) => !findProductByFullKode(item.kode));
+  const validItems = parsed.filter((item) => findProductByParsedItem(item));
+  const invalidItems = parsed.filter((item) => !findProductByParsedItem(item));
 
   return (
     <Card className="rounded-2xl shadow-md border-0 overflow-hidden">
@@ -281,7 +296,7 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
             {/* Rows */}
             <div className="max-h-[60vh] overflow-y-auto space-y-2 -mx-1 px-1">
               {rows.map((row) => {
-                const matched = row.status === "valid" ? findProduct(row.kode) : null;
+                const matched = row.status === "valid" ? findProduct(row.kode, row.productId, row.productKategori) : null;
                 const kategoriLabel = matched?.kategori && matched.kategori !== "2 Ons" ? matched.kategori : null;
                 const qtyLabel = matched?.kategori === "18 Gram" ? "Pack" : "Qty";
                 return (
@@ -389,14 +404,14 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
             {validItems.length > 0 && (
               <div className="space-y-2">
                 {validItems.map((item) => {
-                  const product = findProductByFullKode(item.kode)!;
+                  const product = findProductByParsedItem(item)!;
                   const stokSistem = product.stock?.jumlah ?? 0;
                   const selisih = item.total - stokSistem;
                   const unitLabel = product.kategori === "18 Gram" ? "pack" : "pcs";
                   const kategoriLabel = product.kategori && product.kategori !== "2 Ons" ? product.kategori : null;
                   return (
                     <div
-                      key={item.kode}
+                      key={item.productId || item.kode}
                       className={`rounded-xl border p-3 space-y-1.5 ${
                         selisih !== 0
                           ? "border-l-[3px] border-l-destructive"
@@ -434,7 +449,7 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
               </span>
               <Badge variant="secondary" className="bg-success/10 text-success text-[10px]">
                 <CheckCircle2 className="h-3 w-3 mr-1" />
-                {validItems.filter((i) => i.total === (findProductByFullKode(i.kode)?.stock?.jumlah ?? 0)).length} sesuai
+                {validItems.filter((i) => i.total === (findProductByParsedItem(i)?.stock?.jumlah ?? 0)).length} sesuai
               </Badge>
             </div>
 

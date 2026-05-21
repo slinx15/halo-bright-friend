@@ -1,28 +1,31 @@
 project_id = "bewacnnfyhiiwxhhbeem"
 
 [functions.ocr-nota]
-verify_jwt = false
+verify_jwt = true
 
 [functions.bulk-import]
-verify_jwt = false
+verify_jwt = true
 
 [functions.import-sales-history]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ai-chat]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ai-insights]
-verify_jwt = false
+verify_jwt = true
+
+[functions.budget-chat]
+verify_jwt = true
 
 [functions.manage-users]
-verify_jwt = false
+verify_jwt = true
 
 [functions.review-restock]
-verify_jwt = false
+verify_jwt = true
 
 [functions.public-stock]
-verify_jwt = false
+verify_jwt = true
 
 [functions.voice-opname]
-verify_jwt = false
+verify_jwt = true

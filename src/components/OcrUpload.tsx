@@ -2,14 +2,14 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Camera, Loader2, Check, X, AlertTriangle, Pencil, Trash2, Plus } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/useProducts";
 import { useProductAliases } from "@/hooks/useProductAliases";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getAuthHeaders } from "@/lib/authHeaders";
+import { findProductMatch, isAmbiguousProductCode } from "@/lib/productMatcher";
 
 interface OcrUploadProps {
   mode: "masuk" | "keluar" | "opname";
@@ -59,15 +59,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
       if (found) return found;
     }
 
-    // Step 1: Exact kode match, filtered by kategori if available
-    const filterByKategori = (list: typeof products) => {
-      if (!kategori || !list) return list;
-      const matched = list.filter((p) => p.kategori === kategori);
-      return matched.length > 0 ? matched : list;
-    };
-    const pool = filterByKategori(allProducts) || [];
-
-    let found = pool.find((p) => p.kode.toUpperCase() === kode);
+    let found = findProductMatch(allProducts, { kode, kategori });
     if (found) return found;
 
     // Step 2: Strip leading zeros
@@ -79,7 +71,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
         found = allProducts.find((p) => p.kode.toUpperCase() === fullStripped);
         if (found) return found;
       }
-      found = pool.find((p) => p.kode.toUpperCase() === stripped);
+      found = findProductMatch(allProducts, { kode: stripped, kategori });
       if (found) return found;
     }
 
@@ -89,7 +81,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
       found = allProducts.find((p) => p.kode.toUpperCase().replace(/^0+/, "") === fullStripped);
       if (found) return found;
     }
-    found = pool.find((p) => p.kode.toUpperCase().replace(/^0+/, "") === stripped);
+    found = findProductMatch(allProducts, { kode: stripped, kategori });
     if (found) return found;
 
     // Step 4: Strip suffix like "G-29"
@@ -100,7 +92,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
         found = allProducts.find((p) => p.kode.toUpperCase() === fullBase);
         if (found) return found;
       }
-      found = pool.find((p) => p.kode.toUpperCase() === baseKode || p.kode.toUpperCase().replace(/^0+/, "") === baseKode);
+      found = findProductMatch(allProducts, { kode: baseKode, kategori });
       if (found) return found;
     }
 
@@ -139,13 +131,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
 
   // Check if a kode is ambiguous (exists in multiple categories)
   const isAmbiguousKode = (rawKode: string) => {
-    const kode = String(rawKode).toUpperCase().trim();
-    const matches = (products || []).filter((p) => {
-      const baseKode = p.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|18 GRAM)$/, "");
-      return baseKode === kode;
-    });
-    const uniqueCategories = new Set(matches.map((p) => p.kategori));
-    return uniqueCategories.size > 1;
+    return isAmbiguousProductCode(products, rawKode);
   };
 
   const validateItems = (items: any[]): OcrItem[] => {
@@ -154,7 +140,6 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
       const kategori = item.kategori || undefined;
       const ambiguous = !kategori && isAmbiguousKode(kode);
       const found = ambiguous ? null : findProduct(kode, kategori);
-      console.log("OCR validate:", { rawKode: kode, kategori, foundKode: found?.kode, foundKat: found?.kategori, ambiguous, productsCount: (products || []).length });
       return {
         ...item,
         kode: found ? found.kode : kode,
@@ -185,20 +170,16 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
     setLoading(true);
     try {
       const base64 = await fileToBase64(file);
-      console.log("OCR: sending image, base64 length:", base64.length);
-
       // Use fetch with timeout instead of supabase.functions.invoke
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
+      const headers = await getAuthHeaders();
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ocr-nota`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
+          headers,
           body: JSON.stringify({
             image_base64: base64,
             mode,
@@ -500,6 +481,25 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
                           />
                         </div>
                       </>
+                    )}
+                    {(item.isAmbiguous || item.kategori) && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground">Ukuran:</span>
+                        <Select
+                          value={item.kategori || ""}
+                          onValueChange={(val) => updateOcrItem(idx, "kategori", val)}
+                        >
+                          <SelectTrigger className="h-9 w-28 text-xs">
+                            <SelectValue placeholder="Pilih..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="2 Ons">2 Ons</SelectItem>
+                            <SelectItem value="3 Ons">3 Ons</SelectItem>
+                            <SelectItem value="5 Ons">5 Ons</SelectItem>
+                            <SelectItem value="18 Gram">18 Gram</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     )}
                     {mode === "opname" && (
                       <>

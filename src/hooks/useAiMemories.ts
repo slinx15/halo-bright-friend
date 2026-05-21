@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { getAuthHeaders } from "@/lib/authHeaders";
 
 export interface AiMemory {
   id: string;
@@ -37,14 +38,9 @@ export function useAiMemories() {
   const extractMemories = useCallback(async (messages: { role: string; content: string }[], conversationId: string | null) => {
     if (messages.length < 2) return;
     try {
-      const token = (await supabase.auth.getSession()).data.session?.access_token;
       await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        },
+        headers: await getAuthHeaders(),
         body: JSON.stringify({ messages, conversation_id: conversationId, extract_memories: true }),
       });
       // Reload memories after extraction

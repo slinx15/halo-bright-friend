@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
     // Fetch all products with prices
     const { data: products } = await supabase
       .from("products")
-      .select("id, kode, prices(harga_normal, harga_grosir, harga_modal)")
+      .select("id, kode, kategori, prices(harga_normal, harga_grosir, harga_modal)")
       .eq("is_active", true);
 
     if (!products) {
@@ -81,7 +81,11 @@ Deno.serve(async (req) => {
     for (const p of products) {
       const price = Array.isArray(p.prices) ? p.prices[0] : p.prices;
       const harga = price?.harga_normal ?? 0;
-      productByKode.set(p.kode.toUpperCase(), { id: p.id, harga_normal: harga });
+      const key = p.kode.toUpperCase();
+      const existing = productByKode.get(key);
+      if (!existing || p.kategori === "2 Ons") {
+        productByKode.set(key, { id: p.id, harga_normal: harga });
+      }
     }
 
     // Add aliases

@@ -80,11 +80,11 @@ Create a `.env` file in the project root:
 
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 VITE_SUPABASE_PROJECT_ID=your-project-id
 ```
 
-> **Security:** The anon key is a publishable client key — all data protection is enforced server-side through Row Level Security policies. Never commit `.env` to version control.
+> **Security:** The publishable key is safe for the browser, but the real `.env` file must stay local. Never commit `.env` to version control.
 
 ### Run
 

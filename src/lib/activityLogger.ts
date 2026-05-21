@@ -4,6 +4,7 @@ export type ActivityAction =
   | "stock_in" 
   | "stock_out" 
   | "stock_out_delete"
+  | "stock_reset"
   | "opname" 
   | "product_edit" 
   | "price_edit"

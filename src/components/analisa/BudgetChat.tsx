@@ -3,9 +3,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
 import { MessageCircle, Send, Loader2, Sparkles } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import type { ReviewResult } from "./ReviewResultCards";
 import type { BudgetItem } from "./BudgetPlanner";
+import { getAuthHeaders } from "@/lib/authHeaders";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -67,16 +67,11 @@ ${result.missed.map(m => `${m.kode} (${m.nama}): stok ${m.stok}, DOS ${m.dos} ha
     setIsLoading(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/budget-chat`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
+          headers: await getAuthHeaders(),
           body: JSON.stringify({
             messages: newMessages,
             context: buildContext(),
@@ -164,16 +159,11 @@ ${result.missed.map(m => `${m.kode} (${m.nama}): stok ${m.stok}, DOS ${m.dos} ha
     setIsLoading(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/budget-chat`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
+          headers: await getAuthHeaders(),
           body: JSON.stringify({ messages: newMessages, context: buildContext() }),
         }
       );

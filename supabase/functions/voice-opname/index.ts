@@ -1,5 +1,6 @@
 // Voice Opname: terima audio (base64) dari client, transcribe + parse pakai Lovable AI
 // Return list { kode, qty } untuk dikonfirmasi user
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,6 +25,20 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: "LOVABLE_API_KEY tidak terkonfigurasi" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
+    }
+
+    const authHeader = req.headers.get("Authorization");
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader || "" } } },
+    );
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const body = await req.json();

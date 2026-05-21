@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
 import { formatRupiah } from "@/lib/formatters";
-import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -26,6 +25,8 @@ import { splitIntoStacks, addStacks } from "@/lib/tumpukanUtils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TransactionSkeleton } from "@/components/LoadingSkeletons";
 import { logActivity } from "@/lib/activityLogger";
+import { findProductMatch } from "@/lib/productMatcher";
+import { registerStockIn } from "@/lib/stockMutations";
 
 interface LineItem {
   kode: string;
@@ -33,10 +34,10 @@ interface LineItem {
   productName?: string;
   productId?: string;
   productKode?: string;
+  productKategori?: string | null;
 }
 
 const BarangMasuk = () => {
-  const { user } = useAuth();
   const { data: products } = useProducts();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -68,21 +69,11 @@ const BarangMasuk = () => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
       if (field === "kode" && products) {
-        const input = String(value).toUpperCase();
-        // First try exact match by kode (e.g. "BLCK 5 Ons")
-        let found = products.find((p) => p.kode.toUpperCase() === input);
-        // Then try by nama
-        if (!found) {
-          found = products.find((p) => p.nama.toUpperCase() === input);
-        }
-        // Fallback: match by kode only if there's exactly one product with that kode
-        if (!found) {
-          const byKode = products.filter((p) => p.kode.toUpperCase() === input);
-          found = byKode.length === 1 ? byKode[0] : undefined;
-        }
+        const found = findProductMatch(products, { kode: String(value) });
         updated[index].productName = found?.nama;
         updated[index].productId = found?.id;
         updated[index].productKode = found?.kode;
+        updated[index].productKategori = found?.kategori;
       }
       return updated;
     });
@@ -90,21 +81,6 @@ const BarangMasuk = () => {
 
   const addLine = () => setItems((prev) => [...prev, { kode: "", qty: 1 }]);
   const removeLine = (i: number) => setItems((prev) => prev.filter((_, idx) => idx !== i));
-
-  const retryOp = async <T,>(fn: () => Promise<T>, retries = 2): Promise<T> => {
-    for (let attempt = 0; attempt <= retries; attempt++) {
-      try {
-        return await fn();
-      } catch (err) {
-        if (attempt < retries) {
-          await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
-          continue;
-        }
-        throw err;
-      }
-    }
-    throw new Error("Unreachable");
-  };
 
   const handleSubmit = async () => {
     const validItems = items.filter((i) => i.productId && i.qty > 0);
@@ -119,42 +95,18 @@ const BarangMasuk = () => {
     for (const item of validItems) {
       try {
         const kode = item.productKode || item.kode;
-        const newStacks = splitIntoStacks(item.qty, kode);
+        const newStacks = splitIntoStacks(item.qty, kode, item.productKategori || undefined);
+        const createdAt = tanggal
+          ? new Date(tanggal.getFullYear(), tanggal.getMonth(), tanggal.getDate(), 12, 0, 0).toISOString()
+          : undefined;
 
-        await retryOp(() => Promise.resolve(supabase.from("stock_in").insert({
-          product_id: item.productId!,
+        await registerStockIn({
+          productId: item.productId!,
           qty: item.qty,
-          tumpukan: newStacks.join(","),
-          catatan: catatan || null,
-          user_id: user!.id,
-          ...(tanggal ? { created_at: new Date(tanggal.getFullYear(), tanggal.getMonth(), tanggal.getDate(), 12, 0, 0).toISOString() } : {}),
-        }).then(r => { if (r.error) throw r.error; return r; })));
-
-        const { data: existing } = await retryOp(() => Promise.resolve(supabase
-          .from("stock")
-          .select("*")
-          .eq("product_id", item.productId!)
-          .maybeSingle()
-          .then(r => { if (r.error) throw r.error; return r; })));
-
-        if (existing) {
-          const currentStacks = (existing.tumpukan_detail as number[]) ?? [];
-          const merged = addStacks(currentStacks, newStacks);
-          await retryOp(() => Promise.resolve(supabase
-            .from("stock")
-            .update({
-              jumlah: existing.jumlah + item.qty,
-              tumpukan_detail: merged,
-            })
-            .eq("id", existing.id)
-            .then(r => { if (r.error) throw r.error; return r; })));
-        } else {
-          await retryOp(() => Promise.resolve(supabase.from("stock").insert({
-            product_id: item.productId!,
-            jumlah: item.qty,
-            tumpukan_detail: newStacks,
-          }).then(r => { if (r.error) throw r.error; return r; })));
-        }
+          tumpukanDetail: newStacks,
+          catatan,
+          createdAt,
+        });
         successCount++;
       } catch (itemErr: any) {
         errors.push(`${item.kode}: ${itemErr.message}`);
@@ -208,13 +160,14 @@ const BarangMasuk = () => {
           mode="masuk"
           onResult={(ocrItems) => {
             const newItems: LineItem[] = ocrItems.map((o: any) => {
-              const found = products?.find((p) => p.kode.toUpperCase() === (o.kode || "").toUpperCase());
+              const found = findProductMatch(products, { productId: o.productId, kode: o.kode, kategori: o.kategori });
               return {
-                kode: (o.kode || "").toUpperCase(),
+                kode: (found?.kode || o.kode || "").toUpperCase(),
                 qty: o.qty || 1,
                 productName: found?.nama || o.nama,
                 productId: found?.id,
                 productKode: found?.kode,
+                productKategori: found?.kategori,
               };
             });
             setItems(newItems.length > 0 ? newItems : [{ kode: "", qty: 1 }]);
@@ -252,7 +205,7 @@ const BarangMasuk = () => {
             const matchedProduct = products?.find((p) => p.id === item.productId);
             const currentStacks = (matchedProduct?.stock?.tumpukan_detail as number[]) ?? [];
             const previewNewStacks = item.productId && item.qty > 0
-              ? splitIntoStacks(item.qty, item.productKode || item.kode)
+              ? splitIntoStacks(item.qty, item.productKode || item.kode, item.productKategori || undefined)
               : [];
             const previewMerged = item.productId && item.qty > 0
               ? addStacks(currentStacks, previewNewStacks)

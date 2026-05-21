@@ -42,7 +42,7 @@ export function useProducts() {
     queryKey: ["products"],
     queryFn: async () => {
       const data = await fetchFromSupabase(
-        "products?is_active=eq.true&order=kode&select=*,stock(*),prices(*)"
+        "products?is_active=eq.true&order=kode.asc,kategori.asc&select=*,stock(*),prices(*)"
       );
       return (data ?? []).map((p: any) => ({
         id: p.id,

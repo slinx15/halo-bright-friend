@@ -20,6 +20,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
 import { getAuthHeaders } from "@/lib/authHeaders";
+import { logActivity } from "@/lib/activityLogger";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -44,6 +45,7 @@ const Stok = () => {
   }, [searchParams]);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [showResetDialog, setShowResetDialog] = useState(false);
+  const [resetConfirmText, setResetConfirmText] = useState("");
   const [resetting, setResetting] = useState(false);
   const isMobile = useIsMobile();
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -76,6 +78,7 @@ const Stok = () => {
   };
 
   const handleResetStock = async () => {
+    if (resetConfirmText.trim().toUpperCase() !== "RESET") return;
     setResetting(true);
     try {
       const headers = await getAuthHeaders();
@@ -85,9 +88,11 @@ const Stok = () => {
         body: JSON.stringify({ jumlah: 0, tumpukan: "", tumpukan_detail: [] }),
       });
       if (!res.ok) throw new Error(await res.text());
+      await logActivity("stock_reset", "Reset semua stok ke 0", { scope: "all_stock" });
       toast({ title: "Berhasil", description: "Semua stok telah di-reset ke 0" });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setShowResetDialog(false);
+      setResetConfirmText("");
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
@@ -180,7 +185,13 @@ const Stok = () => {
       </div>
 
       {/* Reset Dialog */}
-      <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+      <Dialog
+        open={showResetDialog}
+        onOpenChange={(open) => {
+          setShowResetDialog(open);
+          if (!open) setResetConfirmText("");
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-destructive flex items-center gap-2">
@@ -199,9 +210,24 @@ const Stok = () => {
               </Button>
             </div>
           </div>
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">
+              Ketik RESET untuk konfirmasi.
+            </p>
+            <Input
+              value={resetConfirmText}
+              onChange={(e) => setResetConfirmText(e.target.value)}
+              placeholder="RESET"
+              disabled={resetting}
+            />
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowResetDialog(false)} disabled={resetting}>Batal</Button>
-            <Button variant="destructive" onClick={handleResetStock} disabled={resetting}>
+            <Button
+              variant="destructive"
+              onClick={handleResetStock}
+              disabled={resetting || resetConfirmText.trim().toUpperCase() !== "RESET"}
+            >
               {resetting ? "Mereset..." : "Ya, Reset Semua"}
             </Button>
           </DialogFooter>

@@ -28,6 +28,8 @@ import { deductFromStacks } from "@/lib/tumpukanUtils";
 import { TransactionSkeleton } from "@/components/LoadingSkeletons";
 import { getAuthHeaders } from "@/lib/authHeaders";
 import { logActivity } from "@/lib/activityLogger";
+import { findProductMatch } from "@/lib/productMatcher";
+import { deleteStockOutTransaction, registerStockOut } from "@/lib/stockMutations";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -41,10 +43,11 @@ interface LineItem {
   productId?: string;
   productKode?: string;
   productName?: string;
+  productKategori?: string | null;
 }
 
 const BarangKeluar = () => {
-  const { user, role } = useAuth();
+  const { role } = useAuth();
   const { data: products } = useProducts();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -110,24 +113,7 @@ const BarangKeluar = () => {
 
   // Auto-detect: search ALL products by kode (exact, base code, or nama)
   const findProduct = (input: string) => {
-    if (!input.trim() || !products) return undefined;
-    const k = input.toUpperCase().trim();
-    // Exact kode match
-    let found = products.find(p => p.kode.toUpperCase() === k);
-    if (found) return found;
-    // Match by nama
-    found = products.find(p => p.nama.toUpperCase() === k);
-    if (found) return found;
-    // Base code match: if input matches a base code and there's exactly one in default category (2 Ons)
-    const baseMatches = products.filter(p => {
-      const base = p.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|18 GRAM)$/i, "");
-      return base === k;
-    });
-    if (baseMatches.length === 1) return baseMatches[0];
-    // Prefer 2 Ons if ambiguous
-    const twoOns = baseMatches.find(p => p.kategori === "2 Ons");
-    if (twoOns) return twoOns;
-    return baseMatches[0];
+    return findProductMatch(products, { kode: input }) || undefined;
   };
 
   const updateItem = (index: number, field: keyof LineItem, value: any) => {
@@ -139,6 +125,7 @@ const BarangKeluar = () => {
         updated[index].productId = found?.id;
         updated[index].productKode = found?.kode;
         updated[index].productName = found?.nama;
+        updated[index].productKategori = found?.kategori;
       }
       return updated;
     });
@@ -204,21 +191,6 @@ const BarangKeluar = () => {
     });
   }, [history, historySearch, historyDateFilter]);
 
-  const fetchWithRetry = async (url: string, options: RequestInit, retries = 2): Promise<Response> => {
-    for (let attempt = 0; attempt <= retries; attempt++) {
-      try {
-        return await fetch(url, options);
-      } catch (err) {
-        if (attempt < retries) {
-          await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
-          continue;
-        }
-        throw err;
-      }
-    }
-    throw new Error("Max retries reached");
-  };
-
   const handleSubmit = async () => {
     const validItems = items.filter(i => i.productId && i.qtyKirim > 0);
     if (validItems.length === 0) {
@@ -244,7 +216,6 @@ const BarangKeluar = () => {
     }
 
     setSubmitting(true);
-    const headers = await getAuthHeaders();
     let successCount = 0;
     const errors: string[] = [];
 
@@ -270,35 +241,26 @@ const BarangKeluar = () => {
 
         const price = getPrice(item);
         const tokoName = item.toko.trim() || globalToko.trim() || "";
+        const createdAt = tanggal
+          ? new Date(tanggal.getFullYear(), tanggal.getMonth(), tanggal.getDate(), 12, 0, 0).toISOString()
+          : undefined;
 
-        const outRes = await fetchWithRetry(`${SUPABASE_URL}/rest/v1/stock_out`, {
-          method: "POST", headers,
-          body: JSON.stringify({
-            product_id: product.id,
-            qty_pesan: item.qtyPesan,
-            qty_kirim: item.qtyKirim,
-            harga_type: item.hargaType === "custom" ? "custom" : item.hargaType,
-            harga_satuan: price,
-            total_harga: price * item.qtyKirim,
-            catatan: catatan || null,
-            toko: tokoName,
-            user_id: user!.id,
-            ...(tanggal ? { created_at: new Date(tanggal.getFullYear(), tanggal.getMonth(), tanggal.getDate(), 12, 0, 0).toISOString() } : {}),
-          }),
+        const result = await registerStockOut({
+          productId: product.id,
+          qtyPesan: item.qtyPesan,
+          qtyKirim: item.qtyKirim,
+          hargaType: item.hargaType === "custom" ? "custom" : item.hargaType,
+          hargaSatuan: price,
+          catatan,
+          toko: tokoName,
+          createdAt,
         });
-        if (!outRes.ok) { errors.push(`${product.kode}: ${await outRes.text()}`); continue; }
 
-        const newStacks = deductFromStacks(currentStock.stacks, item.qtyKirim);
         const newJumlah = currentStock.jumlah - item.qtyKirim;
-
-        const stockRes = await fetchWithRetry(
-          `${SUPABASE_URL}/rest/v1/stock?product_id=eq.${product.id}`,
-          { method: "PATCH", headers, body: JSON.stringify({ jumlah: newJumlah, tumpukan_detail: newStacks }) }
-        );
-        if (!stockRes.ok) { errors.push(`${product.kode} (stok): ${await stockRes.text()}`); continue; }
-
-        currentStock.jumlah = newJumlah;
-        currentStock.stacks = newStacks;
+        currentStock.jumlah = result.new_jumlah ?? newJumlah;
+        currentStock.stacks = Array.isArray(result.new_tumpukan_detail)
+          ? result.new_tumpukan_detail
+          : deductFromStacks(currentStock.stacks, item.qtyKirim);
         successCount++;
       } catch (err: any) {
         errors.push(`${item.kode}: ${err.message}`);
@@ -323,9 +285,9 @@ const BarangKeluar = () => {
 
   const handleOcrResult = (ocrItems: any[]) => {
     const newItems: LineItem[] = ocrItems.map((o: any) => {
-      const found = findProduct(o.kode || "");
+      const found = findProductMatch(products, { productId: o.productId, kode: o.kode, kategori: o.kategori });
       return {
-        kode: (o.kode || "").toUpperCase(),
+        kode: (found?.kode || o.kode || "").toUpperCase(),
         qtyPesan: o.qty_pesan || 0,
         qtyKirim: o.qty_kirim || o.qty || 0,
         hargaType: o.harga_type || "normal",
@@ -333,6 +295,7 @@ const BarangKeluar = () => {
         productId: found?.id,
         productKode: found?.kode,
         productName: found?.nama,
+        productKategori: found?.kategori,
       };
     });
     setItems(prev => {
@@ -344,25 +307,7 @@ const BarangKeluar = () => {
   const handleDeleteTransaction = async (item: any) => {
     setDeletingId(item.id);
     try {
-      const headers = await getAuthHeaders();
-      const stockRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/stock?product_id=eq.${item.product_id}`,
-        { headers: { ...headers, Prefer: "return=representation" } }
-      );
-      if (stockRes.ok) {
-        const stockData = await stockRes.json();
-        if (stockData.length > 0) {
-          const currentStock = stockData[0].jumlah ?? 0;
-          const currentStacks = (stockData[0].tumpukan_detail as number[]) ?? [];
-          const restoredStacks = currentStacks.length > 0 ? [...currentStacks, item.qty_kirim] : currentStacks;
-          await fetch(
-            `${SUPABASE_URL}/rest/v1/stock?product_id=eq.${item.product_id}`,
-            { method: "PATCH", headers, body: JSON.stringify({ jumlah: currentStock + item.qty_kirim, tumpukan_detail: restoredStacks }) }
-          );
-        }
-      }
-      const delRes = await fetch(`${SUPABASE_URL}/rest/v1/stock_out?id=eq.${item.id}`, { method: "DELETE", headers });
-      if (!delRes.ok) throw new Error(await delRes.text());
+      await deleteStockOutTransaction(item.id);
       toast({ title: "Berhasil", description: `Transaksi ${item.products?.kode} dihapus, stok dikembalikan +${item.qty_kirim}` });
       logActivity("stock_out_delete", `Hapus transaksi ${item.products?.kode} x${item.qty_kirim}`, { kode: item.products?.kode, qty: item.qty_kirim });
       queryClient.invalidateQueries({ queryKey: ["stock_out_history"] });

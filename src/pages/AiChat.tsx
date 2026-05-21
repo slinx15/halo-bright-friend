@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useAiConversations, type Msg } from "@/hooks/useAiConversations";
 import { useAiMemories } from "@/hooks/useAiMemories";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getAuthHeaders } from "@/lib/authHeaders";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
@@ -22,15 +23,6 @@ const RESEARCH_PROMPTS = [
   "Strategi lengkap jualan benang di Shopee dari nol",
   "Riset kompetitor toko benang online, harga & positioning mereka",
 ];
-
-function getAuthToken(): string {
-  const storageKey = Object.keys(localStorage).find(k => k.includes("auth-token"));
-  if (!storageKey) return "";
-  try {
-    const parsed = JSON.parse(localStorage.getItem(storageKey) || "");
-    return parsed?.access_token || "";
-  } catch { return ""; }
-}
 
 const CATEGORY_LABELS: Record<string, { label: string; emoji: string }> = {
   keputusan: { label: "Keputusan", emoji: "✅" },
@@ -76,14 +68,9 @@ const AiChat = () => {
 
     let assistantSoFar = "";
     try {
-      const token = getAuthToken();
       const resp = await fetch(CHAT_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        },
+        headers: await getAuthHeaders(),
         body: JSON.stringify({ messages: allMessages, conversation_id: convId, research_mode: researchMode }),
       });
 

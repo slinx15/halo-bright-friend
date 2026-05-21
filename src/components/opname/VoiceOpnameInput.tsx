@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Mic, MicOff, Loader2, Check, X, Trash2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/useProducts";
+import { getAuthHeaders } from "@/lib/authHeaders";
+import { findProductMatch } from "@/lib/productMatcher";
 import {
   Dialog,
   DialogContent,
@@ -40,21 +42,7 @@ export function VoiceOpnameInput({ onResult }: VoiceOpnameInputProps) {
 
   const findProduct = useCallback(
     (rawKode: string) => {
-      const all = products || [];
-      const kode = String(rawKode).toUpperCase().trim();
-      // Exact full kode
-      let found = all.find((p) => p.kode.toUpperCase() === kode);
-      if (found) return found;
-      // Strip leading zeros
-      const stripped = kode.replace(/^0+/, "") || "0";
-      found = all.find((p) => p.kode.toUpperCase().replace(/^0+/, "") === stripped);
-      if (found) return found;
-      // Base code (strip kategori suffix)
-      found = all.find((p) => {
-        const base = p.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|18 GRAM)$/i, "");
-        return base === kode || base === stripped;
-      });
-      return found || null;
+      return findProductMatch(products, { kode: rawKode });
     },
     [products]
   );
@@ -127,14 +115,12 @@ export function VoiceOpnameInput({ onResult }: VoiceOpnameInputProps) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     try {
+      const headers = await getAuthHeaders();
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/voice-opname`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
+          headers,
           body: JSON.stringify({
             audio_base64: base64,
             mime_type: mimeType,

@@ -1,7 +1,5 @@
 import { useState, useRef } from "react";
-import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
-import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 
 import { getAuthHeaders } from "@/lib/authHeaders";
@@ -22,9 +20,10 @@ import { VoiceOpnameInput } from "@/components/opname/VoiceOpnameInput";
 import type { ParsedOpnameItem } from "@/lib/opnameParser";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { OpnameSkeleton } from "@/components/LoadingSkeletons";
+import { findProductMatch } from "@/lib/productMatcher";
+import { registerStockOpname } from "@/lib/stockMutations";
 
 const Opname = () => {
-  const { user } = useAuth();
   const { data: products } = useProducts();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -51,43 +50,46 @@ const Opname = () => {
   const selisihCount = history?.filter((h: any) => h.status !== "sesuai").length ?? 0;
 
   const handleBulkSubmit = async (items: ParsedOpnameItem[]) => {
-    if (!user || !products) return;
+    if (!products) return;
     setSubmitting(true);
     try {
-      const opnameLogs: any[] = [];
-      const stockUpserts: { product_id: string; jumlah: number; tumpukan_detail: number[] }[] = [];
+      let successCount = 0;
+      let selisihCount = 0;
+      const errors: string[] = [];
+
       for (const item of items) {
-        const product = products.find((p) => p.kode.toUpperCase() === item.kode.toUpperCase());
+        const product = item.productId
+          ? products.find((p) => p.id === item.productId)
+          : findProductMatch(products, { kode: item.kode, kategori: item.kategori });
         if (!product) continue;
-        const stokSistem = product.stock?.jumlah ?? 0;
-        const selisih = item.total - stokSistem;
-        opnameLogs.push({
-          product_id: product.id, stok_sistem: stokSistem, stok_fisik: item.total,
-          selisih, catatan: `Bulk SO: tumpukan ${item.stacks.join(", ")}`,
-          user_id: user.id, status: selisih === 0 ? "sesuai" : "selisih",
-        });
-        stockUpserts.push({ product_id: product.id, jumlah: item.total, tumpukan_detail: item.stacks });
+
+        try {
+          const result = await registerStockOpname({
+            productId: product.id,
+            stokFisik: item.total,
+            tumpukanDetail: item.stacks,
+            catatan: `Bulk SO: tumpukan ${item.stacks.join(", ")}`,
+          });
+          if ((result.selisih ?? item.total - (product.stock?.jumlah ?? 0)) !== 0) {
+            selisihCount++;
+          }
+          successCount++;
+        } catch (err: any) {
+          errors.push(`${product.kode}: ${err.message}`);
+        }
       }
-      const headers = await getAuthHeaders();
-      if (opnameLogs.length > 0) {
-        const logRes = await fetch(`${SUPABASE_URL}/rest/v1/stock_opname_log`, { method: "POST", headers, body: JSON.stringify(opnameLogs) });
-        if (!logRes.ok) throw new Error(await logRes.text());
+
+      if (errors.length > 0) {
+        toast({ title: `${successCount} berhasil, ${errors.length} gagal`, description: errors[0], variant: "destructive" });
+      } else {
+        toast({ title: "Bulk Opname Selesai", description: `${successCount} produk berhasil di-update` });
       }
-      if (stockUpserts.length > 0) {
-        const stockRes = await fetch(`${SUPABASE_URL}/rest/v1/stock?on_conflict=product_id`, {
-          method: "POST", headers: { ...headers, "Prefer": "resolution=merge-duplicates,return=minimal" },
-          body: JSON.stringify(stockUpserts),
-        });
-        if (!stockRes.ok) throw new Error(await stockRes.text());
+
+      if (successCount > 0) {
+        logActivity("opname", `Opname ${successCount} produk${selisihCount > 0 ? `, ${selisihCount} selisih` : ""}`, { count: successCount, selisih: selisihCount });
+        queryClient.invalidateQueries({ queryKey: ["opname_history"] });
+        queryClient.invalidateQueries({ queryKey: ["products"] });
       }
-      toast({ title: "Bulk Opname Selesai", description: `${stockUpserts.length} produk berhasil di-update` });
-      const selisihItems = items.filter(i => {
-        const p = products?.find(pr => pr.kode.toUpperCase() === i.kode.toUpperCase());
-        return p && i.total !== (p.stock?.jumlah ?? 0);
-      });
-      logActivity("opname", `Opname ${stockUpserts.length} produk${selisihItems.length > 0 ? `, ${selisihItems.length} selisih` : ""}`, { count: stockUpserts.length, selisih: selisihItems.length });
-      queryClient.invalidateQueries({ queryKey: ["opname_history"] });
-      queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }

@@ -16,6 +16,8 @@ import { formatRupiah, formatNumber } from "@/lib/formatters";
 import { ProdukSkeleton } from "@/components/LoadingSkeletons";
 import { BulkInputDialog } from "@/components/produk/BulkInputDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { splitIntoStacks } from "@/lib/tumpukanUtils";
+import { registerStockIn } from "@/lib/stockMutations";
 
 const PAGE_SIZE = 30;
 
@@ -104,7 +106,12 @@ const ManajemenProduk = () => {
         if (error) throw error;
         await supabase.from("prices").insert({ product_id: newProduct.id, harga_modal: hargaModal, harga_normal: hargaNormal, harga_grosir: hargaGrosir, harga_grosir2: hargaGrosir2 });
         if (stokAwal > 0) {
-          await supabase.from("stock").insert({ product_id: newProduct.id, jumlah: stokAwal });
+          await registerStockIn({
+            productId: newProduct.id,
+            qty: stokAwal,
+            tumpukanDetail: splitIntoStacks(stokAwal, kode.toUpperCase(), kategori || undefined),
+            catatan: "Stok awal produk baru",
+          });
         }
         toast({ title: "Berhasil", description: `${kode} ditambahkan` });
       }
@@ -126,10 +133,8 @@ const ManajemenProduk = () => {
   const handleDelete = async (id: string, kode: string) => {
     if (!confirm(`Hapus produk ${kode}?`)) return;
     try {
-      await supabase.from("prices").delete().eq("product_id", id);
-      await supabase.from("stock").delete().eq("product_id", id);
       await supabase.from("products").update({ is_active: false }).eq("id", id);
-      toast({ title: "Dihapus", description: `${kode} dinonaktifkan` });
+      toast({ title: "Dinonaktifkan", description: `${kode} disembunyikan, data stok dan harga tetap tersimpan` });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });

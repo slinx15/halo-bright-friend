@@ -14,11 +14,11 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/useProducts";
 import { useProductAliases } from "@/hooks/useProductAliases";
-import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { ReviewResultCards, type ReviewResult } from "./ReviewResultCards";
+import { getAuthHeaders } from "@/lib/authHeaders";
 
 interface ReviewItem {
   kode: string;
@@ -207,8 +207,6 @@ export default function ReviewAI() {
     setReviewResult(null);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
       const body: any = { items: validItems.map(i => ({ kode: i.kode, qty: i.qty })) };
       if (targetDays && parseInt(targetDays) > 0) {
         body.target_days = parseInt(targetDays);
@@ -223,10 +221,7 @@ export default function ReviewAI() {
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/review-restock`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
+          headers: await getAuthHeaders(),
           body: JSON.stringify(body),
         }
       );
@@ -268,7 +263,7 @@ export default function ReviewAI() {
 
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ocr-nota`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: await getAuthHeaders(),
         body: JSON.stringify({ image_base64: base64, mode: "review", master_codes: products?.map(p => p.kode) || [] }),
       });
 

@@ -13,6 +13,8 @@
 
 export interface ParsedOpnameItem {
   kode: string;
+  productId?: string;
+  kategori?: string | null;
   stacks: number[];
   total: number;
 }

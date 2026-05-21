@@ -221,7 +221,9 @@ serve(async (req) => {
     for (const p of rawProducts) {
       const stk = Array.isArray(p.stock) ? p.stock[0] : p.stock;
       const prc = Array.isArray(p.prices) ? p.prices[0] : p.prices;
-      productMap[p.kode.toUpperCase()] = {
+      const key = p.kode.toUpperCase();
+      if (productMap[key] && p.kategori !== "2 Ons") continue;
+      productMap[key] = {
         id: p.id, kode: p.kode, nama: p.nama, kategori: p.kategori || "2 Ons",
         stok: stk?.jumlah ?? 0,
         hargaModal: prc?.harga_modal ?? 0,
