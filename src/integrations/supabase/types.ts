@@ -402,6 +402,53 @@ export type Database = {
           },
         ]
       }
+      stock_audit_log: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          new_jumlah: number | null
+          new_tumpukan_detail: Json | null
+          old_jumlah: number | null
+          old_tumpukan_detail: Json | null
+          operation: string
+          product_id: string | null
+          stock_id: string | null
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_jumlah?: number | null
+          new_tumpukan_detail?: Json | null
+          old_jumlah?: number | null
+          old_tumpukan_detail?: Json | null
+          operation: string
+          product_id?: string | null
+          stock_id?: string | null
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_jumlah?: number | null
+          new_tumpukan_detail?: Json | null
+          old_jumlah?: number | null
+          old_tumpukan_detail?: Json | null
+          operation?: string
+          product_id?: string | null
+          stock_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_audit_log_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_in: {
         Row: {
           catatan: string | null
@@ -557,6 +604,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      deduct_int_jsonb_stacks: {
+        Args: { _qty: number; _stacks: Json }
+        Returns: Json
+      }
+      delete_stock_out_transaction: {
+        Args: { p_stock_out_id: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -564,6 +619,41 @@ export type Database = {
         }
         Returns: boolean
       }
+      jsonb_int_array_sum: { Args: { _arr: Json }; Returns: number }
+      jsonb_stack_text: { Args: { _stacks: Json }; Returns: string }
+      register_stock_in: {
+        Args: {
+          p_catatan?: string
+          p_created_at?: string
+          p_product_id: string
+          p_qty: number
+          p_tumpukan_detail?: Json
+        }
+        Returns: Json
+      }
+      register_stock_opname: {
+        Args: {
+          p_catatan?: string
+          p_product_id: string
+          p_stok_fisik: number
+          p_tumpukan_detail?: Json
+        }
+        Returns: Json
+      }
+      register_stock_out: {
+        Args: {
+          p_catatan?: string
+          p_created_at?: string
+          p_harga_satuan: number
+          p_harga_type: string
+          p_product_id: string
+          p_qty_kirim: number
+          p_qty_pesan: number
+          p_toko?: string
+        }
+        Returns: Json
+      }
+      sort_int_jsonb_array: { Args: { _arr: Json }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "karyawan"
