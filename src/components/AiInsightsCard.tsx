@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, RefreshCw, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/lib/supabaseEnv";
 
 export function AiInsightsCard() {
   const [manualRefresh, setManualRefresh] = useState(0);
@@ -16,13 +17,13 @@ export function AiInsightsCard() {
       const token = session?.access_token;
       if (!token) throw new Error("Belum login");
       const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-insights`,
+        `${SUPABASE_URL}/functions/v1/ai-insights`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            apikey: SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({}),
         }

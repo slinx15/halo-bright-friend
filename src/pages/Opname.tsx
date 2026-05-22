@@ -4,8 +4,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 
 import { getAuthHeaders } from "@/lib/authHeaders";
 import { logActivity } from "@/lib/activityLogger";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+import { SUPABASE_URL } from "@/lib/supabaseEnv";
 
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

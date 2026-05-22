@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useProducts } from "@/hooks/useProducts";
 import type { StockOutRecord } from "@/lib/stockAnalyticsEngine";
+import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/lib/supabaseEnv";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const SUPABASE_KEY = SUPABASE_PUBLISHABLE_KEY;
 
 function getAuthToken(): string {
   const storageKey = Object.keys(localStorage).find(k => k.includes("auth-token"));

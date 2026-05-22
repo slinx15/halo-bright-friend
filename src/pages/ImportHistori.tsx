@@ -13,8 +13,7 @@ import { useProducts } from "@/hooks/useProducts";
 import * as XLSX from "xlsx";
 
 import { getAuthHeaders } from "@/lib/authHeaders";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+import { SUPABASE_URL } from "@/lib/supabaseEnv";
 
 type ParsedRow = {
   tanggal: string;

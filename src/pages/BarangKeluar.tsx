@@ -30,8 +30,7 @@ import { getAuthHeaders } from "@/lib/authHeaders";
 import { logActivity } from "@/lib/activityLogger";
 import { findProductMatch } from "@/lib/productMatcher";
 import { deleteStockOutTransaction, registerStockOut } from "@/lib/stockMutations";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+import { SUPABASE_URL } from "@/lib/supabaseEnv";
 
 interface LineItem {
   kode: string;

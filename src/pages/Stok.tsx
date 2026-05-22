@@ -21,8 +21,7 @@ import { cn } from "@/lib/utils";
 
 import { getAuthHeaders } from "@/lib/authHeaders";
 import { logActivity } from "@/lib/activityLogger";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+import { SUPABASE_URL } from "@/lib/supabaseEnv";
 
 const PAGE_SIZE = 30;
 

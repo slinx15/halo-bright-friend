@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/useProducts";
 import { getAuthHeaders } from "@/lib/authHeaders";
 import { findProductMatch } from "@/lib/productMatcher";
+import { SUPABASE_URL } from "@/lib/supabaseEnv";
 import {
   Dialog,
   DialogContent,
@@ -117,7 +118,7 @@ export function VoiceOpnameInput({ onResult }: VoiceOpnameInputProps) {
     try {
       const headers = await getAuthHeaders();
       const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/voice-opname`,
+        `${SUPABASE_URL}/functions/v1/voice-opname`,
         {
           method: "POST",
           headers,

@@ -6,6 +6,7 @@ import { MessageCircle, Send, Loader2, Sparkles } from "lucide-react";
 import type { ReviewResult } from "./ReviewResultCards";
 import type { BudgetItem } from "./BudgetPlanner";
 import { getAuthHeaders } from "@/lib/authHeaders";
+import { SUPABASE_URL } from "@/lib/supabaseEnv";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -68,7 +69,7 @@ ${result.missed.map(m => `${m.kode} (${m.nama}): stok ${m.stok}, DOS ${m.dos} ha
 
     try {
       const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/budget-chat`,
+        `${SUPABASE_URL}/functions/v1/budget-chat`,
         {
           method: "POST",
           headers: await getAuthHeaders(),
@@ -160,7 +161,7 @@ ${result.missed.map(m => `${m.kode} (${m.nama}): stok ${m.stok}, DOS ${m.dos} ha
 
     try {
       const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/budget-chat`,
+        `${SUPABASE_URL}/functions/v1/budget-chat`,
         {
           method: "POST",
           headers: await getAuthHeaders(),

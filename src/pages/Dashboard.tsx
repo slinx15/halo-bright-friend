@@ -15,8 +15,7 @@ import { Progress } from "@/components/ui/progress";
 
 import { getAuthHeaders } from "@/lib/authHeaders";
 import { useStockNotifications, requestNotificationPermission } from "@/hooks/useStockNotifications";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+import { SUPABASE_URL } from "@/lib/supabaseEnv";
 
 // ── Time-based greeting ───────────────────────────────────────────
 function getGreeting() {

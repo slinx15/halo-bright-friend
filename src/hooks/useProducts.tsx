@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/lib/supabaseEnv";
 
 export interface ProductWithDetails {
   id: string;
@@ -21,8 +22,7 @@ function getAuthToken(): string {
   }
 }
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const SUPABASE_KEY = SUPABASE_PUBLISHABLE_KEY;
 
 async function fetchFromSupabase(path: string) {
   const token = getAuthToken();

@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
+import { SUPABASE_PUBLISHABLE_KEY } from "@/lib/supabaseEnv";
 
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const SUPABASE_KEY = SUPABASE_PUBLISHABLE_KEY;
 
 export async function getAuthHeaders(prefer = "return=minimal") {
   let token = SUPABASE_KEY;

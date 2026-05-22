@@ -7,8 +7,9 @@ import { useAiConversations, type Msg } from "@/hooks/useAiConversations";
 import { useAiMemories } from "@/hooks/useAiMemories";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getAuthHeaders } from "@/lib/authHeaders";
+import { SUPABASE_URL } from "@/lib/supabaseEnv";
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
+const CHAT_URL = `${SUPABASE_URL}/functions/v1/ai-chat`;
 
 const CHAT_PROMPTS = [
   "Produk mana yang harus segera di-restock?",

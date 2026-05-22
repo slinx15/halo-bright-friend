@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { TableProperties, Plus, Trash2, Loader2 } from "lucide-react";
+import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/lib/supabaseEnv";
 
 interface BulkRow {
   kode: string;
@@ -132,8 +133,8 @@ export function BulkInputDialog() {
       setProgressLabel(`Mengimport ${payload.length} produk...`);
 
       // Use raw fetch instead of supabase.functions.invoke to bypass SDK lock
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const supabaseUrl = SUPABASE_URL;
+      const supabaseKey = SUPABASE_PUBLISHABLE_KEY;
 
       const response = await fetch(`${supabaseUrl}/functions/v1/bulk-import`, {
         method: "POST",

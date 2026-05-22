@@ -19,6 +19,7 @@ import { id as idLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { ReviewResultCards, type ReviewResult } from "./ReviewResultCards";
 import { getAuthHeaders } from "@/lib/authHeaders";
+import { SUPABASE_URL } from "@/lib/supabaseEnv";
 
 interface ReviewItem {
   kode: string;
@@ -218,7 +219,7 @@ export default function ReviewAI() {
       }
 
       const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/review-restock`,
+        `${SUPABASE_URL}/functions/v1/review-restock`,
         {
           method: "POST",
           headers: await getAuthHeaders(),
@@ -261,7 +262,7 @@ export default function ReviewAI() {
       });
       const base64 = await base64Promise;
 
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ocr-nota`, {
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/ocr-nota`, {
         method: "POST",
         headers: await getAuthHeaders(),
         body: JSON.stringify({ image_base64: base64, mode: "review", master_codes: products?.map(p => p.kode) || [] }),

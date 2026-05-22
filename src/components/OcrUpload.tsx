@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getAuthHeaders } from "@/lib/authHeaders";
 import { findProductMatch, isAmbiguousProductCode } from "@/lib/productMatcher";
+import { SUPABASE_URL } from "@/lib/supabaseEnv";
 
 interface OcrUploadProps {
   mode: "masuk" | "keluar" | "opname";
@@ -176,7 +177,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
 
       const headers = await getAuthHeaders();
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ocr-nota`,
+        `${SUPABASE_URL}/functions/v1/ocr-nota`,
         {
           method: "POST",
           headers,
