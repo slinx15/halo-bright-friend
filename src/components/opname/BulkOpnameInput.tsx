@@ -9,6 +9,7 @@ import { formatNumber } from "@/lib/formatters";
 import type { ProductWithDetails } from "@/hooks/useProducts";
 import type { ParsedOpnameItem } from "@/lib/opnameParser";
 import { findProductMatch } from "@/lib/productMatcher";
+import type { BulkOpnameSubmitResult } from "@/pages/Opname";
 
 interface InputRow {
   id: number;
@@ -22,7 +23,7 @@ interface InputRow {
 
 interface BulkOpnameInputProps {
   products: ProductWithDetails[];
-  onSubmit: (items: ParsedOpnameItem[]) => Promise<void>;
+  onSubmit: (items: ParsedOpnameItem[]) => Promise<BulkOpnameSubmitResult>;
   submitting: boolean;
 }
 
@@ -74,6 +75,7 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
   });
   const [showPreview, setShowPreview] = useState(false);
   const [parsed, setParsed] = useState<ParsedOpnameItem[]>([]);
+  const [submitErrors, setSubmitErrors] = useState<string[]>([]);
 
   const kodeRefs = useRef<Map<number, HTMLInputElement>>(new Map());
   const qtyRefs = useRef<Map<number, HTMLInputElement>>(new Map());
@@ -254,12 +256,20 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
   };
 
   const handleParse = () => {
+    setSubmitErrors([]);
     setParsed(buildParsed());
     setShowPreview(true);
   };
 
   const handleSubmit = async () => {
-    await onSubmit(parsed);
+    const result = await onSubmit(parsed);
+    setSubmitErrors(result.errorMessages);
+
+    if (result.errorMessages.length > 0) {
+      setShowPreview(true);
+      return;
+    }
+
     getNextId.counter = 0;
     setRows([{ id: getNextId(), kode: "", qty: "", status: "idle" }]);
     setParsed([]);
@@ -281,6 +291,7 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
   const validRows = rows.filter((r) => r.status === "valid" && r.qty.trim() && parseInt(r.qty) >= 0);
   const validItems = parsed.filter((item) => findProductByParsedItem(item));
   const invalidItems = parsed.filter((item) => !findProductByParsedItem(item));
+  const invalidRows = rows.filter((row) => row.status === "invalid" && row.kode.trim());
 
   return (
     <Card className="rounded-2xl shadow-md border-0 overflow-hidden">
@@ -388,6 +399,35 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
           </>
         ) : (
           <>
+            {submitErrors.length > 0 && (
+              <div className="bg-destructive/10 text-destructive p-3 rounded-lg text-sm">
+                <div className="flex items-center gap-2 font-medium mb-1">
+                  <AlertTriangle className="h-4 w-4" /> Gagal disimpan:
+                </div>
+                <div className="space-y-1">
+                  {submitErrors.slice(0, 5).map((message) => (
+                    <p key={message} className="font-mono text-xs">{message}</p>
+                  ))}
+                  {submitErrors.length > 5 && (
+                    <p className="text-xs">+{submitErrors.length - 5} error lain</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {invalidRows.length > 0 && (
+              <div className="bg-destructive/10 text-destructive p-3 rounded-lg text-sm">
+                <div className="flex items-center gap-2 font-medium mb-1">
+                  <AlertTriangle className="h-4 w-4" /> Kode tidak cocok:
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {invalidRows.map((row) => (
+                    <span key={row.id} className="font-mono text-xs bg-destructive/10 px-1.5 py-0.5 rounded">{row.kode}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {invalidItems.length > 0 && (
               <div className="bg-destructive/10 text-destructive p-3 rounded-lg text-sm">
                 <div className="flex items-center gap-2 font-medium mb-1">
@@ -456,7 +496,10 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
             <div className="flex gap-3">
               <Button
                 variant="outline"
-                onClick={() => setShowPreview(false)}
+                onClick={() => {
+                  setSubmitErrors([]);
+                  setShowPreview(false);
+                }}
                 className="flex-1 rounded-xl h-12 font-bold min-h-[44px]"
               >
                 Edit
