@@ -18,6 +18,7 @@ import {
   FileText,
   History,
   Wallet,
+  ShieldCheck,
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,7 @@ const navItems = [
   { icon: Bot, label: "AI Assistant", path: "/ai", group: "laporan" },
   { icon: Users, label: "Kelola User", path: "/users", group: "admin" },
   { icon: History, label: "Log Aktivitas", path: "/log", group: "admin" },
+  { icon: ShieldCheck, label: "Audit Stok", path: "/audit-stok", group: "admin" },
 ];
 
 const groups = [

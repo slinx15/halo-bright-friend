@@ -23,6 +23,7 @@ import {
   Sun,
   History,
   Wallet,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +45,7 @@ const secondaryNav = [
   { icon: Bot, label: "AI Assistant", path: "/ai", adminOnly: false },
   { icon: Users, label: "Kelola User", path: "/users", adminOnly: true },
   { icon: History, label: "Log Aktivitas", path: "/log", adminOnly: true },
+  { icon: ShieldCheck, label: "Audit Stok", path: "/audit-stok", adminOnly: true },
 ];
 
 const MobileNav = () => {

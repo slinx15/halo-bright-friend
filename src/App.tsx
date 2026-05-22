@@ -22,6 +22,7 @@ import Nota from "@/pages/Nota";
 import NotFound from "@/pages/NotFound";
 import LogAktivitas from "@/pages/LogAktivitas";
 import DashboardKeuangan from "@/pages/DashboardKeuangan";
+import AuditStok from "@/pages/AuditStok";
 
 const Analisa = lazy(() => import("@/pages/Analisa"));
 
@@ -70,6 +71,7 @@ const App = () => (
                 <Route path="/laporan" element={<Laporan />} />
                 <Route path="/nota" element={<Nota />} />
                 <Route path="/log" element={<LogAktivitas />} />
+                <Route path="/audit-stok" element={<AuditStok />} />
                 <Route path="/keuangan" element={<DashboardKeuangan />} />
               </Route>
               <Route path="*" element={<NotFound />} />
