@@ -7,4 +7,4 @@ export const SUPABASE_URL =
 // This is the browser publishable key, not the service-role secret.
 export const SUPABASE_PUBLISHABLE_KEY =
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6ImJld2Fjbm5meWhpaXd4aGhiZWVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0ODg5MjMsImV4cCI6MjA4NzA2NDkyM30.Rh0DkJo4GJPKmBj-vI0rTLrm1VBYzlHzdzJaZExgAHA";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJld2Fjbm5meWhpaXd4aGhiZWVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0ODg5MjMsImV4cCI6MjA4NzA2NDkyM30.Rh0DkJo4GJPKmBj-vI0rTLrm1VBYzlHzdzJaZExgAHA";
