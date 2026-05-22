@@ -76,6 +76,7 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
   const [showPreview, setShowPreview] = useState(false);
   const [parsed, setParsed] = useState<ParsedOpnameItem[]>([]);
   const [submitErrors, setSubmitErrors] = useState<string[]>([]);
+  const [showAllSubmitErrors, setShowAllSubmitErrors] = useState(false);
 
   const kodeRefs = useRef<Map<number, HTMLInputElement>>(new Map());
   const qtyRefs = useRef<Map<number, HTMLInputElement>>(new Map());
@@ -257,6 +258,7 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
 
   const handleParse = () => {
     setSubmitErrors([]);
+    setShowAllSubmitErrors(false);
     setParsed(buildParsed());
     setShowPreview(true);
   };
@@ -264,6 +266,7 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
   const handleSubmit = async () => {
     const result = await onSubmit(parsed);
     setSubmitErrors(result.errorMessages);
+    setShowAllSubmitErrors(false);
 
     if (result.errorMessages.length > 0) {
       setShowPreview(true);
@@ -292,6 +295,7 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
   const validItems = parsed.filter((item) => findProductByParsedItem(item));
   const invalidItems = parsed.filter((item) => !findProductByParsedItem(item));
   const invalidRows = rows.filter((row) => row.status === "invalid" && row.kode.trim());
+  const visibleSubmitErrors = showAllSubmitErrors ? submitErrors : submitErrors.slice(0, 10);
 
   return (
     <Card className="rounded-2xl shadow-md border-0 overflow-hidden">
@@ -401,17 +405,36 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
           <>
             {submitErrors.length > 0 && (
               <div className="bg-destructive/10 text-destructive p-3 rounded-lg text-sm">
-                <div className="flex items-center gap-2 font-medium mb-1">
-                  <AlertTriangle className="h-4 w-4" /> Gagal disimpan:
-                </div>
-                <div className="space-y-1">
-                  {submitErrors.slice(0, 5).map((message) => (
-                    <p key={message} className="font-mono text-xs">{message}</p>
-                  ))}
-                  {submitErrors.length > 5 && (
-                    <p className="text-xs">+{submitErrors.length - 5} error lain</p>
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <div className="flex items-center gap-2 font-medium">
+                    <AlertTriangle className="h-4 w-4" /> {submitErrors.length} item gagal disimpan
+                  </div>
+                  {submitErrors.length > 10 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllSubmitErrors((prev) => !prev)}
+                      className="text-xs font-semibold underline underline-offset-2"
+                    >
+                      {showAllSubmitErrors ? "Tampilkan ringkas" : "Lihat semua"}
+                    </button>
                   )}
                 </div>
+                <p className="text-xs mb-2 text-destructive/80">
+                  Item ini belum tercatat ke log opname. Periksa kode atau coba simpan ulang jika gagal karena koneksi.
+                </p>
+                <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
+                  {visibleSubmitErrors.map((message) => (
+                    <p key={message} className="font-mono text-xs break-words">{message}</p>
+                  ))}
+                </div>
+                {!showAllSubmitErrors && submitErrors.length > 10 && (
+                  <p className="text-xs mt-2">+{submitErrors.length - 10} item gagal lain</p>
+                )}
+                {submitErrors.length === 1 && (
+                  <p className="text-xs mt-2">
+                    Perbaiki item ini lalu simpan lagi.
+                  </p>
+                )}
               </div>
             )}
 
@@ -498,6 +521,7 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
                 variant="outline"
                 onClick={() => {
                   setSubmitErrors([]);
+                  setShowAllSubmitErrors(false);
                   setShowPreview(false);
                 }}
                 className="flex-1 rounded-xl h-12 font-bold min-h-[44px]"
