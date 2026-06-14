@@ -304,7 +304,9 @@ serve(async (req) => {
       const dos = calculateDaysOfStock(effectiveStock, velocity);
       if (dos <= RULES.WARNING_DAYS) {
         const isBW = isBlackWhiteCode(p.kode);
-        const missedTargetDays = customTargetDays || getDefaultTargetDays(p.kode);
+        const missedTargetDays = customTargetDays
+          ? getPlanningTargetDays(p.kode, customTargetDays)
+          : getDefaultTargetDays(p.kode);
         const recommendation = calculateRestockRecommendation({
           kode: p.kode,
           currentStock: effectiveStock,
