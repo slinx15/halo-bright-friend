@@ -5,6 +5,7 @@ import {
   calculateDaysOfStock,
   calculateRestockRecommendation,
   getDefaultTargetDays,
+  getPlanningTargetDays,
   isBlackWhiteCode,
 } from "../../../shared/restockCore.ts";
 
@@ -255,7 +256,9 @@ serve(async (req) => {
       // 2 Ons: full review
       const { velocity, salesDays } = computeWMAVelocity(stockOut, product.id);
       const isBW = isBlackWhiteCode(kode);
-      const computedTargetDays = customTargetDays || getDefaultTargetDays(kode);
+      const computedTargetDays = customTargetDays
+        ? getPlanningTargetDays(kode, customTargetDays)
+        : getDefaultTargetDays(kode);
       const pendingQty = pendingMap[kode] || 0;
       const effectiveStock = product.stok + pendingQty;
       const dos = calculateDaysOfStock(effectiveStock, velocity);
@@ -301,7 +304,9 @@ serve(async (req) => {
       const dos = calculateDaysOfStock(effectiveStock, velocity);
       if (dos <= RULES.WARNING_DAYS) {
         const isBW = isBlackWhiteCode(p.kode);
-        const missedTargetDays = customTargetDays || getDefaultTargetDays(p.kode);
+        const missedTargetDays = customTargetDays
+          ? getPlanningTargetDays(p.kode, customTargetDays)
+          : getDefaultTargetDays(p.kode);
         const recommendation = calculateRestockRecommendation({
           kode: p.kode,
           currentStock: effectiveStock,
