@@ -50,6 +50,7 @@ export default function BudgetChat({ result, alreadySent, selectedItems, budget 
 ${budget > 0 ? `- Sisa budget Boss: Rp ${budget.toLocaleString("id-ID")}` : "- Boss belum input sisa budget"}
 ${selectedItems.length > 0 ? `- Item terpilih (${selectedItems.length}): ${selectedItems.map(i => `${i.kode} +${i.qty}pcs (Rp ${i.cost.toLocaleString("id-ID")})`).join(", ")}` : ""}
 ${alreadySent ? "- Pesanan SUDAH dikirim, tidak bisa dikurangi" : "- Pesanan BELUM dikirim"}
+${result.review_basis ? `- Patokan review: ${result.review_basis}` : ""}
 
 DETAIL ITEM KURANG:
 ${kurang.map(c => `${c.kode} (${c.nama}): pesan ${c.qty_boss}, ideal ${c.ideal_qty}, DOS ${c.dos} hari, velocity ${c.velocity}/hari, modal Rp ${c.harga_modal.toLocaleString("id-ID")}`).join("\n")}

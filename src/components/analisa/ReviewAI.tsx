@@ -393,7 +393,7 @@ export default function ReviewAI() {
               <div className="rounded-xl bg-muted/30 p-3.5 space-y-2">
                 <label className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
                   <Package className="h-3.5 w-3.5" />
-                  Target Hari
+                  Override Target Hari
                 </label>
                 <div className="flex items-center gap-2">
                   <input
@@ -408,6 +408,9 @@ export default function ReviewAI() {
                   />
                   <span className="text-sm text-muted-foreground">hari</span>
                 </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Kosongkan agar Review AI ikut rumus Analisa utama.
+                </p>
               </div>
 
               {/* Date Picker */}

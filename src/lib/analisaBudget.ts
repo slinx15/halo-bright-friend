@@ -1,4 +1,5 @@
-import { RULES, isBlackWhiteCode, type ProductAnalysis } from "@/lib/stockAnalyticsEngine";
+import type { ProductAnalysis } from "@/lib/stockAnalyticsEngine";
+import { RULES, calculateRestockRecommendation } from "../../shared/restockCore";
 
 export const DAYS_PRESETS = [4, 7, 14, 21, 30];
 
@@ -51,29 +52,16 @@ export function buildBudgetEstimateFromAnalyses(
   const candidates: BudgetCandidate[] = [];
 
   for (const item of sorted) {
-    const isBlackWhite = isBlackWhiteCode(item.kode);
-    const batch = isBlackWhite ? RULES.BATCH_BW : RULES.BATCH;
-    const minOrder = isBlackWhite ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
-
-    const neededStock = Math.ceil(item.velocity * targetDays);
-    const deficit = neededStock - item.currentStock;
-    if (deficit <= 0) {
+    const recommendation = calculateRestockRecommendation({
+      kode: item.kode,
+      currentStock: item.currentStock,
+      velocity: item.velocity,
+      targetDays,
+    });
+    if (recommendation.deficit <= 0 || recommendation.recommendedQty <= 0) {
       continue;
     }
-
-    let qty = Math.max(minOrder, Math.ceil(deficit / batch) * batch);
-
-    const maxReasonableStock = Math.ceil(item.velocity * (targetDays + 3));
-    const projectedStock = item.currentStock + qty;
-    if (projectedStock > maxReasonableStock && qty > 0) {
-      const allowedNeed = maxReasonableStock - item.currentStock;
-      qty = Math.max(0, Math.ceil(allowedNeed / batch) * batch);
-    }
-
-    if (qty < minOrder) {
-      continue;
-    }
-
+    const qty = recommendation.recommendedQty;
     const cost = qty * item.unitPrice;
     const reason = item.isStockOut
       ? "Stok kosong"
@@ -88,8 +76,8 @@ export function buildBudgetEstimateFromAnalyses(
       idealQty: qty,
       idealCost: cost,
       reason,
-      batch,
-      minOrder,
+      batch: recommendation.batchSize,
+      minOrder: recommendation.minOrder,
     });
   }
 

@@ -1,20 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import {
+  RULES,
+  calculateDaysOfStock,
+  calculateRestockRecommendation,
+  getDefaultTargetDays,
+  isBlackWhiteCode,
+} from "../../../shared/restockCore.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
-
-const RULES = {
-  CYCLE_DAYS: 3, SAFETY_STOCK: 1, SAFETY_BW: 2,
-  BATCH: 25, BATCH_BW: 50, MIN_ORDER_PER_CODE: 25,
-  WMA_PERIOD1_DAYS: 14, WMA_PERIOD1_WEIGHT: 0.70, WMA_PERIOD2_WEIGHT: 0.30,
-  ANOMALY_MULTIPLIER: 3, LEAD_TIME_DAYS: 3,
-  BESTSELLER_VELOCITY: 5, SLOWMOVER_VELOCITY: 2,
-  CRITICAL_DAYS: 2, WARNING_DAYS: 4, ATTENTION_DAYS: 7,
-  NEW_PRODUCT_WAIT_DAYS: 7, NEW_PRODUCT_DEFAULT_VEL: 1,
 };
 
 const MATURITY_CONFIG = {
@@ -27,13 +24,6 @@ const HARD_MATURITY_CONFIG = {
   velocityCapFactor: 0.55,
   minSalesForCap: 20,
 };
-
-const COLOR_BLACK = ["BLK", "BLCK", "HITAM", "BLACK"];
-const COLOR_WHITE = ["WHT", "PUTIH", "WHITE"];
-function isBlackWhite(kode: string): boolean {
-  const upper = kode.toUpperCase();
-  return COLOR_BLACK.some(k => upper.includes(k)) || COLOR_WHITE.some(k => upper.includes(k));
-}
 
 const WIB_OFFSET = 7 * 3600000;
 
@@ -264,32 +254,33 @@ serve(async (req) => {
 
       // 2 Ons: full review
       const { velocity, salesDays } = computeWMAVelocity(stockOut, product.id);
-      const isBW = isBlackWhite(kode);
-      const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
-      const safety = isBW ? RULES.SAFETY_BW : RULES.SAFETY_STOCK;
-      const computedTargetDays = customTargetDays || (RULES.CYCLE_DAYS + safety + RULES.LEAD_TIME_DAYS);
-      const targetStock = Math.ceil(velocity * computedTargetDays);
+      const isBW = isBlackWhiteCode(kode);
+      const computedTargetDays = customTargetDays || getDefaultTargetDays(kode);
       const pendingQty = pendingMap[kode] || 0;
       const effectiveStock = product.stok + pendingQty;
-      const dos = velocity > 0 ? effectiveStock / velocity : (effectiveStock > 0 ? 999 : 0);
-      const idealQty = Math.max(0, targetStock - effectiveStock);
-      const idealRounded = idealQty > 0 ? Math.max(isBW ? batch : RULES.MIN_ORDER_PER_CODE, Math.ceil(idealQty / batch) * batch) : 0;
+      const dos = calculateDaysOfStock(effectiveStock, velocity);
+      const recommendation = calculateRestockRecommendation({
+        kode,
+        currentStock: effectiveStock,
+        velocity,
+        targetDays: computedTargetDays,
+      });
       const cost = qty * product.hargaModal;
       totalCost2Ons += cost;
 
       const status = getStatus(dos);
       const isBestSeller = velocity >= RULES.BESTSELLER_VELOCITY;
-      const { verdict, note } = getVerdict(qty, idealRounded, status);
+      const { verdict, note } = getVerdict(qty, recommendation.recommendedQty, status);
 
       cards.push({
         kode: product.kode, nama: product.nama,
         qty_boss: qty, stok: product.stok,
         velocity, dos: Math.round(dos * 10) / 10,
-        status, ideal_qty: idealRounded,
+        status, ideal_qty: recommendation.recommendedQty,
         verdict, verdict_note: note,
         cost, harga_modal: product.hargaModal,
         is_bestseller: isBestSeller, is_bw: isBW,
-        batch, pending_qty: pendingQty,
+        batch: recommendation.batchSize, pending_qty: pendingQty,
       });
     }
 
@@ -307,21 +298,24 @@ serve(async (req) => {
       const kodeUpper = p.kode.toUpperCase();
       const pendingQty = pendingMap[kodeUpper] || 0;
       const effectiveStock = prod.stok + pendingQty;
-      const dos = effectiveStock / velocity;
+      const dos = calculateDaysOfStock(effectiveStock, velocity);
       if (dos <= RULES.WARNING_DAYS) {
-        const isBW = isBlackWhite(p.kode);
-        const batch = isBW ? RULES.BATCH_BW : RULES.BATCH;
-        const missedTargetDays = customTargetDays || (RULES.CYCLE_DAYS + (isBW ? RULES.SAFETY_BW : RULES.SAFETY_STOCK) + RULES.LEAD_TIME_DAYS);
-        const idealQty = Math.max(batch, Math.ceil(velocity * missedTargetDays - effectiveStock));
-        const idealRounded = idealQty > 0 ? Math.ceil(idealQty / batch) * batch : 0;
-        const missedCost = idealRounded * (prod.hargaModal || 0);
-        if (idealRounded <= 0) continue;
+        const isBW = isBlackWhiteCode(p.kode);
+        const missedTargetDays = customTargetDays || getDefaultTargetDays(p.kode);
+        const recommendation = calculateRestockRecommendation({
+          kode: p.kode,
+          currentStock: effectiveStock,
+          velocity,
+          targetDays: missedTargetDays,
+        });
+        const missedCost = recommendation.recommendedQty * (prod.hargaModal || 0);
+        if (recommendation.recommendedQty <= 0) continue;
         missed.push({
           kode: p.kode, nama: p.nama,
           stok: prod.stok, velocity,
           dos: Math.round(dos * 10) / 10,
           status: getStatus(dos),
-          ideal_qty: idealRounded, is_bw: isBW,
+          ideal_qty: recommendation.recommendedQty, is_bw: isBW,
           harga_modal: prod.hargaModal || 0,
           cost: missedCost, pending_qty: pendingQty,
         });
@@ -414,6 +408,10 @@ Beri penilaian singkat + 1 saran paling penting. MAX 3 kalimat. Jangan pake mark
       budget_tambah: budgetTambah,
       budget_missed: budgetMissed,
       budget_total: budgetTotal,
+      target_days_used: customTargetDays ?? null,
+      review_basis: customTargetDays
+        ? `Override ${customTargetDays} hari`
+        : "Ikut rumus Analisa utama (cycle + safety + lead time)",
       stats: summaryData,
     };
 

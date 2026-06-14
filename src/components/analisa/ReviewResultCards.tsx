@@ -65,6 +65,8 @@ export interface ReviewResult {
   budget_tambah: number;
   budget_missed: number;
   budget_total: number;
+  target_days_used?: number | null;
+  review_basis?: string;
   stats: {
     total_items: number;
     pas: number;
@@ -327,7 +329,21 @@ function CollapsibleSection({ icon: Icon, title, count, color, sectionRef, isOpe
 }
 
 export function ReviewResultCards({ result, alreadySent }: { result: ReviewResult; alreadySent: boolean }) {
-  const { score, summary, cards, missed, other_items = [], unknown_codes, total_cost, total_cost_other = 0, budget_tambah, budget_missed, budget_total } = result;
+  const {
+    score,
+    summary,
+    cards,
+    missed,
+    other_items = [],
+    unknown_codes,
+    total_cost,
+    total_cost_other = 0,
+    budget_tambah,
+    budget_missed,
+    budget_total,
+    target_days_used,
+    review_basis,
+  } = result;
 
   const needMoreCards = cards.filter(c => isNeedMore(c)).sort((a, b) => a.dos - b.dos);
   const tooMuchCards = !alreadySent ? cards.filter(c => isTooMuch(c)) : [];
@@ -374,6 +390,12 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
                 <span className="text-lg font-extrabold">Hasil Review</span>
               </div>
               {summary && <p className="text-sm text-muted-foreground leading-relaxed">{summary}</p>}
+              {review_basis && (
+                <p className="text-xs text-muted-foreground">
+                  Patokan review: {review_basis}
+                  {target_days_used ? ` (${target_days_used} hari)` : ""}
+                </p>
+              )}
             </div>
           </div>
           

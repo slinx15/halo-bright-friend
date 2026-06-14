@@ -5,53 +5,17 @@
  */
 
 import type { ProductWithDetails } from "@/hooks/useProducts";
+import {
+  RULES,
+  calculateDaysOfStock,
+  calculateRestockRecommendation,
+  identifyColorGroup,
+  isBlackWhiteCode,
+  roundUpToBatch,
+} from "../../shared/restockCore";
+export { RULES, identifyColorGroup, isBlackWhiteCode } from "../../shared/restockCore";
 
 // ─── Constants (EXACT match bot RULES) ────────────────────
-export const RULES = {
-  CYCLE_DAYS: 3,
-  SAFETY_STOCK: 1,       // Safety 1 hari untuk warna
-  SAFETY_BW: 2,          // Safety 2 hari untuk hitam/putih
-  BATCH: 25,
-  BATCH_BW: 50,
-  MIN_ORDER_PER_CODE: 25,
-
-  // Priority scoring weights
-  WEIGHT_VELOCITY: 0.40,
-  WEIGHT_URGENCY: 0.30,
-  WEIGHT_TREND: 0.20,
-  WEIGHT_STOCK: 0.10,
-
-  // Display
-  DISPLAY_CYCLE_DAYS: 4,
-  DISPLAY_TOP_ITEMS: 20,
-
-  // Thresholds
-  CRITICAL_DAYS: 2,
-  WARNING_DAYS: 4,
-  ATTENTION_DAYS: 7,
-
-  BESTSELLER_VELOCITY: 5,
-  SLOWMOVER_VELOCITY: 2,
-  SLOWMOVER_MIN_QTY: 25,
-
-  // WMA
-  WMA_PERIOD1_DAYS: 14,
-  WMA_PERIOD1_WEIGHT: 0.70,
-  WMA_PERIOD2_WEIGHT: 0.30,
-
-  ANOMALY_MULTIPLIER: 3,
-  DEAD_STOCK_DAYS: 60,
-  LEAD_TIME_DAYS: 3,
-
-  NEW_PRODUCT_WAIT_DAYS: 7,
-  NEW_PRODUCT_DEFAULT_VEL: 1,
-
-  // Budget
-  BUDGET_MAX_WARNA: 25,
-  BUDGET_MAX_BW: 250,
-  WARNA_SUPER_VELOCITY: 5,
-};
-
 const MATURITY_CONFIG = {
   minSalesDays: 3,   // below this → immature data
   divisorFloor: 7,   // same philosophy as bot
@@ -123,30 +87,6 @@ export interface ProductAnalysis {
 }
 
 // ─── Helpers ──────────────────────────────────────────────
-
-export function identifyColorGroup(kode: string): "black" | "white" | null {
-  const upper = kode.toUpperCase();
-  for (const kw of COLOR_BLACK) if (upper.includes(kw)) return "black";
-  for (const kw of COLOR_WHITE) if (upper.includes(kw)) return "white";
-  return null;
-}
-
-export function isBlackWhiteCode(kode: string): boolean {
-  return identifyColorGroup(kode) !== null;
-}
-
-function getBatchSize(kode: string): number {
-  return isBlackWhiteCode(kode) ? RULES.BATCH_BW : RULES.BATCH;
-}
-
-function getSafetyDays(kode: string): number {
-  return isBlackWhiteCode(kode) ? RULES.SAFETY_BW : RULES.SAFETY_STOCK;
-}
-
-function roundUpToBatch(qty: number, batch: number): number {
-  if (qty <= 0) return 0;
-  return Math.ceil(qty / batch) * batch;
-}
 
 function toDateKey(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -379,10 +319,6 @@ export function analyzeAllProducts(
     const currentStock = product.stock?.jumlah ?? 0;
     const colorGroup = identifyColorGroup(product.kode);
     const isBW = isBlackWhiteCode(product.kode);
-    const batchSize = getBatchSize(product.kode);
-    const safetyDays = getSafetyDays(product.kode);
-    const minOrder = RULES.MIN_ORDER_PER_CODE;
-
     // New product check
     const firstSale = getFirstSaleDate(allSales, product.id);
     const ageDays = firstSale
@@ -403,29 +339,19 @@ export function analyzeAllProducts(
     // Sekarang produk stok habis SELALU dimasukkan agar user dapat peringatan.
     // Yang di-skip hanya slow mover yang masih punya stok (tidak urgent).
 
+    const restock = calculateRestockRecommendation({
+      kode: product.kode,
+      currentStock,
+      velocity,
+      targetDays: RULES.CYCLE_DAYS + (isBW ? RULES.SAFETY_BW : RULES.SAFETY_STOCK) + RULES.LEAD_TIME_DAYS,
+    });
+
     // Days of stock
-    const daysOfStock = velocity > 0 ? currentStock / velocity : (currentStock > 0 ? 999 : 0);
-
-    // Reorder target (EXACT bot: cycle + safety + lead time)
-    const targetDays = RULES.CYCLE_DAYS + safetyDays + RULES.LEAD_TIME_DAYS;
-    const targetStock = Math.ceil(velocity * targetDays);
-    const butuh = targetStock - currentStock;
-
-    // Bot parity: zero stock force buy
-    let rawButuh = butuh;
-    if (isStockOut && velocity > 0 && rawButuh <= 0) {
-      rawButuh = batchSize;
-    }
-
-    // Bot parity: batch rounding with min order
-    let recommendedQty = 0;
-    if (rawButuh > 0) {
-      if (isBW) {
-        recommendedQty = Math.max(batchSize, roundUpToBatch(rawButuh, batchSize));
-      } else {
-        recommendedQty = Math.max(minOrder, roundUpToBatch(rawButuh, minOrder));
-      }
-    }
+    const daysOfStock = calculateDaysOfStock(currentStock, velocity);
+    const batchSize = restock.batchSize;
+    const targetDays = restock.targetDays;
+    const targetStock = restock.targetStock;
+    let recommendedQty = restock.recommendedQty;
 
     // Soft best seller push — bot-style extra batch for true fast movers
     const isFastMover = velocity >= BEST_SELLER_PUSH_CONFIG.minVelocity4d;
@@ -441,7 +367,7 @@ export function analyzeAllProducts(
     }
 
     // Safety clamp — prevent runaway overstock
-    const maxReasonableStock = Math.ceil(velocity * (targetDays + 3));
+    const maxReasonableStock = restock.maxReasonableStock;
     const projectedStock = currentStock + recommendedQty;
     if (projectedStock > maxReasonableStock && recommendedQty > 0) {
       const allowedNeed = maxReasonableStock - currentStock;
