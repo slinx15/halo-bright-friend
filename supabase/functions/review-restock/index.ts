@@ -5,6 +5,7 @@ import {
   calculateDaysOfStock,
   calculateRestockRecommendation,
   getDefaultTargetDays,
+  getPlanningTargetDays,
   isBlackWhiteCode,
 } from "../../../shared/restockCore.ts";
 
