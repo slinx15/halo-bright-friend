@@ -42,6 +42,10 @@ interface PendingItem {
   qty: number;
 }
 
+interface PendingRestockRow {
+  pending_restock_items?: PendingItem[] | null;
+}
+
 // Build budget items recalculated for a specific periode (days)
 function buildBudgetItemsForPeriode(
   result: ReviewResult,
@@ -232,8 +236,8 @@ export default function BudgetPlanner({ result, alreadySent, onSelectedItemsChan
         if (error) throw error;
 
         const items: PendingItem[] = [];
-        (data || []).forEach((r: any) => {
-          (r.pending_restock_items || []).forEach((item: any) => {
+        (data as PendingRestockRow[] | null)?.forEach((row) => {
+          (row.pending_restock_items || []).forEach((item) => {
             items.push({ kode: item.kode, qty: item.qty });
           });
         });

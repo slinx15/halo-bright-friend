@@ -392,7 +392,7 @@ export function analyzeAllProducts(
 
     const wma = wmaData[product.id];
     const rawVelocity = isNew ? RULES.NEW_PRODUCT_DEFAULT_VEL : (wma?.velocity ?? 0);
-    let velocity = isNew ? RULES.NEW_PRODUCT_DEFAULT_VEL : (wma?.adjustedVelocity ?? 0);
+    const velocity = isNew ? RULES.NEW_PRODUCT_DEFAULT_VEL : (wma?.adjustedVelocity ?? 0);
 
     // Bot parity: slow mover skip
     const isSlowMover = velocity < RULES.SLOWMOVER_VELOCITY;

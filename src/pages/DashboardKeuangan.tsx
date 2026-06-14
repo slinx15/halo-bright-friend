@@ -46,6 +46,12 @@ type DailyPoint = {
   qty: number;
 };
 
+type DashboardTooltipPayload = {
+  color?: string;
+  dataKey?: string | number;
+  value?: number;
+};
+
 const periods: { key: PeriodKey; label: string; days: number }[] = [
   { key: "7d", label: "7 Hari", days: 7 },
   { key: "14d", label: "14 Hari", days: 14 },
@@ -198,19 +204,27 @@ export default function DashboardKeuangan() {
     return String(value);
   };
 
-  const customTooltip = ({ active, payload, label }: any) => {
+  const customTooltip = ({
+    active,
+    payload,
+    label,
+  }: {
+    active?: boolean;
+    payload?: DashboardTooltipPayload[];
+    label?: string | number;
+  }) => {
     if (!active || !payload?.length) return null;
     return (
       <div className="bg-popover/95 backdrop-blur-md border border-border rounded-xl p-3 shadow-lg text-xs space-y-1">
         <p className="font-bold text-foreground">{label}</p>
-        {payload.map((item: any) => (
-          <div key={item.dataKey} className="flex items-center gap-2">
+        {payload.map((item) => (
+          <div key={String(item.dataKey)} className="flex items-center gap-2">
             <div
               className="w-2.5 h-2.5 rounded-full"
               style={{ backgroundColor: item.color }}
             />
             <span className="text-muted-foreground capitalize">{item.dataKey}:</span>
-            <span className="font-bold text-foreground">{formatRupiah(item.value)}</span>
+            <span className="font-bold text-foreground">{formatRupiah(item.value ?? 0)}</span>
           </div>
         ))}
       </div>

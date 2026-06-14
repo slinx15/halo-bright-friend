@@ -6,6 +6,7 @@ import { MessageCircle, Send, Loader2, Sparkles } from "lucide-react";
 import type { ReviewResult } from "./ReviewResultCards";
 import type { BudgetItem } from "./BudgetPlanner";
 import { getAuthHeaders } from "@/lib/authHeaders";
+import { getErrorMessage } from "@/lib/errors";
 import { SUPABASE_URL } from "@/lib/supabaseEnv";
 
 interface ChatMessage {
@@ -130,7 +131,7 @@ ${result.missed.map(m => `${m.kode} (${m.nama}): stok ${m.stok}, DOS ${m.dos} ha
 
       // Flush remaining
       if (textBuffer.trim()) {
-        for (let raw of textBuffer.split("\n")) {
+        for (const raw of textBuffer.split("\n")) {
           if (!raw || !raw.startsWith("data: ")) continue;
           const jsonStr = raw.slice(6).trim();
           if (jsonStr === "[DONE]") continue;
@@ -141,11 +142,14 @@ ${result.missed.map(m => `${m.kode} (${m.nama}): stok ${m.stok}, DOS ${m.dos} ha
               assistantContent += content;
               updateAssistant(assistantContent);
             }
-          } catch {}
+          } catch {
+            // Ignore malformed trailing event chunks.
+          }
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Budget chat error:", err);
+      console.error("Budget chat message:", getErrorMessage(err));
       setMessages(prev => [...prev, { role: "assistant", content: "Maaf Boss, ada error. Coba lagi ya." }]);
     } finally {
       setIsLoading(false);
@@ -206,8 +210,9 @@ ${result.missed.map(m => `${m.kode} (${m.nama}): stok ${m.stok}, DOS ${m.dos} ha
           } catch { textBuffer = line + "\n" + textBuffer; break; }
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Budget chat error:", err);
+      console.error("Budget chat message:", getErrorMessage(err));
       setMessages(prev => [...prev, { role: "assistant", content: "Maaf Boss, ada error. Coba lagi ya." }]);
     } finally {
       setIsLoading(false);

@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useProducts } from "@/hooks/useProducts";
+import { useProducts, type ProductWithDetails } from "@/hooks/useProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,7 @@ import { formatRupiah, formatNumber } from "@/lib/formatters";
 import { ProdukSkeleton } from "@/components/LoadingSkeletons";
 import { BulkInputDialog } from "@/components/produk/BulkInputDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getErrorMessage } from "@/lib/errors";
 import { splitIntoStacks } from "@/lib/tumpukanUtils";
 import { registerStockIn } from "@/lib/stockMutations";
 
@@ -118,13 +119,13 @@ const ManajemenProduk = () => {
       resetForm();
       setShowAdd(false);
       queryClient.invalidateQueries({ queryKey: ["products"] });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: getErrorMessage(err), variant: "destructive" });
     }
     setSubmitting(false);
   };
 
-  const handleEdit = (p: any) => {
+  const handleEdit = (p: ProductWithDetails) => {
     setEditId(p.id); setKode(p.kode); setKategori(p.kategori || "");
     setHargaModal(p.prices?.harga_modal ?? 0); setHargaNormal(p.prices?.harga_normal ?? 0);
     setHargaGrosir(p.prices?.harga_grosir ?? 0); setHargaGrosir2(p.prices?.harga_grosir2 ?? 0); setStokAwal(0); setShowAdd(true);
@@ -136,8 +137,8 @@ const ManajemenProduk = () => {
       await supabase.from("products").update({ is_active: false }).eq("id", id);
       toast({ title: "Dinonaktifkan", description: `${kode} disembunyikan, data stok dan harga tetap tersimpan` });
       queryClient.invalidateQueries({ queryKey: ["products"] });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: getErrorMessage(err), variant: "destructive" });
     }
   };
 

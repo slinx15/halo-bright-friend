@@ -4,6 +4,7 @@ import { ClipboardCheck, Clock, ChevronDown, ListChecks } from "lucide-react";
 
 import { getAuthHeaders } from "@/lib/authHeaders";
 import { logActivity } from "@/lib/activityLogger";
+import { getErrorMessage } from "@/lib/errors";
 import { formatDate, formatNumber } from "@/lib/formatters";
 import { findProductMatch } from "@/lib/productMatcher";
 import { registerStockOpname } from "@/lib/stockMutations";
@@ -43,6 +44,20 @@ interface MissingOpnameItem {
   stokSaatIni: number | null;
 }
 
+interface OpnameHistoryRow {
+  id: string;
+  created_at: string;
+  status: string;
+  selisih: number;
+  stok_sistem: number;
+  stok_fisik: number;
+  catatan: string | null;
+  products?: {
+    kode?: string;
+    nama?: string;
+  } | null;
+}
+
 function getCurrentStock(product: ProductWithDetails) {
   return product.stock?.jumlah ?? null;
 }
@@ -64,7 +79,7 @@ const Opname = () => {
         { headers: { ...headers, Prefer: "return=representation" } }
       );
       if (!res.ok) throw new Error(await res.text());
-      return res.json();
+      return res.json() as Promise<OpnameHistoryRow[]>;
     },
   });
 
@@ -98,8 +113,8 @@ const Opname = () => {
   });
 
   const totalOpname = history?.length ?? 0;
-  const sesuaiCount = history?.filter((h: any) => h.status === "sesuai").length ?? 0;
-  const selisihCount = history?.filter((h: any) => h.status !== "sesuai").length ?? 0;
+  const sesuaiCount = history?.filter((item) => item.status === "sesuai").length ?? 0;
+  const selisihCount = history?.filter((item) => item.status !== "sesuai").length ?? 0;
 
   const missingSinceReset = useMemo(() => {
     if (!products || !opnameCoverage) return [] as MissingOpnameItem[];
@@ -157,8 +172,8 @@ const Opname = () => {
             totalSelisihCount++;
           }
           successCount++;
-        } catch (err: any) {
-          errors.push(`${product.kode}: ${err.message}`);
+        } catch (err: unknown) {
+          errors.push(`${product.kode}: ${getErrorMessage(err)}`);
         }
       }
 
@@ -184,12 +199,13 @@ const Opname = () => {
       }
 
       return { successCount, selisihCount: totalSelisihCount, errorMessages: errors };
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      toast({ title: "Error", description: message, variant: "destructive" });
       return {
         successCount: 0,
         selisihCount: 0,
-        errorMessages: [err.message],
+        errorMessages: [message],
       };
     } finally {
       setSubmitting(false);
@@ -383,7 +399,7 @@ const Opname = () => {
                       <p className="text-sm text-muted-foreground font-medium">Belum ada riwayat opname</p>
                     </div>
                   ) : (
-                    history.map((h: any) => (
+                    history.map((h) => (
                       <div
                         key={h.id}
                         className={`rounded-xl border p-3.5 space-y-2 transition-all duration-200 active:scale-[0.98] bg-card ${
@@ -443,7 +459,7 @@ const Opname = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {history?.map((h: any, idx: number) => (
+                      {history?.map((h, idx: number) => (
                         <TableRow key={h.id} className={idx % 2 === 0 ? "" : "bg-muted/15"}>
                           <TableCell className="text-xs text-muted-foreground">{formatDate(h.created_at)}</TableCell>
                           <TableCell className="font-mono font-bold text-sm">{h.products?.kode}</TableCell>

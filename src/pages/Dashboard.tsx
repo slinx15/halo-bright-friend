@@ -6,7 +6,7 @@ import { CriticalStockAlert } from "@/components/CriticalStockAlert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useProducts } from "@/hooks/useProducts";
+import { useProducts, type ProductWithDetails } from "@/hooks/useProducts";
 import { useQuery } from "@tanstack/react-query";
 import { formatNumber, formatRupiah, getStockStatus } from "@/lib/formatters";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -35,7 +35,7 @@ function getGreetingEmoji() {
 }
 
 // ── Command Center Chips ──────────────────────────────────────────
-function CommandCenter({ products, isLoading }: { products: any[] | undefined; isLoading: boolean }) {
+function CommandCenter({ products, isLoading }: { products: ProductWithDetails[] | undefined; isLoading: boolean }) {
   const navigate = useNavigate();
   if (isLoading || !products) return null;
 
@@ -151,11 +151,11 @@ function HeroKpi({ omzet, profit, pcs, margin }: { omzet: number; profit: number
 }
 
 // ── Stok Rendah Card ──────────────────────────────────────────────
-function StokRendahCard({ products, isLoading }: { products: any[] | undefined; isLoading: boolean }) {
+function StokRendahCard({ products, isLoading }: { products: ProductWithDetails[] | undefined; isLoading: boolean }) {
   const navigate = useNavigate();
   const stokKritisList = products
     ?.filter(p => p.stock && p.stock.jumlah > 0 && p.stock.jumlah <= 15)
-    .sort((a: any, b: any) => (a.stock?.jumlah ?? 0) - (b.stock?.jumlah ?? 0))
+    .sort((a, b) => (a.stock?.jumlah ?? 0) - (b.stock?.jumlah ?? 0))
     .slice(0, 5) ?? [];
 
   const maxStock = 15;
@@ -186,7 +186,7 @@ function StokRendahCard({ products, isLoading }: { products: any[] | undefined; 
           </div>
         ) : (
           <div className="space-y-2">
-            {stokKritisList.map((p: any) => {
+            {stokKritisList.map((p) => {
               const jumlah = p.stock?.jumlah ?? 0;
               const status = getStockStatus(jumlah);
               const pct = Math.max((jumlah / maxStock) * 100, 5);

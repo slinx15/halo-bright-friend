@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -27,6 +28,8 @@ const ACTION_CONFIG: Record<string, { label: string; icon: React.ElementType; co
 
 const PAGE_SIZE = 50;
 
+type ActivityLogRow = Database["public"]["Tables"]["activity_log"]["Row"];
+
 const LogAktivitas = () => {
   const { role } = useAuth();
   const isMobile = useIsMobile();
@@ -47,7 +50,7 @@ const LogAktivitas = () => {
     queryKey: ["activity-log", filterAction, page],
     queryFn: async () => {
       let query = supabase
-        .from("activity_log" as any)
+        .from("activity_log")
         .select("*", { count: "exact" })
         .order("created_at", { ascending: false })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
@@ -58,7 +61,7 @@ const LogAktivitas = () => {
 
       const { data, count, error } = await query;
       if (error) throw error;
-      return { logs: (data || []) as any[], total: count || 0 };
+      return { logs: (data || []) as ActivityLogRow[], total: count || 0 };
     },
   });
 
@@ -67,7 +70,7 @@ const LogAktivitas = () => {
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   const filtered = search
-    ? logs.filter((l: any) => l.detail?.toLowerCase().includes(search.toLowerCase()))
+    ? logs.filter((log) => log.detail?.toLowerCase().includes(search.toLowerCase()))
     : logs;
 
   const getUserName = (userId: string) => {
@@ -92,7 +95,7 @@ const LogAktivitas = () => {
   };
 
   // Group by date
-  const grouped: Record<string, any[]> = {};
+  const grouped: Record<string, ActivityLogRow[]> = {};
   for (const log of filtered) {
     const d = new Date(log.created_at);
     const wib = new Date(d.getTime() + 7 * 3600000);
@@ -149,7 +152,7 @@ const LogAktivitas = () => {
                 {formatDateWIB(items[0].created_at)}
               </p>
               <Card className="divide-y divide-border/50 overflow-hidden">
-                {items.map((log: any) => {
+                {items.map((log) => {
                   const config = ACTION_CONFIG[log.action] || ACTION_CONFIG.stock_in;
                   const Icon = config.icon;
                   return (

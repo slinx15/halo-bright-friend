@@ -1,14 +1,6 @@
 import { Outlet } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "./AppSidebar";
 import MobileNav from "./MobileNav";
-
-export function doLogout() {
-  Object.keys(localStorage).filter(k => k.startsWith('sb-')).forEach(k => localStorage.removeItem(k));
-  sessionStorage.setItem('logging_out', 'true');
-  supabase.auth.signOut({ scope: 'local' }).catch(() => {});
-  window.location.replace("/auth");
-}
 
 const AppLayout = () => {
   return (

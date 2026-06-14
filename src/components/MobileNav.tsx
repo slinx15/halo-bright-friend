@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { doLogout } from "./AppLayout";
+import { doLogout } from "@/lib/logout";
 import { useTheme } from "next-themes";
 import {
   LayoutDashboard,
@@ -24,6 +24,7 @@ import {
   History,
   Wallet,
   ShieldCheck,
+  Scale,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -46,6 +47,7 @@ const secondaryNav = [
   { icon: Users, label: "Kelola User", path: "/users", adminOnly: true },
   { icon: History, label: "Log Aktivitas", path: "/log", adminOnly: true },
   { icon: ShieldCheck, label: "Audit Stok", path: "/audit-stok", adminOnly: true },
+  { icon: Scale, label: "Rekonsiliasi Stok", path: "/rekonsiliasi-stok", adminOnly: true },
 ];
 
 const MobileNav = () => {

@@ -9,12 +9,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getAuthHeaders } from "@/lib/authHeaders";
+import { getErrorMessage, isAbortError } from "@/lib/errors";
 import { findProductMatch, isAmbiguousProductCode } from "@/lib/productMatcher";
 import { SUPABASE_URL } from "@/lib/supabaseEnv";
 
 interface OcrUploadProps {
   mode: "masuk" | "keluar" | "opname";
-  onResult: (items: any[]) => void;
+  onResult: (items: OcrItem[]) => void;
 }
 
 interface OcrItem {
@@ -36,6 +37,13 @@ interface OcrItem {
   productName?: string;
   stokSistem?: number;
 }
+
+type OcrEditableField = keyof Pick<
+  OcrItem,
+  "kode" | "qty" | "qty_pesan" | "qty_kirim" | "stok_fisik" | "harga_type" | "toko" | "nama" | "catatan" | "harga_modal" | "kategori"
+>;
+
+type OcrFieldValue = string | number | undefined;
 
 export function OcrUpload({ mode, onResult }: OcrUploadProps) {
   const [loading, setLoading] = useState(false);
@@ -135,7 +143,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
     return isAmbiguousProductCode(products, rawKode);
   };
 
-  const validateItems = (items: any[]): OcrItem[] => {
+  const validateItems = (items: OcrItem[]): OcrItem[] => {
     return items.map((item) => {
       const kode = String(item.kode || "").toUpperCase().trim();
       const kategori = item.kategori || undefined;
@@ -212,12 +220,12 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
       const validated = validateItems(items);
       setOcrItems(validated);
       setShowConfirm(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("OCR error:", err);
-      if (err.name === "AbortError") {
+      if (isAbortError(err)) {
         toast({ title: "Timeout", description: "Proses terlalu lama. Coba foto yang lebih jelas/kecil.", variant: "destructive" });
       } else {
-        toast({ title: "Error", description: err.message || "Gagal memproses foto", variant: "destructive" });
+        toast({ title: "Error", description: getErrorMessage(err, "Gagal memproses foto"), variant: "destructive" });
       }
     } finally {
       setLoading(false);
@@ -267,7 +275,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
     setPreview(null);
   };
 
-  const updateOcrItem = (idx: number, field: string, value: any) => {
+  const updateOcrItem = (idx: number, field: OcrEditableField, value: OcrFieldValue) => {
     setOcrItems((prev) => {
       const updated = [...prev];
       updated[idx] = { ...updated[idx], [field]: value };

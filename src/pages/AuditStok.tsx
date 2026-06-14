@@ -39,6 +39,8 @@ type StockAuditRow = Tables<"stock_audit_log"> & {
   products?: ProductSummary | ProductSummary[];
 };
 
+const EMPTY_LOGS: StockAuditRow[] = [];
+
 type OperationFilter = "all" | "INSERT" | "UPDATE" | "DELETE";
 
 const OPERATION_CONFIG: Record<string, { label: string; badge: string; icon: typeof Package }> = {
@@ -171,7 +173,7 @@ const AuditStok = () => {
     enabled: role === "admin",
   });
 
-  const logs = data?.logs || [];
+  const logs = data?.logs ?? EMPTY_LOGS;
   const total = data?.total || 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 

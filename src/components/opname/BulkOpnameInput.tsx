@@ -37,7 +37,9 @@ function saveDraft(rows: InputRow[]) {
     } else {
       localStorage.removeItem(DRAFT_KEY);
     }
-  } catch {}
+  } catch {
+    // Draft persistence is best-effort only.
+  }
 }
 
 function loadDraft(): { rows: InputRow[] } | null {
@@ -58,8 +60,16 @@ function getNextId() {
 getNextId.counter = 0;
 
 export interface BulkOpnameInputHandle {
-  handleOcrResult: (items: any[]) => void;
+  handleOcrResult: (items: BulkOpnameOcrItem[]) => void;
   handleVoiceResult: (items: { kode: string; qty: number }[]) => void;
+}
+
+interface BulkOpnameOcrItem {
+  productId?: string;
+  kode?: string;
+  kategori?: string;
+  qty?: number;
+  stok_fisik?: number;
 }
 
 export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInputProps>(function BulkOpnameInput({ products, onSubmit, submitting }, ref) {
@@ -181,7 +191,7 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
     }
   };
 
-  const handleOcrResult = useCallback((ocrItems: any[]) => {
+  const handleOcrResult = useCallback((ocrItems: BulkOpnameOcrItem[]) => {
     const newRows: InputRow[] = ocrItems
       .map((item) => {
         const product = findProductMatch(products, { productId: item.productId, kode: item.kode, kategori: item.kategori });

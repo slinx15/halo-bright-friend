@@ -18,14 +18,16 @@ function getAuthToken(): string {
   const storageKey = Object.keys(localStorage).find(k => k.includes("auth-token"));
   if (!storageKey) return "";
   try {
-    const parsed = JSON.parse(localStorage.getItem(storageKey) || "");
+    const parsed = JSON.parse(localStorage.getItem(storageKey) || "") as {
+      access_token?: string;
+    };
     return parsed?.access_token || "";
   } catch {
     return "";
   }
 }
 
-function callManageUsers(action: string, method: string, body?: any) {
+function callManageUsers(action: string, method: string, body?: Record<string, unknown>) {
   const token = getAuthToken();
   return fetch(`${SUPABASE_URL}/functions/v1/manage-users?action=${action}`, {
     method,

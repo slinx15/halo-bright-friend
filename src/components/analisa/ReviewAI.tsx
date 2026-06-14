@@ -12,13 +12,14 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useProducts } from "@/hooks/useProducts";
-import { useProductAliases } from "@/hooks/useProductAliases";
+import { useProducts, type ProductWithDetails } from "@/hooks/useProducts";
+import { useProductAliases, type ProductAlias } from "@/hooks/useProductAliases";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { ReviewResultCards, type ReviewResult } from "./ReviewResultCards";
 import { getAuthHeaders } from "@/lib/authHeaders";
+import { getErrorMessage } from "@/lib/errors";
 import { SUPABASE_URL } from "@/lib/supabaseEnv";
 
 interface ReviewItem {
@@ -28,7 +29,13 @@ interface ReviewItem {
   productName?: string;
 }
 
-function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[] {
+interface ReviewOcrItem {
+  kode?: string;
+  qty?: number;
+  qty_pesan?: number;
+}
+
+function parseInput(text: string, products: ProductWithDetails[], aliases: ProductAlias[]): ReviewItem[] {
   const lines = text.split("\n").map(l => l.trim());
   const items: ReviewItem[] = [];
 
@@ -65,7 +72,7 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
     for (const { regex, kategori } of HEADER_PATTERNS) {
       if (regex.test(line)) {
         // Only treat as header if it does NOT look like a product line (no qty pattern)
-        const hasQty = /[\s.\-:=]+\d+\s*(?:pcs|pc|buah|pack)?$/i.test(line);
+        const hasQty = /[\s.:-=]+\d+\s*(?:pcs|pc|buah|pack)?$/i.test(line);
         if (!hasQty) {
           activeKategori = kategori;
           isHeader = true;
@@ -76,8 +83,8 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
     if (isHeader) continue;
 
     // Try to extract: everything before the last number = kode, last number = qty
-    const matchGeneral = line.match(/^(.+?)[.\s]*[\s=\-:]+\s*(\d+)\s*(?:pcs|pc|buah|pack|pak)?$/i);
-    const matchQtyFirst = line.match(/^(\d+)\s*(?:pcs|pc|buah|pack|pak)?\s+([A-Za-z][A-Za-z0-9\-\/\s]*)\s*$/i);
+    const matchGeneral = line.match(/^(.+?)[.\s]*[\s=:-]+\s*(\d+)\s*(?:pcs|pc|buah|pack|pak)?$/i);
+    const matchQtyFirst = line.match(/^(\d+)\s*(?:pcs|pc|buah|pack|pak)?\s+([A-Za-z][A-Za-z0-9\-/\s]*)\s*$/i);
 
     const match = matchGeneral || matchQtyFirst;
     if (!match) continue;
@@ -92,7 +99,7 @@ function parseInput(text: string, products: any[], aliases: any[]): ReviewItem[]
     }
     
     // Clean kode: remove trailing dots, spaces, dashes
-    kode = kode.replace(/[.\s\-]+$/, "");
+    kode = kode.replace(/[.\s-]+$/, "");
 
     if (qty <= 0) continue;
 
@@ -208,7 +215,13 @@ export default function ReviewAI() {
     setReviewResult(null);
 
     try {
-      const body: any = { items: validItems.map(i => ({ kode: i.kode, qty: i.qty })) };
+      const body: {
+        items: Array<{ kode: string; qty: number }>;
+        target_days?: number;
+        already_sent?: boolean;
+        mode?: "topup";
+        ordered_at?: string;
+      } = { items: validItems.map(i => ({ kode: i.kode, qty: i.qty })) };
       if (targetDays && parseInt(targetDays) > 0) {
         body.target_days = parseInt(targetDays);
       }
@@ -234,9 +247,9 @@ export default function ReviewAI() {
 
       const data = await resp.json();
       setReviewResult(data as ReviewResult);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Review error:", err);
-      toast({ title: "Error", description: err.message || "Gagal review", variant: "destructive" });
+      toast({ title: "Error", description: getErrorMessage(err, "Gagal review"), variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -270,18 +283,18 @@ export default function ReviewAI() {
 
       if (!resp.ok) throw new Error(`OCR failed: ${resp.status}`);
       const data = await resp.json();
-      const ocrItems = data?.items || [];
+      const ocrItems = (data?.items ?? []) as ReviewOcrItem[];
 
       if (ocrItems.length === 0) {
         toast({ title: "OCR", description: "Tidak bisa membaca data dari foto", variant: "destructive" });
         return;
       }
 
-      const ocrText = ocrItems.map((i: any) => `${i.kode} ${i.qty || i.qty_pesan || 0}`).join("\n");
+      const ocrText = ocrItems.map((item) => `${item.kode} ${item.qty || item.qty_pesan || 0}`).join("\n");
       setInputText(prev => prev ? prev.trim() + "\n" + ocrText : ocrText);
       toast({ title: "📸 Foto Terbaca!", description: `${ocrItems.length} item berhasil dibaca` });
-    } catch (err: any) {
-      toast({ title: "Error OCR", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Error OCR", description: getErrorMessage(err), variant: "destructive" });
     } finally {
       setOcrLoading(false);
     }

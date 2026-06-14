@@ -5,6 +5,7 @@ import { Mic, MicOff, Loader2, Check, X, Trash2, AlertTriangle } from "lucide-re
 import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/useProducts";
 import { getAuthHeaders } from "@/lib/authHeaders";
+import { getErrorMessage, isAbortError } from "@/lib/errors";
 import { findProductMatch } from "@/lib/productMatcher";
 import { SUPABASE_URL } from "@/lib/supabaseEnv";
 import {
@@ -27,6 +28,31 @@ interface VoiceItem {
   productName?: string;
   matchedKode?: string;
   stokSistem?: number;
+}
+
+interface VoiceApiItem {
+  kode: string;
+  qty: number;
+}
+
+interface VoiceApiResponse {
+  items?: VoiceApiItem[];
+  transcript?: string;
+}
+
+interface VoiceApiErrorResponse {
+  error?: string;
+}
+
+const VOICE_RETRY_DELAY_MS = 800;
+
+function isRetriableVoiceError(error: unknown): boolean {
+  if (isAbortError(error)) {
+    return true;
+  }
+
+  const message = getErrorMessage(error, "");
+  return message.includes("Failed to fetch") || message.includes("NetworkError") || /HTTP 5\d\d/.test(message);
 }
 
 export function VoiceOpnameInput({ onResult }: VoiceOpnameInputProps) {
@@ -95,11 +121,11 @@ export function VoiceOpnameInput({ onResult }: VoiceOpnameInputProps) {
       };
       recorder.start();
       setIsRecording(true);
-    } catch (err: any) {
-      console.error("Mic error:", err);
+    } catch (error) {
+      console.error("Mic error:", error);
       toast({
         title: "Mikrofon tidak bisa diakses",
-        description: "Pastikan izin mic sudah diberikan di browser",
+        description: getErrorMessage(error, "Pastikan izin mic sudah diberikan di browser"),
         variant: "destructive",
       });
     }
@@ -112,7 +138,7 @@ export function VoiceOpnameInput({ onResult }: VoiceOpnameInputProps) {
     setIsRecording(false);
   };
 
-  const callVoiceApi = async (base64: string, mimeType: string, timeoutMs: number) => {
+  const callVoiceApi = async (base64: string, mimeType: string, timeoutMs: number): Promise<VoiceApiResponse> => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     try {
@@ -131,10 +157,10 @@ export function VoiceOpnameInput({ onResult }: VoiceOpnameInputProps) {
         }
       );
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        const errorPayload = (await res.json().catch(() => ({}))) as VoiceApiErrorResponse;
+        throw new Error(errorPayload.error || `HTTP ${res.status}`);
       }
-      return await res.json();
+      return (await res.json()) as VoiceApiResponse;
     } finally {
       clearTimeout(timeoutId);
     }
@@ -144,8 +170,8 @@ export function VoiceOpnameInput({ onResult }: VoiceOpnameInputProps) {
     setIsProcessing(true);
     try {
       const base64 = await blobToBase64(blob);
-      let data: any;
-      let lastErr: any = null;
+      let data: VoiceApiResponse | null = null;
+      let lastError: unknown = null;
 
       // Try up to 2x (1 retry) on timeout / network / 5xx errors
       for (let attempt = 1; attempt <= 2; attempt++) {
@@ -153,23 +179,22 @@ export function VoiceOpnameInput({ onResult }: VoiceOpnameInputProps) {
           data = await callVoiceApi(base64, blob.type, 60000);
           lastErr = null;
           break;
-        } catch (err: any) {
-          lastErr = err;
-          const isTimeout = err?.name === "AbortError";
-          const isNetwork = err?.message?.includes("Failed to fetch") || err?.message?.includes("NetworkError");
-          const isServerErr = /HTTP 5\d\d/.test(err?.message || "");
-          const retriable = isTimeout || isNetwork || isServerErr;
-          console.warn(`Voice attempt ${attempt} failed:`, err?.message, "retriable:", retriable);
+        } catch (error) {
+          lastError = error;
+          const retriable = isRetriableVoiceError(error);
+          console.warn(`Voice attempt ${attempt} failed:`, getErrorMessage(error), "retriable:", retriable);
           if (attempt === 1 && retriable) {
             toast({ title: "Mencoba ulang...", description: "Koneksi/AI lambat, coba sekali lagi" });
-            await new Promise((r) => setTimeout(r, 800));
+            await new Promise((resolve) => setTimeout(resolve, VOICE_RETRY_DELAY_MS));
             continue;
           }
-          throw err;
+          throw error;
         }
       }
 
-      if (lastErr) throw lastErr;
+      if (lastError) {
+        throw lastError;
+      }
 
       const rawItems: { kode: string; qty: number }[] = data?.items || [];
       if (rawItems.length === 0) {
@@ -185,11 +210,11 @@ export function VoiceOpnameInput({ onResult }: VoiceOpnameInputProps) {
       setItems(validateItems(rawItems));
       setTranscript(data?.transcript || "");
       setShowConfirm(true);
-    } catch (err: any) {
-      console.error("Voice opname error:", err);
+    } catch (error) {
+      console.error("Voice opname error:", error);
       toast({
         title: "Gagal memproses suara",
-        description: err.name === "AbortError" ? "Timeout — coba rekam lebih pendek" : err.message,
+        description: isAbortError(error) ? "Timeout — coba rekam lebih pendek" : getErrorMessage(error, "Gagal memproses suara"),
         variant: "destructive",
       });
     } finally {

@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { getErrorMessage } from "@/lib/errors";
 import { TableProperties, Plus, Trash2, Loader2 } from "lucide-react";
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/lib/supabaseEnv";
 
@@ -113,11 +114,11 @@ export function BulkInputDialog() {
       if (!accessToken) {
         console.log("[BulkImport] Trying getSession fallback...");
         const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise((_, reject) => 
+        const timeoutPromise = new Promise<never>((_, reject) => 
           setTimeout(() => reject(new Error("Auth timeout")), 5000)
         );
         try {
-          const { data: sessionData } = await Promise.race([sessionPromise, timeoutPromise]) as any;
+          const { data: sessionData } = await Promise.race([sessionPromise, timeoutPromise]);
           accessToken = sessionData?.session?.access_token || "";
         } catch (e) {
           console.warn("[BulkImport] getSession timed out, using stored token");
@@ -177,9 +178,9 @@ export function BulkInputDialog() {
       setRows([emptyRow(), emptyRow(), emptyRow(), emptyRow(), emptyRow()]);
       setOpen(false);
       queryClient.invalidateQueries({ queryKey: ["products"] });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[BulkImport] Error:", err);
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Error", description: getErrorMessage(err), variant: "destructive" });
     }
     setSubmitting(false);
     setProgress(0);

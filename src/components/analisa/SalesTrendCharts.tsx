@@ -15,6 +15,13 @@ interface SalesTrendChartsProps {
   isMobile: boolean;
 }
 
+interface ChartTooltipPayload {
+  color?: string;
+  dataKey?: string | number;
+  name?: string | number;
+  value?: string | number;
+}
+
 function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementType; title: string; subtitle?: string }) {
   return (
     <div className="flex items-center gap-3 pb-1">
@@ -30,16 +37,24 @@ function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementTyp
 }
 
 // Custom tooltip
-function ChartTooltip({ active, payload, label }: any) {
+function ChartTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: ChartTooltipPayload[];
+  label?: string | number;
+}) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-lg border bg-popover p-2.5 shadow-md text-xs">
       <p className="font-semibold mb-1">{label}</p>
-      {payload.map((p: any) => (
-        <div key={p.dataKey} className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
-          <span className="text-muted-foreground">{p.name}:</span>
-          <span className="font-bold tabular-nums">{p.value}</span>
+      {payload.map((item) => (
+        <div key={String(item.dataKey)} className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
+          <span className="text-muted-foreground">{item.name}:</span>
+          <span className="font-bold tabular-nums">{item.value}</span>
         </div>
       ))}
     </div>

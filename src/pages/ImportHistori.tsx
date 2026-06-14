@@ -13,6 +13,7 @@ import { useProducts } from "@/hooks/useProducts";
 import * as XLSX from "xlsx";
 
 import { getAuthHeaders } from "@/lib/authHeaders";
+import { getErrorMessage } from "@/lib/errors";
 import { SUPABASE_URL } from "@/lib/supabaseEnv";
 
 type ParsedRow = {
@@ -22,6 +23,31 @@ type ParsedRow = {
   pesanan: number;
   kiriman: number;
 };
+
+interface ExportedSaleRow {
+  created_at: string;
+  product_id: string;
+  toko: string | null;
+  qty_pesan: number;
+  qty_kirim: number;
+  harga_type: string;
+  harga_satuan: number;
+  total_harga: number;
+  catatan: string | null;
+}
+
+interface ImportFailure {
+  kode: string;
+  tanggal: string;
+  error: string;
+}
+
+interface ImportResult {
+  inserted: number;
+  skipped: number;
+  not_found: string[];
+  failed: ImportFailure[];
+}
 
 function parseCSV(text: string): ParsedRow[] {
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
@@ -56,7 +82,7 @@ const ImportHistori = () => {
   const [fileName, setFileName] = useState("");
   const [importing, setImporting] = useState(false);
   const [clearBeforeImport, setClearBeforeImport] = useState(false);
-  const [result, setResult] = useState<{ inserted: number; skipped: number; not_found: string[] } | null>(null);
+  const [result, setResult] = useState<ImportResult | null>(null);
 
   const handleFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -87,12 +113,31 @@ const ImportHistori = () => {
         headers: await getAuthHeaders(),
         body: JSON.stringify({ rows, clear_before_import: clearBeforeImport }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as Partial<ImportResult> & { error?: string };
       if (!res.ok) throw new Error(data.error || "Import gagal");
-      setResult(data);
-      toast.success(`${data.inserted} transaksi berhasil diimport!`);
-    } catch (err: any) {
-      toast.error(err.message);
+
+      const importResult: ImportResult = {
+        inserted: data.inserted ?? 0,
+        skipped: data.skipped ?? 0,
+        not_found: data.not_found ?? [],
+        failed: data.failed ?? [],
+      };
+
+      setResult(importResult);
+
+      if (importResult.failed.length > 0) {
+        const failedPreview = importResult.failed
+          .slice(0, 2)
+          .map((item) => `${item.kode}: ${item.error}`)
+          .join("; ");
+        toast.error(
+          `${importResult.inserted} berhasil, ${importResult.failed.length} gagal${failedPreview ? ` - ${failedPreview}` : ""}`,
+        );
+      } else {
+        toast.success(`${importResult.inserted} transaksi berhasil diimport!`);
+      }
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     } finally {
       setImporting(false);
     }
@@ -202,7 +247,7 @@ const ImportHistori = () => {
                     />
                     <Label htmlFor="clearBefore" className="text-sm cursor-pointer">
                       <span className="font-semibold text-destructive">Hapus semua data penjualan lama</span>
-                      <span className="text-muted-foreground"> sebelum import (untuk menghindari duplikat)</span>
+                      <span className="text-muted-foreground"> sebelum import dan kembalikan stoknya dulu (admin only)</span>
                     </Label>
                   </div>
 
@@ -215,14 +260,28 @@ const ImportHistori = () => {
 
               {result && (
                 <div className="space-y-2 rounded-xl bg-muted/40 p-3.5">
-                  <div className="flex items-center gap-2 text-success text-sm font-semibold">
+                  <div className={`flex items-center gap-2 text-sm font-semibold ${result.failed.length > 0 ? "text-warning" : "text-success"}`}>
                     <CheckCircle className="h-4 w-4" />
-                    {result.inserted} transaksi berhasil diimport
+                    {result.inserted} transaksi berhasil diproses
                   </div>
                   {result.skipped > 0 && (
                     <div className="flex items-center gap-2 text-warning text-sm">
                       <AlertTriangle className="h-4 w-4" />
                       {result.skipped} baris dilewati
+                    </div>
+                  )}
+                  {result.failed.length > 0 && (
+                    <div className="space-y-1 text-sm text-destructive">
+                      <div className="flex items-center gap-2 font-semibold">
+                        <AlertTriangle className="h-4 w-4" />
+                        {result.failed.length} transaksi gagal diproses
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {result.failed
+                          .slice(0, 5)
+                          .map((item) => `${item.kode}: ${item.error}`)
+                          .join(" | ")}
+                      </div>
                     </div>
                   )}
                   {result.not_found.length > 0 && (
@@ -265,7 +324,7 @@ function ExportSection() {
         { headers: { ...headers, "Prefer": "return=representation" } }
       );
       if (!res.ok) throw new Error("Gagal mengambil data penjualan");
-      const sales: any[] = await res.json();
+      const sales = (await res.json()) as ExportedSaleRow[];
 
       if (sales.length === 0) {
         toast.error("Tidak ada data penjualan dalam periode ini");
@@ -297,8 +356,9 @@ function ExportSection() {
       const ws = XLSX.utils.json_to_sheet(excelRows);
 
       // Auto-size columns
-      const colWidths = Object.keys(excelRows[0]).map(key => ({
-        wch: Math.max(key.length, ...excelRows.map(r => String((r as any)[key]).length)) + 2
+      const columns = Object.keys(excelRows[0]) as Array<keyof (typeof excelRows)[number]>;
+      const colWidths = columns.map((key) => ({
+        wch: Math.max(String(key).length, ...excelRows.map((row) => String(row[key]).length)) + 2
       }));
       ws["!cols"] = colWidths;
 
@@ -310,8 +370,8 @@ function ExportSection() {
       XLSX.writeFile(wb, fileName);
 
       toast.success(`${sales.length} transaksi berhasil diexport!`);
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     } finally {
       setExporting(false);
     }

@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Safety timeout
     const timeout = setTimeout(() => {
-      if (mounted && loading) setLoading(false);
+      if (mounted) setLoading(false);
     }, 5000);
 
     // INITIAL load

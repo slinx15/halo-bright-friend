@@ -7,6 +7,7 @@ import { useAiConversations, type Msg } from "@/hooks/useAiConversations";
 import { useAiMemories } from "@/hooks/useAiMemories";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getAuthHeaders } from "@/lib/authHeaders";
+import { getErrorMessage } from "@/lib/errors";
 import { SUPABASE_URL } from "@/lib/supabaseEnv";
 
 const CHAT_URL = `${SUPABASE_URL}/functions/v1/ai-chat`;
@@ -140,8 +141,8 @@ const AiChat = () => {
         // Extract memories in background
         extractMemories([...allMessages, { role: "assistant", content: assistantSoFar }], convId);
       }
-    } catch (e: any) {
-      toast.error(e.message || "Gagal menghubungi AI");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Gagal menghubungi AI"));
       if (!assistantSoFar) setMessages(prev => prev.slice(0, -1));
     } finally {
       setIsLoading(false);

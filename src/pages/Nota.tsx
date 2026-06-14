@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { getAuthHeaders } from "@/lib/authHeaders";
+import { isAbortError } from "@/lib/errors";
 import { formatRupiah, formatNumber } from "@/lib/formatters";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -145,8 +146,8 @@ const Nota = () => {
         a.click();
         URL.revokeObjectURL(url);
       }
-    } catch (err: any) {
-      if (err?.name !== "AbortError") {
+    } catch (err: unknown) {
+      if (!isAbortError(err)) {
         console.error("Share error:", err);
       }
     } finally {

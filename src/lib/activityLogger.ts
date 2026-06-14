@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
+import type { ActivityLogInsert, JsonObject } from "@/lib/supabaseRows";
 
 export type ActivityAction = 
   | "stock_in" 
@@ -14,18 +16,20 @@ export type ActivityAction =
 export async function logActivity(
   action: ActivityAction,
   detail: string,
-  metadata?: Record<string, any>
+  metadata?: JsonObject
 ) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    
-    await supabase.from("activity_log" as any).insert({
+
+    const payload: ActivityLogInsert = {
       user_id: user.id,
       action,
       detail,
-      metadata: metadata || {},
-    } as any);
+      metadata: (metadata ?? {}) as Json,
+    };
+
+    await supabase.from("activity_log").insert(payload);
   } catch {
     // Silent fail - logging should never block main operations
   }

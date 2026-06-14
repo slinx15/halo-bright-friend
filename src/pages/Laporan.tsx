@@ -34,6 +34,39 @@ function toWIB(dateStr: string) {
   return new Date(new Date(dateStr).getTime() + WIB_OFFSET_MS);
 }
 
+interface ProductPriceRelation {
+  harga_modal?: number;
+}
+
+interface ProductReportRelation {
+  kode?: string;
+  nama?: string;
+  kategori?: string | null;
+  prices?: ProductPriceRelation[] | ProductPriceRelation | null;
+}
+
+interface SalesReportRow {
+  created_at: string;
+  qty_kirim: number | null;
+  total_harga: number | null;
+  toko: string | null;
+  products?: ProductReportRelation | null;
+}
+
+interface StockInReportRow {
+  created_at: string;
+  qty: number | null;
+  products?: ProductReportRelation | null;
+}
+
+function getHargaModal(products?: ProductReportRelation | null): number {
+  if (!products?.prices) return 0;
+
+  return Array.isArray(products.prices)
+    ? products.prices[0]?.harga_modal ?? 0
+    : products.prices.harga_modal ?? 0;
+}
+
 export default function Laporan() {
   const isMobile = useIsMobile();
   const [monthOffset, setMonthOffset] = useState(0);
@@ -54,7 +87,7 @@ export default function Laporan() {
         .lte("created_at", endISO)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as SalesReportRow[];
     },
   });
 
@@ -68,7 +101,7 @@ export default function Laporan() {
         .lte("created_at", endISO)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as StockInReportRow[];
     },
   });
 
@@ -80,7 +113,7 @@ export default function Laporan() {
     const totalRevenue = salesData.reduce((s, r) => s + (r.total_harga || 0), 0);
 
     const productMap = new Map<string, { kode: string; nama: string; qty: number; revenue: number }>();
-    salesData.forEach((r: any) => {
+    salesData.forEach((r) => {
       const kode = r.products?.kode || "?";
       const nama = r.products?.nama || "";
       const existing = productMap.get(kode) || { kode, nama, qty: 0, revenue: 0 };
@@ -91,7 +124,7 @@ export default function Laporan() {
     const byProduct = Array.from(productMap.values()).sort((a, b) => b.qty - a.qty);
 
     const tokoMap = new Map<string, { toko: string; qty: number; revenue: number; tx: number }>();
-    salesData.forEach((r: any) => {
+    salesData.forEach((r) => {
       const toko = r.toko || "(Tanpa toko)";
       const existing = tokoMap.get(toko) || { toko, qty: 0, revenue: 0, tx: 0 };
       existing.qty += r.qty_kirim || 0;
@@ -102,7 +135,7 @@ export default function Laporan() {
     const byToko = Array.from(tokoMap.values()).sort((a, b) => b.revenue - a.revenue);
 
     const dateMap = new Map<string, { date: string; qty: number; revenue: number }>();
-    salesData.forEach((r: any) => {
+    salesData.forEach((r) => {
       const d = format(toWIB(r.created_at), "yyyy-MM-dd");
       const existing = dateMap.get(d) || { date: d, qty: 0, revenue: 0 };
       existing.qty += r.qty_kirim || 0;
@@ -120,10 +153,10 @@ export default function Laporan() {
     const totalTx = stockInData.length;
     const totalQty = stockInData.reduce((s, r) => s + (r.qty || 0), 0);
     const productMap = new Map<string, { kode: string; nama: string; qty: number; modal: number; hargaModal: number }>();
-    stockInData.forEach((r: any) => {
+    stockInData.forEach((r) => {
       const kode = r.products?.kode || "?";
       const nama = r.products?.nama || "";
-      const hargaModal = r.products?.prices?.[0]?.harga_modal || r.products?.prices?.harga_modal || 0;
+      const hargaModal = getHargaModal(r.products);
       const existing = productMap.get(kode) || { kode, nama, qty: 0, modal: 0, hargaModal };
       existing.qty += r.qty || 0;
       existing.modal += (r.qty || 0) * hargaModal;
@@ -138,9 +171,9 @@ export default function Laporan() {
     if (!salesData) return { totalOmzet: 0, totalModal: 0, totalProfit: 0, margin: 0, byDate: [], byWeek: [] };
     
     const dateMap = new Map<string, { date: string; omzet: number; modal: number }>();
-    salesData.forEach((r: any) => {
+    salesData.forEach((r) => {
       const d = format(toWIB(r.created_at), "yyyy-MM-dd");
-      const hargaModal = r.products?.prices?.[0]?.harga_modal || r.products?.prices?.harga_modal || 0;
+      const hargaModal = getHargaModal(r.products);
       const modalItem = hargaModal * (r.qty_kirim || 0);
       const existing = dateMap.get(d) || { date: d, omzet: 0, modal: 0 };
       existing.omzet += r.total_harga || 0;

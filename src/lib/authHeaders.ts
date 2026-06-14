@@ -10,7 +10,9 @@ export async function getAuthHeaders(prefer = "return=minimal") {
     if (session?.access_token) {
       token = session.access_token;
     }
-  } catch {}
+  } catch {
+    // Fall back to the publishable key when session refresh is unavailable.
+  }
   return {
     "Content-Type": "application/json",
     "apikey": SUPABASE_KEY,

@@ -1,7 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useProducts } from "@/hooks/useProducts";
-import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +19,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
 import { getAuthHeaders } from "@/lib/authHeaders";
+import { getErrorMessage } from "@/lib/errors";
 import { logActivity } from "@/lib/activityLogger";
 import { SUPABASE_URL } from "@/lib/supabaseEnv";
 
@@ -41,7 +41,7 @@ const Stok = () => {
       setKategoriFilter(paramKategori);
       setVisibleCount(PAGE_SIZE);
     }
-  }, [searchParams]);
+  }, [kategoriFilter, searchParams]);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resetConfirmText, setResetConfirmText] = useState("");
@@ -66,9 +66,11 @@ const Stok = () => {
       "Nilai Stok": (p.stock?.jumlah ?? 0) * (p.prices?.harga_modal ?? 0),
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
+    const firstRow = rows[0];
+    const columns = Object.keys(firstRow) as Array<keyof typeof firstRow>;
     // Auto-fit column widths
-    ws["!cols"] = Object.keys(rows[0]).map((key) => ({
-      wch: Math.max(key.length, ...rows.map((r) => String((r as any)[key]).length)) + 2,
+    ws["!cols"] = columns.map((key) => ({
+      wch: Math.max(String(key).length, ...rows.map((row) => String(row[key]).length)) + 2,
     }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Stok");
@@ -92,8 +94,8 @@ const Stok = () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setShowResetDialog(false);
       setResetConfirmText("");
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: getErrorMessage(err), variant: "destructive" });
     }
     setResetting(false);
   };

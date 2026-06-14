@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
-import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,30 +13,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 // Table imports removed — riwayat sekarang grouped per tanggal (collapsible)
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { PackageMinus, Send, Clock, Store, ChevronDown, CheckCircle2, DollarSign, CalendarIcon, Trash2, Search, Plus, SlidersHorizontal } from "lucide-react";
-import { formatDate, formatNumber, formatRupiah } from "@/lib/formatters";
+import { PackageMinus, Send, CheckCircle2, CalendarIcon, Trash2, Plus, SlidersHorizontal } from "lucide-react";
+import { formatNumber, formatRupiah } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { OcrUpload } from "@/components/OcrUpload";
+import { BarangKeluarHistory } from "@/components/keluar/BarangKeluarHistory";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { deductFromStacks } from "@/lib/tumpukanUtils";
 // useIsMobile no longer needed — riwayat tampilan unified (grouped per tanggal)
-import { TransactionSkeleton } from "@/components/LoadingSkeletons";
-import { getAuthHeaders } from "@/lib/authHeaders";
 import { logActivity } from "@/lib/activityLogger";
+import { getErrorMessage } from "@/lib/errors";
+import { getTodayStockOutSummary, useStockOutHistory, type StockOutHistoryEntry } from "@/hooks/useStockOutHistory";
 import { findProductMatch } from "@/lib/productMatcher";
 import { deleteStockOutTransaction, registerStockOut } from "@/lib/stockMutations";
-import { SUPABASE_URL } from "@/lib/supabaseEnv";
+
+type HargaType = "normal" | "grosir" | "grosir2" | "custom";
 
 interface LineItem {
   kode: string;
   qtyPesan: number;
   qtyKirim: number;
-  hargaType: string;
+  hargaType: HargaType;
   customHarga?: number;
   toko: string;
   productId?: string;
@@ -45,25 +45,35 @@ interface LineItem {
   productKategori?: string | null;
 }
 
+interface BarangKeluarOcrItem {
+  kode: string;
+  kategori?: string;
+  productId?: string;
+  qty?: number;
+  qty_pesan?: number;
+  qty_kirim?: number;
+  harga_type?: HargaType;
+}
+
+function createEmptyLineItem(): LineItem {
+  return { kode: "", qtyPesan: 0, qtyKirim: 0, hargaType: "normal", toko: "" };
+}
+
 const BarangKeluar = () => {
   const { role } = useAuth();
   const { data: products } = useProducts();
+  const { data: history = [], isLoading: historyLoading } = useStockOutHistory();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   // isMobile no longer used after riwayat unification
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Multi-row input state
-  const [items, setItems] = useState<LineItem[]>([{ kode: "", qtyPesan: 0, qtyKirim: 0, hargaType: "normal", toko: "" }]);
+  const [items, setItems] = useState<LineItem[]>([createEmptyLineItem()]);
   const [globalToko, setGlobalToko] = useState("");
   const [catatan, setCatatan] = useState("");
   const [tanggal, setTanggal] = useState<Date | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
-
-  // Search/filter state for history
-  const [historySearch, setHistorySearch] = useState("");
-  const [historyDateFilter, setHistoryDateFilter] = useState<Date | undefined>(undefined);
-  const [expandedDate, setExpandedDate] = useState<string | null>(null);
 
   // Set Harga Sekaligus state
   const [hargaDialogOpen, setHargaDialogOpen] = useState(false);
@@ -95,7 +105,7 @@ const BarangKeluar = () => {
     return ` (${formatRupiah(min)} - ${formatRupiah(max)})`;
   }, [products]);
 
-  const applyBulkHarga = useCallback((filter: (k: string) => boolean, type: string, customHarga?: number) => {
+  const applyBulkHarga = useCallback((filter: (k: string) => boolean, type: HargaType, customHarga?: number) => {
     setItems(prev => prev.map(item => {
       if (!item.productId) return item;
       const k = (item.productKode || item.kode).toUpperCase();
@@ -115,7 +125,7 @@ const BarangKeluar = () => {
     return findProductMatch(products, { kode: input }) || undefined;
   };
 
-  const updateItem = (index: number, field: keyof LineItem, value: any) => {
+  const updateItem = <K extends keyof LineItem>(index: number, field: K, value: LineItem[K]) => {
     setItems(prev => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
@@ -130,7 +140,7 @@ const BarangKeluar = () => {
     });
   };
 
-  const addLine = () => setItems(prev => [...prev, { kode: "", qtyPesan: 0, qtyKirim: 0, hargaType: "normal", toko: "" }]);
+  const addLine = () => setItems(prev => [...prev, createEmptyLineItem()]);
   const removeLine = (i: number) => setItems(prev => prev.filter((_, idx) => idx !== i));
 
   const getMatchedProduct = (item: LineItem) => products?.find(p => p.id === item.productId);
@@ -149,46 +159,7 @@ const BarangKeluar = () => {
     return p?.kategori === "18 Gram" ? "pack" : "pcs";
   };
 
-  const { data: history } = useQuery({
-    queryKey: ["stock_out_history"],
-    queryFn: async () => {
-      const headers = await getAuthHeaders("return=representation");
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/stock_out?select=*,products(kode,nama)&order=created_at.desc,id.desc&limit=500`,
-        { headers }
-      );
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
-    },
-  });
-
-  // Today's stats
-  const todayLocal = new Date();
-  const todayStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, "0")}-${String(todayLocal.getDate()).padStart(2, "0")}`;
-  const todayItems = history?.filter((h: any) => {
-    if (!h.created_at) return false;
-    const d = new Date(h.created_at);
-    const localStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    return localStr === todayStr;
-  }) ?? [];
-  const todayQty = todayItems.reduce((s: number, h: any) => s + (h.qty_kirim ?? 0), 0);
-  const todayRevenue = todayItems.reduce((s: number, h: any) => s + (h.total_harga ?? 0), 0);
-
-  const filteredHistory = useMemo(() => {
-    if (!history) return [];
-    return history.filter((h: any) => {
-      const matchSearch = !historySearch ||
-        h.products?.kode?.toLowerCase().includes(historySearch.toLowerCase()) ||
-        h.products?.nama?.toLowerCase().includes(historySearch.toLowerCase()) ||
-        h.toko?.toLowerCase().includes(historySearch.toLowerCase());
-      const matchDate = !historyDateFilter || (() => {
-        const d = new Date(h.created_at);
-        const localStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-        return localStr === format(historyDateFilter, "yyyy-MM-dd");
-      })();
-      return matchSearch && matchDate;
-    });
-  }, [history, historySearch, historyDateFilter]);
+  const todaySummary = useMemo(() => getTodayStockOutSummary(history), [history]);
 
   const handleSubmit = async () => {
     const validItems = items.filter(i => i.productId && i.qtyKirim > 0);
@@ -217,6 +188,7 @@ const BarangKeluar = () => {
     setSubmitting(true);
     let successCount = 0;
     const errors: string[] = [];
+    const successfulItems: LineItem[] = [];
 
     // Track live stock per product for duplicate handling
     const liveStock = new Map<string, { jumlah: number; stacks: number[] }>();
@@ -261,35 +233,62 @@ const BarangKeluar = () => {
           ? result.new_tumpukan_detail
           : deductFromStacks(currentStock.stacks, item.qtyKirim);
         successCount++;
-      } catch (err: any) {
-        errors.push(`${item.kode}: ${err.message}`);
+        successfulItems.push(item);
+      } catch (error) {
+        errors.push(`${item.kode}: ${getErrorMessage(error, "Gagal menyimpan transaksi")}`);
       }
     }
 
     if (errors.length > 0) {
-      toast({ title: `${successCount} berhasil, ${errors.length} gagal`, description: errors[0], variant: "destructive" });
+      const errorPreview = errors.slice(0, 3).join("; ");
+      const extraErrorCount = errors.length - Math.min(errors.length, 3);
+      toast({
+        title: `${successCount} berhasil, ${errors.length} gagal`,
+        description: `${errorPreview}${extraErrorCount > 0 ? `; +${extraErrorCount} error lagi` : ""}. Item yang gagal tetap ada di form.`,
+        variant: "destructive",
+      });
     } else {
       toast({ title: "Berhasil", description: `${successCount} item berhasil disimpan` });
-      const summary = validItems.map(i => `${i.kode} x${i.qtyKirim}`).join(", ");
-      logActivity("stock_out", `Barang keluar: ${summary}`, { toko: globalToko, items: validItems.map(i => ({ kode: i.kode, qty: i.qtyKirim })) });
     }
+
+    if (successfulItems.length > 0) {
+      const summary = successfulItems.map((item) => `${item.kode} x${item.qtyKirim}`).join(", ");
+      logActivity("stock_out", `${errors.length > 0 ? "Barang keluar parsial" : "Barang keluar"}: ${summary}`, {
+        toko: globalToko,
+        items: successfulItems.map((item) => ({ kode: item.kode, qty: item.qtyKirim })),
+      });
+    }
+
     if (successCount > 0) {
-      setItems([{ kode: "", qtyPesan: 0, qtyKirim: 0, hargaType: "normal", toko: "" }]);
-      setGlobalToko(""); setCatatan(""); setTanggal(undefined);
+      const successfulSet = new Set(successfulItems);
+      const remainingItems = items.filter((item) => !successfulSet.has(item));
+      const hasPendingItems = remainingItems.some((item) =>
+        item.kode.trim() || item.productId || item.qtyPesan > 0 || item.qtyKirim > 0 || item.toko.trim(),
+      );
+
+      if (hasPendingItems) {
+        setItems(remainingItems);
+      } else {
+        setItems([createEmptyLineItem()]);
+        setGlobalToko("");
+        setCatatan("");
+        setTanggal(undefined);
+      }
+
       queryClient.invalidateQueries({ queryKey: ["stock_out_history"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     }
     setSubmitting(false);
   };
 
-  const handleOcrResult = (ocrItems: any[]) => {
-    const newItems: LineItem[] = ocrItems.map((o: any) => {
-      const found = findProductMatch(products, { productId: o.productId, kode: o.kode, kategori: o.kategori });
+  const handleOcrResult = (ocrItems: BarangKeluarOcrItem[]) => {
+    const newItems: LineItem[] = ocrItems.map((item) => {
+      const found = findProductMatch(products, { productId: item.productId, kode: item.kode, kategori: item.kategori });
       return {
-        kode: (found?.kode || o.kode || "").toUpperCase(),
-        qtyPesan: o.qty_pesan || 0,
-        qtyKirim: o.qty_kirim || o.qty || 0,
-        hargaType: o.harga_type || "normal",
+        kode: (found?.kode || item.kode || "").toUpperCase(),
+        qtyPesan: item.qty_pesan || 0,
+        qtyKirim: item.qty_kirim || item.qty || 0,
+        hargaType: item.harga_type || "normal",
         toko: "",
         productId: found?.id,
         productKode: found?.kode,
@@ -303,7 +302,7 @@ const BarangKeluar = () => {
     });
   };
 
-  const handleDeleteTransaction = async (item: any) => {
+  const handleDeleteTransaction = async (item: StockOutHistoryEntry) => {
     setDeletingId(item.id);
     try {
       await deleteStockOutTransaction(item.id);
@@ -311,8 +310,8 @@ const BarangKeluar = () => {
       logActivity("stock_out_delete", `Hapus transaksi ${item.products?.kode} x${item.qty_kirim}`, { kode: item.products?.kode, qty: item.qty_kirim });
       queryClient.invalidateQueries({ queryKey: ["stock_out_history"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (error) {
+      toast({ title: "Error", description: getErrorMessage(error, "Gagal menghapus transaksi"), variant: "destructive" });
     }
     setDeletingId(null);
   };
@@ -340,15 +339,15 @@ const BarangKeluar = () => {
       {/* ── KPI Strip ── */}
       <div className="grid grid-cols-3 gap-2.5">
         <div className="card-premium bg-destructive/5 p-3 text-center">
-          <p className="text-2xl font-extrabold text-destructive tabular-nums">{todayItems.length}</p>
+          <p className="text-2xl font-extrabold text-destructive tabular-nums">{todaySummary.count}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Transaksi</p>
         </div>
         <div className="card-premium bg-warning/5 p-3 text-center">
-          <p className="text-2xl font-extrabold text-foreground tabular-nums">{formatNumber(todayQty)}</p>
+          <p className="text-2xl font-extrabold text-foreground tabular-nums">{formatNumber(todaySummary.qty)}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Qty Hari Ini</p>
         </div>
         <div className="card-premium bg-success/5 p-3 text-center">
-          <p className="text-lg font-extrabold text-success tabular-nums truncate">{formatRupiah(todayRevenue)}</p>
+          <p className="text-lg font-extrabold text-success tabular-nums truncate">{formatRupiah(todaySummary.revenue)}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Omzet Hari Ini</p>
         </div>
       </div>
@@ -415,7 +414,7 @@ const BarangKeluar = () => {
                         if (v === "custom") {
                           if (customWarnaHarga > 0) applyBulkHarga(filter, "custom", customWarnaHarga);
                         } else {
-                          applyBulkHarga(filter, v);
+                          applyBulkHarga(filter, v as HargaType);
                         }
                       }}>
                         <SelectTrigger className="h-11 text-sm mt-1"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
@@ -443,7 +442,7 @@ const BarangKeluar = () => {
                         if (v === "custom") {
                           if (customWhtHarga > 0) applyBulkHarga(filter, "custom", customWhtHarga);
                         } else {
-                          applyBulkHarga(filter, v);
+                          applyBulkHarga(filter, v as HargaType);
                         }
                       }}>
                         <SelectTrigger className="h-11 text-sm mt-1"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
@@ -467,7 +466,7 @@ const BarangKeluar = () => {
                         if (v === "custom") {
                           if (customBlckHarga > 0) applyBulkHarga(filter, "custom", customBlckHarga);
                         } else {
-                          applyBulkHarga(filter, v);
+                          applyBulkHarga(filter, v as HargaType);
                         }
                       }}>
                         <SelectTrigger className="h-11 text-sm mt-1"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
@@ -572,7 +571,7 @@ const BarangKeluar = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <label className="text-[9px] font-semibold text-muted-foreground uppercase">Harga</label>
-                      <Select value={item.hargaType} onValueChange={v => updateItem(i, "hargaType", v)}>
+                      <Select value={item.hargaType} onValueChange={v => updateItem(i, "hargaType", v as HargaType)}>
                         <SelectTrigger className="h-9 text-xs mt-0.5"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="normal">Normal {matched.prices ? `(${formatRupiah(matched.prices.harga_normal)})` : ""}</SelectItem>
@@ -645,155 +644,13 @@ const BarangKeluar = () => {
       </Card>
 
       {/* ── Riwayat ── */}
-      <Card className="card-premium">
-        <Collapsible defaultOpen>
-          <CardHeader className="pb-2">
-            <CollapsibleTrigger asChild>
-              <button className="flex items-center justify-between w-full text-left min-h-[44px]">
-                <CardTitle className="text-base font-bold flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" /> Riwayat Barang Keluar
-                </CardTitle>
-                <div className="flex items-center gap-2">
-                  {history && history.length > 0 && (
-                    <Badge variant="secondary" className="text-[10px] rounded-full px-2.5 font-bold">{history.length}</Badge>
-                  )}
-                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
-                </div>
-              </button>
-            </CollapsibleTrigger>
-          </CardHeader>
-          <CollapsibleContent>
-            <CardContent className="space-y-3">
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Cari kode, nama, toko..." value={historySearch} onChange={e => setHistorySearch(e.target.value)} className="pl-9 rounded-xl h-10" />
-                </div>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="icon" className={cn("rounded-xl h-10 w-10 shrink-0", historyDateFilter && "border-primary text-primary")}>
-                      <CalendarIcon className="h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="end">
-                    <Calendar mode="single" selected={historyDateFilter} onSelect={setHistoryDateFilter} initialFocus className="p-3 pointer-events-auto" />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              {historyDateFilter && (
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-xs rounded-full">{format(historyDateFilter, "dd MMM yyyy", { locale: localeId })}</Badge>
-                  <button onClick={() => setHistoryDateFilter(undefined)} className="text-[10px] text-primary hover:underline">Reset</button>
-                </div>
-              )}
-              {filteredHistory.length !== (history?.length ?? 0) && (
-                <p className="text-xs text-muted-foreground">{filteredHistory.length} dari {history?.length} transaksi</p>
-              )}
-
-              {/* ── Grouped by Date ── */}
-              {filteredHistory.length > 0 && (() => {
-                const grouped: Record<string, { qty: number; revenue: number; count: number; items: any[] }> = {};
-                filteredHistory.forEach((h: any) => {
-                  const utc = new Date(h.created_at);
-                  const wib = new Date(utc.getTime() + 7 * 60 * 60 * 1000);
-                  const dateKey = h.created_at ? format(wib, "yyyy-MM-dd") : "unknown";
-                  if (!grouped[dateKey]) grouped[dateKey] = { qty: 0, revenue: 0, count: 0, items: [] };
-                  grouped[dateKey].qty += (h.qty_kirim || 0);
-                  grouped[dateKey].revenue += (h.total_harga || 0);
-                  grouped[dateKey].count += 1;
-                  grouped[dateKey].items.push(h);
-                });
-                const sortedDates = Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0]));
-                const visibleDates = sortedDates.slice(0, 5);
-                const hiddenCount = sortedDates.length - visibleDates.length;
-                return (
-                  <div className="space-y-3">
-                    {visibleDates.map(([date, { qty, revenue, count, items: dateItems }]) => {
-                      const isOpen = expandedDate === date;
-                      return (
-                        <div key={date} className="rounded-2xl border-2 border-border/60 bg-card overflow-hidden transition-all duration-200 shadow-sm hover:shadow-md">
-                          <button
-                            onClick={() => setExpandedDate(isOpen ? null : date)}
-                            className="flex items-center justify-between w-full p-4 text-left min-h-[64px] hover:bg-muted/30 transition-colors gap-3"
-                          >
-                            <div className="flex items-center gap-3 min-w-0 flex-1">
-                              <div className="w-11 h-11 rounded-xl bg-destructive/10 flex items-center justify-center shrink-0">
-                                <PackageMinus className="h-5 w-5 text-destructive" />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="text-sm font-bold text-foreground">{format(new Date(date), "dd MMM yyyy", { locale: localeId })}</p>
-                                <p className="text-xs text-muted-foreground mt-0.5">{count} transaksi · -{formatNumber(qty)} pcs</p>
-                                <p className="text-base font-extrabold text-primary tabular-nums mt-1">{formatRupiah(revenue)}</p>
-                              </div>
-                            </div>
-                            <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform duration-200 shrink-0", isOpen && "rotate-180")} />
-                          </button>
-                          {isOpen && (
-                            <div className="border-t border-border/40 px-4 pb-3 pt-2.5 space-y-2 animate-fade-in">
-                              {dateItems.map((h: any) => (
-                                <div key={h.id} className="flex items-center justify-between gap-2 py-2 border-b border-border/20 last:border-0">
-                                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                                    <span className="font-mono font-bold text-sm shrink-0">{h.products?.kode}</span>
-                                    <span className="text-xs text-muted-foreground truncate">{h.products?.nama}</span>
-                                    {h.toko && (
-                                      <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 shrink-0">
-                                        <Store className="h-2.5 w-2.5" />{h.toko}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-2 shrink-0">
-                                    <span className="text-sm font-bold text-foreground tabular-nums">{formatRupiah(h.total_harga)}</span>
-                                    <Badge variant="secondary" className="rounded-full text-xs font-bold px-2">
-                                      -{formatNumber(h.qty_kirim)}
-                                    </Badge>
-                                    {role === "admin" && (
-                                      <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" disabled={deletingId === h.id}>
-                                            <Trash2 className="h-3.5 w-3.5" />
-                                          </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                          <AlertDialogHeader>
-                                            <AlertDialogTitle>Hapus Transaksi?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                              {h.products?.kode} — {formatNumber(h.qty_kirim)} pcs ({formatRupiah(h.total_harga)}). Stok akan dikembalikan.
-                                            </AlertDialogDescription>
-                                          </AlertDialogHeader>
-                                          <AlertDialogFooter>
-                                            <AlertDialogCancel>Batal</AlertDialogCancel>
-                                            <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDeleteTransaction(h)}>Hapus</AlertDialogAction>
-                                          </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                      </AlertDialog>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                    {hiddenCount > 0 && (
-                      <p className="text-xs text-center text-muted-foreground pt-1">
-                        Menampilkan 5 hari terbaru · {hiddenCount} hari lebih lama disembunyikan
-                      </p>
-                    )}
-                  </div>
-                );
-              })()}
-
-              {filteredHistory.length === 0 && (
-                <div className="py-10 text-center">
-                  <PackageMinus className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground font-medium">{history?.length ? "Tidak ada hasil" : "Belum ada riwayat"}</p>
-                </div>
-              )}
-            </CardContent>
-          </CollapsibleContent>
-        </Collapsible>
-      </Card>
+      <BarangKeluarHistory
+        history={history}
+        isLoading={historyLoading}
+        role={role}
+        deletingId={deletingId}
+        onDeleteTransaction={handleDeleteTransaction}
+      />
     </div>
   );
 };

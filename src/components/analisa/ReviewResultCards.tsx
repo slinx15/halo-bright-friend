@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Sparkles, AlertTriangle, CheckCircle2, Plus, Flame, ArrowDown,
   TrendingUp, ShoppingCart, PackageX, Wallet, CirclePlus, CircleAlert, ChevronDown,
-  Package
+  Package, type LucideIcon
 } from "lucide-react";
 import { formatRupiah, formatNumber } from "@/lib/formatters";
 
@@ -176,7 +176,7 @@ function ScoreRing({ score }: { score: number }) {
 
 // ── Stat Pill — Bigger ──
 function StatPill({ icon: Icon, label, value, className = "", onClick }: {
-  icon: any; label: string; value: string | number; className?: string; onClick?: () => void;
+  icon: LucideIcon; label: string; value: string | number; className?: string; onClick?: () => void;
 }) {
   return (
     <button
@@ -304,7 +304,7 @@ function MissedProductCard({ card }: { card: MissedCard }) {
 
 // ── Collapsible Section — Bigger touch target ──
 function CollapsibleSection({ icon: Icon, title, count, color, sectionRef, isOpen, onToggle, children }: {
-  icon: any; title: string; count: number; color: string;
+  icon: LucideIcon; title: string; count: number; color: string;
   sectionRef?: React.RefObject<HTMLDivElement>; isOpen: boolean; onToggle: () => void; children: React.ReactNode;
 }) {
   return (

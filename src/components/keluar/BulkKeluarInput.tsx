@@ -41,7 +41,15 @@ interface BulkKeluarInputProps {
 }
 
 export interface BulkKeluarInputHandle {
-  handleOcrResult: (items: any[]) => void;
+  handleOcrResult: (items: BulkKeluarOcrItem[]) => void;
+}
+
+interface BulkKeluarOcrItem {
+  kode?: string;
+  qty?: number;
+  qty_pesan?: number;
+  qty_kirim?: number;
+  harga_type?: BulkKeluarItem["hargaType"];
 }
 
 const KATEGORI_OPTIONS = [
@@ -94,7 +102,7 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
     };
   }, [findProduct]);
 
-  const handleOcrResult = useCallback((ocrItems: any[]) => {
+  const handleOcrResult = useCallback((ocrItems: BulkKeluarOcrItem[]) => {
     const newItems = ocrItems.map((item) =>
       resolveItem(item.kode || "", {
         qtyPesan: item.qty_pesan || 0,
@@ -132,7 +140,11 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
     setItems((prev) => [...prev, resolveItem("")]);
   };
 
-  const updateItem = (idx: number, field: keyof BulkKeluarItem, value: any) => {
+  const updateItem = (
+    idx: number,
+    field: "kode" | "qtyPesan" | "qtyKirim" | "hargaType" | "customHarga",
+    value: string | number | BulkKeluarItem["hargaType"] | undefined,
+  ) => {
     setItems((prev) => {
       const updated = [...prev];
       if (field === "kode") {

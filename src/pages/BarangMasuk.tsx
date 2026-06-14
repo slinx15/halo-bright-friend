@@ -1,30 +1,28 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { formatRupiah } from "@/lib/formatters";
 import { useProducts } from "@/hooks/useProducts";
-import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { PackagePlus, Plus, Trash2, Send, Clock, Package, Hash, ChevronDown, CheckCircle2, Box, Search, CalendarIcon } from "lucide-react";
-import { formatDate, formatNumber } from "@/lib/formatters";
+import { PackagePlus, Plus, Trash2, Send, CheckCircle2, CalendarIcon } from "lucide-react";
+import { formatNumber } from "@/lib/formatters";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { OcrUpload } from "@/components/OcrUpload";
+import { BarangMasukHistory } from "@/components/masuk/BarangMasukHistory";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { splitIntoStacks, addStacks } from "@/lib/tumpukanUtils";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { TransactionSkeleton } from "@/components/LoadingSkeletons";
 import { logActivity } from "@/lib/activityLogger";
+import { getErrorMessage } from "@/lib/errors";
+import { useStockInHistory } from "@/hooks/useStockInHistory";
 import { findProductMatch } from "@/lib/productMatcher";
 import { registerStockIn } from "@/lib/stockMutations";
 
@@ -37,34 +35,30 @@ interface LineItem {
   productKategori?: string | null;
 }
 
+interface BarangMasukOcrItem {
+  kode: string;
+  qty?: number;
+  nama?: string;
+  productId?: string;
+  kategori?: string;
+  catatan?: string;
+}
+
+function createEmptyLineItem(): LineItem {
+  return { kode: "", qty: 1 };
+}
+
 const BarangMasuk = () => {
   const { data: products } = useProducts();
+  const { data: history = [], isLoading: historyLoading } = useStockInHistory();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [items, setItems] = useState<LineItem[]>([{ kode: "", qty: 1 }]);
+  const [items, setItems] = useState<LineItem[]>([createEmptyLineItem()]);
   const [catatan, setCatatan] = useState("");
   const [tanggal, setTanggal] = useState<Date | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
-  const isMobile = useIsMobile();
-  const [historySearch, setHistorySearch] = useState("");
-  const [historyDateFilter, setHistoryDateFilter] = useState<Date | undefined>(undefined);
-  const [expandedDate, setExpandedDate] = useState<string | null>(null);
 
-  const { data: history } = useQuery({
-    queryKey: ["stock_in_history"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("stock_in")
-        .select("*, products(kode, nama, prices(harga_modal))")
-        .order("created_at", { ascending: false })
-        .order("id", { ascending: false })
-        .limit(500);
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const updateItem = (index: number, field: keyof LineItem, value: string | number) => {
+  const updateItem = <K extends keyof LineItem>(index: number, field: K, value: LineItem[K]) => {
     setItems((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
@@ -79,7 +73,7 @@ const BarangMasuk = () => {
     });
   };
 
-  const addLine = () => setItems((prev) => [...prev, { kode: "", qty: 1 }]);
+  const addLine = () => setItems((prev) => [...prev, createEmptyLineItem()]);
   const removeLine = (i: number) => setItems((prev) => prev.filter((_, idx) => idx !== i));
 
   const handleSubmit = async () => {
@@ -91,6 +85,7 @@ const BarangMasuk = () => {
     setSubmitting(true);
     let successCount = 0;
     const errors: string[] = [];
+    const successfulItems: LineItem[] = [];
 
     for (const item of validItems) {
       try {
@@ -108,21 +103,45 @@ const BarangMasuk = () => {
           createdAt,
         });
         successCount++;
-      } catch (itemErr: any) {
-        errors.push(`${item.kode}: ${itemErr.message}`);
+        successfulItems.push(item);
+      } catch (error) {
+        errors.push(`${item.kode}: ${getErrorMessage(error, "Gagal menyimpan barang masuk")}`);
       }
     }
 
     if (errors.length > 0) {
-      toast({ title: `${successCount} berhasil, ${errors.length} gagal`, description: errors.join("; "), variant: "destructive" });
+      const errorPreview = errors.slice(0, 3).join("; ");
+      const extraErrorCount = errors.length - Math.min(errors.length, 3);
+      toast({
+        title: `${successCount} berhasil, ${errors.length} gagal`,
+        description: `${errorPreview}${extraErrorCount > 0 ? `; +${extraErrorCount} error lagi` : ""}. Item yang gagal tetap ada di form.`,
+        variant: "destructive",
+      });
     } else {
       toast({ title: "Berhasil", description: `${validItems.length} item masuk tercatat` });
-      const summary = validItems.map(i => `${i.productKode || i.kode} x${i.qty}`).join(", ");
-      logActivity("stock_in", `Barang masuk: ${summary}`, { items: validItems.map(i => ({ kode: i.productKode || i.kode, qty: i.qty })) });
     }
-    setItems([{ kode: "", qty: 1 }]);
-    setCatatan("");
-    setTanggal(undefined);
+
+    if (successfulItems.length > 0) {
+      const summary = successfulItems.map((item) => `${item.productKode || item.kode} x${item.qty}`).join(", ");
+      logActivity("stock_in", `${errors.length > 0 ? "Barang masuk parsial" : "Barang masuk"}: ${summary}`, {
+        items: successfulItems.map((item) => ({ kode: item.productKode || item.kode, qty: item.qty })),
+      });
+    }
+
+    if (successCount > 0) {
+      const successfulSet = new Set(successfulItems);
+      const remainingItems = items.filter((item) => !successfulSet.has(item));
+      const hasPendingItems = remainingItems.some((item) => item.kode.trim() || item.productId);
+
+      if (hasPendingItems) {
+        setItems(remainingItems);
+      } else {
+        setItems([createEmptyLineItem()]);
+        setCatatan("");
+        setTanggal(undefined);
+      }
+    }
+
     queryClient.invalidateQueries({ queryKey: ["stock_in_history"] });
     queryClient.invalidateQueries({ queryKey: ["products"] });
     setSubmitting(false);
@@ -130,18 +149,6 @@ const BarangMasuk = () => {
 
   const validCount = items.filter((i) => i.productId && i.qty > 0).length;
   const totalQty = items.filter((i) => i.productId && i.qty > 0).reduce((s, i) => s + i.qty, 0);
-
-  const filteredHistory = useMemo(() => {
-    if (!history) return [];
-    return history.filter((h: any) => {
-      const matchSearch = !historySearch || 
-        h.products?.kode?.toLowerCase().includes(historySearch.toLowerCase()) ||
-        h.products?.nama?.toLowerCase().includes(historySearch.toLowerCase());
-      const wibDate = h.created_at ? (() => { const u = new Date(h.created_at); return format(new Date(u.getTime() + 7*60*60*1000), "yyyy-MM-dd"); })() : "";
-      const matchDate = !historyDateFilter || wibDate === format(historyDateFilter, "yyyy-MM-dd");
-      return matchSearch && matchDate;
-    });
-  }, [history, historySearch, historyDateFilter]);
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*:nth-child(5)]:![animation-delay:200ms] [&>*]:[animation-fill-mode:both]">
@@ -159,19 +166,20 @@ const BarangMasuk = () => {
         <OcrUpload
           mode="masuk"
           onResult={(ocrItems) => {
-            const newItems: LineItem[] = ocrItems.map((o: any) => {
-              const found = findProductMatch(products, { productId: o.productId, kode: o.kode, kategori: o.kategori });
+            const typedItems = ocrItems as BarangMasukOcrItem[];
+            const newItems: LineItem[] = typedItems.map((item) => {
+              const found = findProductMatch(products, { productId: item.productId, kode: item.kode, kategori: item.kategori });
               return {
-                kode: (found?.kode || o.kode || "").toUpperCase(),
-                qty: o.qty || 1,
-                productName: found?.nama || o.nama,
+                kode: (found?.kode || item.kode || "").toUpperCase(),
+                qty: item.qty || 1,
+                productName: found?.nama || item.nama,
                 productId: found?.id,
                 productKode: found?.kode,
                 productKategori: found?.kategori,
               };
             });
-            setItems(newItems.length > 0 ? newItems : [{ kode: "", qty: 1 }]);
-            if (ocrItems[0]?.catatan) setCatatan(ocrItems[0].catatan);
+            setItems(newItems.length > 0 ? newItems : [createEmptyLineItem()]);
+            if (typedItems[0]?.catatan) setCatatan(typedItems[0].catatan);
           }}
         />
       </div>
@@ -329,134 +337,10 @@ const BarangMasuk = () => {
       </Card>
 
       {/* ── Riwayat ── */}
-      <Card className="card-premium">
-        <Collapsible defaultOpen>
-          <CardHeader className="pb-2">
-            <CollapsibleTrigger asChild>
-              <button className="flex items-center justify-between w-full text-left min-h-[44px]">
-                <CardTitle className="text-base font-bold flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" /> Riwayat Barang Masuk
-                </CardTitle>
-                <div className="flex items-center gap-2">
-                  {history && history.length > 0 && (
-                    <Badge variant="secondary" className="text-[10px] rounded-full px-2.5 font-bold">{history.length}</Badge>
-                  )}
-                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
-                </div>
-              </button>
-            </CollapsibleTrigger>
-          </CardHeader>
-          <CollapsibleContent>
-            <CardContent className="space-y-3">
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Cari kode, nama..."
-                    value={historySearch}
-                    onChange={(e) => setHistorySearch(e.target.value)}
-                    className="pl-9 rounded-xl h-10"
-                  />
-                </div>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="icon" className={cn("rounded-xl h-10 w-10 shrink-0", historyDateFilter && "border-primary text-primary")}>
-                      <CalendarIcon className="h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="end">
-                    <Calendar mode="single" selected={historyDateFilter} onSelect={setHistoryDateFilter} initialFocus className="p-3 pointer-events-auto" />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              {historyDateFilter && (
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-xs rounded-full">{format(historyDateFilter, "dd MMM yyyy", { locale: localeId })}</Badge>
-                  <button onClick={() => setHistoryDateFilter(undefined)} className="text-[10px] text-primary hover:underline">Reset</button>
-                </div>
-              )}
-              {filteredHistory.length !== (history?.length ?? 0) && (
-                <p className="text-xs text-muted-foreground">{filteredHistory.length} dari {history?.length} entri</p>
-              )}
-
-              {/* ── Grouped by Date ── */}
-              {filteredHistory.length > 0 && (() => {
-                const grouped: Record<string, { qty: number; cost: number; count: number; items: any[] }> = {};
-                filteredHistory.forEach((h: any) => {
-                  const utc = new Date(h.created_at);
-                  const wib = new Date(utc.getTime() + 7 * 60 * 60 * 1000);
-                  const dateKey = h.created_at ? format(wib, "yyyy-MM-dd") : "unknown";
-                  const modal = h.products?.prices?.[0]?.harga_modal || h.products?.prices?.harga_modal || 0;
-                  if (!grouped[dateKey]) grouped[dateKey] = { qty: 0, cost: 0, count: 0, items: [] };
-                  grouped[dateKey].qty += (h.qty || 0);
-                  grouped[dateKey].cost += modal * (h.qty || 0);
-                  grouped[dateKey].count += 1;
-                  grouped[dateKey].items.push(h);
-                });
-                const sortedDates = Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0]));
-                const visibleDates = sortedDates.slice(0, 5);
-                const hiddenCount = sortedDates.length - visibleDates.length;
-                return (
-                  <div className="space-y-3">
-                    {visibleDates.map(([date, { qty, cost, count, items: dateItems }]) => {
-                      const isOpen = expandedDate === date;
-                      return (
-                        <div key={date} className="rounded-2xl border-2 border-border/60 bg-card overflow-hidden transition-all duration-200 shadow-sm hover:shadow-md">
-                          <button
-                            onClick={() => setExpandedDate(isOpen ? null : date)}
-                            className="flex items-center justify-between w-full p-4 text-left min-h-[64px] hover:bg-muted/30 transition-colors gap-3"
-                          >
-                            <div className="flex items-center gap-3 min-w-0 flex-1">
-                              <div className="w-11 h-11 rounded-xl bg-success/10 flex items-center justify-center shrink-0">
-                                <Package className="h-5 w-5 text-success" />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="text-sm font-bold text-foreground">{format(new Date(date), "dd MMM yyyy", { locale: localeId })}</p>
-                                <p className="text-xs text-muted-foreground mt-0.5">{count} transaksi · +{formatNumber(qty)} pcs</p>
-                                {cost > 0 && (
-                                  <p className="text-base font-extrabold text-success tabular-nums mt-1">{formatRupiah(cost)}</p>
-                                )}
-                              </div>
-                            </div>
-                            <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform duration-200 shrink-0", isOpen && "rotate-180")} />
-                          </button>
-                          {isOpen && (
-                            <div className="border-t border-border/40 px-4 pb-3 pt-2.5 space-y-2 animate-fade-in">
-                              {dateItems.map((h: any) => (
-                                <div key={h.id} className="flex items-center justify-between gap-2 py-2 border-b border-border/20 last:border-0">
-                                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                                    <span className="font-mono font-bold text-sm">{h.products?.kode}</span>
-                                    <span className="text-xs text-muted-foreground truncate">{h.products?.nama}</span>
-                                  </div>
-                                  <Badge variant="secondary" className="rounded-full text-xs font-bold px-2 shrink-0">
-                                    +{formatNumber(h.qty)}
-                                  </Badge>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                    {hiddenCount > 0 && (
-                      <p className="text-xs text-center text-muted-foreground pt-1">
-                        Menampilkan 5 hari terbaru · {hiddenCount} hari lebih lama disembunyikan
-                      </p>
-                    )}
-                  </div>
-                );
-              })()}
-
-              {filteredHistory.length === 0 && (
-                <div className="py-10 text-center">
-                  <Package className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground font-medium">{history?.length ? "Tidak ada hasil" : "Belum ada riwayat"}</p>
-                </div>
-              )}
-            </CardContent>
-          </CollapsibleContent>
-        </Collapsible>
-      </Card>
+      <BarangMasukHistory
+        history={history}
+        isLoading={historyLoading}
+      />
     </div>
   );
 };

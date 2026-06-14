@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation, useNavigate } from "react-router-dom";
-import { doLogout } from "./AppLayout";
+import { doLogout } from "@/lib/logout";
 import {
   LayoutDashboard,
   PackagePlus,
@@ -19,6 +19,7 @@ import {
   History,
   Wallet,
   ShieldCheck,
+  Scale,
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ const navItems = [
   { icon: Users, label: "Kelola User", path: "/users", group: "admin" },
   { icon: History, label: "Log Aktivitas", path: "/log", group: "admin" },
   { icon: ShieldCheck, label: "Audit Stok", path: "/audit-stok", group: "admin" },
+  { icon: Scale, label: "Rekonsiliasi Stok", path: "/rekonsiliasi-stok", group: "admin" },
 ];
 
 const groups = [
