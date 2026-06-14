@@ -256,7 +256,9 @@ serve(async (req) => {
       // 2 Ons: full review
       const { velocity, salesDays } = computeWMAVelocity(stockOut, product.id);
       const isBW = isBlackWhiteCode(kode);
-      const computedTargetDays = customTargetDays || getDefaultTargetDays(kode);
+      const computedTargetDays = customTargetDays
+        ? getPlanningTargetDays(kode, customTargetDays)
+        : getDefaultTargetDays(kode);
       const pendingQty = pendingMap[kode] || 0;
       const effectiveStock = product.stok + pendingQty;
       const dos = calculateDaysOfStock(effectiveStock, velocity);
