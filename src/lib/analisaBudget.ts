@@ -38,12 +38,16 @@ interface BudgetPick {
   item: ProductAnalysis;
   qty: number;
   cost: number;
+  effectiveStock: number;
+  effectiveDaysLeft: number;
+  reason: string;
 }
 
 export function buildBudgetEstimateFromAnalyses(
   analyses: ProductAnalysis[],
   targetDays: number,
   budgetCap: number = Number.POSITIVE_INFINITY,
+  pendingMap: ReadonlyMap<string, number> = new Map(),
 ): BudgetEstimateSummary {
   const sorted = [...analyses]
     .filter((analysis) => analysis.velocity > 0)
@@ -52,9 +56,11 @@ export function buildBudgetEstimateFromAnalyses(
   const candidates: BudgetCandidate[] = [];
 
   for (const item of sorted) {
+    const pendingQty = pendingMap.get(item.kode.toUpperCase()) ?? 0;
+    const effectiveStock = item.currentStock + pendingQty;
     const recommendation = calculateRestockRecommendation({
       kode: item.kode,
-      currentStock: item.currentStock,
+      currentStock: effectiveStock,
       velocity: item.velocity,
       targetDays,
     });
@@ -63,11 +69,12 @@ export function buildBudgetEstimateFromAnalyses(
     }
     const qty = recommendation.recommendedQty;
     const cost = qty * item.unitPrice;
-    const reason = item.isStockOut
+    const effectiveDaysLeft = item.velocity > 0 ? effectiveStock / item.velocity : 999;
+    const reason = effectiveStock === 0
       ? "Stok kosong"
-      : item.daysOfStock <= RULES.CRITICAL_DAYS
+      : effectiveDaysLeft <= RULES.CRITICAL_DAYS
         ? "Kritis"
-        : item.daysOfStock <= RULES.WARNING_DAYS
+        : effectiveDaysLeft <= RULES.WARNING_DAYS
           ? "Segera habis"
           : "Perlu restock";
 
@@ -87,13 +94,28 @@ export function buildBudgetEstimateFromAnalyses(
 
   if (!Number.isFinite(budgetCap) || totalIdealCost <= budgetCap) {
     for (const candidate of candidates) {
-      picks.push({ item: candidate.item, qty: candidate.idealQty, cost: candidate.idealCost });
+      const pendingQty = pendingMap.get(candidate.item.kode.toUpperCase()) ?? 0;
+      const effectiveStock = candidate.item.currentStock + pendingQty;
+      const effectiveDaysLeft = candidate.item.velocity > 0 ? effectiveStock / candidate.item.velocity : 999;
+      picks.push({
+        item: candidate.item,
+        qty: candidate.idealQty,
+        cost: candidate.idealCost,
+        effectiveStock,
+        effectiveDaysLeft,
+        reason: candidate.reason,
+      });
       if (Number.isFinite(budgetCap)) {
         remaining -= candidate.idealCost;
       }
     }
   } else {
-    const tier1 = candidates.filter((candidate) => candidate.item.isStockOut || candidate.item.daysOfStock <= RULES.CRITICAL_DAYS);
+    const tier1 = candidates.filter((candidate) => {
+      const pendingQty = pendingMap.get(candidate.item.kode.toUpperCase()) ?? 0;
+      const effectiveStock = candidate.item.currentStock + pendingQty;
+      const effectiveDaysLeft = candidate.item.velocity > 0 ? effectiveStock / candidate.item.velocity : 999;
+      return effectiveStock === 0 || effectiveDaysLeft <= RULES.CRITICAL_DAYS;
+    });
     const tier2 = candidates.filter((candidate) => !tier1.includes(candidate) && candidate.item.isBestSeller);
     const tier3 = candidates.filter((candidate) => !tier1.includes(candidate) && !tier2.includes(candidate));
 
@@ -114,7 +136,17 @@ export function buildBudgetEstimateFromAnalyses(
           cost = qty * candidate.item.unitPrice;
         }
 
-        picks.push({ item: candidate.item, qty, cost });
+        const pendingQty = pendingMap.get(candidate.item.kode.toUpperCase()) ?? 0;
+        const effectiveStock = candidate.item.currentStock + pendingQty;
+        const effectiveDaysLeft = candidate.item.velocity > 0 ? effectiveStock / candidate.item.velocity : 999;
+        picks.push({
+          item: candidate.item,
+          qty,
+          cost,
+          effectiveStock,
+          effectiveDaysLeft,
+          reason: candidate.reason,
+        });
         remaining -= cost;
       }
     }
@@ -127,11 +159,11 @@ export function buildBudgetEstimateFromAnalyses(
       qty: pick.qty,
       unitPrice: pick.item.unitPrice,
       cost: pick.cost,
-      stok: pick.item.currentStock,
+      stok: pick.effectiveStock,
       velocity: pick.item.velocity,
-      daysLeft: pick.item.daysOfStock,
+      daysLeft: pick.effectiveDaysLeft,
       isBestSeller: pick.item.isBestSeller,
-      reason: candidates.find((candidate) => candidate.item.productId === pick.item.productId)?.reason ?? "Perlu restock",
+      reason: pick.reason,
     }))
     .sort((left, right) => left.daysLeft - right.daysLeft);
 

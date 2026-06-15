@@ -26,6 +26,7 @@ import { DAYS_PRESETS, buildBudgetEstimateFromAnalyses } from "@/lib/analisaBudg
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AnalisaSkeleton } from "@/components/LoadingSkeletons";
 import { SalesTrendCharts } from "@/components/analisa/SalesTrendCharts";
+import { usePendingRestockMap } from "@/hooks/usePendingRestockMap";
 
 const ReviewAI = lazy(() => import("@/components/analisa/ReviewAI"));
 const ColorTrendAnalysis = lazy(() => import("@/components/analisa/ColorTrendAnalysis"));
@@ -154,6 +155,7 @@ const Analisa = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [expandedBudgetDays, setExpandedBudgetDays] = useState<number | null>(null);
   const isMobile = useIsMobile();
+  const { data: pendingRestockMap } = usePendingRestockMap();
   
 
   const analyses = useMemo(() => {
@@ -295,7 +297,10 @@ const Analisa = () => {
   const predictions = useMemo(() => calcPredictions(products, stockOutData), [products, stockOutData]);
   const profitItems = useMemo(() => calcProfit(products, stockOutData), [products, stockOutData]);
   const tokoItems = useMemo(() => calcTokoAnalysis(products, stockOutData), [products, stockOutData]);
-  const budgetEstimates = useMemo(() => DAYS_PRESETS.map((days) => buildBudgetEstimateFromAnalyses(analyses, days)), [analyses]);
+  const budgetEstimates = useMemo(
+    () => DAYS_PRESETS.map((days) => buildBudgetEstimateFromAnalyses(analyses, days, Number.POSITIVE_INFINITY, pendingRestockMap)),
+    [analyses, pendingRestockMap],
+  );
   const stats = useMemo(() => calcStats(products, stockOutData), [products, stockOutData]);
 
   if (isLoading) {
