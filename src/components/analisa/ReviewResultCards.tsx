@@ -3,10 +3,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Sparkles, AlertTriangle, CheckCircle2, Plus, Flame, ArrowDown,
-  TrendingUp, ShoppingCart, PackageX, Wallet, CirclePlus, CircleAlert, ChevronDown,
-  Package, type LucideIcon
+  TrendingUp, ShoppingCart, PackageX, Wallet, CirclePlus, ChevronDown,
+
+  Package, Info, ShieldCheck, Clock, type LucideIcon
 } from "lucide-react";
 import { formatRupiah, formatNumber } from "@/lib/formatters";
+
 
 type Status = "kritis" | "segera" | "perhatian" | "aman";
 type Verdict = "kurang" | "pas" | "lebih" | "ok" | "unknown";
@@ -143,6 +145,41 @@ function getMissedReason(card: MissedCard): string {
   return `Barang ${speed} tapi ${timeLeft}, harus pesan sebelum kehabisan`;
 }
 
+type Priority = "wajib" | "sebaiknya" | "tunda" | "cukup";
+
+function getCardPriority(card: ReviewCard, alreadySent: boolean): Priority {
+  if (card.verdict === "kurang") {
+    if (card.stok === 0 || card.dos <= 2) return "wajib";
+    return "sebaiknya";
+  }
+  if (card.verdict === "lebih" && !alreadySent) return "tunda";
+  return "cukup";
+}
+
+function getMissedPriority(card: MissedCard): Priority {
+  // Missed = belum dipesan sama sekali. Default wajib kalau stok kritis.
+  if (card.stok === 0 || card.dos <= 2) return "wajib";
+  return "sebaiknya";
+}
+
+const PRIORITY_META: Record<Priority, { label: string; classes: string; icon: LucideIcon }> = {
+  wajib:     { label: "Wajib Sekarang",   classes: "bg-destructive text-destructive-foreground",                          icon: AlertTriangle },
+  sebaiknya: { label: "Sebaiknya Ditambah", classes: "bg-orange-500 text-white",                                          icon: Plus },
+  tunda:     { label: "Bisa Ditunda",     classes: "bg-blue-500 text-white",                                              icon: Clock },
+  cukup:     { label: "Sudah Cukup",      classes: "bg-emerald-500 text-white",                                           icon: CheckCircle2 },
+};
+
+function PriorityBadge({ priority }: { priority: Priority }) {
+  const meta = PRIORITY_META[priority];
+  const Icon = meta.icon;
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold shadow-sm ${meta.classes}`}>
+      <Icon className="h-3 w-3" /> {meta.label}
+    </span>
+  );
+}
+
+
 // ── Score Ring — BIGGER ──
 function ScoreRing({ score }: { score: number }) {
   const pct = (score / 10) * 100;
@@ -199,19 +236,23 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
   const tooMuch = !alreadySent && isTooMuch(card);
   const shortfall = getShortfall(card);
   const excess = getExcess(card);
+  const priority = getCardPriority(card, alreadySent);
 
-  const accentClass = needMore
-    ? "bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800/50"
-    : tooMuch
-    ? "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800/50"
-    : "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50";
+  const accentClass =
+    priority === "wajib"
+      ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50"
+      : priority === "sebaiknya"
+      ? "bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800/50"
+      : priority === "tunda"
+      ? "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800/50"
+      : "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50";
 
   return (
     <div className={`card-premium p-4 space-y-3 transition-all duration-200 active:scale-[0.98] ${accentClass}`}>
       {/* Header row */}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-mono font-extrabold text-base">{card.kode}</span>
             {card.is_bestseller && (
               <span className="inline-flex items-center gap-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 rounded-full px-2 py-0.5 text-xs font-bold">
@@ -221,21 +262,18 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
           </div>
           <p className="text-sm text-muted-foreground truncate mt-0.5">{card.nama}</p>
         </div>
-        
-        {/* Action badge — bigger */}
-        {needMore ? (
-          <span className="inline-flex items-center gap-1 bg-orange-500 text-white rounded-full px-3 py-1.5 text-sm font-bold shadow-sm shrink-0">
-            <Plus className="h-3.5 w-3.5" /> +{formatNumber(shortfall)}
-          </span>
-        ) : tooMuch ? (
-          <span className="inline-flex items-center gap-1 bg-blue-500 text-white rounded-full px-3 py-1.5 text-sm font-bold shadow-sm shrink-0">
-            <ArrowDown className="h-3.5 w-3.5" /> -{formatNumber(excess)}
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 bg-emerald-500 text-white rounded-full px-3 py-1.5 text-sm font-bold shadow-sm shrink-0">
-            <CheckCircle2 className="h-3.5 w-3.5" /> OK
-          </span>
-        )}
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <PriorityBadge priority={priority} />
+          {needMore ? (
+            <span className="inline-flex items-center gap-1 bg-orange-500/90 text-white rounded-full px-2.5 py-1 text-xs font-bold">
+              <Plus className="h-3 w-3" /> +{formatNumber(shortfall)} pcs
+            </span>
+          ) : tooMuch ? (
+            <span className="inline-flex items-center gap-1 bg-blue-500/90 text-white rounded-full px-2.5 py-1 text-xs font-bold">
+              <ArrowDown className="h-3 w-3" /> -{formatNumber(excess)} pcs
+            </span>
+          ) : null}
+        </div>
       </div>
 
       {/* Stock + Qty info */}
@@ -262,9 +300,11 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
 
       {/* Reason bubble — bigger */}
       <div className={`rounded-xl px-4 py-3 text-sm leading-relaxed font-medium ${
-        needMore 
-          ? "bg-orange-100/80 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300" 
-          : tooMuch
+        priority === "wajib"
+          ? "bg-red-100/80 dark:bg-red-900/30 text-red-800 dark:text-red-300"
+          : priority === "sebaiknya"
+          ? "bg-orange-100/80 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300"
+          : priority === "tunda"
           ? "bg-blue-100/80 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
           : "bg-emerald-100/80 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300"
       }`}>
@@ -274,20 +314,32 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
   );
 }
 
+
 // ── Missed Product Card — Bigger ──
 function MissedProductCard({ card }: { card: MissedCard }) {
+  const priority = getMissedPriority(card);
+  const accent = priority === "wajib"
+    ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50"
+    : "bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800/50";
   return (
-    <div className="card-premium p-4 space-y-3 transition-all duration-200 active:scale-[0.98] bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50">
+    <div className={`card-premium p-4 space-y-3 transition-all duration-200 active:scale-[0.98] ${accent}`}>
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <span className="font-mono font-extrabold text-base">{card.kode}</span>
           <p className="text-sm text-muted-foreground truncate mt-0.5">{card.nama}</p>
         </div>
-        <span className="inline-flex items-center gap-1 bg-destructive text-destructive-foreground rounded-full px-3 py-1.5 text-sm font-bold shadow-sm shrink-0">
-          <Plus className="h-3.5 w-3.5" /> Pesan {formatNumber(card.ideal_qty)}
-        </span>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <PriorityBadge priority={priority} />
+          <span className="inline-flex items-center gap-1 bg-destructive/90 text-destructive-foreground rounded-full px-2.5 py-1 text-xs font-bold">
+            <Plus className="h-3 w-3" /> Pesan {formatNumber(card.ideal_qty)}
+          </span>
+        </div>
       </div>
-      <div className="rounded-xl px-4 py-3 text-sm leading-relaxed font-medium bg-red-100/80 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+      <div className={`rounded-xl px-4 py-3 text-sm leading-relaxed font-medium ${
+        priority === "wajib"
+          ? "bg-red-100/80 dark:bg-red-900/30 text-red-800 dark:text-red-300"
+          : "bg-orange-100/80 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300"
+      }`}>
         💬 {getMissedReason(card)}
       </div>
       <div className="flex items-center gap-3 text-sm flex-wrap">
@@ -303,6 +355,7 @@ function MissedProductCard({ card }: { card: MissedCard }) {
     </div>
   );
 }
+
 
 // ── Collapsible Section — Bigger touch target ──
 function CollapsibleSection({ icon: Icon, title, count, color, sectionRef, isOpen, onToggle, children }: {
@@ -350,7 +403,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
   const okCards = cards.filter(c => !isNeedMore(c) && !(isTooMuch(c) && !alreadySent));
 
   const totalTambah = needMoreCards.reduce((sum, c) => sum + getShortfall(c), 0);
-  const hasBudgetExtra = (budget_tambah || 0) > 0 || (budget_missed || 0) > 0 || total_cost_other > 0;
+  
 
   // Group other items by kategori
   const otherByKategori: Record<string, typeof other_items> = {};
@@ -399,63 +452,127 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
             </div>
           </div>
           
-          {/* Budget Breakdown */}
-          <div className="mt-5 rounded-xl bg-muted/40 p-4 space-y-2.5">
-            <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-              <Wallet className="h-4 w-4 text-primary" />
-              Rincian Budget
-            </div>
-            <div className="space-y-2 text-sm">
-              {/* Section 1: What user actually ordered */}
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Pesanan 2 Ons</span>
-                <span className="font-bold tabular-nums text-base">{formatRupiah(total_cost)}</span>
-              </div>
-              {total_cost_other > 0 && (
-                <div className="flex items-center justify-between text-purple-600 dark:text-purple-400">
-                  <span className="flex items-center gap-1.5">
-                    <Package className="h-3.5 w-3.5" /> Ukuran lain
-                  </span>
-                  <span className="font-bold tabular-nums text-base">+{formatRupiah(total_cost_other)}</span>
-                </div>
-              )}
-              {/* Total Pesanan Saya */}
-              <div className="border-t border-border/50 my-1.5" />
-              <div className="flex items-center justify-between font-extrabold">
-                <span className="text-base">💰 Total Pesanan Saya</span>
-                <span className="tabular-nums text-primary text-xl">{formatRupiah(total_cost + total_cost_other)}</span>
-              </div>
+          {/* ── Total Aman Siapkan — HERO ── */}
+          {(() => {
+            const myOrder = total_cost + total_cost_other;
+            const extras = (budget_tambah || 0) + (budget_missed || 0);
+            const totalAman = (budget_total || 0) > 0 ? budget_total : myOrder + extras;
+            const delta = Math.max(0, totalAman - myOrder);
 
-              {/* Section 2: AI recommendations (if any) */}
-              {((budget_tambah || 0) > 0 || (budget_missed || 0) > 0) && (
-                <>
-                  <div className="border-t border-dashed border-border/50 my-2" />
-                  <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Saran Tambahan</div>
+            // Top contributors to the delta: combine missed + needMore shortfalls
+            type Contributor = { kode: string; nama: string; cost: number; reason: "missed" | "tambah" };
+            const contributors: Contributor[] = [
+              ...missed
+                .filter(m => (m.cost || 0) > 0)
+                .map(m => ({ kode: m.kode, nama: m.nama, cost: m.cost, reason: "missed" as const })),
+              ...needMoreCards
+                .map(c => ({
+                  kode: c.kode,
+                  nama: c.nama,
+                  cost: Math.max(0, getShortfall(c)) * c.harga_modal,
+                  reason: "tambah" as const,
+                }))
+                .filter(c => c.cost > 0),
+            ].sort((a, b) => b.cost - a.cost).slice(0, 3);
+
+            return (
+              <div className="mt-5 space-y-3">
+                {/* Hero: Total Aman Siapkan */}
+                <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-2 border-primary/20 p-4">
+                  <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wide">
+                    <ShieldCheck className="h-4 w-4" />
+                    Total Aman Disiapkan
+                  </div>
+                  <div className="mt-1 text-3xl font-black tabular-nums text-primary leading-tight">
+                    {formatRupiah(totalAman)}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                    Angka ini = pesanan Boss + item wajib yang belum masuk draft.
+                    <strong className="text-foreground"> Pegang angka ini</strong> sebagai budget final sebelum kirim ke supplier.
+                  </p>
+                </div>
+
+                {/* Breakdown */}
+                <div className="rounded-xl bg-muted/40 p-4 space-y-2 text-sm">
+                  <div className="flex items-center gap-2 text-sm font-bold text-foreground mb-1">
+                    <Wallet className="h-4 w-4 text-primary" />
+                    Rincian
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground flex items-center gap-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Sudah Boss pesan (2 Ons)
+                    </span>
+                    <span className="font-bold tabular-nums">{formatRupiah(total_cost)}</span>
+                  </div>
+                  {total_cost_other > 0 && (
+                    <div className="flex items-center justify-between text-purple-600 dark:text-purple-400">
+                      <span className="flex items-center gap-1.5">
+                        <Package className="h-3.5 w-3.5" /> Sudah Boss pesan (Ukuran lain)
+                      </span>
+                      <span className="font-bold tabular-nums">+{formatRupiah(total_cost_other)}</span>
+                    </div>
+                  )}
                   {(budget_tambah || 0) > 0 && (
                     <div className="flex items-center justify-between text-orange-600 dark:text-orange-400">
                       <span className="flex items-center gap-1.5">
-                        <CirclePlus className="h-3.5 w-3.5" /> Tambahan 2 Ons
+                        <CirclePlus className="h-3.5 w-3.5" /> Sebaiknya ditambah (qty kurang)
                       </span>
-                      <span className="font-bold tabular-nums text-base">+{formatRupiah(budget_tambah)}</span>
+                      <span className="font-bold tabular-nums">+{formatRupiah(budget_tambah)}</span>
                     </div>
                   )}
                   {(budget_missed || 0) > 0 && (
                     <div className="flex items-center justify-between text-destructive">
                       <span className="flex items-center gap-1.5">
-                        <CircleAlert className="h-3.5 w-3.5" /> Belum dipesan
+                        <AlertTriangle className="h-3.5 w-3.5" /> Wajib beli (belum dipesan)
                       </span>
-                      <span className="font-bold tabular-nums text-base">+{formatRupiah(budget_missed)}</span>
+                      <span className="font-bold tabular-nums">+{formatRupiah(budget_missed)}</span>
                     </div>
                   )}
-                  <div className="border-t border-border/50 my-1.5" />
-                  <div className="flex items-center justify-between font-extrabold text-muted-foreground">
-                    <span className="text-sm">Grand Total (jika ditambah)</span>
-                    <span className="tabular-nums text-base">{formatRupiah(budget_total || total_cost)}</span>
+                  <div className="border-t border-border/60 my-1.5" />
+                  <div className="flex items-center justify-between font-extrabold">
+                    <span className="text-sm">Total Aman</span>
+                    <span className="tabular-nums text-primary">{formatRupiah(totalAman)}</span>
                   </div>
-                </>
-              )}
-            </div>
-          </div>
+                </div>
+
+                {/* Scope explainer + Why higher than Analisa */}
+                {delta > 0 && (
+                  <div className="rounded-xl bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 p-4 space-y-2.5">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="text-sm font-bold text-blue-900 dark:text-blue-200">
+                          Kenapa lebih besar dari Analisa?
+                        </p>
+                        <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
+                          <strong>Analisa</strong> = daftar rekomendasi otomatis untuk semua barang yang perlu restok.
+                          <br />
+                          <strong>Review AI</strong> = cek draft Boss + tambahkan item kritis yang <em>belum</em> masuk daftar Boss.
+                          <br />
+                          Selisih <strong className="tabular-nums">{formatRupiah(delta)}</strong> berasal dari item di bawah ini:
+                        </p>
+                      </div>
+                    </div>
+                    {contributors.length > 0 && (
+                      <ul className="space-y-1.5 pl-1">
+                        {contributors.map(c => (
+                          <li key={c.kode} className="flex items-center justify-between text-xs bg-white/60 dark:bg-blue-950/30 rounded-lg px-2.5 py-1.5">
+                            <span className="flex items-center gap-1.5 min-w-0">
+                              <span className={`inline-block h-1.5 w-1.5 rounded-full ${c.reason === "missed" ? "bg-destructive" : "bg-orange-500"}`} />
+                              <span className="font-mono font-bold shrink-0">{c.kode}</span>
+                              <span className="text-muted-foreground truncate">— {c.reason === "missed" ? "wajib beli" : "kurang qty"}</span>
+                            </span>
+                            <span className="font-bold tabular-nums shrink-0 ml-2">+{formatRupiah(c.cost)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
 
           {/* Quick Stats */}
           <div className="grid grid-cols-2 gap-2 mt-4">
@@ -510,7 +627,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
 
       {/* 2 Ons Sections */}
       {needMoreCards.length > 0 && (
-        <CollapsibleSection icon={Plus} title="Perlu Ditambah" count={needMoreCards.length} color="bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400" sectionRef={tambahRef} isOpen={openSections.tambah} onToggle={() => toggleSection("tambah")}>
+        <CollapsibleSection icon={Plus} title="Sebaiknya Ditambah (di draft, qty kurang)" count={needMoreCards.length} color="bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400" sectionRef={tambahRef} isOpen={openSections.tambah} onToggle={() => toggleSection("tambah")}>
           {needMoreCards.map((card, i) => (
             <div key={card.kode} className="animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
               <ProductCard card={card} alreadySent={alreadySent} />
@@ -520,7 +637,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
       )}
 
       {missed.length > 0 && (
-        <CollapsibleSection icon={PackageX} title="Belum Dipesan tapi Kritis" count={missed.length} color="bg-red-100 dark:bg-red-900/40 text-destructive" sectionRef={missedRef} isOpen={openSections.missed} onToggle={() => toggleSection("missed")}>
+        <CollapsibleSection icon={PackageX} title="Wajib Beli Sekarang (belum masuk draft)" count={missed.length} color="bg-red-100 dark:bg-red-900/40 text-destructive" sectionRef={missedRef} isOpen={openSections.missed} onToggle={() => toggleSection("missed")}>
           {missed.map((card, i) => (
             <div key={card.kode} className="animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
               <MissedProductCard card={card} />
@@ -530,7 +647,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
       )}
 
       {tooMuchCards.length > 0 && (
-        <CollapsibleSection icon={ArrowDown} title="Bisa Dikurangi" count={tooMuchCards.length} color="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400" sectionRef={kurangiRef} isOpen={openSections.kurangi} onToggle={() => toggleSection("kurangi")}>
+        <CollapsibleSection icon={ArrowDown} title="Bisa Ditunda / Kurangi" count={tooMuchCards.length} color="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400" sectionRef={kurangiRef} isOpen={openSections.kurangi} onToggle={() => toggleSection("kurangi")}>
           {tooMuchCards.map((card, i) => (
             <div key={card.kode} className="animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
               <ProductCard card={card} alreadySent={alreadySent} />
@@ -540,7 +657,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
       )}
 
       {okCards.length > 0 && (
-        <CollapsibleSection icon={CheckCircle2} title="Sudah Cukup" count={okCards.length} color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400" sectionRef={cukupRef} isOpen={openSections.cukup} onToggle={() => toggleSection("cukup")}>
+        <CollapsibleSection icon={CheckCircle2} title="Sudah Cukup ✓" count={okCards.length} color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400" sectionRef={cukupRef} isOpen={openSections.cukup} onToggle={() => toggleSection("cukup")}>
           {okCards.map((card, i) => (
             <div key={card.kode} className="animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
               <ProductCard card={card} alreadySent={alreadySent} />
