@@ -5,6 +5,7 @@ import {
   calculateDaysOfStock,
   calculateRestockRecommendation,
   getDefaultTargetDays,
+  getPlanningTargetDays,
   isBlackWhiteCode,
 } from "../../../shared/restockCore.ts";
 
@@ -255,7 +256,9 @@ serve(async (req) => {
       // 2 Ons: full review
       const { velocity, salesDays } = computeWMAVelocity(stockOut, product.id);
       const isBW = isBlackWhiteCode(kode);
-      const computedTargetDays = customTargetDays || getDefaultTargetDays(kode);
+      const computedTargetDays = customTargetDays
+        ? getPlanningTargetDays(kode, customTargetDays)
+        : getDefaultTargetDays(kode);
       const pendingQty = pendingMap[kode] || 0;
       const effectiveStock = product.stok + pendingQty;
       const dos = calculateDaysOfStock(effectiveStock, velocity);
@@ -299,27 +302,28 @@ serve(async (req) => {
       const pendingQty = pendingMap[kodeUpper] || 0;
       const effectiveStock = prod.stok + pendingQty;
       const dos = calculateDaysOfStock(effectiveStock, velocity);
-      if (dos <= RULES.WARNING_DAYS) {
-        const isBW = isBlackWhiteCode(p.kode);
-        const missedTargetDays = customTargetDays || getDefaultTargetDays(p.kode);
-        const recommendation = calculateRestockRecommendation({
-          kode: p.kode,
-          currentStock: effectiveStock,
-          velocity,
-          targetDays: missedTargetDays,
-        });
-        const missedCost = recommendation.recommendedQty * (prod.hargaModal || 0);
-        if (recommendation.recommendedQty <= 0) continue;
-        missed.push({
-          kode: p.kode, nama: p.nama,
-          stok: prod.stok, velocity,
-          dos: Math.round(dos * 10) / 10,
-          status: getStatus(dos),
-          ideal_qty: recommendation.recommendedQty, is_bw: isBW,
-          harga_modal: prod.hargaModal || 0,
-          cost: missedCost, pending_qty: pendingQty,
-        });
-      }
+      const isBW = isBlackWhiteCode(p.kode);
+      const missedTargetDays = customTargetDays
+        ? getPlanningTargetDays(p.kode, customTargetDays)
+        : getDefaultTargetDays(p.kode);
+      const recommendation = calculateRestockRecommendation({
+        kode: p.kode,
+        currentStock: effectiveStock,
+        velocity,
+        targetDays: missedTargetDays,
+      });
+      if (recommendation.recommendedQty <= 0) continue;
+
+      const missedCost = recommendation.recommendedQty * (prod.hargaModal || 0);
+      missed.push({
+        kode: p.kode, nama: p.nama,
+        stok: prod.stok, velocity,
+        dos: Math.round(dos * 10) / 10,
+        status: getStatus(dos),
+        ideal_qty: recommendation.recommendedQty, is_bw: isBW,
+        harga_modal: prod.hargaModal || 0,
+        cost: missedCost, pending_qty: pendingQty,
+      });
     }
     missed.sort((a, b) => a.dos - b.dos);
 
