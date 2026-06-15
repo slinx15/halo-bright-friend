@@ -402,7 +402,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
   const okCards = cards.filter(c => !isNeedMore(c) && !(isTooMuch(c) && !alreadySent));
 
   const totalTambah = needMoreCards.reduce((sum, c) => sum + getShortfall(c), 0);
-  const hasBudgetExtra = (budget_tambah || 0) > 0 || (budget_missed || 0) > 0 || total_cost_other > 0;
+  
 
   // Group other items by kategori
   const otherByKategori: Record<string, typeof other_items> = {};
