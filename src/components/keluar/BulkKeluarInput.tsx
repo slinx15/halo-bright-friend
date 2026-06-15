@@ -148,7 +148,7 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
     setItems((prev) => {
       const updated = [...prev];
       if (field === "kode") {
-        updated[idx] = resolveItem(value, updated[idx]);
+        updated[idx] = resolveItem(String(value ?? ""), updated[idx]);
       } else {
         updated[idx] = { ...updated[idx], [field]: value };
       }
