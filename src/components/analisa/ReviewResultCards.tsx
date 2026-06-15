@@ -144,6 +144,41 @@ function getMissedReason(card: MissedCard): string {
   return `Barang ${speed} tapi ${timeLeft}, harus pesan sebelum kehabisan`;
 }
 
+type Priority = "wajib" | "sebaiknya" | "tunda" | "cukup";
+
+function getCardPriority(card: ReviewCard, alreadySent: boolean): Priority {
+  if (card.verdict === "kurang") {
+    if (card.stok === 0 || card.dos <= 2) return "wajib";
+    return "sebaiknya";
+  }
+  if (card.verdict === "lebih" && !alreadySent) return "tunda";
+  return "cukup";
+}
+
+function getMissedPriority(card: MissedCard): Priority {
+  // Missed = belum dipesan sama sekali. Default wajib kalau stok kritis.
+  if (card.stok === 0 || card.dos <= 2) return "wajib";
+  return "sebaiknya";
+}
+
+const PRIORITY_META: Record<Priority, { label: string; classes: string; icon: LucideIcon }> = {
+  wajib:     { label: "Wajib Sekarang",   classes: "bg-destructive text-destructive-foreground",                          icon: AlertTriangle },
+  sebaiknya: { label: "Sebaiknya Ditambah", classes: "bg-orange-500 text-white",                                          icon: Plus },
+  tunda:     { label: "Bisa Ditunda",     classes: "bg-blue-500 text-white",                                              icon: Clock },
+  cukup:     { label: "Sudah Cukup",      classes: "bg-emerald-500 text-white",                                           icon: CheckCircle2 },
+};
+
+function PriorityBadge({ priority }: { priority: Priority }) {
+  const meta = PRIORITY_META[priority];
+  const Icon = meta.icon;
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold shadow-sm ${meta.classes}`}>
+      <Icon className="h-3 w-3" /> {meta.label}
+    </span>
+  );
+}
+
+
 // ── Score Ring — BIGGER ──
 function ScoreRing({ score }: { score: number }) {
   const pct = (score / 10) * 100;
