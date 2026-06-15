@@ -178,7 +178,6 @@ serve(async (req) => {
     const queries: Promise<any>[] = [
       supabase.from("products").select("id, kode, nama, kategori, stock(jumlah), prices(harga_modal, harga_normal, harga_grosir)").eq("is_active", true),
       supabase.from("stock_out").select("product_id, qty_pesan, created_at").gte("created_at", cutoff.toISOString()).order("created_at", { ascending: false }).limit(5000),
-      supabase.from("pending_restock").select("id, status").in("status", ["pending", "active"]),
     ];
     if (isTopup && ordered_at) {
       queries.push(
@@ -187,25 +186,10 @@ serve(async (req) => {
     }
 
     const queryResults = await Promise.all(queries);
-    const [productsRes, stockOutRes, pendingRestockRes] = queryResults;
-    const stockOutAfterOrder = isTopup && queryResults[3] ? queryResults[3].data || [] : [];
+    const [productsRes, stockOutRes] = queryResults;
+    const stockOutAfterOrder = isTopup && queryResults[2] ? queryResults[2].data || [] : [];
     const rawProducts = productsRes.data || [];
     const stockOut = stockOutRes.data || [];
-
-    // Build pending qty map
-    const pendingMap: Record<string, number> = {};
-    const pendingRestocks = pendingRestockRes.data || [];
-    if (pendingRestocks.length > 0) {
-      const restockIds = pendingRestocks.map((r: any) => r.id);
-      const { data: pendingItems } = await supabase
-        .from("pending_restock_items")
-        .select("kode, qty")
-        .in("restock_id", restockIds);
-      for (const pi of (pendingItems || [])) {
-        const k = pi.kode.toUpperCase().trim();
-        pendingMap[k] = (pendingMap[k] || 0) + pi.qty;
-      }
-    }
 
     // Build product lookup — ALL categories
     const productMap: Record<string, any> = {};
@@ -259,12 +243,10 @@ serve(async (req) => {
       const computedTargetDays = customTargetDays
         ? getPlanningTargetDays(kode, customTargetDays)
         : getDefaultTargetDays(kode);
-      const pendingQty = pendingMap[kode] || 0;
-      const effectiveStock = product.stok + pendingQty;
-      const dos = calculateDaysOfStock(effectiveStock, velocity);
+      const dos = calculateDaysOfStock(product.stok, velocity);
       const recommendation = calculateRestockRecommendation({
         kode,
-        currentStock: effectiveStock,
+        currentStock: product.stok,
         velocity,
         targetDays: computedTargetDays,
       });
@@ -283,7 +265,7 @@ serve(async (req) => {
         verdict, verdict_note: note,
         cost, harga_modal: product.hargaModal,
         is_bestseller: isBestSeller, is_bw: isBW,
-        batch: recommendation.batchSize, pending_qty: pendingQty,
+        batch: recommendation.batchSize, pending_qty: 0,
       });
     }
 
@@ -298,17 +280,14 @@ serve(async (req) => {
       if (!prod) continue;
       const { velocity } = computeWMAVelocity(stockOut, prod.id);
       if (velocity <= 0) continue;
-      const kodeUpper = p.kode.toUpperCase();
-      const pendingQty = pendingMap[kodeUpper] || 0;
-      const effectiveStock = prod.stok + pendingQty;
-      const dos = calculateDaysOfStock(effectiveStock, velocity);
+      const dos = calculateDaysOfStock(prod.stok, velocity);
       const isBW = isBlackWhiteCode(p.kode);
       const missedTargetDays = customTargetDays
         ? getPlanningTargetDays(p.kode, customTargetDays)
         : getDefaultTargetDays(p.kode);
       const recommendation = calculateRestockRecommendation({
         kode: p.kode,
-        currentStock: effectiveStock,
+        currentStock: prod.stok,
         velocity,
         targetDays: missedTargetDays,
       });
@@ -322,7 +301,7 @@ serve(async (req) => {
         status: getStatus(dos),
         ideal_qty: recommendation.recommendedQty, is_bw: isBW,
         harga_modal: prod.hargaModal || 0,
-        cost: missedCost, pending_qty: pendingQty,
+        cost: missedCost, pending_qty: 0,
       });
     }
     missed.sort((a, b) => a.dos - b.dos);
@@ -414,8 +393,8 @@ Beri penilaian singkat + 1 saran paling penting. MAX 3 kalimat. Jangan pake mark
       budget_total: budgetTotal,
       target_days_used: customTargetDays ?? null,
       review_basis: customTargetDays
-        ? `Override ${customTargetDays} hari`
-        : "Ikut rumus Analisa utama (cycle + safety + lead time)",
+        ? `Override ${customTargetDays} hari · stok fisik`
+        : "Ikut rumus Analisa utama · stok fisik",
       stats: summaryData,
     };
 
