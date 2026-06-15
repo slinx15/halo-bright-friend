@@ -21,6 +21,7 @@ import { ReviewResultCards, type ReviewResult } from "./ReviewResultCards";
 import { getAuthHeaders } from "@/lib/authHeaders";
 import { getErrorMessage } from "@/lib/errors";
 import { SUPABASE_URL } from "@/lib/supabaseEnv";
+import type { BudgetEstimateSummary } from "@/lib/analisaBudget";
 
 interface ReviewItem {
   kode: string;
@@ -33,6 +34,10 @@ interface ReviewOcrItem {
   kode?: string;
   qty?: number;
   qty_pesan?: number;
+}
+
+interface ReviewAIProps {
+  budgetEstimates?: BudgetEstimateSummary[];
 }
 
 function parseInput(text: string, products: ProductWithDetails[], aliases: ProductAlias[]): ReviewItem[] {
@@ -171,7 +176,7 @@ function parseInput(text: string, products: ProductWithDetails[], aliases: Produ
   return Array.from(merged.values());
 }
 
-export default function ReviewAI() {
+export default function ReviewAI({ budgetEstimates = [] }: ReviewAIProps) {
   const [expandParsed, setExpandParsed] = useState(false);
   const [inputText, setInputText] = useState("");
   const [parsedItems, setParsedItems] = useState<ReviewItem[]>([]);
@@ -221,9 +226,17 @@ export default function ReviewAI() {
         already_sent?: boolean;
         mode?: "topup";
         ordered_at?: string;
+        baseline_items?: Array<{ kode: string; qty: number }>;
       } = { items: validItems.map(i => ({ kode: i.kode, qty: i.qty })) };
       if (targetDays && parseInt(targetDays) > 0) {
         body.target_days = parseInt(targetDays);
+        const baseline = budgetEstimates.find((estimate) => estimate.days === body.target_days);
+        if (baseline) {
+          body.baseline_items = baseline.details.map((detail) => ({
+            kode: detail.kode,
+            qty: detail.qty,
+          }));
+        }
       }
       body.already_sent = alreadySent;
       if (orderDate) {
@@ -253,7 +266,7 @@ export default function ReviewAI() {
     } finally {
       setIsLoading(false);
     }
-  }, [parsedItems, orderDate, targetDays, alreadySent, toast]);
+  }, [parsedItems, orderDate, targetDays, alreadySent, toast, budgetEstimates]);
 
   const handleOcrFile = async (file: File) => {
     if (!file.type.startsWith("image/")) { toast({ title: "Error", description: "File harus gambar", variant: "destructive" }); return; }

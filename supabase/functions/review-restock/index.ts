@@ -165,7 +165,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { items, mode, ordered_at, target_days, already_sent } = await req.json();
+    const { items, mode, ordered_at, target_days, already_sent, baseline_items } = await req.json();
     const customTargetDays = target_days && Number(target_days) > 0 ? Number(target_days) : null;
     if (!items || !Array.isArray(items) || items.length === 0) {
       return new Response(JSON.stringify({ error: "Kirim minimal 1 item untuk di-review" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -173,8 +173,8 @@ serve(async (req) => {
 
     const isTopup = mode === "topup";
 
-    // Fetch ALL active products (2 Ons for review, others for passthrough cost)
-    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
+    // Match Analisa: use 56 days / 8 weeks of sales for more stable velocity.
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 56);
     const queries: Promise<any>[] = [
       supabase.from("products").select("id, kode, nama, kategori, stock(jumlah), prices(harga_modal, harga_normal, harga_grosir)").eq("is_active", true),
       supabase.from("stock_out").select("product_id, qty_pesan, created_at").gte("created_at", cutoff.toISOString()).order("created_at", { ascending: false }).limit(5000),
@@ -190,6 +190,15 @@ serve(async (req) => {
     const stockOutAfterOrder = isTopup && queryResults[2] ? queryResults[2].data || [] : [];
     const rawProducts = productsRes.data || [];
     const stockOut = stockOutRes.data || [];
+    const baselineMap: Record<string, number> = {};
+    if (Array.isArray(baseline_items)) {
+      for (const baselineItem of baseline_items) {
+        const kode = String(baselineItem?.kode || "").toUpperCase().trim();
+        const qty = Number(baselineItem?.qty) || 0;
+        if (!kode || qty <= 0) continue;
+        baselineMap[kode] = qty;
+      }
+    }
 
     // Build product lookup — ALL categories
     const productMap: Record<string, any> = {};
@@ -250,18 +259,20 @@ serve(async (req) => {
         velocity,
         targetDays: computedTargetDays,
       });
+      const baselineQty = baselineMap[kode];
+      const idealQty = baselineQty && baselineQty > 0 ? baselineQty : recommendation.recommendedQty;
       const cost = qty * product.hargaModal;
       totalCost2Ons += cost;
 
       const status = getStatus(dos);
       const isBestSeller = velocity >= RULES.BESTSELLER_VELOCITY;
-      const { verdict, note } = getVerdict(qty, recommendation.recommendedQty, status);
+      const { verdict, note } = getVerdict(qty, idealQty, status);
 
       cards.push({
         kode: product.kode, nama: product.nama,
         qty_boss: qty, stok: product.stok,
         velocity, dos: Math.round(dos * 10) / 10,
-        status, ideal_qty: recommendation.recommendedQty,
+        status, ideal_qty: idealQty,
         verdict, verdict_note: note,
         cost, harga_modal: product.hargaModal,
         is_bestseller: isBestSeller, is_bw: isBW,
@@ -273,33 +284,39 @@ serve(async (req) => {
     const selectedKodes = new Set(items.map((i: any) => String(i.kode).toUpperCase().trim()));
     const missed: MissedCard[] = [];
 
-    for (const p of rawProducts) {
-      if (p.kategori !== "2 Ons") continue;
-      if (selectedKodes.has(p.kode.toUpperCase())) continue;
-      const prod = productMap[p.kode.toUpperCase()];
+    const missedKodes = Object.keys(baselineMap).length > 0
+      ? Object.keys(baselineMap).filter((kode) => !selectedKodes.has(kode))
+      : rawProducts
+          .filter((p) => p.kategori === "2 Ons" && !selectedKodes.has(p.kode.toUpperCase()))
+          .map((p) => p.kode.toUpperCase());
+
+    for (const missedKode of missedKodes) {
+      const prod = productMap[missedKode];
       if (!prod) continue;
       const { velocity } = computeWMAVelocity(stockOut, prod.id);
       if (velocity <= 0) continue;
       const dos = calculateDaysOfStock(prod.stok, velocity);
-      const isBW = isBlackWhiteCode(p.kode);
+      const isBW = isBlackWhiteCode(prod.kode);
       const missedTargetDays = customTargetDays
-        ? getPlanningTargetDays(p.kode, customTargetDays)
-        : getDefaultTargetDays(p.kode);
+        ? getPlanningTargetDays(prod.kode, customTargetDays)
+        : getDefaultTargetDays(prod.kode);
       const recommendation = calculateRestockRecommendation({
-        kode: p.kode,
+        kode: prod.kode,
         currentStock: prod.stok,
         velocity,
         targetDays: missedTargetDays,
       });
-      if (recommendation.recommendedQty <= 0) continue;
+      const baselineQty = baselineMap[missedKode];
+      const idealQty = baselineQty && baselineQty > 0 ? baselineQty : recommendation.recommendedQty;
+      if (idealQty <= 0) continue;
 
-      const missedCost = recommendation.recommendedQty * (prod.hargaModal || 0);
+      const missedCost = idealQty * (prod.hargaModal || 0);
       missed.push({
-        kode: p.kode, nama: p.nama,
+        kode: prod.kode, nama: prod.nama,
         stok: prod.stok, velocity,
         dos: Math.round(dos * 10) / 10,
         status: getStatus(dos),
-        ideal_qty: recommendation.recommendedQty, is_bw: isBW,
+        ideal_qty: idealQty, is_bw: isBW,
         harga_modal: prod.hargaModal || 0,
         cost: missedCost, pending_qty: 0,
       });
@@ -393,7 +410,9 @@ Beri penilaian singkat + 1 saran paling penting. MAX 3 kalimat. Jangan pake mark
       budget_total: budgetTotal,
       target_days_used: customTargetDays ?? null,
       review_basis: customTargetDays
-        ? `Override ${customTargetDays} hari · stok fisik`
+        ? Object.keys(baselineMap).length > 0
+          ? `Override ${customTargetDays} hari · baseline Ringkasan · stok fisik`
+          : `Override ${customTargetDays} hari · stok fisik`
         : "Ikut rumus Analisa utama · stok fisik",
       stats: summaryData,
     };

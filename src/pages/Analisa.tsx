@@ -1262,7 +1262,7 @@ const Analisa = () => {
 
             <TabsContent value="review" className="space-y-4 mt-3">
               <Suspense fallback={<div className="flex items-center justify-center py-16"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
-                <ReviewAI />
+                <ReviewAI budgetEstimates={budgetEstimates} />
               </Suspense>
             </TabsContent>
           </Tabs>
