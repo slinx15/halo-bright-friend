@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Sparkles, AlertTriangle, CheckCircle2, Plus, Flame, ArrowDown,
-  TrendingUp, ShoppingCart, PackageX, Wallet, CirclePlus, CircleAlert, ChevronDown,
+  TrendingUp, ShoppingCart, PackageX, Wallet, CirclePlus, ChevronDown,
 
   Package, Info, ShieldCheck, Clock, type LucideIcon
 } from "lucide-react";
