@@ -235,19 +235,23 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
   const tooMuch = !alreadySent && isTooMuch(card);
   const shortfall = getShortfall(card);
   const excess = getExcess(card);
+  const priority = getCardPriority(card, alreadySent);
 
-  const accentClass = needMore
-    ? "bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800/50"
-    : tooMuch
-    ? "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800/50"
-    : "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50";
+  const accentClass =
+    priority === "wajib"
+      ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50"
+      : priority === "sebaiknya"
+      ? "bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800/50"
+      : priority === "tunda"
+      ? "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800/50"
+      : "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50";
 
   return (
     <div className={`card-premium p-4 space-y-3 transition-all duration-200 active:scale-[0.98] ${accentClass}`}>
       {/* Header row */}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-mono font-extrabold text-base">{card.kode}</span>
             {card.is_bestseller && (
               <span className="inline-flex items-center gap-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 rounded-full px-2 py-0.5 text-xs font-bold">
@@ -257,21 +261,18 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
           </div>
           <p className="text-sm text-muted-foreground truncate mt-0.5">{card.nama}</p>
         </div>
-        
-        {/* Action badge — bigger */}
-        {needMore ? (
-          <span className="inline-flex items-center gap-1 bg-orange-500 text-white rounded-full px-3 py-1.5 text-sm font-bold shadow-sm shrink-0">
-            <Plus className="h-3.5 w-3.5" /> +{formatNumber(shortfall)}
-          </span>
-        ) : tooMuch ? (
-          <span className="inline-flex items-center gap-1 bg-blue-500 text-white rounded-full px-3 py-1.5 text-sm font-bold shadow-sm shrink-0">
-            <ArrowDown className="h-3.5 w-3.5" /> -{formatNumber(excess)}
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 bg-emerald-500 text-white rounded-full px-3 py-1.5 text-sm font-bold shadow-sm shrink-0">
-            <CheckCircle2 className="h-3.5 w-3.5" /> OK
-          </span>
-        )}
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <PriorityBadge priority={priority} />
+          {needMore ? (
+            <span className="inline-flex items-center gap-1 bg-orange-500/90 text-white rounded-full px-2.5 py-1 text-xs font-bold">
+              <Plus className="h-3 w-3" /> +{formatNumber(shortfall)} pcs
+            </span>
+          ) : tooMuch ? (
+            <span className="inline-flex items-center gap-1 bg-blue-500/90 text-white rounded-full px-2.5 py-1 text-xs font-bold">
+              <ArrowDown className="h-3 w-3" /> -{formatNumber(excess)} pcs
+            </span>
+          ) : null}
+        </div>
       </div>
 
       {/* Stock + Qty info */}
@@ -298,9 +299,11 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
 
       {/* Reason bubble — bigger */}
       <div className={`rounded-xl px-4 py-3 text-sm leading-relaxed font-medium ${
-        needMore 
-          ? "bg-orange-100/80 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300" 
-          : tooMuch
+        priority === "wajib"
+          ? "bg-red-100/80 dark:bg-red-900/30 text-red-800 dark:text-red-300"
+          : priority === "sebaiknya"
+          ? "bg-orange-100/80 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300"
+          : priority === "tunda"
           ? "bg-blue-100/80 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
           : "bg-emerald-100/80 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300"
       }`}>
@@ -309,6 +312,7 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
     </div>
   );
 }
+
 
 // ── Missed Product Card — Bigger ──
 function MissedProductCard({ card }: { card: MissedCard }) {
