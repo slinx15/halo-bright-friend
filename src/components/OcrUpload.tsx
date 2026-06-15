@@ -282,7 +282,8 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
       // Re-validate kode if kode or kategori changed
       if (field === "kode" || field === "kategori") {
         const kode = String(field === "kode" ? value : updated[idx].kode).toUpperCase().trim();
-        const kat = field === "kategori" ? (value || undefined) : updated[idx].kategori;
+        const katRaw = field === "kategori" ? value : updated[idx].kategori;
+        const kat = katRaw != null && katRaw !== "" ? String(katRaw) : undefined;
         const found = findProduct(kode, kat);
         updated[idx].kode = found ? found.kode : kode;
         updated[idx].kategori = found ? found.kategori : kat;

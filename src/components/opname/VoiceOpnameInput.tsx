@@ -177,7 +177,7 @@ export function VoiceOpnameInput({ onResult }: VoiceOpnameInputProps) {
       for (let attempt = 1; attempt <= 2; attempt++) {
         try {
           data = await callVoiceApi(base64, blob.type, 60000);
-          lastErr = null;
+          lastError = null;
           break;
         } catch (error) {
           lastError = error;
