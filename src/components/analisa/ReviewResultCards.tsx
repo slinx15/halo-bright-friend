@@ -626,7 +626,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
 
       {/* 2 Ons Sections */}
       {needMoreCards.length > 0 && (
-        <CollapsibleSection icon={Plus} title="Perlu Ditambah" count={needMoreCards.length} color="bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400" sectionRef={tambahRef} isOpen={openSections.tambah} onToggle={() => toggleSection("tambah")}>
+        <CollapsibleSection icon={Plus} title="Sebaiknya Ditambah (di draft, qty kurang)" count={needMoreCards.length} color="bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400" sectionRef={tambahRef} isOpen={openSections.tambah} onToggle={() => toggleSection("tambah")}>
           {needMoreCards.map((card, i) => (
             <div key={card.kode} className="animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
               <ProductCard card={card} alreadySent={alreadySent} />
@@ -636,7 +636,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
       )}
 
       {missed.length > 0 && (
-        <CollapsibleSection icon={PackageX} title="Belum Dipesan tapi Kritis" count={missed.length} color="bg-red-100 dark:bg-red-900/40 text-destructive" sectionRef={missedRef} isOpen={openSections.missed} onToggle={() => toggleSection("missed")}>
+        <CollapsibleSection icon={PackageX} title="Wajib Beli Sekarang (belum masuk draft)" count={missed.length} color="bg-red-100 dark:bg-red-900/40 text-destructive" sectionRef={missedRef} isOpen={openSections.missed} onToggle={() => toggleSection("missed")}>
           {missed.map((card, i) => (
             <div key={card.kode} className="animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
               <MissedProductCard card={card} />
@@ -646,7 +646,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
       )}
 
       {tooMuchCards.length > 0 && (
-        <CollapsibleSection icon={ArrowDown} title="Bisa Dikurangi" count={tooMuchCards.length} color="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400" sectionRef={kurangiRef} isOpen={openSections.kurangi} onToggle={() => toggleSection("kurangi")}>
+        <CollapsibleSection icon={ArrowDown} title="Bisa Ditunda / Kurangi" count={tooMuchCards.length} color="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400" sectionRef={kurangiRef} isOpen={openSections.kurangi} onToggle={() => toggleSection("kurangi")}>
           {tooMuchCards.map((card, i) => (
             <div key={card.kode} className="animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
               <ProductCard card={card} alreadySent={alreadySent} />
@@ -656,7 +656,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
       )}
 
       {okCards.length > 0 && (
-        <CollapsibleSection icon={CheckCircle2} title="Sudah Cukup" count={okCards.length} color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400" sectionRef={cukupRef} isOpen={openSections.cukup} onToggle={() => toggleSection("cukup")}>
+        <CollapsibleSection icon={CheckCircle2} title="Sudah Cukup ✓" count={okCards.length} color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400" sectionRef={cukupRef} isOpen={openSections.cukup} onToggle={() => toggleSection("cukup")}>
           {okCards.map((card, i) => (
             <div key={card.kode} className="animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
               <ProductCard card={card} alreadySent={alreadySent} />
