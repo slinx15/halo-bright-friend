@@ -4,9 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import {
   Sparkles, AlertTriangle, CheckCircle2, Plus, Flame, ArrowDown,
   TrendingUp, ShoppingCart, PackageX, Wallet, CirclePlus, CircleAlert, ChevronDown,
-  Package, type LucideIcon
+  Package, Info, ShieldCheck, Clock, type LucideIcon
 } from "lucide-react";
 import { formatRupiah, formatNumber } from "@/lib/formatters";
+
 
 type Status = "kritis" | "segera" | "perhatian" | "aman";
 type Verdict = "kurang" | "pas" | "lebih" | "ok" | "unknown";
