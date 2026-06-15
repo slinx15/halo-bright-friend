@@ -7,7 +7,7 @@ import {
   getDefaultTargetDays,
   getPlanningTargetDays,
   isBlackWhiteCode,
-} from "../../../shared/restockCore.ts";
+} from "../_shared/restockCore.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
