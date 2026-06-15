@@ -316,18 +316,29 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
 
 // ── Missed Product Card — Bigger ──
 function MissedProductCard({ card }: { card: MissedCard }) {
+  const priority = getMissedPriority(card);
+  const accent = priority === "wajib"
+    ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50"
+    : "bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800/50";
   return (
-    <div className="card-premium p-4 space-y-3 transition-all duration-200 active:scale-[0.98] bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50">
+    <div className={`card-premium p-4 space-y-3 transition-all duration-200 active:scale-[0.98] ${accent}`}>
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <span className="font-mono font-extrabold text-base">{card.kode}</span>
           <p className="text-sm text-muted-foreground truncate mt-0.5">{card.nama}</p>
         </div>
-        <span className="inline-flex items-center gap-1 bg-destructive text-destructive-foreground rounded-full px-3 py-1.5 text-sm font-bold shadow-sm shrink-0">
-          <Plus className="h-3.5 w-3.5" /> Pesan {formatNumber(card.ideal_qty)}
-        </span>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <PriorityBadge priority={priority} />
+          <span className="inline-flex items-center gap-1 bg-destructive/90 text-destructive-foreground rounded-full px-2.5 py-1 text-xs font-bold">
+            <Plus className="h-3 w-3" /> Pesan {formatNumber(card.ideal_qty)}
+          </span>
+        </div>
       </div>
-      <div className="rounded-xl px-4 py-3 text-sm leading-relaxed font-medium bg-red-100/80 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+      <div className={`rounded-xl px-4 py-3 text-sm leading-relaxed font-medium ${
+        priority === "wajib"
+          ? "bg-red-100/80 dark:bg-red-900/30 text-red-800 dark:text-red-300"
+          : "bg-orange-100/80 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300"
+      }`}>
         💬 {getMissedReason(card)}
       </div>
       <div className="flex items-center gap-3 text-sm flex-wrap">
@@ -343,6 +354,7 @@ function MissedProductCard({ card }: { card: MissedCard }) {
     </div>
   );
 }
+
 
 // ── Collapsible Section — Bigger touch target ──
 function CollapsibleSection({ icon: Icon, title, count, color, sectionRef, isOpen, onToggle, children }: {
