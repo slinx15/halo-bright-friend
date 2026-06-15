@@ -451,63 +451,127 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
             </div>
           </div>
           
-          {/* Budget Breakdown */}
-          <div className="mt-5 rounded-xl bg-muted/40 p-4 space-y-2.5">
-            <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-              <Wallet className="h-4 w-4 text-primary" />
-              Rincian Budget
-            </div>
-            <div className="space-y-2 text-sm">
-              {/* Section 1: What user actually ordered */}
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Pesanan 2 Ons</span>
-                <span className="font-bold tabular-nums text-base">{formatRupiah(total_cost)}</span>
-              </div>
-              {total_cost_other > 0 && (
-                <div className="flex items-center justify-between text-purple-600 dark:text-purple-400">
-                  <span className="flex items-center gap-1.5">
-                    <Package className="h-3.5 w-3.5" /> Ukuran lain
-                  </span>
-                  <span className="font-bold tabular-nums text-base">+{formatRupiah(total_cost_other)}</span>
-                </div>
-              )}
-              {/* Total Pesanan Saya */}
-              <div className="border-t border-border/50 my-1.5" />
-              <div className="flex items-center justify-between font-extrabold">
-                <span className="text-base">💰 Total Pesanan Saya</span>
-                <span className="tabular-nums text-primary text-xl">{formatRupiah(total_cost + total_cost_other)}</span>
-              </div>
+          {/* ── Total Aman Siapkan — HERO ── */}
+          {(() => {
+            const myOrder = total_cost + total_cost_other;
+            const extras = (budget_tambah || 0) + (budget_missed || 0);
+            const totalAman = (budget_total || 0) > 0 ? budget_total : myOrder + extras;
+            const delta = Math.max(0, totalAman - myOrder);
 
-              {/* Section 2: AI recommendations (if any) */}
-              {((budget_tambah || 0) > 0 || (budget_missed || 0) > 0) && (
-                <>
-                  <div className="border-t border-dashed border-border/50 my-2" />
-                  <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Saran Tambahan</div>
+            // Top contributors to the delta: combine missed + needMore shortfalls
+            type Contributor = { kode: string; nama: string; cost: number; reason: "missed" | "tambah" };
+            const contributors: Contributor[] = [
+              ...missed
+                .filter(m => (m.cost || 0) > 0)
+                .map(m => ({ kode: m.kode, nama: m.nama, cost: m.cost, reason: "missed" as const })),
+              ...needMoreCards
+                .map(c => ({
+                  kode: c.kode,
+                  nama: c.nama,
+                  cost: Math.max(0, getShortfall(c)) * c.harga_modal,
+                  reason: "tambah" as const,
+                }))
+                .filter(c => c.cost > 0),
+            ].sort((a, b) => b.cost - a.cost).slice(0, 3);
+
+            return (
+              <div className="mt-5 space-y-3">
+                {/* Hero: Total Aman Siapkan */}
+                <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-2 border-primary/20 p-4">
+                  <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wide">
+                    <ShieldCheck className="h-4 w-4" />
+                    Total Aman Disiapkan
+                  </div>
+                  <div className="mt-1 text-3xl font-black tabular-nums text-primary leading-tight">
+                    {formatRupiah(totalAman)}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                    Angka ini = pesanan Boss + item wajib yang belum masuk draft.
+                    <strong className="text-foreground"> Pegang angka ini</strong> sebagai budget final sebelum kirim ke supplier.
+                  </p>
+                </div>
+
+                {/* Breakdown */}
+                <div className="rounded-xl bg-muted/40 p-4 space-y-2 text-sm">
+                  <div className="flex items-center gap-2 text-sm font-bold text-foreground mb-1">
+                    <Wallet className="h-4 w-4 text-primary" />
+                    Rincian
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground flex items-center gap-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Sudah Boss pesan (2 Ons)
+                    </span>
+                    <span className="font-bold tabular-nums">{formatRupiah(total_cost)}</span>
+                  </div>
+                  {total_cost_other > 0 && (
+                    <div className="flex items-center justify-between text-purple-600 dark:text-purple-400">
+                      <span className="flex items-center gap-1.5">
+                        <Package className="h-3.5 w-3.5" /> Sudah Boss pesan (Ukuran lain)
+                      </span>
+                      <span className="font-bold tabular-nums">+{formatRupiah(total_cost_other)}</span>
+                    </div>
+                  )}
                   {(budget_tambah || 0) > 0 && (
                     <div className="flex items-center justify-between text-orange-600 dark:text-orange-400">
                       <span className="flex items-center gap-1.5">
-                        <CirclePlus className="h-3.5 w-3.5" /> Tambahan 2 Ons
+                        <CirclePlus className="h-3.5 w-3.5" /> Sebaiknya ditambah (qty kurang)
                       </span>
-                      <span className="font-bold tabular-nums text-base">+{formatRupiah(budget_tambah)}</span>
+                      <span className="font-bold tabular-nums">+{formatRupiah(budget_tambah)}</span>
                     </div>
                   )}
                   {(budget_missed || 0) > 0 && (
                     <div className="flex items-center justify-between text-destructive">
                       <span className="flex items-center gap-1.5">
-                        <CircleAlert className="h-3.5 w-3.5" /> Belum dipesan
+                        <AlertTriangle className="h-3.5 w-3.5" /> Wajib beli (belum dipesan)
                       </span>
-                      <span className="font-bold tabular-nums text-base">+{formatRupiah(budget_missed)}</span>
+                      <span className="font-bold tabular-nums">+{formatRupiah(budget_missed)}</span>
                     </div>
                   )}
-                  <div className="border-t border-border/50 my-1.5" />
-                  <div className="flex items-center justify-between font-extrabold text-muted-foreground">
-                    <span className="text-sm">Grand Total (jika ditambah)</span>
-                    <span className="tabular-nums text-base">{formatRupiah(budget_total || total_cost)}</span>
+                  <div className="border-t border-border/60 my-1.5" />
+                  <div className="flex items-center justify-between font-extrabold">
+                    <span className="text-sm">Total Aman</span>
+                    <span className="tabular-nums text-primary">{formatRupiah(totalAman)}</span>
                   </div>
-                </>
-              )}
-            </div>
-          </div>
+                </div>
+
+                {/* Scope explainer + Why higher than Analisa */}
+                {delta > 0 && (
+                  <div className="rounded-xl bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 p-4 space-y-2.5">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="text-sm font-bold text-blue-900 dark:text-blue-200">
+                          Kenapa lebih besar dari Analisa?
+                        </p>
+                        <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
+                          <strong>Analisa</strong> = daftar rekomendasi otomatis untuk semua barang yang perlu restok.
+                          <br />
+                          <strong>Review AI</strong> = cek draft Boss + tambahkan item kritis yang <em>belum</em> masuk daftar Boss.
+                          <br />
+                          Selisih <strong className="tabular-nums">{formatRupiah(delta)}</strong> berasal dari item di bawah ini:
+                        </p>
+                      </div>
+                    </div>
+                    {contributors.length > 0 && (
+                      <ul className="space-y-1.5 pl-1">
+                        {contributors.map(c => (
+                          <li key={c.kode} className="flex items-center justify-between text-xs bg-white/60 dark:bg-blue-950/30 rounded-lg px-2.5 py-1.5">
+                            <span className="flex items-center gap-1.5 min-w-0">
+                              <span className={`inline-block h-1.5 w-1.5 rounded-full ${c.reason === "missed" ? "bg-destructive" : "bg-orange-500"}`} />
+                              <span className="font-mono font-bold shrink-0">{c.kode}</span>
+                              <span className="text-muted-foreground truncate">— {c.reason === "missed" ? "wajib beli" : "kurang qty"}</span>
+                            </span>
+                            <span className="font-bold tabular-nums shrink-0 ml-2">+{formatRupiah(c.cost)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
 
           {/* Quick Stats */}
           <div className="grid grid-cols-2 gap-2 mt-4">
