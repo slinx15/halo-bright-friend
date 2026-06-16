@@ -45,10 +45,10 @@ function CommandCenter({ products, isLoading }: { products: ProductWithDetails[]
   const aman = total - kosong - kritis - warning;
 
   const cards = [
-    { label: "Kosong", count: kosong, icon: PackageX, lightBg: "bg-destructive/8", lightText: "text-destructive", emoji: "!" },
-    { label: "Kritis", count: kritis, icon: AlertCircle, lightBg: "bg-orange-500/8", lightText: "text-orange-600", emoji: "!!" },
-    { label: "Perlu Cek", count: warning, icon: AlertTriangle, lightBg: "bg-warning/8", lightText: "text-amber-600", emoji: "?" },
-    { label: "Aman", count: aman, icon: Package, lightBg: "bg-success/8", lightText: "text-success", emoji: "OK" },
+    { label: "Kosong", count: kosong, icon: PackageX, lightBg: "bg-destructive/8", lightText: "text-destructive", emoji: "🚨" },
+    { label: "Kritis", count: kritis, icon: AlertCircle, lightBg: "bg-orange-500/8", lightText: "text-orange-600", emoji: "⚠️" },
+    { label: "Perlu Cek", count: warning, icon: AlertTriangle, lightBg: "bg-warning/8", lightText: "text-amber-600", emoji: "📦" },
+    { label: "Aman", count: aman, icon: Package, lightBg: "bg-success/8", lightText: "text-success", emoji: "✅" },
   ];
 
   return (

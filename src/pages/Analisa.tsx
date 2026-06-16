@@ -88,11 +88,11 @@ const PRIORITY_LEGEND = [
 ];
 
 const FILTER_CHIPS: { key: FilterChip; label: string; icon: string; activeClass: string }[] = [
-  { key: "CRITICAL", label: "Kritis", icon: "!", activeClass: "bg-destructive text-destructive-foreground" },
-  { key: "WARNING", label: "< 4 Hari", icon: "!!", activeClass: "bg-warning text-warning-foreground" },
-  { key: "ATTENTION", label: "Pantau", icon: "~", activeClass: "bg-accent text-accent-foreground" },
-  { key: "SAFE", label: "Aman", icon: "OK", activeClass: "bg-success text-success-foreground" },
-  { key: "ALL", label: "Semua", icon: "*", activeClass: "bg-primary text-primary-foreground" },
+  { key: "CRITICAL", label: "Kritis", icon: "🔴", activeClass: "bg-destructive text-destructive-foreground" },
+  { key: "WARNING", label: "< 4 Hari", icon: "🟠", activeClass: "bg-warning text-warning-foreground" },
+  { key: "ATTENTION", label: "Pantau", icon: "🟡", activeClass: "bg-accent text-accent-foreground" },
+  { key: "SAFE", label: "Aman", icon: "🟢", activeClass: "bg-success text-success-foreground" },
+  { key: "ALL", label: "Semua", icon: "🔵", activeClass: "bg-primary text-primary-foreground" },
 ];
 
 const STATUS_BADGE: Record<DosStatus, { label: string; className: string }> = {
@@ -347,7 +347,7 @@ const Analisa = () => {
             style={{ animationDelay: "0ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-destructive/8" />
-            <span className="text-lg">!</span>
+            <span className="text-lg">🚨</span>
             <p className="text-2xl font-black text-destructive tabular-nums mt-1">{criticalCount || "-"}</p>
             <p className="text-[10px] font-medium text-destructive/70 mt-0.5">Harus Restock</p>
           </button>
@@ -360,7 +360,7 @@ const Analisa = () => {
             style={{ animationDelay: "60ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-warning/8" />
-            <span className="text-lg">!!</span>
+            <span className="text-lg">⚠️</span>
             <p className="text-2xl font-black text-warning tabular-nums mt-1">{warningCount || "-"}</p>
             <p className="text-[10px] font-medium text-warning/70 mt-0.5">Segera Habis</p>
           </button>
@@ -371,7 +371,7 @@ const Analisa = () => {
             style={{ animationDelay: "120ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-muted/40" />
-            <span className="text-lg">?</span>
+            <span className="text-lg">📦</span>
             <p className="text-2xl font-black tabular-nums mt-1">{zeroStockCount || "-"}</p>
             <p className="text-[10px] font-medium text-muted-foreground mt-0.5">Stok Kosong</p>
           </button>
@@ -381,7 +381,7 @@ const Analisa = () => {
             style={{ animationDelay: "180ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-primary/5" />
-            <span className="text-lg">Rp</span>
+            <span className="text-lg">💰</span>
             <p className="text-base font-black tabular-nums mt-1 truncate">{formatRp(totalRestockCost)}</p>
             <p className="text-[10px] font-medium text-muted-foreground mt-0.5">Modal Restock</p>
           </div>
@@ -1077,12 +1077,12 @@ const Analisa = () => {
             <TabsContent value="ringkasan" className="space-y-4 mt-3">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {[
-                  { icon: "SKU", label: "Jenis Barang", value: String(stats.totalSKU), color: "" },
-                  { icon: "PCS", label: "Total Stok", value: `${stats.totalStock.toLocaleString("id-ID")} pcs`, color: "" },
-                  { icon: "Rp", label: "Nilai Barang", value: formatRp(stats.totalValue), color: "" },
-                  { icon: "!", label: "Habis", value: String(stats.outOfStock), color: "text-destructive" },
-                  { icon: "!!", label: "Mau Habis", value: String(stats.criticalCount), color: "text-warning" },
-                  { icon: "OK", label: "Laris", value: String(stats.bestSellerCount), color: "text-primary" },
+                  { icon: "📦", label: "Jenis Barang", value: String(stats.totalSKU), color: "" },
+                  { icon: "🧵", label: "Total Stok", value: `${stats.totalStock.toLocaleString("id-ID")} pcs`, color: "" },
+                  { icon: "💵", label: "Nilai Barang", value: formatRp(stats.totalValue), color: "" },
+                  { icon: "🔴", label: "Habis", value: String(stats.outOfStock), color: "text-destructive" },
+                  { icon: "⚠️", label: "Mau Habis", value: String(stats.criticalCount), color: "text-warning" },
+                  { icon: "🔥", label: "Laris", value: String(stats.bestSellerCount), color: "text-primary" },
                 ].map((s, idx) => (
                   <div key={s.label} className="rounded-2xl bg-card border border-border/50 shadow-sm p-3.5 animate-fade-in" style={{ animationDelay: `${idx * 60}ms`, animationFillMode: "both" }}>
                     <div className="flex items-center gap-2 mb-1.5">
