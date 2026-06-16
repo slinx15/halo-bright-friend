@@ -40,16 +40,16 @@ function formatRp(n: number): string {
 }
 
 function formatDaysLeft(d: number): string {
-  if (d >= 999) return "∞";
-  if (d < 1) return "< 1hr";
-  return Math.round(d) + "hr";
+  if (d >= 999) return "Tak terbatas";
+  if (d < 1) return "< 1 hari";
+  return Math.round(d) + " hari";
 }
 
 function urgencyIcon(days: number) {
-  if (days <= RULES.CRITICAL_DAYS) return "🔴";
-  if (days <= RULES.WARNING_DAYS) return "🟠";
-  if (days <= RULES.ATTENTION_DAYS) return "🟡";
-  return "🟢";
+  if (days <= RULES.CRITICAL_DAYS) return "!";
+  if (days <= RULES.WARNING_DAYS) return "!!";
+  if (days <= RULES.ATTENTION_DAYS) return "?";
+  return "OK";
 }
 
 // ─── Types ────────────────────────────────────────────────
@@ -88,11 +88,11 @@ const PRIORITY_LEGEND = [
 ];
 
 const FILTER_CHIPS: { key: FilterChip; label: string; icon: string; activeClass: string }[] = [
-  { key: "CRITICAL", label: "Critical", icon: "🔴", activeClass: "bg-destructive text-destructive-foreground" },
-  { key: "WARNING", label: "<4 Hari", icon: "🟠", activeClass: "bg-warning text-warning-foreground" },
-  { key: "ATTENTION", label: "Perhatian", icon: "🟡", activeClass: "bg-accent text-accent-foreground" },
-  { key: "SAFE", label: "Aman", icon: "🟢", activeClass: "bg-success text-success-foreground" },
-  { key: "ALL", label: "Semua", icon: "🔵", activeClass: "bg-primary text-primary-foreground" },
+  { key: "CRITICAL", label: "Kritis", icon: "!", activeClass: "bg-destructive text-destructive-foreground" },
+  { key: "WARNING", label: "< 4 Hari", icon: "!!", activeClass: "bg-warning text-warning-foreground" },
+  { key: "ATTENTION", label: "Pantau", icon: "~", activeClass: "bg-accent text-accent-foreground" },
+  { key: "SAFE", label: "Aman", icon: "OK", activeClass: "bg-success text-success-foreground" },
+  { key: "ALL", label: "Semua", icon: "*", activeClass: "bg-primary text-primary-foreground" },
 ];
 
 const STATUS_BADGE: Record<DosStatus, { label: string; className: string }> = {
@@ -130,7 +130,7 @@ function MobileRankedCard({ rank, kode, isBestSeller, children, borderClass, ind
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-xs text-muted-foreground font-mono">{typeof rank === 'number' && rank <= 3 ? ['🥇','🥈','🥉'][rank-1] : `#${rank}`}</span>
+          <span className="text-xs text-muted-foreground font-mono">{typeof rank === "number" ? `#${rank}` : rank}</span>
           <span className="font-bold text-sm">{kode}</span>
           {isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
         </div>
@@ -326,13 +326,13 @@ const Analisa = () => {
             <div>
               <h1 className="text-lg md:text-xl font-extrabold tracking-tight">Analisa</h1>
               <p className="text-[10px] text-muted-foreground">
-                {analyses.length} SKU · WMA {RULES.WMA_PERIOD1_DAYS}d · cycle {RULES.CYCLE_DAYS}d
+                {analyses.length} SKU | WMA {RULES.WMA_PERIOD1_DAYS} hari | siklus {RULES.CYCLE_DAYS} hari
               </p>
             </div>
           </div>
           {needsReorder > 0 && (
             <Badge className="bg-destructive text-destructive-foreground text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">
-              {needsReorder} restock
+              {needsReorder} perlu restock
             </Badge>
           )}
         </div>
@@ -347,8 +347,8 @@ const Analisa = () => {
             style={{ animationDelay: "0ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-destructive/8" />
-            <span className="text-lg">🚨</span>
-            <p className="text-2xl font-black text-destructive tabular-nums mt-1">{criticalCount || "—"}</p>
+            <span className="text-lg">!</span>
+            <p className="text-2xl font-black text-destructive tabular-nums mt-1">{criticalCount || "-"}</p>
             <p className="text-[10px] font-medium text-destructive/70 mt-0.5">Harus Restock</p>
           </button>
 
@@ -360,8 +360,8 @@ const Analisa = () => {
             style={{ animationDelay: "60ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-warning/8" />
-            <span className="text-lg">⚠️</span>
-            <p className="text-2xl font-black text-warning tabular-nums mt-1">{warningCount || "—"}</p>
+            <span className="text-lg">!!</span>
+            <p className="text-2xl font-black text-warning tabular-nums mt-1">{warningCount || "-"}</p>
             <p className="text-[10px] font-medium text-warning/70 mt-0.5">Segera Habis</p>
           </button>
 
@@ -371,8 +371,8 @@ const Analisa = () => {
             style={{ animationDelay: "120ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-muted/40" />
-            <span className="text-lg">📦</span>
-            <p className="text-2xl font-black tabular-nums mt-1">{zeroStockCount || "—"}</p>
+            <span className="text-lg">?</span>
+            <p className="text-2xl font-black tabular-nums mt-1">{zeroStockCount || "-"}</p>
             <p className="text-[10px] font-medium text-muted-foreground mt-0.5">Stok Kosong</p>
           </button>
 
@@ -381,7 +381,7 @@ const Analisa = () => {
             style={{ animationDelay: "180ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-primary/5" />
-            <span className="text-lg">💰</span>
+            <span className="text-lg">Rp</span>
             <p className="text-base font-black tabular-nums mt-1 truncate">{formatRp(totalRestockCost)}</p>
             <p className="text-[10px] font-medium text-muted-foreground mt-0.5">Modal Restock</p>
           </div>
@@ -451,7 +451,7 @@ const Analisa = () => {
 
           <div key={`s-${filterKey}`} className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground animate-fade-in">
             <span>Ditampilkan: <strong className="text-foreground">{filtered.length}</strong></span>
-            <span className="text-border">·</span>
+            <span className="text-border">|</span>
             <span>Perlu reorder: <strong className="text-foreground">{needsReorder}</strong></span>
           </div>
 
@@ -466,7 +466,7 @@ const Analisa = () => {
                       <TableHead>Status</TableHead>
                       <TableHead>Kode</TableHead>
                       <TableHead className="text-right">Stok</TableHead>
-                      <TableHead className="text-right hidden sm:table-cell">Vel/{RULES.DISPLAY_CYCLE_DAYS}hr</TableHead>
+                      <TableHead className="text-right hidden sm:table-cell">Vel/{RULES.DISPLAY_CYCLE_DAYS} hari</TableHead>
                       <TableHead className="text-right">Sisa Hari</TableHead>
                       <TableHead className="text-right hidden lg:table-cell">Target</TableHead>
                       <TableHead className="text-right">Rekomendasi</TableHead>
@@ -670,12 +670,12 @@ const Analisa = () => {
                         p.urgency === "critical" ? "border-l-[3px] border-l-destructive border-border/60" : "border-border/60"
                       }`} style={{ animationDelay: `${Math.min(pIdx * 30, 300)}ms`, animationFillMode: "both" }}>
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-sm">{p.kode}{p.isBestSeller ? " 🔥" : ""}</span>
+                          <span className="font-bold text-sm">{p.kode}{p.isBestSeller ? " Top" : ""}</span>
                           <span className={`font-mono font-bold tabular-nums ${color}`}>{formatDaysLeft(p.daysLeft)}</span>
                         </div>
                         <div className="grid grid-cols-3 gap-2 text-[11px]">
                           <div><span className="text-muted-foreground">Stok</span><p className="font-semibold tabular-nums">{p.stok}</p></div>
-                          <div><span className="text-muted-foreground">Vel</span><p className="font-semibold tabular-nums">{p.velocity.toFixed(1)}/hr</p></div>
+                          <div><span className="text-muted-foreground">Vel</span><p className="font-semibold tabular-nums">{p.velocity.toFixed(1)}/hari</p></div>
                           <div><span className="text-muted-foreground">Habis</span><p className="font-semibold text-[10px]">{p.predictedDate.toLocaleDateString("id-ID")}</p></div>
                         </div>
                       </div>
@@ -696,9 +696,9 @@ const Analisa = () => {
                       <TableBody>
                         {items.map(p => (
                           <TableRow key={p.productId}>
-                            <TableCell className="font-semibold text-sm">{p.kode}{p.isBestSeller ? " 🔥" : ""}</TableCell>
+                            <TableCell className="font-semibold text-sm">{p.kode}{p.isBestSeller ? " Top" : ""}</TableCell>
                             <TableCell className="text-right font-mono text-sm">{p.stok}</TableCell>
-                            <TableCell className="text-right font-mono text-sm">{p.velocity.toFixed(1)}/hr</TableCell>
+                            <TableCell className="text-right font-mono text-sm">{p.velocity.toFixed(1)}/hari</TableCell>
                             <TableCell className="text-right font-mono text-sm">{formatDaysLeft(p.daysLeft)}</TableCell>
                             <TableCell className="text-xs text-muted-foreground">{p.predictedDate.toLocaleDateString("id-ID")}</TableCell>
                           </TableRow>
@@ -709,7 +709,7 @@ const Analisa = () => {
                 )}
               </div>
             ))}
-            <p className="text-xs text-muted-foreground">🟢 Aman ({`>${RULES.ATTENTION_DAYS} hari`}): {predSafe.length} item</p>
+            <p className="text-xs text-muted-foreground">Aman ({`> ${RULES.ATTENTION_DAYS} hari`}): {predSafe.length} item</p>
           </Card>
 
           {/* Low Stock */}
@@ -718,7 +718,7 @@ const Analisa = () => {
             {isMobile ? (
               <div className="space-y-2">
                 {lowStock.map((l, i) => {
-                  const icon = l.stok === 0 ? "🔴" : l.stok < 10 ? "🟡" : "🟢";
+                  const label = l.stok === 0 ? "Kosong" : l.stok < 10 ? "Tipis" : "Aman";
                   return (
                     <div key={l.productId} className={`rounded-xl border p-3 transition-all active:scale-[0.99] animate-fade-in ${
                       l.stok === 0 ? "border-l-[3px] border-l-destructive border-border/60" : "border-border/60"
@@ -726,12 +726,13 @@ const Analisa = () => {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground">#{i + 1}</span>
-                          <span className="font-bold text-sm">{icon} {l.kode}{l.isBestSeller ? " 🔥" : ""}</span>
+                          <span className="font-bold text-sm">{l.kode}{l.isBestSeller ? " Top" : ""}</span>
+                          <span className="text-[10px] font-medium text-muted-foreground">{label}</span>
                         </div>
                         <span className={`font-mono font-bold tabular-nums ${l.stok === 0 ? "text-destructive" : ""}`}>{l.stok}</span>
                       </div>
                       <div className="flex justify-between mt-1 text-[11px] text-muted-foreground">
-                        <span>Laku/{RULES.DISPLAY_CYCLE_DAYS}hr</span>
+                        <span>Laku/{RULES.DISPLAY_CYCLE_DAYS} hari</span>
                         <span className="font-semibold tabular-nums text-foreground">{(l.velocity * RULES.DISPLAY_CYCLE_DAYS).toFixed(0)}</span>
                       </div>
                     </div>
@@ -746,16 +747,15 @@ const Analisa = () => {
                       <TableHead className="w-10 text-xs">#</TableHead>
                       <TableHead className="text-xs">Kode</TableHead>
                       <TableHead className="text-right text-xs">Stok</TableHead>
-                      <TableHead className="text-right text-xs">Laku/{RULES.DISPLAY_CYCLE_DAYS}hr</TableHead>
+                      <TableHead className="text-right text-xs">Laku/{RULES.DISPLAY_CYCLE_DAYS} hari</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {lowStock.map((l, i) => {
-                      const icon = l.stok === 0 ? "🔴" : l.stok < 10 ? "🟡" : "🟢";
                       return (
                         <TableRow key={l.productId}>
                           <TableCell className="text-xs">{i + 1}</TableCell>
-                          <TableCell className="font-semibold text-sm">{icon} {l.kode}{l.isBestSeller ? " 🔥" : ""}</TableCell>
+                          <TableCell className="font-semibold text-sm">{l.kode}{l.isBestSeller ? " Top" : ""}</TableCell>
                           <TableCell className={`text-right font-mono text-sm ${l.stok === 0 ? "text-destructive font-bold" : ""}`}>{l.stok}</TableCell>
                           <TableCell className="text-right font-mono text-sm">{(l.velocity * RULES.DISPLAY_CYCLE_DAYS).toFixed(0)}</TableCell>
                         </TableRow>
@@ -792,8 +792,8 @@ const Analisa = () => {
                       <MobileRankedCard key={t.productId} rank={i + 1} kode={t.kode} isBestSeller={t.isBestSeller} index={i}>
                         <div className="grid grid-cols-2 gap-2 text-[11px] mt-1.5">
                           <div><span className="text-muted-foreground">Terjual</span><p className="font-bold tabular-nums">{t.totalQty} pcs</p></div>
-                          <div><span className="text-muted-foreground">Hari Data</span><p className="font-semibold tabular-nums">{t.days}{t.days < 7 ? " ⚠️" : ""}</p></div>
-                          <div><span className="text-muted-foreground">Laku/{RULES.DISPLAY_CYCLE_DAYS}hr</span><p className="font-semibold tabular-nums">{(t.velocity * RULES.DISPLAY_CYCLE_DAYS).toFixed(0)}</p></div>
+                          <div><span className="text-muted-foreground">Hari Data</span><p className="font-semibold tabular-nums">{t.days}{t.days < 7 ? " (baru)" : ""}</p></div>
+                          <div><span className="text-muted-foreground">Laku/{RULES.DISPLAY_CYCLE_DAYS} hari</span><p className="font-semibold tabular-nums">{(t.velocity * RULES.DISPLAY_CYCLE_DAYS).toFixed(0)}</p></div>
                           <div><span className="text-muted-foreground">Sisa</span><p className={`font-bold tabular-nums ${t.daysLeft <= 2 ? "text-destructive" : t.daysLeft <= 4 ? "text-warning" : ""}`}>{urgencyIcon(t.daysLeft)} {formatDaysLeft(t.daysLeft)}</p></div>
                         </div>
                       </MobileRankedCard>
@@ -808,19 +808,19 @@ const Analisa = () => {
                           <TableHead className="text-xs">Kode</TableHead>
                           <TableHead className="text-right text-xs">Terjual</TableHead>
                           <TableHead className="text-right text-xs">Hari Data</TableHead>
-                          <TableHead className="text-right text-xs">Laku/{RULES.DISPLAY_CYCLE_DAYS}hr</TableHead>
+                          <TableHead className="text-right text-xs">Laku/{RULES.DISPLAY_CYCLE_DAYS} hari</TableHead>
                           <TableHead className="text-right text-xs">Stok</TableHead>
                           <TableHead className="text-right text-xs">Sisa Hari</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {topSellers.map((t, i) => {
-                          const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
+                          const medal = `${i + 1}.`;
                           return (
                             <TableRow key={t.productId}>
                               <TableCell className="font-medium">{medal}</TableCell>
                               <TableCell className="font-semibold text-sm">
-                                {t.kode}{t.isBestSeller ? " 🔥" : ""}{t.days < 7 ? " ⚠️" : ""}
+                                {t.kode}{t.isBestSeller ? " Top" : ""}{t.days < 7 ? " (baru)" : ""}
                               </TableCell>
                               <TableCell className="text-right font-mono text-sm">{t.totalQty}</TableCell>
                               <TableCell className="text-right font-mono text-sm">{t.days}</TableCell>
@@ -834,7 +834,7 @@ const Analisa = () => {
                     </Table>
                   </div>
                 )}
-                <p className="text-[11px] text-muted-foreground">⚠️ = data &lt; 7 hari (mungkin belum akurat)</p>
+                <p className="text-[11px] text-muted-foreground">Catatan: data kurang dari 7 hari masih bisa berubah lebih cepat.</p>
               </Card>
 
               <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
@@ -854,11 +854,11 @@ const Analisa = () => {
                 {isMobile ? (
                   <div className="space-y-2">
                     {trendItems.map((t, i) => {
-                      const icon = t.changePct > 10 ? "📈" : t.changePct < -10 ? "📉" : "➡️";
+                      const trendLabel = t.changePct > 10 ? "Naik" : t.changePct < -10 ? "Turun" : "Stabil";
                       return (
                         <div key={t.productId} className="rounded-xl border border-border/60 p-3 space-y-1 animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
                           <div className="flex items-center justify-between">
-                            <span className="font-bold text-sm">{icon} {t.kode}{t.isBestSeller ? " 🔥" : ""}</span>
+                            <span className="font-bold text-sm">{trendLabel} | {t.kode}{t.isBestSeller ? " Top" : ""}</span>
                             <span className={`font-mono font-bold text-sm tabular-nums ${t.changePct > 0 ? "text-success" : t.changePct < 0 ? "text-destructive" : ""}`}>
                               {t.changePct > 0 ? "+" : ""}{t.changePct.toFixed(0)}%
                             </span>
@@ -885,11 +885,11 @@ const Analisa = () => {
                       </TableHeader>
                       <TableBody>
                         {trendItems.map((t, i) => {
-                          const icon = t.changePct > 10 ? "📈" : t.changePct < -10 ? "📉" : "➡️";
+                          const trendLabel = t.changePct > 10 ? "Naik" : t.changePct < -10 ? "Turun" : "Stabil";
                           return (
                             <TableRow key={t.productId}>
                               <TableCell className="text-xs">{i + 1}</TableCell>
-                              <TableCell className="font-semibold text-sm">{icon} {t.kode}{t.isBestSeller ? " 🔥" : ""}</TableCell>
+                              <TableCell className="font-semibold text-sm">{trendLabel} | {t.kode}{t.isBestSeller ? " Top" : ""}</TableCell>
                               <TableCell className="text-right font-mono text-sm">{t.thisWeek}</TableCell>
                               <TableCell className="text-right font-mono text-sm">{t.lastWeek}</TableCell>
                               <TableCell className={`text-right font-mono text-sm ${t.changePct > 0 ? "text-success" : t.changePct < 0 ? "text-destructive" : ""}`}>
@@ -950,11 +950,11 @@ const Analisa = () => {
                           </TableHeader>
                           <TableBody>
                             {profitItems.slice(0, 20).map((p, i) => {
-                              const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
+                              const medal = `${i + 1}.`;
                               return (
                                 <TableRow key={p.productId}>
                                   <TableCell>{medal}</TableCell>
-                                  <TableCell className="font-semibold text-sm">{p.kode}{p.isBestSeller ? " 🔥" : ""}</TableCell>
+                                  <TableCell className="font-semibold text-sm">{p.kode}{p.isBestSeller ? " Top" : ""}</TableCell>
                                   <TableCell className="text-right font-mono text-sm font-bold text-success">{formatRp(p.totalProfit)}</TableCell>
                                   <TableCell className="text-right font-mono text-sm">{p.totalQty}</TableCell>
                                   <TableCell className="text-right font-mono text-sm">{formatRp(p.margin)}</TableCell>
@@ -1032,7 +1032,7 @@ const Analisa = () => {
                           </TableHeader>
                           <TableBody>
                             {tokoItems.slice(0, 15).map((t, i) => {
-                              const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
+                              const medal = `${i + 1}.`;
                               return (
                                 <TableRow key={t.nama}>
                                   <TableCell>{medal}</TableCell>
@@ -1077,12 +1077,12 @@ const Analisa = () => {
             <TabsContent value="ringkasan" className="space-y-4 mt-3">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {[
-                  { icon: "📦", label: "Jenis Barang", value: String(stats.totalSKU), color: "" },
-                  { icon: "🧵", label: "Total Stok", value: `${stats.totalStock.toLocaleString("id-ID")} pcs`, color: "" },
-                  { icon: "💵", label: "Nilai Barang", value: formatRp(stats.totalValue), color: "" },
-                  { icon: "🔴", label: "Habis", value: String(stats.outOfStock), color: "text-destructive" },
-                  { icon: "⚠️", label: "Mau Habis", value: String(stats.criticalCount), color: "text-warning" },
-                  { icon: "🔥", label: "Laris", value: String(stats.bestSellerCount), color: "text-primary" },
+                  { icon: "SKU", label: "Jenis Barang", value: String(stats.totalSKU), color: "" },
+                  { icon: "PCS", label: "Total Stok", value: `${stats.totalStock.toLocaleString("id-ID")} pcs`, color: "" },
+                  { icon: "Rp", label: "Nilai Barang", value: formatRp(stats.totalValue), color: "" },
+                  { icon: "!", label: "Habis", value: String(stats.outOfStock), color: "text-destructive" },
+                  { icon: "!!", label: "Mau Habis", value: String(stats.criticalCount), color: "text-warning" },
+                  { icon: "OK", label: "Laris", value: String(stats.bestSellerCount), color: "text-primary" },
                 ].map((s, idx) => (
                   <div key={s.label} className="rounded-2xl bg-card border border-border/50 shadow-sm p-3.5 animate-fade-in" style={{ animationDelay: `${idx * 60}ms`, animationFillMode: "both" }}>
                     <div className="flex items-center gap-2 mb-1.5">
@@ -1095,7 +1095,7 @@ const Analisa = () => {
               </div>
 
               <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
-                <SectionHeader icon={DollarSign} title="Estimasi Budget Restock" />
+                <SectionHeader icon={DollarSign} title="Estimasi Budget Restock" subtitle="Buka detail untuk lihat item yang membentuk total budget." />
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                   {budgetEstimates.map((e) => {
                     const label = e.days === 4 ? "1 siklus" : e.days === 7 ? "1 minggu" : e.days === 14 ? "2 minggu" : e.days === 21 ? "3 minggu" : "1 bulan";
@@ -1108,9 +1108,9 @@ const Analisa = () => {
                             isExpanded ? "bg-primary/10 ring-1 ring-primary/30" : "bg-muted/30 hover:bg-muted/50"
                           }`}
                         >
-                          <p className="text-xs text-muted-foreground">{e.days} hari · {label}</p>
+                          <p className="text-xs text-muted-foreground">{e.days} hari | {label}</p>
                           <p className="text-lg font-bold tabular-nums">{formatRp(e.cost)}</p>
-                          <p className="text-[11px] text-muted-foreground">{e.items} item · {e.qty} pcs · <span className="underline">Lihat daftar ▾</span></p>
+                          <p className="text-[11px] text-muted-foreground">{e.items} item | {e.qty} pcs | <span className="underline">Lihat daftar</span></p>
                         </button>
                         {isExpanded && (
                           <div className="mt-2 rounded-lg border bg-background p-2 space-y-1 max-h-[400px] overflow-y-auto">
@@ -1125,7 +1125,7 @@ const Analisa = () => {
                                 d.daysLeft <= RULES.CRITICAL_DAYS ? "bg-destructive/10" : d.isBestSeller ? "bg-primary/5" : ""
                               }`}>
                                 <span className="font-mono text-[11px] truncate flex items-center gap-1">
-                                  {d.daysLeft <= RULES.CRITICAL_DAYS ? "🔴" : d.isBestSeller ? "⭐" : ""}
+                                  {d.daysLeft <= RULES.CRITICAL_DAYS ? "!" : d.isBestSeller ? "*" : ""}
                                   {d.kode}
                                 </span>
                                 <span className={`text-right tabular-nums ${d.stok === 0 ? "text-destructive font-bold" : d.stok <= 5 ? "text-warning" : ""}`}>{d.stok}</span>
@@ -1149,14 +1149,14 @@ const Analisa = () => {
 
               <Card className="border-0 shadow-sm animate-fade-in" style={{ animationDelay: "300ms", animationFillMode: "both" }}>
                 <CardContent className="p-4 space-y-1.5 text-xs text-muted-foreground">
-                  <p className="font-semibold text-foreground text-sm">⚙️ Pengaturan Analisa</p>
+                  <p className="font-semibold text-foreground text-sm">Pengaturan Analisa</p>
                   <div className="grid grid-cols-2 gap-1">
                     <p>Siklus belanja: {RULES.CYCLE_DAYS} hari</p>
                     <p>Laris jika laku: {RULES.BESTSELLER_VELOCITY}/hari</p>
                     <p>Dead stock setelah: {RULES.DEAD_STOCK_DAYS} hari</p>
                     <p>Beli minimal: {RULES.BATCH} pcs (BW: {RULES.BATCH_BW})</p>
                     <p>Lead time: {RULES.LEAD_TIME_DAYS} hari</p>
-                    <p>WMA: {RULES.WMA_PERIOD1_DAYS}hr ({RULES.WMA_PERIOD1_WEIGHT * 100}%) + sisa ({RULES.WMA_PERIOD2_WEIGHT * 100}%)</p>
+                    <p>WMA: {RULES.WMA_PERIOD1_DAYS} hari ({RULES.WMA_PERIOD1_WEIGHT * 100}%) + sisa ({RULES.WMA_PERIOD2_WEIGHT * 100}%)</p>
                   </div>
                 </CardContent>
               </Card>
@@ -1179,7 +1179,7 @@ const Analisa = () => {
                 <SectionHeader icon={Skull} title={`Barang Tidak Laku (${RULES.DEAD_STOCK_DAYS}+ hari)`} />
                 {deadStock.length === 0 ? (
                   <div className="text-center py-12">
-                    <p className="text-success text-lg">✅</p>
+                    <p className="text-success text-lg">OK</p>
                     <p className="text-sm font-medium mt-1">Semua barang laku!</p>
                     <p className="text-xs text-muted-foreground">Tidak ada yang macet</p>
                   </div>

@@ -47,9 +47,9 @@ const navItems = [
 
 const groups = [
   { key: "main", label: "" },
-  { key: "transaksi", label: "Transaksi" },
-  { key: "inventaris", label: "Inventaris" },
-  { key: "laporan", label: "Laporan & Data" },
+  { key: "transaksi", label: "Operasional" },
+  { key: "inventaris", label: "Stok & Audit" },
+  { key: "laporan", label: "Analisa & Data" },
   { key: "admin", label: "Admin" },
 ];
 
@@ -120,6 +120,10 @@ const AppSidebar = () => {
 
       {/* User info */}
       <div className="px-4 py-4 border-t border-sidebar-border">
+        <div className="mb-3 rounded-xl border border-sidebar-border/60 bg-sidebar-accent/40 px-3 py-2">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/35">Akses Cepat</p>
+          <p className="mt-1 text-xs text-sidebar-foreground/55">Gunakan Analisa untuk keputusan restock, lalu lanjut ke Review sebelum kirim pesanan.</p>
+        </div>
         <div className="flex items-center gap-3 mb-3">
           <div className="h-9 w-9 rounded-xl bg-sidebar-primary/10 flex items-center justify-center ring-1 ring-sidebar-primary/20">
             <User className="h-4 w-4 text-sidebar-primary" />

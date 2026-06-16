@@ -42,7 +42,7 @@ const secondaryNav = [
   { icon: FileBarChart, label: "Laporan Bulanan", path: "/laporan", adminOnly: false },
   { icon: Wallet, label: "Dashboard Keuangan", path: "/keuangan", adminOnly: false },
   { icon: Settings, label: "Produk", path: "/produk", adminOnly: false },
-  { icon: FileUp, label: "Import & Export", path: "/import-histori", adminOnly: false },
+  { icon: FileUp, label: "Import Histori", path: "/import-histori", adminOnly: false },
   { icon: Bot, label: "AI Assistant", path: "/ai", adminOnly: false },
   { icon: Users, label: "Kelola User", path: "/users", adminOnly: true },
   { icon: History, label: "Log Aktivitas", path: "/log", adminOnly: true },
@@ -91,6 +91,11 @@ const MobileNav = () => {
                 </button>
               );
             })}
+            <div className="border-t border-border/30 my-1" />
+            <div className="px-4 py-2">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Tips</p>
+              <p className="mt-1 text-xs text-muted-foreground">Pakai Analisa untuk lihat kebutuhan, lalu cek ulang di Review sebelum kirim pesanan.</p>
+            </div>
             <div className="border-t border-border/30 my-1" />
             <div className="flex items-center gap-2 px-2">
               <button

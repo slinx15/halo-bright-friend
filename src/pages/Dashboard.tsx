@@ -26,14 +26,6 @@ function getGreeting() {
   return "Selamat Malam";
 }
 
-function getGreetingEmoji() {
-  const hour = new Date().getHours();
-  if (hour < 11) return "☀️";
-  if (hour < 15) return "🌤️";
-  if (hour < 18) return "🌅";
-  return "🌙";
-}
-
 // ── Command Center Chips ──────────────────────────────────────────
 function CommandCenter({ products, isLoading }: { products: ProductWithDetails[] | undefined; isLoading: boolean }) {
   const navigate = useNavigate();
@@ -53,10 +45,10 @@ function CommandCenter({ products, isLoading }: { products: ProductWithDetails[]
   const aman = total - kosong - kritis - warning;
 
   const cards = [
-    { label: "Kosong", count: kosong, icon: PackageX, lightBg: "bg-destructive/8", lightText: "text-destructive", emoji: "🚨" },
-    { label: "Kritis", count: kritis, icon: AlertCircle, lightBg: "bg-orange-500/8", lightText: "text-orange-600", emoji: "⚠️" },
-    { label: "Warning", count: warning, icon: AlertTriangle, lightBg: "bg-warning/8", lightText: "text-amber-600", emoji: "📦" },
-    { label: "Aman", count: aman, icon: Package, lightBg: "bg-success/8", lightText: "text-success", emoji: "✅" },
+    { label: "Kosong", count: kosong, icon: PackageX, lightBg: "bg-destructive/8", lightText: "text-destructive", emoji: "!" },
+    { label: "Kritis", count: kritis, icon: AlertCircle, lightBg: "bg-orange-500/8", lightText: "text-orange-600", emoji: "!!" },
+    { label: "Perlu Cek", count: warning, icon: AlertTriangle, lightBg: "bg-warning/8", lightText: "text-amber-600", emoji: "?" },
+    { label: "Aman", count: aman, icon: Package, lightBg: "bg-success/8", lightText: "text-success", emoji: "OK" },
   ];
 
   return (
@@ -67,7 +59,7 @@ function CommandCenter({ products, isLoading }: { products: ProductWithDetails[]
           <Package className="h-3.5 w-3.5 text-primary" />
           <span className="text-xs text-muted-foreground font-medium">{formatNumber(total)} item</span>
         </div>
-        <span className="text-border">•</span>
+        <span className="text-border">|</span>
         <div className="flex items-center gap-1.5">
           <TrendingUp className="h-3.5 w-3.5 text-success" />
           <span className="text-xs text-muted-foreground font-medium">{formatNumber(totalStok)} stok</span>
@@ -221,7 +213,7 @@ function StokRendahCard({ products, isLoading }: { products: ProductWithDetails[
               className="w-full text-xs mt-1 rounded-xl font-semibold text-primary hover:bg-primary/5"
               onClick={() => navigate("/stok?kategori=2 Ons")}
             >
-              Lihat semua stok →
+              Lihat semua stok
             </Button>
           </div>
         )}
@@ -396,7 +388,7 @@ const Dashboard = () => {
       <div className="flex items-center justify-between animate-fade-in">
         <div>
           <p className="text-sm text-muted-foreground font-medium">
-            {getGreeting()}, Boss {getGreetingEmoji()}
+            {getGreeting()}, Boss
           </p>
           <h1 className="text-xl font-extrabold tracking-tight">Dashboard</h1>
         </div>
