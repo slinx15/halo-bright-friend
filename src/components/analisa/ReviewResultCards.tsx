@@ -458,6 +458,10 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
             const extras = (budget_tambah || 0) + (budget_missed || 0);
             const totalAman = (budget_total || 0) > 0 ? budget_total : myOrder + extras;
             const delta = Math.max(0, totalAman - myOrder);
+            const overOrderCost = tooMuchCards.reduce((sum, card) => sum + getExcess(card) * card.harga_modal, 0);
+            const baseline2Ons = cards.reduce((sum, card) => sum + card.ideal_qty * card.harga_modal, 0) + missed.reduce((sum, card) => sum + card.cost, 0);
+            const baselineTotal = baseline2Ons + total_cost_other;
+            const belumMasukPesanan = Math.max(0, baselineTotal - Math.min(myOrder, baselineTotal));
 
             // Top contributors to the delta: combine missed + needMore shortfalls
             type Contributor = { kode: string; nama: string; cost: number; reason: "missed" | "tambah" };
@@ -481,14 +485,14 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
                 <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-2 border-primary/20 p-4">
                   <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wide">
                     <ShieldCheck className="h-4 w-4" />
-                    Total Aman Disiapkan
+                    Total Final Yang Harus Dipegang
                   </div>
                   <div className="mt-1 text-3xl font-black tabular-nums text-primary leading-tight">
                     {formatRupiah(totalAman)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                    Angka ini = pesanan Boss + item wajib yang belum masuk draft.
-                    <strong className="text-foreground"> Pegang angka ini</strong> sebagai budget final sebelum kirim ke supplier.
+                    Ini angka akhir yang paling gampang dibaca:
+                    <strong className="text-foreground"> total pesanan Boss + sisa kebutuhan dari Ringkasan.</strong>
                   </p>
                 </div>
 
@@ -496,41 +500,47 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
                 <div className="rounded-xl bg-muted/40 p-4 space-y-2 text-sm">
                   <div className="flex items-center gap-2 text-sm font-bold text-foreground mb-1">
                     <Wallet className="h-4 w-4 text-primary" />
-                    Rincian
+                    Ringkasan Belanja
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground flex items-center gap-1.5">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Sudah Boss pesan (2 Ons)
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Total pesanan saya
                     </span>
-                    <span className="font-bold tabular-nums">{formatRupiah(total_cost)}</span>
+                    <span className="font-bold tabular-nums">{formatRupiah(myOrder)}</span>
                   </div>
-                  {total_cost_other > 0 && (
-                    <div className="flex items-center justify-between text-purple-600 dark:text-purple-400">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground flex items-center gap-1.5">
+                      <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Target Ringkasan
+                    </span>
+                    <span className="font-bold tabular-nums">{formatRupiah(baselineTotal)}</span>
+                  </div>
+                  {belumMasukPesanan > 0 && (
+                    <div className="flex items-center justify-between text-orange-600 dark:text-orange-400">
                       <span className="flex items-center gap-1.5">
-                        <Package className="h-3.5 w-3.5" /> Sudah Boss pesan (Ukuran lain)
+                        <CirclePlus className="h-3.5 w-3.5" /> Belum masuk pesanan
                       </span>
-                      <span className="font-bold tabular-nums">+{formatRupiah(total_cost_other)}</span>
+                      <span className="font-bold tabular-nums">+{formatRupiah(belumMasukPesanan)}</span>
+                    </div>
+                  )}
+                  {overOrderCost > 0 && (
+                    <div className="flex items-center justify-between text-blue-600 dark:text-blue-400">
+                      <span className="flex items-center gap-1.5">
+                        <ArrowDown className="h-3.5 w-3.5" /> Lebih pesan
+                      </span>
+                      <span className="font-bold tabular-nums">+{formatRupiah(overOrderCost)}</span>
                     </div>
                   )}
                   {(budget_tambah || 0) > 0 && (
                     <div className="flex items-center justify-between text-orange-600 dark:text-orange-400">
                       <span className="flex items-center gap-1.5">
-                        <CirclePlus className="h-3.5 w-3.5" /> Sebaiknya ditambah (qty kurang)
+                        <Plus className="h-3.5 w-3.5" /> Qty masih kurang
                       </span>
                       <span className="font-bold tabular-nums">+{formatRupiah(budget_tambah)}</span>
                     </div>
                   )}
-                  {(budget_missed || 0) > 0 && (
-                    <div className="flex items-center justify-between text-destructive">
-                      <span className="flex items-center gap-1.5">
-                        <AlertTriangle className="h-3.5 w-3.5" /> Wajib beli (belum dipesan)
-                      </span>
-                      <span className="font-bold tabular-nums">+{formatRupiah(budget_missed)}</span>
-                    </div>
-                  )}
                   <div className="border-t border-border/60 my-1.5" />
                   <div className="flex items-center justify-between font-extrabold">
-                    <span className="text-sm">Total Aman</span>
+                    <span className="text-sm">Grand Total / Total Final</span>
                     <span className="tabular-nums text-primary">{formatRupiah(totalAman)}</span>
                   </div>
                 </div>
