@@ -260,13 +260,21 @@ serve(async (req) => {
         targetDays: computedTargetDays,
       });
       const baselineQty = baselineMap[kode];
-      const idealQty = baselineQty && baselineQty > 0 ? baselineQty : recommendation.recommendedQty;
+      const hasBaseline = Object.keys(baselineMap).length > 0;
+      // When baseline (Ringkasan) is authoritative, items outside baseline are
+      // out-of-scope: treat as user's choice, no phantom "kurang/lebih".
+      const outOfScope = hasBaseline && !(baselineQty && baselineQty > 0);
+      const idealQty = outOfScope
+        ? qty
+        : (baselineQty && baselineQty > 0 ? baselineQty : recommendation.recommendedQty);
       const cost = qty * product.hargaModal;
       totalCost2Ons += cost;
 
       const status = getStatus(dos);
       const isBestSeller = velocity >= RULES.BESTSELLER_VELOCITY;
-      const { verdict, note } = getVerdict(qty, idealQty, status);
+      const { verdict, note } = outOfScope
+        ? { verdict: "ok" as Verdict, note: "Di luar Ringkasan Analisa — qty mengikuti pilihan Boss" }
+        : getVerdict(qty, idealQty, status);
 
       cards.push({
         kode: product.kode, nama: product.nama,
