@@ -481,88 +481,87 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
 
             return (
               <div className="mt-5 space-y-3">
-                {/* Hero: Total Aman Siapkan */}
-                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
-                  <div className="flex items-center gap-2 text-[11px] font-bold text-primary uppercase tracking-wide">
-                    <ShieldCheck className="h-4 w-4" />
-                    Total Final
+                <div className="rounded-2xl border bg-background p-4 shadow-sm space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                        Total Final
+                      </p>
+                      <div className="mt-1 text-3xl font-black tabular-nums leading-tight text-foreground">
+                        {formatRupiah(totalAman)}
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Ini angka akhir yang bisa langsung Boss pegang.
+                      </p>
+                    </div>
+                    <div className="rounded-full bg-muted p-2.5">
+                      <ShieldCheck className="h-4 w-4 text-primary" />
+                    </div>
                   </div>
-                  <div className="mt-1 text-3xl font-black tabular-nums text-primary leading-tight">
-                    {formatRupiah(totalAman)}
+
+                  <div className="rounded-xl bg-muted/35 p-3">
+                    <div className="flex items-center gap-2 text-sm font-bold text-foreground">
+                      <Wallet className="h-4 w-4 text-primary" />
+                      Ringkasan belanja
+                    </div>
+                    <div className="mt-3 space-y-2.5 text-sm">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-muted-foreground">Saya pesan</span>
+                        <span className="font-bold tabular-nums">{formatRupiah(myOrder)}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-muted-foreground">Target dari ringkasan</span>
+                        <span className="font-bold tabular-nums">{formatRupiah(baselineTotal)}</span>
+                      </div>
+                      {belumMasukPesanan > 0 && (
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-muted-foreground">Belum masuk pesanan</span>
+                          <span className="font-bold tabular-nums text-orange-600 dark:text-orange-400">+{formatRupiah(belumMasukPesanan)}</span>
+                        </div>
+                      )}
+                      {overOrderCost > 0 && (
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-muted-foreground">Lebih pesan</span>
+                          <span className="font-bold tabular-nums text-blue-600 dark:text-blue-400">+{formatRupiah(overOrderCost)}</span>
+                        </div>
+                      )}
+                      {(budget_tambah || 0) > 0 && (
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-muted-foreground">Masih kurang qty</span>
+                          <span className="font-bold tabular-nums text-orange-600 dark:text-orange-400">+{formatRupiah(budget_tambah)}</span>
+                        </div>
+                      )}
+                      <div className="border-t border-border/60 pt-2.5" />
+                      <div className="flex items-center justify-between gap-3 text-base font-extrabold">
+                        <span>Total final</span>
+                        <span className="tabular-nums text-primary">{formatRupiah(totalAman)}</span>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                    Pegang angka ini sebagai patokan akhir sebelum kirim pesanan.
-                  </p>
                 </div>
 
-                {/* Breakdown */}
-                <div className="rounded-xl border bg-background p-4 space-y-3">
-                  <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-                    <Wallet className="h-4 w-4 text-primary" />
-                    Ringkasan Belanja
-                  </div>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <div className="rounded-xl bg-muted/40 px-3 py-2.5">
-                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Saya pesan</p>
-                      <p className="mt-1 text-lg font-extrabold tabular-nums">{formatRupiah(myOrder)}</p>
-                    </div>
-                    <div className="rounded-xl bg-muted/40 px-3 py-2.5">
-                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Target dari ringkasan</p>
-                      <p className="mt-1 text-lg font-extrabold tabular-nums">{formatRupiah(baselineTotal)}</p>
-                    </div>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    {belumMasukPesanan > 0 && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Belum masuk pesanan</span>
-                        <span className="font-bold tabular-nums text-orange-600 dark:text-orange-400">+{formatRupiah(belumMasukPesanan)}</span>
-                      </div>
-                    )}
-                    {overOrderCost > 0 && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Lebih pesan</span>
-                        <span className="font-bold tabular-nums text-blue-600 dark:text-blue-400">+{formatRupiah(overOrderCost)}</span>
-                      </div>
-                    )}
-                    {(budget_tambah || 0) > 0 && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Masih kurang qty</span>
-                        <span className="font-bold tabular-nums text-orange-600 dark:text-orange-400">+{formatRupiah(budget_tambah)}</span>
-                      </div>
-                    )}
-                    <div className="border-t border-border/60 pt-2" />
-                    <div className="flex items-center justify-between font-extrabold">
-                      <span>Total final</span>
-                      <span className="tabular-nums text-primary">{formatRupiah(totalAman)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Scope explainer + Why higher than Analisa */}
                 {delta > 0 && (
-                  <div className="rounded-xl border bg-muted/30 p-4 space-y-2.5">
+                  <div className="rounded-xl border bg-background p-4">
                     <div className="flex items-start gap-2">
-                      <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                      <div className="space-y-1">
-                        <p className="text-sm font-bold">
-                          Kenapa totalnya berubah?
-                        </p>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          Review AI membandingkan pesanan Boss dengan target dari Ringkasan.
-                          Selisih <strong className="tabular-nums text-foreground">{formatRupiah(delta)}</strong> datang dari item-item ini:
+                      <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                      <div className="space-y-1 min-w-0">
+                        <p className="text-sm font-bold text-foreground">Kenapa totalnya beda?</p>
+                        <p className="text-xs leading-relaxed text-muted-foreground">
+                          Ada selisih <strong className="tabular-nums text-foreground">{formatRupiah(delta)}</strong> dari barang yang belum masuk atau qty yang masih kurang.
                         </p>
                       </div>
                     </div>
                     {contributors.length > 0 && (
-                      <ul className="space-y-1.5 pl-1">
+                      <ul className="mt-3 space-y-2">
                         {contributors.map(c => (
-                          <li key={c.kode} className="flex items-center justify-between text-xs rounded-lg bg-background px-2.5 py-1.5">
-                            <span className="flex items-center gap-1.5 min-w-0">
-                              <span className={`inline-block h-1.5 w-1.5 rounded-full ${c.reason === "missed" ? "bg-destructive" : "bg-orange-500"}`} />
-                              <span className="font-mono font-bold shrink-0">{c.kode}</span>
-                              <span className="text-muted-foreground truncate">- {c.reason === "missed" ? "belum masuk pesanan" : "qty masih kurang"}</span>
-                            </span>
-                            <span className="font-bold tabular-nums shrink-0 ml-2">+{formatRupiah(c.cost)}</span>
+                          <li key={c.kode} className="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2 text-xs">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono font-bold">{c.kode}</span>
+                                <span className="text-muted-foreground">{c.reason === "missed" ? "belum masuk pesanan" : "qty masih kurang"}</span>
+                              </div>
+                            </div>
+                            <span className="shrink-0 font-bold tabular-nums">+{formatRupiah(c.cost)}</span>
                           </li>
                         ))}
                       </ul>
