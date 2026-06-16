@@ -228,15 +228,16 @@ export default function ReviewAI({ budgetEstimates = [] }: ReviewAIProps) {
         ordered_at?: string;
         baseline_items?: Array<{ kode: string; qty: number }>;
       } = { items: validItems.map(i => ({ kode: i.kode, qty: i.qty })) };
-      if (targetDays && parseInt(targetDays) > 0) {
-        body.target_days = parseInt(targetDays);
-        const baseline = budgetEstimates.find((estimate) => estimate.days === body.target_days);
-        if (baseline) {
-          body.baseline_items = baseline.details.map((detail) => ({
-            kode: detail.kode,
-            qty: detail.qty,
-          }));
-        }
+
+      // Always anchor to Ringkasan baseline. Default to 4-day cycle (= Analisa default)
+      const effectiveTargetDays = targetDays && parseInt(targetDays) > 0 ? parseInt(targetDays) : 4;
+      body.target_days = effectiveTargetDays;
+      const baseline = budgetEstimates.find((estimate) => estimate.days === effectiveTargetDays);
+      if (baseline && baseline.details.length > 0) {
+        body.baseline_items = baseline.details.map((detail) => ({
+          kode: detail.kode,
+          qty: detail.qty,
+        }));
       }
       body.already_sent = alreadySent;
       if (orderDate) {
