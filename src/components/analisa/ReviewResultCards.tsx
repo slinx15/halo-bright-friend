@@ -221,11 +221,11 @@ function StatPill({ icon: Icon, label, value, className = "", onClick }: {
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-all active:scale-95 ${onClick ? "cursor-pointer hover:ring-2 hover:ring-ring/30" : ""} ${className}`}
+      className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs transition-all active:scale-95 ${onClick ? "cursor-pointer hover:ring-2 hover:ring-ring/20" : ""} ${className}`}
     >
-      <Icon className="h-4 w-4 shrink-0" />
-      <span className="font-bold">{label}</span>
-      <span className="font-extrabold ml-auto tabular-nums">{value}</span>
+      <Icon className="h-3.5 w-3.5 shrink-0" />
+      <span className="font-semibold">{label}</span>
+      <span className="font-bold ml-auto tabular-nums">{value}</span>
     </button>
   );
 }
@@ -248,7 +248,7 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
       : "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50";
 
   return (
-    <div className={`card-premium p-4 space-y-3 transition-all duration-200 active:scale-[0.98] ${accentClass}`}>
+    <div className={`card-premium p-3.5 space-y-2.5 transition-all duration-200 active:scale-[0.98] ${accentClass}`}>
       {/* Header row */}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
@@ -265,11 +265,11 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
         <div className="flex flex-col items-end gap-1 shrink-0">
           <PriorityBadge priority={priority} />
           {needMore ? (
-            <span className="inline-flex items-center gap-1 bg-orange-500/90 text-white rounded-full px-2.5 py-1 text-xs font-bold">
+            <span className="inline-flex items-center gap-1 bg-orange-500/90 text-white rounded-full px-2.5 py-1 text-[11px] font-bold">
               <Plus className="h-3 w-3" /> +{formatNumber(shortfall)} pcs
             </span>
           ) : tooMuch ? (
-            <span className="inline-flex items-center gap-1 bg-blue-500/90 text-white rounded-full px-2.5 py-1 text-xs font-bold">
+            <span className="inline-flex items-center gap-1 bg-blue-500/90 text-white rounded-full px-2.5 py-1 text-[11px] font-bold">
               <ArrowDown className="h-3 w-3" /> -{formatNumber(excess)} pcs
             </span>
           ) : null}
@@ -299,7 +299,7 @@ function ProductCard({ card, alreadySent }: { card: ReviewCard; alreadySent: boo
       </div>
 
       {/* Reason bubble — bigger */}
-      <div className={`rounded-xl px-4 py-3 text-sm leading-relaxed font-medium ${
+      <div className={`rounded-xl px-3.5 py-2.5 text-sm leading-relaxed font-medium ${
         priority === "wajib"
           ? "bg-red-100/80 dark:bg-red-900/30 text-red-800 dark:text-red-300"
           : priority === "sebaiknya"
@@ -322,7 +322,7 @@ function MissedProductCard({ card }: { card: MissedCard }) {
     ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50"
     : "bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800/50";
   return (
-    <div className={`card-premium p-4 space-y-3 transition-all duration-200 active:scale-[0.98] ${accent}`}>
+    <div className={`card-premium p-3.5 space-y-2.5 transition-all duration-200 active:scale-[0.98] ${accent}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <span className="font-mono font-extrabold text-base">{card.kode}</span>
@@ -330,12 +330,12 @@ function MissedProductCard({ card }: { card: MissedCard }) {
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
           <PriorityBadge priority={priority} />
-          <span className="inline-flex items-center gap-1 bg-destructive/90 text-destructive-foreground rounded-full px-2.5 py-1 text-xs font-bold">
+          <span className="inline-flex items-center gap-1 bg-destructive/90 text-destructive-foreground rounded-full px-2.5 py-1 text-[11px] font-bold">
             <Plus className="h-3 w-3" /> Pesan {formatNumber(card.ideal_qty)}
           </span>
         </div>
       </div>
-      <div className={`rounded-xl px-4 py-3 text-sm leading-relaxed font-medium ${
+      <div className={`rounded-xl px-3.5 py-2.5 text-sm leading-relaxed font-medium ${
         priority === "wajib"
           ? "bg-red-100/80 dark:bg-red-900/30 text-red-800 dark:text-red-300"
           : "bg-orange-100/80 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300"
@@ -358,8 +358,8 @@ function MissedProductCard({ card }: { card: MissedCard }) {
 
 
 // ── Collapsible Section — Bigger touch target ──
-function CollapsibleSection({ icon: Icon, title, count, color, sectionRef, isOpen, onToggle, children }: {
-  icon: LucideIcon; title: string; count: number; color: string;
+function CollapsibleSection({ icon: Icon, title, subtitle, count, color, sectionRef, isOpen, onToggle, children }: {
+  icon: LucideIcon; title: string; subtitle?: string; count: number; color: string;
   sectionRef?: React.RefObject<HTMLDivElement>; isOpen: boolean; onToggle: () => void; children: React.ReactNode;
 }) {
   return (
@@ -372,7 +372,10 @@ function CollapsibleSection({ icon: Icon, title, count, color, sectionRef, isOpe
         <div className={`flex items-center justify-center h-8 w-8 rounded-xl ${color}`}>
           <Icon className="h-4.5 w-4.5" />
         </div>
-        <span className="text-base font-bold">{title}</span>
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-bold text-foreground">{title}</div>
+          {subtitle && <div className="text-xs text-muted-foreground">{subtitle}</div>}
+        </div>
         <Badge variant="secondary" className="text-xs font-bold">{count}</Badge>
         <ChevronDown className={`h-5 w-5 ml-auto text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
@@ -416,6 +419,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     tambah: true, missed: true, kurangi: false, cukup: false, other: true,
   });
+  const [showDeltaDetails, setShowDeltaDetails] = useState(false);
   const tambahRef = useRef<HTMLDivElement>(null);
   const missedRef = useRef<HTMLDivElement>(null);
   const kurangiRef = useRef<HTMLDivElement>(null);
@@ -527,7 +531,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
                       )}
                       {(budget_tambah || 0) > 0 && (
                         <div className="flex items-center justify-between gap-3">
-                          <span className="text-muted-foreground">Masih kurang qty</span>
+                        <span className="text-muted-foreground">Perlu ditambah</span>
                           <span className="font-bold tabular-nums text-orange-600 dark:text-orange-400">+{formatRupiah(budget_tambah)}</span>
                         </div>
                       )}
@@ -552,19 +556,31 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
                       </div>
                     </div>
                     {contributors.length > 0 && (
-                      <ul className="mt-3 space-y-2">
-                        {contributors.map(c => (
-                          <li key={c.kode} className="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2 text-xs">
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono font-bold">{c.kode}</span>
-                                <span className="text-muted-foreground">{c.reason === "missed" ? "belum masuk pesanan" : "qty masih kurang"}</span>
-                              </div>
-                            </div>
-                            <span className="shrink-0 font-bold tabular-nums">+{formatRupiah(c.cost)}</span>
-                          </li>
-                        ))}
-                      </ul>
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          onClick={() => setShowDeltaDetails((prev) => !prev)}
+                          className="inline-flex items-center gap-2 rounded-lg border border-border/60 px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted/40"
+                        >
+                          <span>{showDeltaDetails ? "Sembunyikan penyebab" : "Lihat penyebab"}</span>
+                          <ChevronDown className={`h-4 w-4 transition-transform ${showDeltaDetails ? "rotate-180" : ""}`} />
+                        </button>
+                        {showDeltaDetails && (
+                          <ul className="mt-3 space-y-2">
+                            {contributors.map(c => (
+                              <li key={c.kode} className="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2 text-xs">
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono font-bold">{c.kode}</span>
+                                    <span className="text-muted-foreground">{c.reason === "missed" ? "belum masuk pesanan" : "perlu ditambah"}</span>
+                                  </div>
+                                </div>
+                                <span className="shrink-0 font-bold tabular-nums">+{formatRupiah(c.cost)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
@@ -580,7 +596,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
                 icon={Plus}
                 label="Tambah"
                 value={`${needMoreCards.length} (+${formatNumber(totalTambah)})`}
-                className="bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400"
+                className="bg-orange-50 dark:bg-orange-950/25 text-orange-700 dark:text-orange-300"
                 onClick={() => scrollToSection("tambah", tambahRef)}
               />
             )}
@@ -589,16 +605,16 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
                 icon={ArrowDown}
                 label="Kurangi"
                 value={`${tooMuchCards.length}`}
-                className="bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400"
+                className="bg-blue-50 dark:bg-blue-950/25 text-blue-700 dark:text-blue-300"
                 onClick={() => scrollToSection("kurangi", kurangiRef)}
               />
             )}
             {missed.length > 0 && (
               <StatPill
                 icon={PackageX}
-                label="Belum pesan"
+                label="Belum masuk"
                 value={`${missed.length}`}
-                className="bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400"
+                className="bg-red-50 dark:bg-red-950/25 text-red-700 dark:text-red-300"
                 onClick={() => scrollToSection("missed", missedRef)}
               />
             )}
@@ -607,7 +623,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
                 icon={CheckCircle2}
                 label="Cukup"
                 value={`${okCards.length}`}
-                className="bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400"
+                className="bg-emerald-50 dark:bg-emerald-950/25 text-emerald-700 dark:text-emerald-300"
                 onClick={() => scrollToSection("cukup", cukupRef)}
               />
             )}
@@ -616,7 +632,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
                 icon={Package}
                 label="Ukuran lain"
                 value={`${other_items.length}`}
-                className="bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400"
+                className="bg-purple-50 dark:bg-purple-950/25 text-purple-700 dark:text-purple-300"
                 onClick={() => scrollToSection("other", otherRef)}
               />
             )}
@@ -626,7 +642,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
 
       {/* 2 Ons Sections */}
       {needMoreCards.length > 0 && (
-        <CollapsibleSection icon={Plus} title="Sebaiknya Ditambah (di draft, qty kurang)" count={needMoreCards.length} color="bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400" sectionRef={tambahRef} isOpen={openSections.tambah} onToggle={() => toggleSection("tambah")}>
+        <CollapsibleSection icon={Plus} title="Perlu ditambah" subtitle="Qty di draft masih kurang" count={needMoreCards.length} color="bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400" sectionRef={tambahRef} isOpen={openSections.tambah} onToggle={() => toggleSection("tambah")}>
           {needMoreCards.map((card, i) => (
             <div key={card.kode} className="animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
               <ProductCard card={card} alreadySent={alreadySent} />
@@ -636,7 +652,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
       )}
 
       {missed.length > 0 && (
-        <CollapsibleSection icon={PackageX} title="Wajib Beli Sekarang (belum masuk draft)" count={missed.length} color="bg-red-100 dark:bg-red-900/40 text-destructive" sectionRef={missedRef} isOpen={openSections.missed} onToggle={() => toggleSection("missed")}>
+        <CollapsibleSection icon={PackageX} title="Belum masuk pesanan" subtitle="Masih ada item penting yang belum ikut" count={missed.length} color="bg-red-100 dark:bg-red-900/40 text-destructive" sectionRef={missedRef} isOpen={openSections.missed} onToggle={() => toggleSection("missed")}>
           {missed.map((card, i) => (
             <div key={card.kode} className="animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
               <MissedProductCard card={card} />
@@ -646,7 +662,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
       )}
 
       {tooMuchCards.length > 0 && (
-        <CollapsibleSection icon={ArrowDown} title="Bisa Ditunda / Kurangi" count={tooMuchCards.length} color="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400" sectionRef={kurangiRef} isOpen={openSections.kurangi} onToggle={() => toggleSection("kurangi")}>
+        <CollapsibleSection icon={ArrowDown} title="Bisa dikurangi" subtitle="Qty yang sudah lebih dari target" count={tooMuchCards.length} color="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400" sectionRef={kurangiRef} isOpen={openSections.kurangi} onToggle={() => toggleSection("kurangi")}>
           {tooMuchCards.map((card, i) => (
             <div key={card.kode} className="animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
               <ProductCard card={card} alreadySent={alreadySent} />
@@ -656,7 +672,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
       )}
 
       {okCards.length > 0 && (
-        <CollapsibleSection icon={CheckCircle2} title="Sudah Cukup ✓" count={okCards.length} color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400" sectionRef={cukupRef} isOpen={openSections.cukup} onToggle={() => toggleSection("cukup")}>
+        <CollapsibleSection icon={CheckCircle2} title="Sudah cukup" subtitle="Qty sudah pas dengan target" count={okCards.length} color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400" sectionRef={cukupRef} isOpen={openSections.cukup} onToggle={() => toggleSection("cukup")}>
           {okCards.map((card, i) => (
             <div key={card.kode} className="animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
               <ProductCard card={card} alreadySent={alreadySent} />
@@ -667,7 +683,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
 
       {/* ── Non-2 Ons Section ── */}
       {other_items.length > 0 && (
-        <CollapsibleSection icon={Package} title="Pesanan Ukuran Lain" count={other_items.length} color="bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400" sectionRef={otherRef} isOpen={openSections.other} onToggle={() => toggleSection("other")}>
+        <CollapsibleSection icon={Package} title="Ukuran lain" subtitle="Tidak ikut review, hanya dihitung biayanya" count={other_items.length} color="bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400" sectionRef={otherRef} isOpen={openSections.other} onToggle={() => toggleSection("other")}>
           {Object.entries(otherByKategori).map(([kategori, items]) => (
             <div key={kategori} className="space-y-2">
               <div className="flex items-center gap-2 px-1">
@@ -679,20 +695,17 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
                 </span>
               </div>
               {items.map((item, i) => (
-                <div key={item.kode} className="card-premium p-4 space-y-2 bg-purple-50/50 dark:bg-purple-950/20 border-purple-200/60 dark:border-purple-800/40 animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
+                <div key={item.kode} className="card-premium p-3.5 space-y-2 bg-purple-50/40 dark:bg-purple-950/15 border-purple-200/60 dark:border-purple-800/40 animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <span className="font-mono font-extrabold text-base">{item.kode}</span>
                       <p className="text-sm text-muted-foreground truncate mt-0.5">{item.nama}</p>
                     </div>
-                    <span className="inline-flex items-center gap-1 bg-purple-500 text-white rounded-full px-3 py-1.5 text-sm font-bold shadow-sm shrink-0">
+                    <span className="inline-flex items-center gap-1 bg-purple-500 text-white rounded-full px-2.5 py-1 text-[11px] font-bold shadow-sm shrink-0">
                       <ShoppingCart className="h-3.5 w-3.5" /> {formatNumber(item.qty)}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Modal: {formatRupiah(item.harga_modal)}/pcs</span>
-                    <span className="font-bold tabular-nums">{formatRupiah(item.cost)}</span>
-                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">`r`n                    <div className="rounded-lg bg-background/70 px-2.5 py-2">`r`n                      <div className="text-[11px] text-muted-foreground">Qty</div>`r`n                      <div className="mt-0.5 font-extrabold text-base text-foreground">{formatNumber(item.qty)}</div>`r`n                    </div>`r`n                    <div className="rounded-lg bg-background/70 px-2.5 py-2">`r`n                      <div className="text-[11px] text-muted-foreground">Budget</div>`r`n                      <div className="mt-0.5 font-bold text-sm text-foreground">{formatRupiah(item.cost)}</div>`r`n                    </div>`r`n                  </div>
                 </div>
               ))}
             </div>
@@ -716,3 +729,4 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
     </div>
   );
 }
+
