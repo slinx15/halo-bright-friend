@@ -75,7 +75,7 @@ const Stok = () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Stok");
     XLSX.writeFile(wb, `backup-stok-${dateStr}.xlsx`);
-    toast({ title: "✅ Export berhasil", description: `File backup-stok-${dateStr}.xlsx telah diunduh` });
+    toast({ title: "Export berhasil", description: `File backup-stok-${dateStr}.xlsx telah diunduh` });
   };
 
   const handleResetStock = async () => {
@@ -168,21 +168,31 @@ const Stok = () => {
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*]:[animation-fill-mode:both]">
       {/* ── Premium Header ── */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3.5">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div className="flex items-start gap-3.5">
           <div className="p-3 rounded-2xl bg-primary/10 shadow-sm">
             <Package className="h-6 w-6 text-primary" />
           </div>
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             <h1 className="text-xl font-extrabold tracking-tight leading-tight">Manajemen Stok</h1>
             <p className="text-muted-foreground text-xs font-medium">
-              {formatNumber(totalItems)} produk · {formatNumber(totalStok)} total pcs
+              {formatNumber(totalItems)} produk • {formatNumber(totalStok)} total pcs
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Cari cepat, cek stok rendah, lalu lanjut ke tindakan seperti export atau reset hanya saat dibutuhkan.
             </p>
           </div>
         </div>
-        <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setShowResetDialog(true)}>
-          <Trash2 className="h-4 w-4 mr-1.5" /> Reset Stok
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="h-10 rounded-xl" onClick={exportStokToExcel}>
+            <Download className="h-4 w-4 mr-1.5" />
+            Export
+          </Button>
+          <Button variant="outline" size="sm" className="h-10 rounded-xl text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setShowResetDialog(true)}>
+            <Trash2 className="h-4 w-4 mr-1.5" />
+            Reset Stok
+          </Button>
+        </div>
       </div>
 
       {/* Reset Dialog */}
@@ -259,7 +269,7 @@ const Stok = () => {
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Warning</span>
           </div>
           <p className="text-2xl font-extrabold tabular-nums text-foreground">{warning}</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">Stok 6–15 pcs</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">Stok 6-15 pcs</p>
         </div>
         <div className="card-premium bg-destructive/5 p-3.5 transition-all duration-150 md:hover:shadow-md md:hover:-translate-y-[1px]">
           <div className="flex items-center gap-2 mb-1.5">
@@ -267,7 +277,22 @@ const Stok = () => {
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Kritis / Kosong</span>
           </div>
           <p className="text-2xl font-extrabold tabular-nums text-destructive">{kritis + kosong}</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">{kosong} kosong · {kritis} kritis</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">{kosong} kosong • {kritis} kritis</p>
+        </div>
+      </div>
+
+      <div className="grid gap-2.5 md:grid-cols-3">
+        <div className="rounded-2xl border border-border/60 bg-card px-4 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Fokus Hari Ini</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">{kosong + kritis > 0 ? "Prioritaskan stok kosong dan kritis lebih dulu." : "Stok relatif aman, lanjut cek warning dan nilai stok."}</p>
+        </div>
+        <div className="rounded-2xl border border-border/60 bg-card px-4 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Filter Aktif</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">{kategoriFilter === "Semua" ? "Semua kategori" : kategoriFilter}</p>
+        </div>
+        <div className="rounded-2xl border border-border/60 bg-card px-4 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Pencarian</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">{search.trim() ? `Kata kunci: ${search}` : "Belum ada kata kunci"}</p>
         </div>
       </div>
 
@@ -282,7 +307,7 @@ const Stok = () => {
             </CardTitle>
             <div className="relative w-full md:w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input className="pl-9 rounded-xl h-10" placeholder="Cari kode / nama..." value={search} onChange={(e) => handleSearch(e.target.value)} />
+              <Input className="pl-9 rounded-xl h-10" placeholder="Cari kode atau nama produk..." value={search} onChange={(e) => handleSearch(e.target.value)} />
             </div>
           </div>
           {/* Kategori filter */}
@@ -347,7 +372,7 @@ const Stok = () => {
                           <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{p.kategori}</span>
                         )}
                         <Badge variant="secondary" className={`text-[10px] rounded-full px-2 ${getStockStatusColor(status)}`}>
-                          {status === "kritis" ? "🔴 Kritis" : status === "warning" ? "🟡 Warning" : "🟢 Aman"}
+                          {status === "kritis" ? "Kritis" : status === "warning" ? "Perlu cek" : "Aman"}
                         </Badge>
                       </div>
                       <span className="font-extrabold text-lg tabular-nums">{formatNumber(jumlah)}</span>
@@ -419,7 +444,7 @@ const Stok = () => {
                         <TableCell className="text-right text-sm tabular-nums">{p.prices ? formatRupiah(p.prices.harga_grosir2) : "-"}</TableCell>
                         <TableCell>
                           <Badge variant="secondary" className={`${getStockStatusColor(status)} rounded-full text-xs`}>
-                            {status === "kritis" ? "🔴 Kritis" : status === "warning" ? "🟡 Warning" : "🟢 Aman"}
+                            {status === "kritis" ? "Kritis" : status === "warning" ? "Perlu cek" : "Aman"}
                           </Badge>
                         </TableCell>
                       </TableRow>

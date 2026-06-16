@@ -67,7 +67,7 @@ function CommandCenter({ products, isLoading }: { products: ProductWithDetails[]
           <Package className="h-3.5 w-3.5 text-primary" />
           <span className="text-xs text-muted-foreground font-medium">{formatNumber(total)} item</span>
         </div>
-        <span className="text-border">·</span>
+        <span className="text-border">•</span>
         <div className="flex items-center gap-1.5">
           <TrendingUp className="h-3.5 w-3.5 text-success" />
           <span className="text-xs text-muted-foreground font-medium">{formatNumber(totalStok)} stok</span>
@@ -182,7 +182,7 @@ function StokRendahCard({ products, isLoading }: { products: ProductWithDetails[
           <p className="text-sm text-muted-foreground py-6 text-center">Memuat...</p>
         ) : stokKritisList.length === 0 ? (
           <div className="py-6 text-center">
-            <p className="text-sm text-muted-foreground">Semua stok aman 👍</p>
+            <p className="text-sm text-muted-foreground">Semua stok aman</p>
           </div>
         ) : (
           <div className="space-y-2">

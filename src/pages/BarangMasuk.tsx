@@ -200,6 +200,21 @@ const BarangMasuk = () => {
         </div>
       </div>
 
+      <div className="grid gap-2.5 md:grid-cols-3">
+        <div className="rounded-2xl border border-border/60 bg-card px-4 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Fokus Input</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">Isi kode dan qty dulu, lalu cek preview tumpukan sebelum simpan.</p>
+        </div>
+        <div className="rounded-2xl border border-border/60 bg-card px-4 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Item Valid</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">{validCount > 0 ? `${validCount} item siap disimpan` : "Belum ada item valid"}</p>
+        </div>
+        <div className="rounded-2xl border border-border/60 bg-card px-4 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Catatan</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">{catatan.trim() ? "Catatan sudah diisi" : "Catatan masih kosong"}</p>
+        </div>
+      </div>
+
       {/* ── Input Card ── */}
       <Card className="card-premium overflow-hidden">
         <CardHeader className="pb-3 bg-gradient-to-r from-success/5 to-transparent">
@@ -234,7 +249,7 @@ const BarangMasuk = () => {
                 <div className="flex gap-2 items-center">
                   <div className="flex-1 min-w-0">
                     <Input
-                      placeholder="Ketik kode produk..."
+                      placeholder="Ketik kode produk atau nama..."
                       value={item.kode}
                       onChange={(e) => updateItem(i, "kode", e.target.value.toUpperCase())}
                       list="product-codes"
@@ -267,7 +282,7 @@ const BarangMasuk = () => {
                   </p>
                 )}
                 {item.kode && !item.productId && (
-                  <p className="text-xs text-destructive font-medium">✗ Produk tidak ditemukan</p>
+                  <p className="text-xs text-destructive font-medium">Produk tidak ditemukan</p>
                 )}
                 {/* Stack preview */}
                 {item.productId && item.qty > 0 && (
@@ -296,7 +311,7 @@ const BarangMasuk = () => {
           })}
 
           <datalist id="product-codes">
-            {products?.map((p) => <option key={p.id} value={p.nama} label={`${p.kode} — ${p.nama}`} />)}
+            {products?.map((p) => <option key={p.id} value={p.nama} label={`${p.kode} - ${p.nama}`} />)}
           </datalist>
 
           <Button variant="outline" size="sm" onClick={addLine} className="rounded-xl transition-all duration-150 active:scale-95 min-h-[44px]">

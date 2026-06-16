@@ -178,7 +178,7 @@ const BarangKeluar = () => {
 
     if (missingFields.length > 0) {
       toast({
-        title: "⚠️ Data Belum Lengkap",
+        title: "Data belum lengkap",
         description: `Mohon isi: ${missingFields.join(", ")}`,
         variant: "destructive",
       });
@@ -352,6 +352,21 @@ const BarangKeluar = () => {
         </div>
       </div>
 
+      <div className="grid gap-2.5 md:grid-cols-3">
+        <div className="rounded-2xl border border-border/60 bg-card px-4 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Fokus Input</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">Isi toko, tanggal, lalu pastikan qty kirim dan harga sudah sesuai sebelum simpan.</p>
+        </div>
+        <div className="rounded-2xl border border-border/60 bg-card px-4 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Item Valid</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">{validCount > 0 ? `${validCount} item siap dikirim` : "Belum ada item valid"}</p>
+        </div>
+        <div className="rounded-2xl border border-border/60 bg-card px-4 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Nilai Draft</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">{validCount > 0 ? formatRupiah(totalRevenue) : "Belum ada nilai draft"}</p>
+        </div>
+      </div>
+
       {/* ── Input Card ── */}
       <Card className="card-premium overflow-hidden">
         <CardHeader className="pb-3 bg-gradient-to-r from-destructive/5 to-transparent">
@@ -365,7 +380,7 @@ const BarangKeluar = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <Label className="text-xs font-semibold text-muted-foreground">Nama Toko / Pelanggan</Label>
-              <Input value={globalToko} onChange={e => setGlobalToko(e.target.value)} placeholder="Nama toko..." className="rounded-lg mt-1" />
+              <Input value={globalToko} onChange={e => setGlobalToko(e.target.value)} placeholder="Nama toko atau pelanggan..." className="rounded-lg mt-1" />
             </div>
             <div>
               <Label className="text-xs font-semibold text-muted-foreground">Tanggal (opsional)</Label>
@@ -394,7 +409,7 @@ const BarangKeluar = () => {
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="w-full rounded-xl min-h-[40px] gap-2 text-sm font-semibold">
                   <SlidersHorizontal className="h-4 w-4" />
-                  Set Harga Sekaligus
+                  Atur Harga Sekaligus
                   <Badge variant="secondary" className="text-[10px] ml-auto">{validItemsForHarga.length} item</Badge>
                 </Button>
               </DialogTrigger>
@@ -402,7 +417,7 @@ const BarangKeluar = () => {
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2 text-base">
                     <SlidersHorizontal className="h-4 w-4" />
-                    Set Harga Sekaligus
+                    Atur Harga Sekaligus
                   </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 pt-2">
@@ -422,7 +437,7 @@ const BarangKeluar = () => {
                           <SelectItem value="normal">Normal{getBulkPriceLabel(warnaItems, "harga_normal")}</SelectItem>
                           <SelectItem value="grosir">Grosir{getBulkPriceLabel(warnaItems, "harga_grosir")}</SelectItem>
                           <SelectItem value="grosir2">Grosir 2{getBulkPriceLabel(warnaItems, "harga_grosir2")}</SelectItem>
-                          <SelectItem value="custom">✏️ Custom</SelectItem>
+                          <SelectItem value="custom">Custom</SelectItem>
                         </SelectContent>
                       </Select>
                       <div className="flex items-center gap-2 mt-1.5">
@@ -449,7 +464,7 @@ const BarangKeluar = () => {
                         <SelectContent>
                           <SelectItem value="normal">Normal{getBulkPriceLabel(whtItems, "harga_normal")}</SelectItem>
                           <SelectItem value="grosir">Grosir{getBulkPriceLabel(whtItems, "harga_grosir")}</SelectItem>
-                          <SelectItem value="custom">✏️ Custom</SelectItem>
+                          <SelectItem value="custom">Custom</SelectItem>
                         </SelectContent>
                       </Select>
                       <div className="flex items-center gap-2 mt-1.5">
@@ -473,7 +488,7 @@ const BarangKeluar = () => {
                         <SelectContent>
                           <SelectItem value="normal">Normal{getBulkPriceLabel(blckItems, "harga_normal")}</SelectItem>
                           <SelectItem value="grosir">Grosir{getBulkPriceLabel(blckItems, "harga_grosir")}</SelectItem>
-                          <SelectItem value="custom">✏️ Custom</SelectItem>
+                          <SelectItem value="custom">Custom</SelectItem>
                         </SelectContent>
                       </Select>
                       <div className="flex items-center gap-2 mt-1.5">
@@ -482,10 +497,10 @@ const BarangKeluar = () => {
                       </div>
                     </div>
                   )}
-                  <Button className="w-full rounded-xl" onClick={() => setHargaDialogOpen(false)}>Selesai</Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+                <Button className="w-full rounded-xl" onClick={() => setHargaDialogOpen(false)}>Selesai</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
           )}
 
           {/* Item rows */}
@@ -543,7 +558,7 @@ const BarangKeluar = () => {
                   </div>
                 )}
                 {item.kode && !item.productId && (
-                  <p className="text-xs text-destructive font-medium">✗ Produk tidak ditemukan</p>
+                  <p className="text-xs text-destructive font-medium">Produk tidak ditemukan</p>
                 )}
 
                 {/* Row 2: Qty + Harga */}
@@ -577,7 +592,7 @@ const BarangKeluar = () => {
                           <SelectItem value="normal">Normal {matched.prices ? `(${formatRupiah(matched.prices.harga_normal)})` : ""}</SelectItem>
                           <SelectItem value="grosir">Grosir {matched.prices ? `(${formatRupiah(matched.prices.harga_grosir)})` : ""}</SelectItem>
                           {matched.prices?.harga_grosir2 ? <SelectItem value="grosir2">Grosir 2 ({formatRupiah(matched.prices.harga_grosir2)})</SelectItem> : null}
-                          <SelectItem value="custom">✏️ Custom</SelectItem>
+                          <SelectItem value="custom">Custom</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -609,13 +624,13 @@ const BarangKeluar = () => {
                     </span>
                   </div>
                 )}
-                {overStock && <p className="text-xs text-destructive font-bold">⚠️ Stok tidak cukup!</p>}
+                {overStock && <p className="text-xs text-destructive font-bold">Stok tidak cukup</p>}
               </div>
             );
           })}
 
           <datalist id="product-codes-out">
-            {products?.map(p => <option key={p.id} value={p.kode} label={`${p.kode} — ${p.nama}`} />)}
+            {products?.map(p => <option key={p.id} value={p.kode} label={`${p.kode} - ${p.nama}`} />)}
           </datalist>
 
           <Button variant="outline" size="sm" onClick={addLine} className="rounded-xl transition-all duration-150 active:scale-95 min-h-[44px]">
@@ -624,10 +639,14 @@ const BarangKeluar = () => {
 
           {/* Summary */}
           {validCount > 0 && (
-            <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-3 space-y-1">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{validCount} item · {formatNumber(totalQty)} {items.some(i => getMatchedProduct(i)?.kategori === "18 Gram") ? "unit" : "pcs"}</span>
+            <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-3 space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Ringkasan draft</span>
                 <span className="font-extrabold text-primary tabular-nums">{formatRupiah(totalRevenue)}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{validCount} item siap disimpan</span>
+                <span>{formatNumber(totalQty)} {items.some(i => getMatchedProduct(i)?.kategori === "18 Gram") ? "unit" : "pcs"}</span>
               </div>
             </div>
           )}
