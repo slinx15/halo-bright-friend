@@ -42,11 +42,11 @@ export default function BudgetChat({ result, alreadySent, selectedItems, budget 
 
     return `KONTEKS REVIEW RESTOK:
 - Total ${cards.length} item di-review, skor ${result.score}/10
-- ${kurang.length} item kurang, ${lebih.length} item kebanyakan, ${result.missed.length} belum dipesan
+- ${kurang.length} item perlu ditambah, ${lebih.length} item lebih pesan, ${result.missed.length} belum masuk dari ringkasan
 - Budget pesanan awal: Rp ${result.total_cost.toLocaleString("id-ID")}
 - Budget tambahan (kurang): Rp ${(result.budget_tambah || 0).toLocaleString("id-ID")}
-- Budget belum pesan (kritis): Rp ${(result.budget_missed || 0).toLocaleString("id-ID")}
-- Total dibutuhkan: Rp ${(result.budget_total || 0).toLocaleString("id-ID")}
+- Budget belum masuk dari ringkasan: Rp ${(result.budget_missed || 0).toLocaleString("id-ID")}
+- Total final: Rp ${(result.budget_total || 0).toLocaleString("id-ID")}
 ${budget > 0 ? `- Sisa budget Boss: Rp ${budget.toLocaleString("id-ID")}` : "- Boss belum input sisa budget"}
 ${selectedItems.length > 0 ? `- Item terpilih (${selectedItems.length}): ${selectedItems.map(i => `${i.kode} +${i.qty}pcs (Rp ${i.cost.toLocaleString("id-ID")})`).join(", ")}` : ""}
 ${alreadySent ? "- Pesanan SUDAH dikirim, tidak bisa dikurangi" : "- Pesanan BELUM dikirim"}
@@ -55,7 +55,7 @@ ${result.review_basis ? `- Patokan review: ${result.review_basis}` : ""}
 DETAIL ITEM KURANG:
 ${kurang.map(c => `${c.kode} (${c.nama}): pesan ${c.qty_boss}, ideal ${c.ideal_qty}, DOS ${c.dos} hari, velocity ${c.velocity}/hari, modal Rp ${c.harga_modal.toLocaleString("id-ID")}`).join("\n")}
 
-ITEM BELUM DIPESAN:
+ITEM BELUM MASUK DARI RINGKASAN:
 ${result.missed.map(m => `${m.kode} (${m.nama}): stok ${m.stok}, DOS ${m.dos} hari, velocity ${m.velocity}/hari, ideal ${m.ideal_qty} pcs`).join("\n")}`;
   };
 
@@ -268,7 +268,7 @@ ${result.missed.map(m => `${m.kode} (${m.nama}): stok ${m.stok}, DOS ${m.dos} ha
                     onClick={() => sendQuickQuestion(q)}
                     className="w-full text-left px-3 py-2 rounded-xl bg-muted/40 hover:bg-muted text-xs text-foreground transition-colors"
                   >
-                    💬 {q}
+                    {q}
                   </button>
                 ))}
               </div>
