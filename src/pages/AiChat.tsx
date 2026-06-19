@@ -27,11 +27,11 @@ const RESEARCH_PROMPTS = [
 ];
 
 const CATEGORY_LABELS: Record<string, { label: string; emoji: string }> = {
-  keputusan: { label: "Keputusan", emoji: "OK" },
-  project: { label: "Project", emoji: "PRJ" },
-  target: { label: "Target", emoji: "GO" },
-  catatan: { label: "Catatan", emoji: "NT" },
-  ide: { label: "Ide", emoji: "IDE" },
+  keputusan: { label: "Keputusan", emoji: "\u2705" },
+  project: { label: "Project", emoji: "\u{1F4CB}" },
+  target: { label: "Target", emoji: "\u{1F3AF}" },
+  catatan: { label: "Catatan", emoji: "\u{1F4DD}" },
+  ide: { label: "Ide", emoji: "\u{1F4A1}" },
 };
 
 const AiChat = () => {
@@ -181,7 +181,7 @@ const AiChat = () => {
               {memories.map(m => (
                 <div key={m.id} className="text-xs bg-muted/40 rounded-lg p-2.5 group relative">
                   <div className="flex items-center gap-1 mb-1">
-                    <span>{CATEGORY_LABELS[m.category]?.emoji || "--"}</span>
+                    <span>{CATEGORY_LABELS[m.category]?.emoji || "\u{1F4CC}"}</span>
                     <span className="font-semibold text-[10px] uppercase text-muted-foreground">{CATEGORY_LABELS[m.category]?.label || m.category}</span>
                   </div>
                   <p className="leading-relaxed">{m.content}</p>
@@ -254,11 +254,13 @@ const AiChat = () => {
                 {researchMode ? <Search className="h-10 w-10 text-primary" /> : <Sparkles className="h-10 w-10 text-primary" />}
               </div>
               <div className="text-center space-y-1">
-                <h2 className="font-bold text-lg">{researchMode ? "Mode Riset Mendalam" : "Halo Boss!"}</h2>
+                <h2 className="font-bold text-lg">
+                  {researchMode ? `Mode Riset Mendalam ${"\u{1F50D}"}` : `Halo Boss! ${"\u{1F44B}"}`}
+                </h2>
                 <p className="text-sm text-muted-foreground max-w-xs">
                   {researchMode
                     ? "Tanya apa saja soal riset pasar - harga kompetitor, tren warna, strategi Shopee, analisis produk. AI akan memberikan analisis mendalam!"
-                    : "Tanya apa saja - stok, penjualan, ide bisnis, strategi marketing, atau curhat soal bisnis. Saya ingat semua percakapan kita."}
+                    : `Tanya apa saja - stok, penjualan, ide bisnis, strategi marketing, atau curhat soal bisnis. Saya ingat semua percakapan kita ${"\u{1F9E0}"}`}
                 </p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">

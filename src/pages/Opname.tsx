@@ -416,7 +416,7 @@ const Opname = () => {
                               h.status === "sesuai" ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"
                             }`}
                           >
-                            {h.status === "sesuai" ? "OK Sesuai" : "Ada Selisih"}
+                            {h.status === "sesuai" ? `${"\u2713"} Sesuai` : `${"\u2715"} Selisih`}
                           </Badge>
                         </div>
                         <div className="grid grid-cols-3 gap-2 text-[11px]">
@@ -475,7 +475,7 @@ const Opname = () => {
                               variant="secondary"
                               className={`rounded-full text-xs ${h.status === "sesuai" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}
                             >
-                              {h.status === "sesuai" ? "OK Sesuai" : "Ada Selisih"}
+                              {h.status === "sesuai" ? `${"\u2713"} Sesuai` : `${"\u2715"} Selisih`}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{h.catatan || "-"}</TableCell>
