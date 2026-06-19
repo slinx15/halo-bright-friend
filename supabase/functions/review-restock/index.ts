@@ -247,7 +247,7 @@ serve(async (req) => {
       }
 
       // 2 Ons: full review
-      const { velocity, salesDays } = computeWMAVelocity(stockOut, product.id);
+      const { velocity } = computeWMAVelocity(stockOut, product.id);
       const isBW = isBlackWhiteCode(kode);
       const computedTargetDays = customTargetDays
         ? getPlanningTargetDays(kode, customTargetDays)
@@ -273,7 +273,7 @@ serve(async (req) => {
       const status = getStatus(dos);
       const isBestSeller = velocity >= RULES.BESTSELLER_VELOCITY;
       const { verdict, note } = outOfScope
-        ? { verdict: "ok" as Verdict, note: "Di luar Ringkasan Analisa — qty mengikuti pilihan Boss" }
+        ? { verdict: "ok" as Verdict, note: "Di luar Ringkasan Analisa - qty mengikuti pilihan Boss" }
         : getVerdict(qty, idealQty, status);
 
       cards.push({
@@ -362,7 +362,7 @@ serve(async (req) => {
       ? `\nKONTEKS KRITIS: Pesanan ini SUDAH DIKIRIM ke supplier dan TIDAK BISA diubah/dibatalkan. Jadi:
 - JANGAN PERNAH sarankan untuk mengurangi, memangkas, menghapus, atau membatalkan item yang kebanyakan. Itu sudah terlanjur dikirim.
 - Item yang "lebih" cukup dicatat saja, bukan masalah karena stok tambahan tetap berguna.
-- Fokus saran HANYA pada: (1) item yang KURANG — perlu tambah pesanan baru, (2) produk kritis yang BELUM dipesan — perlu pesan terpisah.
+- Fokus saran HANYA pada: (1) item yang KURANG - perlu tambah pesanan baru, (2) produk kritis yang BELUM dipesan - perlu pesan terpisah.
 - Gunakan istilah "pesan tambahan" atau "top-up" bukan "pangkas" atau "kurangi".\n`
       : "";
     
@@ -419,9 +419,9 @@ Beri penilaian singkat + 1 saran paling penting. MAX 3 kalimat. Jangan pake mark
       target_days_used: customTargetDays ?? null,
       review_basis: customTargetDays
         ? Object.keys(baselineMap).length > 0
-          ? `Override ${customTargetDays} hari · baseline Ringkasan · stok fisik`
-          : `Override ${customTargetDays} hari · stok fisik`
-        : "Ikut rumus Analisa utama · stok fisik",
+          ? `Override ${customTargetDays} hari | baseline Ringkasan | stok fisik`
+          : `Override ${customTargetDays} hari | stok fisik`
+        : "Ikut rumus Analisa utama | stok fisik",
       stats: summaryData,
     };
 

@@ -110,7 +110,7 @@ function parseInput(text: string, products: ProductWithDetails[], aliases: Produ
 
     // If active kategori is non-2 Ons, append suffix to kode
     if (activeKategori && activeKategori !== "2 Ons") {
-      // Map common names like PUTIH → WHT
+      // Map common names like PUTIH -> WHT
       const mappedKode = NAME_TO_KODE[kode] || kode;
       kode = mappedKode + " " + activeKategori;
     }
@@ -130,7 +130,7 @@ function parseInput(text: string, products: ProductWithDetails[], aliases: Produ
       found = products?.find(p => p.kode.toUpperCase().replace(/^0+/, "") === stripped);
       if (found) return found;
       
-      // 3. Try category suffix expansion (e.g., "BLCK 5OZ" → "BLCK 5 Ons")
+      // 3. Try category suffix expansion (e.g., "BLCK 5OZ" -> "BLCK 5 Ons")
       for (const [alias, suffix] of Object.entries(CATEGORY_ALIASES)) {
         if (kUpper.endsWith(alias) || kUpper.endsWith(alias.replace(" ", ""))) {
           const baseKode = kUpper.replace(new RegExp(alias.replace(" ", "\\s*") + "$"), "").trim();
@@ -306,7 +306,7 @@ export default function ReviewAI({ budgetEstimates = [] }: ReviewAIProps) {
 
       const ocrText = ocrItems.map((item) => `${item.kode} ${item.qty || item.qty_pesan || 0}`).join("\n");
       setInputText(prev => prev ? prev.trim() + "\n" + ocrText : ocrText);
-      toast({ title: "📸 Foto Terbaca!", description: `${ocrItems.length} item berhasil dibaca` });
+      toast({ title: "Foto Terbaca!", description: `${ocrItems.length} item berhasil dibaca` });
     } catch (err: unknown) {
       toast({ title: "Error OCR", description: getErrorMessage(err), variant: "destructive" });
     } finally {
@@ -364,7 +364,7 @@ export default function ReviewAI({ budgetEstimates = [] }: ReviewAIProps) {
                 disabled={ocrLoading || isLoading}
               >
                 {ocrLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
-                {ocrLoading ? "Membaca..." : "📸 Foto"}
+                {ocrLoading ? "Membaca..." : "Foto"}
               </Button>
             </div>
           </div>
@@ -562,7 +562,7 @@ export default function ReviewAI({ budgetEstimates = [] }: ReviewAIProps) {
                   {item.isValid ? (
                     <span className="text-sm text-muted-foreground truncate">{item.productName}</span>
                   ) : (
-                    <span className="text-sm text-destructive font-bold">❌ Salah</span>
+                    <span className="text-sm text-destructive font-bold">Salah</span>
                   )}
                 </div>
                 <span className="font-bold text-base tabular-nums ml-2">{item.qty}</span>
