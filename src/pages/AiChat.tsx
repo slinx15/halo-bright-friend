@@ -27,11 +27,11 @@ const RESEARCH_PROMPTS = [
 ];
 
 const CATEGORY_LABELS: Record<string, { label: string; emoji: string }> = {
-  keputusan: { label: "Keputusan", emoji: "✅" },
-  project: { label: "Project", emoji: "📋" },
-  target: { label: "Target", emoji: "🎯" },
-  catatan: { label: "Catatan", emoji: "📝" },
-  ide: { label: "Ide", emoji: "💡" },
+  keputusan: { label: "Keputusan", emoji: "OK" },
+  project: { label: "Project", emoji: "PRJ" },
+  target: { label: "Target", emoji: "GO" },
+  catatan: { label: "Catatan", emoji: "NT" },
+  ide: { label: "Ide", emoji: "IDE" },
 };
 
 const AiChat = () => {
@@ -181,7 +181,7 @@ const AiChat = () => {
               {memories.map(m => (
                 <div key={m.id} className="text-xs bg-muted/40 rounded-lg p-2.5 group relative">
                   <div className="flex items-center gap-1 mb-1">
-                    <span>{CATEGORY_LABELS[m.category]?.emoji || "📌"}</span>
+                    <span>{CATEGORY_LABELS[m.category]?.emoji || "--"}</span>
                     <span className="font-semibold text-[10px] uppercase text-muted-foreground">{CATEGORY_LABELS[m.category]?.label || m.category}</span>
                   </div>
                   <p className="leading-relaxed">{m.content}</p>
@@ -226,7 +226,7 @@ const AiChat = () => {
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-lg font-extrabold tracking-tight">AI Partner Bisnis</h1>
-            <p className="text-muted-foreground text-xs truncate">Asisten pribadi RRCollections • {memories.length} memory tersimpan</p>
+            <p className="text-muted-foreground text-xs truncate">Asisten pribadi RRCollections | {memories.length} memory tersimpan</p>
           </div>
           <div className="flex items-center gap-1 bg-muted/60 rounded-xl p-1">
             <button
@@ -254,11 +254,11 @@ const AiChat = () => {
                 {researchMode ? <Search className="h-10 w-10 text-primary" /> : <Sparkles className="h-10 w-10 text-primary" />}
               </div>
               <div className="text-center space-y-1">
-                <h2 className="font-bold text-lg">{researchMode ? "Mode Riset Mendalam 🔍" : "Halo Boss! 👋"}</h2>
+                <h2 className="font-bold text-lg">{researchMode ? "Mode Riset Mendalam" : "Halo Boss!"}</h2>
                 <p className="text-sm text-muted-foreground max-w-xs">
                   {researchMode
-                    ? "Tanya apa saja soal riset pasar — harga kompetitor, tren warna, strategi Shopee, analisis produk. AI akan memberikan analisis mendalam!"
-                    : "Tanya apa saja — stok, penjualan, ide bisnis, strategi marketing, atau curhat soal bisnis. Saya ingat semua percakapan kita! 🧠"}
+                    ? "Tanya apa saja soal riset pasar - harga kompetitor, tren warna, strategi Shopee, analisis produk. AI akan memberikan analisis mendalam!"
+                    : "Tanya apa saja - stok, penjualan, ide bisnis, strategi marketing, atau curhat soal bisnis. Saya ingat semua percakapan kita."}
                 </p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
@@ -326,7 +326,7 @@ function SimpleMarkdown({ text }: { text: string }) {
     if (line.startsWith("### ")) elements.push(<h3 key={i} className="font-bold text-base mt-3 mb-1">{formatInline(line.slice(4))}</h3>);
     else if (line.startsWith("## ")) elements.push(<h2 key={i} className="font-bold text-lg mt-3 mb-1">{formatInline(line.slice(3))}</h2>);
     else if (line.startsWith("# ")) elements.push(<h1 key={i} className="font-extrabold text-xl mt-3 mb-1">{formatInline(line.slice(2))}</h1>);
-    else if (/^[-*•]\s/.test(line)) elements.push(<div key={i} className="flex gap-2 items-start pl-1"><span className="text-muted-foreground mt-0.5">•</span><span>{formatInline(line.replace(/^[-*•]\s/, ""))}</span></div>);
+    else if (/^[-*]\s/.test(line)) elements.push(<div key={i} className="flex gap-2 items-start pl-1"><span className="text-muted-foreground mt-0.5">-</span><span>{formatInline(line.replace(/^[-*]\s/, ""))}</span></div>);
     else if (/^\d+\.\s/.test(line)) { const num = line.match(/^(\d+)\./)?.[1]; elements.push(<div key={i} className="flex gap-2 items-start pl-1"><span className="text-muted-foreground font-semibold mt-0.5">{num}.</span><span>{formatInline(line.replace(/^\d+\.\s/, ""))}</span></div>); }
     else if (line.trim() === "") elements.push(<div key={i} className="h-2" />);
     else elements.push(<p key={i}>{formatInline(line)}</p>);

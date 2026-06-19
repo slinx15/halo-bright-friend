@@ -171,7 +171,7 @@ const Nota = () => {
           <div className="flex-1">
             <h1 className="text-lg font-extrabold">Nota Penjualan</h1>
             <p className="text-xs text-muted-foreground">
-              {selectedNota.toko} • {selectedNota.dateLabel}
+              {selectedNota.toko} | {selectedNota.dateLabel}
             </p>
           </div>
           <Button
@@ -196,7 +196,7 @@ const Nota = () => {
                   RR COLLECTIONS
                 </h2>
                 <p className="text-[11px] sm:text-xs text-muted-foreground">
-                  Toko Perlengkapan Jahit • Jl. Rancabentang Barat Rt.04 Rw.25 No.517
+                  Toko Perlengkapan Jahit | Jl. Rancabentang Barat Rt.04 Rw.25 No.517
                 </p>
               </div>
 
@@ -217,7 +217,7 @@ const Nota = () => {
                       {selectedNota.date.replace(/-/g, "")}-{selectedNota.toko.slice(0, 3).toUpperCase()}
                     </span>
                   </p>
-                  <p className="text-right text-muted-foreground">📞 081287922663</p>
+                  <p className="text-right text-muted-foreground">Telp 081287922663</p>
                 </div>
               </div>
 
@@ -412,7 +412,7 @@ const Nota = () => {
                   <div className="flex-1 min-w-0 space-y-0.5">
                     <p className="font-bold text-sm truncate">{g.toko}</p>
                     <p className="text-[11px] text-muted-foreground">
-                      {g.dateLabel} • {g.items.length} item
+                      {g.dateLabel} | {g.items.length} item
                     </p>
                   </div>
                   <div className="text-right shrink-0 space-y-0.5">

@@ -423,7 +423,7 @@ const BarangKeluar = () => {
                 <div className="space-y-4 pt-2">
                   {warnaItems.length > 0 && (
                     <div>
-                      <label className="text-xs text-muted-foreground font-medium">🎨 Warna ({warnaItems.length} item)</label>
+                      <label className="text-xs text-muted-foreground font-medium">Warna ({warnaItems.length} item)</label>
                       <Select onValueChange={(v) => {
                         const filter = (k: string) => !k.includes("WHT") && !k.includes("BLCK") && !k.includes("BLK");
                         if (v === "custom") {
@@ -451,7 +451,7 @@ const BarangKeluar = () => {
                   )}
                   {whtItems.length > 0 && (
                     <div>
-                      <label className="text-xs text-muted-foreground font-medium">⬜ WHT ({whtItems.length} item)</label>
+                      <label className="text-xs text-muted-foreground font-medium">WHT ({whtItems.length} item)</label>
                       <Select onValueChange={(v) => {
                         const filter = (k: string) => k.includes("WHT");
                         if (v === "custom") {
@@ -475,7 +475,7 @@ const BarangKeluar = () => {
                   )}
                   {blckItems.length > 0 && (
                     <div>
-                      <label className="text-xs text-muted-foreground font-medium">⬛ BLCK ({blckItems.length} item)</label>
+                      <label className="text-xs text-muted-foreground font-medium">BLCK ({blckItems.length} item)</label>
                       <Select onValueChange={(v) => {
                         const filter = (k: string) => k.includes("BLCK") || k.includes("BLK");
                         if (v === "custom") {
