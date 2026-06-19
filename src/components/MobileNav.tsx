@@ -67,7 +67,7 @@ const MobileNav = () => {
         <div className="md:hidden fixed inset-0 z-[60]" onClick={() => setMoreOpen(false)}>
           <div className="absolute inset-0 bg-background/60 backdrop-blur-md" />
           <div
-            className="absolute bottom-[calc(3.5rem+env(safe-area-inset-bottom))] left-3 right-3 bg-card rounded-2xl border border-border/30 shadow-2xl p-2 space-y-0.5 animate-slide-up"
+            className="absolute bottom-[calc(3.5rem+env(safe-area-inset-bottom))] left-3 right-3 max-h-[calc(100svh-7rem-env(safe-area-inset-bottom))] overflow-y-auto overscroll-contain bg-card rounded-2xl border border-border/30 shadow-2xl p-2 space-y-0.5 animate-slide-up scrollbar-hide"
             onClick={(e) => e.stopPropagation()}
           >
             {visibleSecondary.map((item) => {
