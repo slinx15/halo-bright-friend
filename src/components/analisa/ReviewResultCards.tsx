@@ -142,8 +142,8 @@ function getReason(card: ReviewCard, alreadySent: boolean): string {
     return `Cukup pesan ${formatNumber(card.ideal_qty)} aja, sisanya bisa buat barang lain`;
   }
 
-  if (card.stok === 0 && card.velocity > 0) return "Stok habis tapi pesanan Boss udah pas 👍";
-  if (card.is_bestseller) return `Barang ${speed}, qty segini udah pas 👍`;
+  if (card.stok === 0 && card.velocity > 0) return "Stok habis tapi pesanan Boss sudah pas";
+  if (card.is_bestseller) return `Barang ${speed}, qty segini sudah pas`;
   if (card.velocity > 0) return `Barang ${speed}, qty segini cukup`;
   if (card.velocity === 0 && card.qty_boss > 0) return "Belum ada data penjualan, tapi Boss udah pesan";
   return "Stok aman";
@@ -502,7 +502,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
     <div className="space-y-5">
       <Card className="card-premium overflow-hidden shadow-premium">
         <CardContent className="p-5">
-          <div className="flex items-center gap-5">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
             <ScoreRing score={score} />
             <div className="min-w-0 flex-1 space-y-2">
               <div className="flex items-center gap-2">
@@ -662,7 +662,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
             );
           })()}
 
-          <div className="mt-4 grid grid-cols-2 gap-2">
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
             {needMoreCards.length > 0 && (
               <StatPill
                 icon={Plus}

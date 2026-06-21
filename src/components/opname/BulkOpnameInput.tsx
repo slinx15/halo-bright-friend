@@ -503,9 +503,9 @@ export const BulkOpnameInput = forwardRef<BulkOpnameInputHandle, BulkOpnameInput
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground truncate">{product.nama}</p>
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <TumpukanBadges stacks={item.stacks} kode={item.kode} compact />
-                        <div className="flex gap-3 text-[11px] tabular-nums">
+                        <div className="flex flex-wrap gap-3 text-[11px] tabular-nums">
                           <span className="text-muted-foreground">Fisik <strong className="text-foreground">{formatNumber(item.total)}</strong></span>
                           <span className="text-muted-foreground">Sistem <strong className="text-foreground">{formatNumber(stokSistem)}</strong></span>
                         </div>

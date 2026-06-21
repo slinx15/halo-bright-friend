@@ -147,26 +147,26 @@ const ManajemenProduk = () => {
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*]:[animation-fill-mode:both]">
       {/* ── Premium Header ── */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3.5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3.5 sm:items-center">
           <div className="p-3 rounded-2xl bg-primary/10 shadow-sm">
             <Settings className="h-6 w-6 text-primary" />
           </div>
-          <div className="space-y-0.5">
+          <div className="min-w-0 space-y-0.5">
             <h1 className="text-xl font-extrabold tracking-tight leading-tight">Manajemen Produk</h1>
             <p className="text-muted-foreground text-xs font-medium">Kelola data produk & harga</p>
           </div>
         </div>
         {isAdmin && (
-          <div className="flex gap-2">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <BulkInputDialog />
             <Dialog open={showAdd} onOpenChange={(v) => { setShowAdd(v); if (!v) resetForm(); }}>
               <DialogTrigger asChild>
-                <Button className="rounded-xl transition-all duration-150 active:scale-95 min-h-[44px] bg-primary hover:bg-primary/90 shadow-md">
+                <Button className="w-full rounded-xl transition-all duration-150 active:scale-95 min-h-[44px] bg-primary hover:bg-primary/90 shadow-md sm:w-auto">
                   <Plus className="h-4 w-4 mr-1" /> Tambah
                 </Button>
               </DialogTrigger>
-              <DialogContent className="rounded-2xl">
+              <DialogContent className="rounded-2xl sm:max-w-xl">
                 <DialogHeader>
                   <DialogTitle className="font-bold flex items-center gap-2">
                     {editId ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
@@ -174,7 +174,7 @@ const ManajemenProduk = () => {
                   </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                       <Label className="text-xs font-semibold text-muted-foreground">Kode</Label>
                       <Input value={kode} onChange={(e) => setKode(e.target.value.toUpperCase())} placeholder="KTN-001" className="rounded-lg mt-1" />
@@ -184,7 +184,7 @@ const ManajemenProduk = () => {
                       <Input value={kategori} onChange={(e) => setKategori(e.target.value)} placeholder="Katun" className="rounded-lg mt-1" />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                       <Label className="text-xs font-semibold text-muted-foreground">H. Modal</Label>
                       <Input type="number" value={hargaModal} onChange={(e) => setHargaModal(parseInt(e.target.value) || 0)} className="rounded-lg mt-1 tabular-nums" />
@@ -219,7 +219,7 @@ const ManajemenProduk = () => {
       </div>
 
       {/* ── KPI Strip ── */}
-      <div className="grid grid-cols-3 gap-2.5">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
         <div className="card-premium bg-primary/5 p-3 text-center">
           <p className="text-2xl font-extrabold tabular-nums text-foreground">{formatNumber(totalProducts)}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Produk</p>
@@ -276,7 +276,7 @@ const ManajemenProduk = () => {
                     </div>
                     <span className="font-extrabold text-lg tabular-nums">{formatNumber(p.stock?.jumlah ?? 0)}</span>
                   </div>
-                  <div className="grid grid-cols-4 gap-2 text-[11px]">
+                  <div className="grid grid-cols-2 gap-2 text-[11px] sm:grid-cols-4">
                     <div>
                       <span className="text-muted-foreground">Modal</span>
                       <p className="font-semibold tabular-nums">{p.prices ? formatRupiah(p.prices.harga_modal) : "-"}</p>

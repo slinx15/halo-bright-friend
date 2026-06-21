@@ -10,13 +10,13 @@ interface PageHeaderProps {
 
 export function PageHeader({ icon: Icon, iconColor, iconBg, title, subtitle }: PageHeaderProps) {
   return (
-    <div className="flex items-center gap-3.5">
-      <div className={`p-3 rounded-2xl ${iconBg} shadow-sm`}>
-        <Icon className={`h-6 w-6 ${iconColor}`} />
+    <div className="flex items-start gap-3.5 sm:items-center">
+      <div className={`shrink-0 rounded-2xl p-3 shadow-sm ${iconBg}`}>
+        <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${iconColor}`} />
       </div>
-      <div className="space-y-0.5">
-        <h1 className="text-xl font-extrabold tracking-tight leading-tight">{title}</h1>
-        <p className="text-muted-foreground text-xs font-medium">{subtitle}</p>
+      <div className="min-w-0 space-y-0.5">
+        <h1 className="text-lg font-extrabold leading-tight tracking-tight sm:text-xl">{title}</h1>
+        <p className="text-xs font-medium text-muted-foreground">{subtitle}</p>
       </div>
     </div>
   );

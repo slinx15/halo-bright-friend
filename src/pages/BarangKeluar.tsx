@@ -323,17 +323,19 @@ const BarangKeluar = () => {
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*:nth-child(5)]:![animation-delay:200ms] [&>*]:[animation-fill-mode:both]">
       {/* ── Header ── */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3.5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3.5 sm:items-center">
           <div className="p-3 rounded-2xl bg-destructive/10 shadow-sm">
             <PackageMinus className="h-6 w-6 text-destructive" />
           </div>
-          <div className="space-y-0.5">
+          <div className="min-w-0 space-y-0.5">
             <h1 className="text-xl font-extrabold tracking-tight leading-tight">Barang Keluar</h1>
             <p className="text-muted-foreground text-xs font-medium">Catat penjualan / pengiriman</p>
           </div>
         </div>
-        <OcrUpload mode="keluar" onResult={handleOcrResult} />
+        <div className="w-full sm:w-auto">
+          <OcrUpload mode="keluar" onResult={handleOcrResult} />
+        </div>
       </div>
 
       {/* ── KPI Strip ── */}

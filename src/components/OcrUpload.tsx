@@ -320,12 +320,13 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
           e.target.value = "";
         }}
       />
-      <div className="flex gap-2 items-center">
+      <div className="flex w-full items-center gap-2 sm:w-auto">
         <Button
           variant="outline"
           size="sm"
           onClick={() => fileRef.current?.click()}
           disabled={loading}
+          className="min-h-[44px] w-full rounded-xl sm:w-auto"
         >
           {loading ? (
             <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -337,15 +338,16 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
       </div>
 
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
-          <DialogHeader>
+        <DialogContent className="flex max-h-[90svh] w-[calc(100vw-1.5rem)] max-w-lg flex-col overflow-hidden rounded-2xl p-0">
+          <DialogHeader className="px-6 pt-6 pb-4">
             <DialogTitle className="flex items-center gap-2">
-              📷 Hasil Baca Foto
+              <Camera className="h-4 w-4 text-primary" />
+              Hasil Baca Foto
             </DialogTitle>
           </DialogHeader>
 
           {/* Summary */}
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex flex-wrap gap-2 px-6">
             <Badge variant="secondary" className="bg-success/10 text-success">
               <Check className="h-3 w-3 mr-1" /> {validCount} valid
             </Badge>
@@ -357,13 +359,13 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
           </div>
 
           {invalidCount > 0 && (
-            <div className="text-xs text-destructive bg-destructive/5 p-2 rounded">
-              ⚠️ Item bertanda merah tidak ada di Master. Edit kode atau hapus item tersebut.
+            <div className="mx-6 rounded bg-destructive/5 p-2 text-xs text-destructive">
+              Item bertanda merah tidak ada di master. Edit kode atau hapus item tersebut.
             </div>
           )}
 
           {/* Items list */}
-          <div className="flex-1 min-h-0 max-h-[45vh] overflow-y-auto border rounded-md p-1">
+          <div className="mx-6 my-4 flex-1 min-h-0 max-h-[45vh] overflow-y-auto rounded-md border p-1">
             <div className="space-y-2 pr-1">
               {ocrItems.map((item, idx) => (
                 <div
@@ -395,7 +397,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
                         </span>
                       )}
                       {item.isAmbiguous ? (
-                        <span className="text-xs text-amber-600 font-medium">⚠ Pilih ukuran →</span>
+                        <span className="text-xs font-medium text-amber-600">Pilih ukuran dulu</span>
                       ) : item.isValid ? (
                         <span className="text-xs text-muted-foreground truncate">
                           {item.productName}
@@ -544,11 +546,11 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
             {products?.map((p) => <option key={p.id} value={p.kode} />)}
           </datalist>
 
-          <DialogFooter className="flex gap-2 sm:gap-2">
-            <Button variant="outline" onClick={handleCancel}>
+          <DialogFooter className="flex flex-col gap-2 border-t px-6 py-4 sm:flex-row">
+            <Button variant="outline" onClick={handleCancel} className="w-full sm:w-auto">
               <X className="h-4 w-4 mr-1" /> Batal
             </Button>
-            <Button onClick={handleConfirm} disabled={validCount === 0}>
+            <Button onClick={handleConfirm} disabled={validCount === 0} className="w-full sm:w-auto">
               <Check className="h-4 w-4 mr-1" /> Terapkan ({validCount} item)
             </Button>
           </DialogFooter>

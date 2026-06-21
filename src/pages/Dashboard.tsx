@@ -66,7 +66,7 @@ function CommandCenter({ products, isLoading }: { products: ProductWithDetails[]
         </div>
       </div>
       {/* Status grid */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {cards.map((card, idx) => (
           <button
             key={card.label}
@@ -87,7 +87,7 @@ function CommandCenter({ products, isLoading }: { products: ProductWithDetails[]
 // ── Hero KPI Section ──────────────────────────────────────────────
 function HeroKpi({ omzet, profit, pcs, margin }: { omzet: number; profit: number; pcs: number; margin: number }) {
   return (
-    <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
       {/* Omzet */}
       <div className="col-span-2 relative overflow-hidden rounded-2xl p-4 text-primary-foreground shadow-premium-lg" style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(217 91% 40%))" }}>
         <div className="absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/10 animate-glow-pulse" />
@@ -119,7 +119,7 @@ function HeroKpi({ omzet, profit, pcs, margin }: { omzet: number; profit: number
       </div>
 
       {/* Profit */}
-      <div className="col-span-3 card-premium p-3.5">
+      <div className="col-span-2 card-premium p-3.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-success/10">
@@ -385,7 +385,7 @@ const Dashboard = () => {
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto w-full pb-24 md:pb-6">
       {/* Header — greeting based on time */}
-      <div className="flex items-center justify-between animate-fade-in">
+      <div className="flex items-start justify-between gap-3 animate-fade-in">
         <div>
           <p className="text-sm text-muted-foreground font-medium">
             {getGreeting()}, Boss

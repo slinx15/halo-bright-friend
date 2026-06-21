@@ -333,12 +333,12 @@ export default function ReviewAI({ budgetEstimates = [] }: ReviewAIProps) {
   return (
     <div className="space-y-5">
       {/* ── Header ── */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3.5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3.5 sm:items-center">
           <div className="p-3.5 rounded-2xl bg-gradient-to-br from-primary/20 to-blue-500/10 shadow-sm">
             <Sparkles className="h-7 w-7 text-primary" />
           </div>
-          <div className="space-y-0.5">
+          <div className="min-w-0 space-y-0.5">
             <h3 className="text-xl font-extrabold tracking-tight leading-tight">Review AI</h3>
             <p className="text-muted-foreground text-sm font-medium">Tulis daftar belanja, AI kasih masukan</p>
           </div>
@@ -348,13 +348,13 @@ export default function ReviewAI({ budgetEstimates = [] }: ReviewAIProps) {
       {/* ── Input Card — Simple Textarea ── */}
       <Card className="card-premium overflow-hidden">
         <CardHeader className="pb-2 bg-gradient-to-r from-primary/5 to-transparent">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-base font-bold flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
               Daftar Pesanan
               {lineCount > 0 && <Badge variant="secondary" className="text-xs font-bold">{lineCount}</Badge>}
             </CardTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
               <input
                 ref={fileRef}
                 id="review-ai-photo"
@@ -368,7 +368,7 @@ export default function ReviewAI({ budgetEstimates = [] }: ReviewAIProps) {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="rounded-xl font-bold transition-all duration-150 active:scale-95 h-11 px-4 text-sm gap-2" 
+                className="h-11 w-full gap-2 rounded-xl px-4 text-sm font-bold transition-all duration-150 active:scale-95 sm:w-auto" 
                 onClick={() => fileRef.current?.click()} 
                 disabled={ocrLoading || isLoading}
               >
@@ -492,9 +492,9 @@ export default function ReviewAI({ budgetEstimates = [] }: ReviewAIProps) {
           )}
 
           {/* Action Buttons */}
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <Button 
-              className="flex-1 rounded-xl h-14 text-lg font-bold transition-all duration-150 active:scale-[0.97] shadow-md hover:shadow-lg" 
+              className="h-14 w-full rounded-xl text-lg font-bold transition-all duration-150 active:scale-[0.97] shadow-md hover:shadow-lg sm:flex-1" 
               onClick={handleParse} 
               disabled={lineCount === 0 || isLoading}
             >
@@ -502,7 +502,7 @@ export default function ReviewAI({ budgetEstimates = [] }: ReviewAIProps) {
               Cek Daftar
             </Button>
             {(parsedItems.length > 0 || reviewResult) && (
-              <Button variant="ghost" size="icon" className="h-14 w-14 rounded-xl shrink-0" onClick={handleReset} disabled={isLoading}>
+              <Button variant="ghost" size="icon" className="h-14 w-full rounded-xl shrink-0 sm:w-14" onClick={handleReset} disabled={isLoading}>
                 <Trash2 className="h-5 w-5" />
               </Button>
             )}
@@ -512,11 +512,11 @@ export default function ReviewAI({ budgetEstimates = [] }: ReviewAIProps) {
 
       {/* ── Parsed Result + Review Button ── */}
       {showParsed && parsedItems.length > 0 && (
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
           <Button
             variant="outline"
             size="sm"
-            className="rounded-xl text-sm font-bold gap-2 h-12 px-4 transition-all duration-150 active:scale-95"
+            className="h-12 w-full gap-2 rounded-xl px-4 text-sm font-bold transition-all duration-150 active:scale-95 sm:w-auto"
             onClick={() => setExpandParsed(true)}
           >
             <FileText className="h-4 w-4" />
@@ -524,7 +524,7 @@ export default function ReviewAI({ budgetEstimates = [] }: ReviewAIProps) {
             {invalidCount > 0 && <span className="text-destructive font-bold">({invalidCount} salah)</span>}
           </Button>
           <Button
-            className="flex-1 rounded-xl h-14 text-lg font-bold transition-all duration-150 active:scale-[0.97] shadow-md hover:shadow-lg"
+            className="h-14 w-full rounded-xl text-lg font-bold transition-all duration-150 active:scale-[0.97] shadow-md hover:shadow-lg sm:flex-1"
             onClick={() => setShowSentDialog(true)}
             disabled={isLoading}
           >

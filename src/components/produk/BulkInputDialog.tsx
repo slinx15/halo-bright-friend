@@ -190,11 +190,11 @@ export function BulkInputDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" className="min-h-[44px] w-full rounded-xl sm:w-auto">
           <TableProperties className="h-4 w-4 mr-1" /> Input Massal
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="flex max-h-[90svh] w-[calc(100vw-1rem)] max-w-4xl flex-col rounded-2xl">
         <DialogHeader>
           <DialogTitle>Input Massal Produk</DialogTitle>
         </DialogHeader>
@@ -253,8 +253,8 @@ export function BulkInputDialog() {
             <Progress value={progress} className="h-2" />
           </div>
         )}
-        <div className="flex items-center justify-between pt-2">
-          <div className="flex gap-2">
+        <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => addRows(5)} disabled={submitting}>
               <Plus className="h-3 w-3 mr-1" /> 5 Baris
             </Button>
@@ -262,7 +262,7 @@ export function BulkInputDialog() {
               <Plus className="h-3 w-3 mr-1" /> 10 Baris
             </Button>
           </div>
-          <Button onClick={handleSubmit} disabled={submitting || validRows.length === 0}>
+          <Button onClick={handleSubmit} disabled={submitting || validRows.length === 0} className="w-full sm:w-auto">
             {submitting ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Mengimport...</> : `Import ${validRows.length} Produk`}
           </Button>
         </div>

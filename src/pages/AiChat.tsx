@@ -153,7 +153,7 @@ const AiChat = () => {
   const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); sendMessage(input); };
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] md:h-[calc(100vh-2rem)] max-w-[1400px] mx-auto w-full">
+    <div className="flex min-h-[calc(100svh-5.5rem)] md:min-h-[calc(100vh-2rem)] max-w-[1400px] mx-auto w-full">
       {/* Sidebar - Conversation List */}
       {showSidebar && (
         <div className={`${isMobile ? "absolute inset-0 z-50 bg-background" : "w-72 border-r border-border"} flex flex-col`}>
@@ -215,7 +215,7 @@ const AiChat = () => {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="p-4 pb-2 flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 p-4 pb-2">
           {(!showSidebar || isMobile) && (
             <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => setShowSidebar(true)}>
               <ChevronLeft className="h-5 w-5" />
@@ -228,7 +228,7 @@ const AiChat = () => {
             <h1 className="text-lg font-extrabold tracking-tight">AI Partner Bisnis</h1>
             <p className="text-muted-foreground text-xs truncate">Asisten pribadi RRCollections | {memories.length} memory tersimpan</p>
           </div>
-          <div className="flex items-center gap-1 bg-muted/60 rounded-xl p-1">
+          <div className="ml-auto flex items-center gap-1 rounded-xl bg-muted/60 p-1 sm:ml-0">
             <button
               onClick={() => setResearchMode(false)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${!researchMode ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
@@ -306,7 +306,7 @@ const AiChat = () => {
         </div>
 
         {/* Input */}
-        <div className="p-4 pt-2 pb-20 md:pb-4">
+        <div className="p-4 pt-2 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-4">
           <form onSubmit={handleSubmit} className="flex gap-2">
             <Input ref={inputRef} value={input} onChange={e => setInput(e.target.value)} placeholder={researchMode ? "Riset apa? (misal: harga benang Ivory di Shopee)" : "Tanya AI tentang bisnis kamu..."} disabled={isLoading} className="rounded-xl h-12 text-base" autoComplete="off" />
             <Button type="submit" disabled={isLoading || !input.trim()} className="rounded-xl h-12 w-12 shrink-0 press-scale">

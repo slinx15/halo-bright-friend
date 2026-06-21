@@ -153,35 +153,37 @@ const BarangMasuk = () => {
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*:nth-child(5)]:![animation-delay:200ms] [&>*]:[animation-fill-mode:both]">
       {/* ── Header ── */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3.5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3.5 sm:items-center">
           <div className="p-3 rounded-2xl bg-success/10 shadow-sm">
             <PackagePlus className="h-6 w-6 text-success" />
           </div>
-          <div className="space-y-0.5">
+          <div className="min-w-0 space-y-0.5">
             <h1 className="text-xl font-extrabold tracking-tight leading-tight">Barang Masuk</h1>
             <p className="text-muted-foreground text-xs font-medium">Catat barang masuk ke gudang</p>
           </div>
         </div>
-        <OcrUpload
-          mode="masuk"
-          onResult={(ocrItems) => {
-            const typedItems = ocrItems as BarangMasukOcrItem[];
-            const newItems: LineItem[] = typedItems.map((item) => {
-              const found = findProductMatch(products, { productId: item.productId, kode: item.kode, kategori: item.kategori });
-              return {
-                kode: (found?.kode || item.kode || "").toUpperCase(),
-                qty: item.qty || 1,
-                productName: found?.nama || item.nama,
-                productId: found?.id,
-                productKode: found?.kode,
-                productKategori: found?.kategori,
-              };
-            });
-            setItems(newItems.length > 0 ? newItems : [createEmptyLineItem()]);
-            if (typedItems[0]?.catatan) setCatatan(typedItems[0].catatan);
-          }}
-        />
+        <div className="w-full sm:w-auto">
+          <OcrUpload
+            mode="masuk"
+            onResult={(ocrItems) => {
+              const typedItems = ocrItems as BarangMasukOcrItem[];
+              const newItems: LineItem[] = typedItems.map((item) => {
+                const found = findProductMatch(products, { productId: item.productId, kode: item.kode, kategori: item.kategori });
+                return {
+                  kode: (found?.kode || item.kode || "").toUpperCase(),
+                  qty: item.qty || 1,
+                  productName: found?.nama || item.nama,
+                  productId: found?.id,
+                  productKode: found?.kode,
+                  productKategori: found?.kategori,
+                };
+              });
+              setItems(newItems.length > 0 ? newItems : [createEmptyLineItem()]);
+              if (typedItems[0]?.catatan) setCatatan(typedItems[0].catatan);
+            }}
+          />
+        </div>
       </div>
 
       {/* ── KPI Strip ── */}

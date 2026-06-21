@@ -183,12 +183,12 @@ const Stok = () => {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="h-10 rounded-xl" onClick={exportStokToExcel}>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          <Button variant="outline" size="sm" className="h-10 w-full rounded-xl sm:w-auto" onClick={exportStokToExcel}>
             <Download className="h-4 w-4 mr-1.5" />
             Export
           </Button>
-          <Button variant="outline" size="sm" className="h-10 rounded-xl text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setShowResetDialog(true)}>
+          <Button variant="outline" size="sm" className="h-10 w-full rounded-xl text-destructive border-destructive/30 hover:bg-destructive/10 sm:w-auto" onClick={() => setShowResetDialog(true)}>
             <Trash2 className="h-4 w-4 mr-1.5" />
             Reset Stok
           </Button>
@@ -311,35 +311,37 @@ const Stok = () => {
             </div>
           </div>
           {/* Kategori filter */}
-          <div className="flex flex-wrap gap-2 mt-3">
-            {kategoriList.map((cat) => {
-              const isActive = kategoriFilter === cat;
-              const count = cat === "Semua" 
-                ? (products?.length ?? 0) 
-                : (products?.filter(p => p.kategori === cat).length ?? 0);
-              return (
-                <button
-                  key={cat}
-                  onClick={() => { setKategoriFilter(cat); setVisibleCount(PAGE_SIZE); }}
-                  className={cn(
-                    "relative flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all duration-200",
-                    isActive
-                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/25 scale-[1.02]"
-                      : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground hover:scale-[1.02] active:scale-95"
-                  )}
-                >
-                  <span>{cat}</span>
-                  <span className={cn(
-                    "text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[20px] text-center tabular-nums",
-                    isActive
-                      ? "bg-primary-foreground/20 text-primary-foreground"
-                      : "bg-background/80 text-muted-foreground"
-                  )}>
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
+          <div className="-mx-1 mt-3 overflow-x-auto px-1 pb-1">
+            <div className="flex min-w-max gap-2">
+              {kategoriList.map((cat) => {
+                const isActive = kategoriFilter === cat;
+                const count = cat === "Semua"
+                  ? (products?.length ?? 0)
+                  : (products?.filter(p => p.kategori === cat).length ?? 0);
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => { setKategoriFilter(cat); setVisibleCount(PAGE_SIZE); }}
+                    className={cn(
+                      "relative flex shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all duration-200",
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-md shadow-primary/25 scale-[1.02]"
+                        : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground hover:scale-[1.02] active:scale-95"
+                    )}
+                  >
+                    <span>{cat}</span>
+                    <span className={cn(
+                      "text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[20px] text-center tabular-nums",
+                      isActive
+                        ? "bg-primary-foreground/20 text-primary-foreground"
+                        : "bg-background/80 text-muted-foreground"
+                    )}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
