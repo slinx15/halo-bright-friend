@@ -355,7 +355,16 @@ export default function ReviewAI({ budgetEstimates = [] }: ReviewAIProps) {
               {lineCount > 0 && <Badge variant="secondary" className="text-xs font-bold">{lineCount}</Badge>}
             </CardTitle>
             <div className="flex items-center gap-2">
-              <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleOcrFile(f); e.target.value = ""; }} />
+              <input
+                ref={fileRef}
+                id="review-ai-photo"
+                name="review-ai-photo"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleOcrFile(f); e.target.value = ""; }}
+              />
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -373,6 +382,8 @@ export default function ReviewAI({ budgetEstimates = [] }: ReviewAIProps) {
           {/* Textarea */}
           <div className="relative">
             <textarea
+              id="review-ai-input"
+              name="review-ai-input"
               value={inputText}
               onChange={e => setInputText(e.target.value)}
               placeholder={"Tulis kode & jumlah, satu baris satu item:\n\n8842 50\nR484 50\n2135 25"}
@@ -411,6 +422,8 @@ export default function ReviewAI({ budgetEstimates = [] }: ReviewAIProps) {
                 </label>
                 <div className="flex items-center gap-2">
                   <input
+                    id="review-ai-target-days"
+                    name="review-ai-target-days"
                     type="number"
                     min="1"
                     max="30"

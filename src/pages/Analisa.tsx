@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef, lazy, Suspense } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -26,11 +26,10 @@ import { DAYS_PRESETS, buildBudgetEstimateFromAnalyses } from "@/lib/analisaBudg
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AnalisaSkeleton } from "@/components/LoadingSkeletons";
 import { SalesTrendCharts } from "@/components/analisa/SalesTrendCharts";
-
-const ReviewAI = lazy(() => import("@/components/analisa/ReviewAI"));
-const ColorTrendAnalysis = lazy(() => import("@/components/analisa/ColorTrendAnalysis"));
-const HariRamaiAnalysis = lazy(() => import("@/components/analisa/HariRamaiAnalysis"));
-const RepeatCustomerAnalysis = lazy(() => import("@/components/analisa/RepeatCustomerAnalysis"));
+import ReviewAI from "@/components/analisa/ReviewAI";
+import ColorTrendAnalysis from "@/components/analisa/ColorTrendAnalysis";
+import HariRamaiAnalysis from "@/components/analisa/HariRamaiAnalysis";
+import RepeatCustomerAnalysis from "@/components/analisa/RepeatCustomerAnalysis";
 
 
 // ─── Formatting Helpers ───────────────────────────────────
@@ -1055,9 +1054,7 @@ const Analisa = () => {
             </TabsContent>
 
             <TabsContent value="pelanggan" className="space-y-4 mt-3">
-              <Suspense fallback={<div className="flex items-center justify-center py-16"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
-                <RepeatCustomerAnalysis stockOutData={stockOutData} products={products} />
-              </Suspense>
+              <RepeatCustomerAnalysis stockOutData={stockOutData} products={products} />
             </TabsContent>
           </Tabs>
         </TabsContent>
@@ -1163,15 +1160,11 @@ const Analisa = () => {
             </TabsContent>
 
             <TabsContent value="hari" className="space-y-4 mt-3">
-              <Suspense fallback={<div className="flex items-center justify-center py-16"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
-                <HariRamaiAnalysis stockOutData={stockOutData} />
-              </Suspense>
+              <HariRamaiAnalysis stockOutData={stockOutData} />
             </TabsContent>
 
             <TabsContent value="tren" className="space-y-4 mt-3">
-              <Suspense fallback={<div className="flex items-center justify-center py-16"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
-                <ColorTrendAnalysis products={products} stockOutData={stockOutData} />
-              </Suspense>
+              <ColorTrendAnalysis products={products} stockOutData={stockOutData} />
             </TabsContent>
 
             <TabsContent value="dead" className="space-y-4 mt-3">
@@ -1261,9 +1254,7 @@ const Analisa = () => {
             </TabsContent>
 
             <TabsContent value="review" className="space-y-4 mt-3">
-              <Suspense fallback={<div className="flex items-center justify-center py-16"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
-                <ReviewAI budgetEstimates={budgetEstimates} />
-              </Suspense>
+              <ReviewAI budgetEstimates={budgetEstimates} />
             </TabsContent>
           </Tabs>
         </TabsContent>
