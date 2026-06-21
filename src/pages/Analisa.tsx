@@ -110,7 +110,7 @@ function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementTyp
         <Icon className="h-4 w-4 text-primary" />
       </div>
       <div>
-        <h3 className="text-sm font-semibold">{title}</h3>
+        <div className="text-sm font-semibold text-foreground">{title}</div>
         {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
       </div>
     </div>
@@ -324,20 +324,20 @@ const Analisa = () => {
             </div>
             <div>
               <h1 className="text-lg md:text-xl font-extrabold tracking-tight">Analisa</h1>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-[11px] font-medium text-foreground/70">
                 {analyses.length} SKU | WMA {RULES.WMA_PERIOD1_DAYS} hari | siklus {RULES.CYCLE_DAYS} hari
               </p>
             </div>
           </div>
           {needsReorder > 0 && (
-            <Badge className="bg-destructive text-destructive-foreground text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">
+            <Badge className="bg-red-700 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm dark:bg-red-600">
               {needsReorder} perlu restock
             </Badge>
           )}
         </div>
 
         {/* 4-Card Action Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           <button
             onClick={() => setFilter(filter === "CRITICAL" ? "ALL" : "CRITICAL")}
             className={`relative overflow-hidden card-premium bg-destructive/5 p-3.5 text-left transition-all duration-200 active:scale-[0.97] animate-fade-in ${
@@ -346,22 +346,22 @@ const Analisa = () => {
             style={{ animationDelay: "0ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-destructive/8" />
-            <span className="text-lg">🚨</span>
-            <p className="text-2xl font-black text-destructive tabular-nums mt-1">{criticalCount || "-"}</p>
-            <p className="text-[10px] font-medium text-destructive/70 mt-0.5">Harus Restock</p>
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            <p className="mt-1 text-2xl font-black tabular-nums text-destructive">{criticalCount || "-"}</p>
+            <p className="mt-0.5 text-[11px] font-semibold text-destructive">Harus Restock</p>
           </button>
 
           <button
             onClick={() => setFilter(filter === "WARNING" ? "ALL" : "WARNING")}
-            className={`relative overflow-hidden card-premium bg-warning/5 p-3.5 text-left transition-all duration-200 active:scale-[0.97] animate-fade-in ${
+            className={`relative overflow-hidden card-premium bg-amber-50 p-3.5 text-left transition-all duration-200 active:scale-[0.97] animate-fade-in dark:bg-amber-950/20 ${
               filter === "WARNING" ? "ring-2 ring-warning shadow-md" : ""
             }`}
             style={{ animationDelay: "60ms", animationFillMode: "both" }}
           >
-            <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-warning/8" />
-            <span className="text-lg">⚠️</span>
-            <p className="text-2xl font-black text-warning tabular-nums mt-1">{warningCount || "-"}</p>
-            <p className="text-[10px] font-medium text-warning/70 mt-0.5">Segera Habis</p>
+            <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-amber-200/30 dark:bg-amber-700/15" />
+            <Clock className="h-5 w-5 text-amber-700 dark:text-amber-400" />
+            <p className="mt-1 text-2xl font-black tabular-nums text-amber-700 dark:text-amber-400">{warningCount || "-"}</p>
+            <p className="mt-0.5 text-[11px] font-semibold text-amber-700 dark:text-amber-300">Segera Habis</p>
           </button>
 
           <button
@@ -370,9 +370,9 @@ const Analisa = () => {
             style={{ animationDelay: "120ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-muted/40" />
-            <span className="text-lg">📦</span>
-            <p className="text-2xl font-black tabular-nums mt-1">{zeroStockCount || "-"}</p>
-            <p className="text-[10px] font-medium text-muted-foreground mt-0.5">Stok Kosong</p>
+            <Package className="h-5 w-5 text-foreground/80" />
+            <p className="mt-1 text-2xl font-black tabular-nums">{zeroStockCount || "-"}</p>
+            <p className="mt-0.5 text-[11px] font-semibold text-foreground/70">Stok Kosong</p>
           </button>
 
           <div
@@ -380,13 +380,12 @@ const Analisa = () => {
             style={{ animationDelay: "180ms", animationFillMode: "both" }}
           >
             <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-primary/5" />
-            <span className="text-lg">💰</span>
-            <p className="text-base font-black tabular-nums mt-1 truncate">{formatRp(totalRestockCost)}</p>
-            <p className="text-[10px] font-medium text-muted-foreground mt-0.5">Modal Restock</p>
+            <Wallet className="h-5 w-5 text-primary" />
+            <p className="mt-1 truncate text-base font-black tabular-nums">{formatRp(totalRestockCost)}</p>
+            <p className="mt-0.5 text-[11px] font-semibold text-foreground/70">Modal Restock</p>
           </div>
         </div>
       </div>
-
 
       {/* MAIN CONTENT — TABS */}
       <Tabs defaultValue="restock" className="w-full">
@@ -405,7 +404,7 @@ const Analisa = () => {
                 <div className="relative">
                   <tab.icon className="h-4 w-4 shrink-0" />
                   {tab.badge && (
-                    <span className="md:hidden absolute -top-1.5 -right-2 h-4 min-w-[16px] px-1 text-[9px] rounded-full bg-destructive text-destructive-foreground flex items-center justify-center font-bold">
+                    <span className="md:hidden absolute -top-1.5 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-700 px-1 text-[9px] font-bold text-white dark:bg-red-600">
                       {tab.badge}
                     </span>
                   )}
@@ -653,14 +652,14 @@ const Analisa = () => {
           <Card className="border-0 shadow-sm p-5 space-y-4 animate-fade-in" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
             <SectionHeader icon={Clock} title="Prediksi Kehabisan Stok" subtitle="Berdasarkan velocity saat ini" />
             {[
-              { items: predCritical, label: `Kritis — ≤${RULES.CRITICAL_DAYS} hari`, color: "text-destructive", dot: "bg-destructive" },
-              { items: predWarning, label: `Warning — ${RULES.CRITICAL_DAYS + 1}-${RULES.WARNING_DAYS} hari`, color: "text-warning", dot: "bg-warning" },
-              { items: predAttention, label: `Perhatian — ${RULES.WARNING_DAYS + 1}-${RULES.ATTENTION_DAYS} hari`, color: "text-accent", dot: "bg-accent" },
+              { items: predCritical, label: `Kritis <= ${RULES.CRITICAL_DAYS} hari`, color: "text-destructive", dot: "bg-destructive" },
+              { items: predWarning, label: `Warning ${RULES.CRITICAL_DAYS + 1}-${RULES.WARNING_DAYS} hari`, color: "text-amber-700 dark:text-amber-300", dot: "bg-amber-500" },
+              { items: predAttention, label: `Perhatian ${RULES.WARNING_DAYS + 1}-${RULES.ATTENTION_DAYS} hari`, color: "text-accent", dot: "bg-accent" },
             ].map(({ items, label, color, dot }) => items.length > 0 && (
               <div key={label} className="space-y-2">
                 <div className="flex items-center gap-2">
                   <span className={`h-2 w-2 rounded-full ${dot}`} />
-                  <h4 className={`text-xs font-semibold ${color}`}>{label} ({items.length})</h4>
+                  <div className={`text-xs font-semibold ${color}`}>{label} ({items.length})</div>
                 </div>
                 {isMobile ? (
                   <div className="space-y-2">
