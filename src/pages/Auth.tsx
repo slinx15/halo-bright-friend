@@ -17,9 +17,9 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const justLoggedOut = sessionStorage.getItem('logging_out') === 'true';
+  const justLoggedOut = sessionStorage.getItem("logging_out") === "true";
   if (justLoggedOut) {
-    sessionStorage.removeItem('logging_out');
+    sessionStorage.removeItem("logging_out");
   }
 
   if (loading && !justLoggedOut) {
@@ -43,17 +43,33 @@ const Auth = () => {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center p-4 overflow-hidden" style={{ background: "linear-gradient(160deg, hsl(213 30% 97%) 0%, hsl(217 40% 94%) 50%, hsl(213 30% 97%) 100%)" }}>
-      {/* Decorative blobs */}
-      <div className="absolute -top-32 -left-32 w-80 h-80 rounded-full opacity-30 blur-3xl" style={{ background: "radial-gradient(circle, hsl(217 91% 50% / 0.2), transparent)" }} />
-      <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full opacity-20 blur-3xl" style={{ background: "radial-gradient(circle, hsl(217 91% 50% / 0.15), transparent)" }} />
-      <div className="absolute top-1/3 right-1/4 w-48 h-48 rounded-full opacity-15 blur-2xl" style={{ background: "radial-gradient(circle, hsl(43 96% 56% / 0.2), transparent)" }} />
+    <div
+      className="relative flex min-h-screen items-center justify-center p-4 overflow-hidden"
+      style={{
+        background:
+          "linear-gradient(160deg, hsl(213 30% 97%) 0%, hsl(217 40% 94%) 50%, hsl(213 30% 97%) 100%)",
+      }}
+    >
+      <div
+        className="absolute -top-32 -left-32 h-80 w-80 rounded-full opacity-30 blur-3xl"
+        style={{ background: "radial-gradient(circle, hsl(217 91% 50% / 0.2), transparent)" }}
+      />
+      <div
+        className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full opacity-20 blur-3xl"
+        style={{ background: "radial-gradient(circle, hsl(217 91% 50% / 0.15), transparent)" }}
+      />
+      <div
+        className="absolute right-1/4 top-1/3 h-48 w-48 rounded-full opacity-15 blur-2xl"
+        style={{ background: "radial-gradient(circle, hsl(43 96% 56% / 0.2), transparent)" }}
+      />
 
       <div className="relative w-full max-w-md space-y-8 animate-fade-in" style={{ animationFillMode: "both" }}>
-        {/* Logo / Brand */}
         <div className="flex flex-col items-center gap-3">
           <div className="relative">
-            <div className="absolute inset-0 rounded-2xl blur-xl opacity-30" style={{ background: "hsl(217 91% 50% / 0.3)" }} />
+            <div
+              className="absolute inset-0 rounded-2xl blur-xl opacity-30"
+              style={{ background: "hsl(217 91% 50% / 0.3)" }}
+            />
             <img
               src={logo}
               alt="RRCollections"
@@ -68,11 +84,11 @@ const Auth = () => {
             <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
               RR<span className="text-primary">Collections</span>
             </h1>
-            <p className="text-muted-foreground text-sm font-medium">Manajemen Stok Produk Tekstil</p>
+            <p className="text-sm font-medium text-muted-foreground">Manajemen Stok Produk Tekstil</p>
           </div>
         </div>
 
-        <Card className="card-premium border-border/30 shadow-premium-lg backdrop-blur-sm overflow-hidden">
+        <Card className="card-premium overflow-hidden border-border/30 shadow-premium-lg backdrop-blur-sm">
           <CardHeader className="pb-4 pt-6 text-center">
             <h2 className="text-lg font-bold text-foreground">Masuk</h2>
             <p className="text-xs text-muted-foreground">Gunakan akun yang sudah didaftarkan admin</p>
@@ -81,7 +97,12 @@ const Auth = () => {
           <CardContent className="pb-6">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="login-email" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email</Label>
+                <Label
+                  htmlFor="login-email"
+                  className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                >
+                  Email
+                </Label>
                 <Input
                   id="login-email"
                   type="email"
@@ -89,24 +110,29 @@ const Auth = () => {
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                   required
-                  className="h-11 rounded-xl border-border/50 bg-muted/30 focus:bg-card transition-colors"
+                  className="h-11 rounded-xl border-border/50 bg-muted/30 transition-colors focus:bg-card"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="login-password" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Password</Label>
+                <Label
+                  htmlFor="login-password"
+                  className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                >
+                  Password
+                </Label>
                 <div className="relative">
                   <Input
                     id="login-password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
+                    placeholder="........"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     required
-                    className="h-11 rounded-xl border-border/50 bg-muted/30 focus:bg-card transition-colors pr-10"
+                    className="h-11 rounded-xl border-border/50 bg-muted/30 pr-10 transition-colors focus:bg-card"
                   />
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -115,23 +141,24 @@ const Auth = () => {
               </div>
               <Button
                 type="submit"
-                className="w-full h-11 rounded-xl font-bold text-sm shadow-premium native-press"
+                className="native-press h-11 w-full rounded-xl text-sm font-bold shadow-premium"
                 disabled={submitting}
               >
                 {submitting ? (
                   <div className="flex items-center gap-2">
-                    <div className="animate-spin h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full" />
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
                     Memproses...
                   </div>
-                ) : "Masuk"}
+                ) : (
+                  "Masuk"
+                )}
               </Button>
             </form>
           </CardContent>
         </Card>
 
-        {/* Footer */}
-        <p className="text-center text-[11px] text-muted-foreground/60 font-medium">
-          © {new Date().getFullYear()} RRCollections · Command Center
+        <p className="text-center text-[11px] font-medium text-muted-foreground/60">
+          {`© ${new Date().getFullYear()} RRCollections | Command Center`}
         </p>
       </div>
     </div>
