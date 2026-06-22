@@ -219,7 +219,7 @@ const ManajemenProduk = () => {
       </div>
 
       {/* ── KPI Strip ── */}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2.5">
         <div className="card-premium bg-primary/5 p-3 text-center">
           <p className="text-2xl font-extrabold tabular-nums text-foreground">{formatNumber(totalProducts)}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Produk</p>

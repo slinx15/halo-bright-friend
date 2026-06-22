@@ -662,7 +662,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
             );
           })()}
 
-          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="mt-4 grid grid-cols-2 gap-2">
             {needMoreCards.length > 0 && (
               <StatPill
                 icon={Plus}
