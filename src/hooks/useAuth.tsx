@@ -27,7 +27,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select("role")
         .eq("user_id", userId)
         .maybeSingle();
-      console.log("[fetchRole]", { userId, data, error });
       if (error) {
         console.error("[fetchRole] error:", error.message);
         return null;
