@@ -18,7 +18,7 @@ export function CriticalStockAlert() {
     return analysis
       .filter((a) => a.dosStatus === "CRITICAL")
       .sort((a, b) => a.daysOfStock - b.daysOfStock)
-      .slice(0, 6);
+      .slice(0, 3);
   }, [products, stockOutData]);
 
   if (isLoading) {
@@ -62,7 +62,7 @@ export function CriticalStockAlert() {
             <AlertTriangle className="h-4 w-4 text-destructive" />
             <h2 className="font-semibold text-foreground">Stok kritis</h2>
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">Prioritas cek hari ini, urut dari yang paling cepat habis.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Tiga kode paling darurat hari ini.</p>
         </div>
         <Badge variant="destructive" className="rounded-full">
           {criticalItems.length} item

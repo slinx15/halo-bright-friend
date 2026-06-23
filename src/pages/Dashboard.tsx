@@ -90,23 +90,13 @@ function getInventorySummary(products: ProductWithDetails[] | undefined): Invent
 function DashboardHeader({ summary }: { summary: InventorySummary }) {
   return (
     <header className="overflow-hidden rounded-xl border border-slate-900 bg-slate-950 text-white">
-      <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end md:p-5">
+      <div className="p-4 md:p-5">
         <div>
           <p className="text-sm font-medium text-slate-300">{getGreeting()}, Boss</p>
           <h1 className="mt-1 text-2xl font-black tracking-tight md:text-3xl">Papan Kerja Hari Ini</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
             Mulai dari yang merah dulu: stok kosong, kritis, lalu cek barang yang menipis sebelum belanja.
           </p>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-lg border border-white/10 bg-white/8 px-3 py-2">
-            <p className="text-[11px] font-semibold uppercase text-slate-400">2 Ons aktif</p>
-            <p className="text-2xl font-black tabular-nums">{formatNumber(summary.totalItems)}</p>
-          </div>
-          <div className="rounded-lg border border-white/10 bg-white/8 px-3 py-2">
-            <p className="text-[11px] font-semibold uppercase text-slate-400">Stok fisik</p>
-            <p className="text-2xl font-black tabular-nums">{formatNumber(summary.totalStok)}</p>
-          </div>
         </div>
       </div>
       <div className="grid grid-cols-3 border-t border-white/10 bg-white/[0.03] text-xs text-slate-300">
@@ -561,7 +551,6 @@ const Dashboard = () => {
   return (
     <div className="mx-auto w-full max-w-[1360px] space-y-4 p-4 pb-24 md:p-6 md:pb-6">
       <DashboardHeader summary={summary} />
-      <StatusStrip summary={summary} />
 
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
         <WorkQueue summary={summary} metrics={todayMetrics} />
@@ -569,14 +558,6 @@ const Dashboard = () => {
       </div>
 
       <TodayLedger metrics={todayMetrics} />
-
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <SalesChartPanel chartData={chartData} />
-        <LowStockQueue products={products} isLoading={isLoading} />
-      </div>
-
-      <AiInsightsCard />
-      <QuickActions />
     </div>
   );
 };
