@@ -30,6 +30,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 
 const BUDGET_PRESETS = [1000000, 2000000, 3000000, 5000000, 10000000];
 const PLAN_DAYS_PRESETS = [2, 3, 5, 7];
+const ACTIVE_PENDING_STATUSES = ["pending", "sent"] as const;
+const CLOSED_PENDING_STATUSES = ["received", "cancelled"] as const;
 
 type RestockPlan = Database["public"]["Tables"]["restock_plans"]["Row"];
 type PendingRestockInsert = Database["public"]["Tables"]["pending_restock"]["Insert"];
@@ -38,18 +40,30 @@ type PendingRestockRelationRow = Pick<
   Database["public"]["Tables"]["pending_restock_items"]["Row"],
   "kode" | "qty"
 >;
+type PendingRestockStatus = Database["public"]["Tables"]["pending_restock"]["Row"]["status"];
 
 interface PendingItem {
   kode: string;
   qty: number;
   orderedAt?: string;
+  restockId?: string;
+  status?: PendingRestockStatus;
 }
 
 interface PendingRestockWithItems {
   id: string;
   status: string;
   ordered_at: string;
+  notes: string | null;
   pending_restock_items?: PendingRestockRelationRow[] | null;
+}
+
+interface PendingRestockOrder {
+  id: string;
+  status: PendingRestockStatus;
+  orderedAt: string;
+  notes: string;
+  items: PendingItem[];
 }
 
 interface RecItem {
@@ -97,8 +111,29 @@ function parseRupiahInput(raw: string): number {
   return cleaned === "" ? 0 : Number(cleaned);
 }
 
+function formatPendingStatus(status: PendingRestockStatus): string {
+  if (status === "sent") return "Sudah dikirim";
+  if (status === "received") return "Sudah diterima";
+  if (status === "cancelled") return "Dibatalkan";
+  return "Draft siap kirim";
+}
+
+function getPendingStatusClasses(status: PendingRestockStatus): string {
+  if (status === "sent") {
+    return "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20";
+  }
+  if (status === "received") {
+    return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20";
+  }
+  if (status === "cancelled") {
+    return "bg-muted text-muted-foreground border-border";
+  }
+  return "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20";
+}
+
 function usePendingRestock() {
   const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
+  const [pendingOrders, setPendingOrders] = useState<PendingRestockOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [version, setVersion] = useState(0);
 
@@ -112,8 +147,9 @@ function usePendingRestock() {
       try {
         const { data, error } = await supabase
           .from("pending_restock")
-          .select("id, status, ordered_at, pending_restock_items(kode, qty)")
-          .eq("status", "pending");
+          .select("id, status, ordered_at, notes, pending_restock_items(kode, qty)")
+          .not("status", "in", `(${CLOSED_PENDING_STATUSES.map((status) => `"${status}"`).join(",")})`)
+          .order("ordered_at", { ascending: false });
 
         if (error) {
           throw error;
@@ -121,14 +157,31 @@ function usePendingRestock() {
 
         const rows = (data ?? []) as PendingRestockWithItems[];
         const items: PendingItem[] = [];
+        const orders: PendingRestockOrder[] = [];
         rows.forEach((row) => {
-          (row.pending_restock_items ?? []).forEach((item) => {
-            items.push({ kode: item.kode, qty: item.qty, orderedAt: row.ordered_at });
+          const orderItems = (row.pending_restock_items ?? []).map((item) => ({
+            kode: item.kode,
+            qty: item.qty,
+            orderedAt: row.ordered_at,
+            restockId: row.id,
+            status: row.status,
+          }));
+          orders.push({
+            id: row.id,
+            status: row.status,
+            orderedAt: row.ordered_at,
+            notes: row.notes ?? "",
+            items: orderItems,
           });
+          if (ACTIVE_PENDING_STATUSES.includes(row.status as (typeof ACTIVE_PENDING_STATUSES)[number])) {
+            items.push(...orderItems);
+          }
         });
         setPendingItems(items);
+        setPendingOrders(orders);
       } catch {
         setPendingItems([]);
+        setPendingOrders([]);
       } finally {
         setLoading(false);
       }
@@ -137,7 +190,7 @@ function usePendingRestock() {
     fetchData();
   }, [version]);
 
-  return { pendingItems, loading, refetch };
+  return { pendingItems, pendingOrders, loading, refetch };
 }
 
 export function AnalisaBudgetPlanner({
@@ -148,7 +201,7 @@ export function AnalisaBudgetPlanner({
   setBudgetDays,
 }: AnalisaBudgetPlannerProps) {
   const [mode, setMode] = useState<"budget" | "periode">("budget");
-  const { pendingItems, refetch: refetchPending } = usePendingRestock();
+  const { pendingItems, pendingOrders, loading: pendingLoading, refetch: refetchPending } = usePendingRestock();
 
   const pendingMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -169,6 +222,7 @@ export function AnalisaBudgetPlanner({
 
   const [selectedPeriodeIds, setSelectedPeriodeIds] = useState<Set<string>>(new Set());
   const [submittingOrder, setSubmittingOrder] = useState(false);
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
   const togglePeriodeItem = useCallback((kode: string) => {
     setSelectedPeriodeIds((previous) => {
@@ -449,6 +503,30 @@ export function AnalisaBudgetPlanner({
     };
   }, [periodePerDay]);
 
+  const priceMap = useMemo(() => {
+    const map = new Map<string, number>();
+    analyses.forEach((analysis) => {
+      map.set(analysis.kode.toUpperCase(), analysis.unitPrice);
+    });
+    return map;
+  }, [analyses]);
+
+  const pendingOrdersView = useMemo(() => {
+    return pendingOrders.map((order) => {
+      const totalQty = order.items.reduce((sum, item) => sum + item.qty, 0);
+      const totalCost = order.items.reduce(
+        (sum, item) => sum + item.qty * (priceMap.get(item.kode.toUpperCase()) ?? 0),
+        0,
+      );
+      return {
+        ...order,
+        totalQty,
+        totalCost,
+        itemCount: order.items.length,
+      };
+    });
+  }, [pendingOrders, priceMap]);
+
   async function submitSelectedItems() {
     const selectedItems = periodeRecommendations.items.filter((item) => selectedPeriodeIds.has(item.item.kode));
     if (selectedItems.length === 0) {
@@ -470,6 +548,7 @@ export function AnalisaBudgetPlanner({
       const restockPayload: PendingRestockInsert = {
         user_id: user.id,
         notes: `Periode Hari ${dayNum}`,
+        status: "pending",
       };
 
       const { data: restock, error: restockError } = await supabase
@@ -505,12 +584,155 @@ export function AnalisaBudgetPlanner({
     }
   }
 
+  async function updatePendingOrderStatus(orderId: string, status: PendingRestockStatus) {
+    setUpdatingOrderId(orderId);
+    try {
+      const { error } = await supabase
+        .from("pending_restock")
+        .update({ status })
+        .eq("id", orderId);
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success(
+        status === "sent"
+          ? "Status pesanan diubah ke sudah dikirim"
+          : status === "received"
+            ? "Pesanan ditandai sudah diterima"
+            : "Pesanan dibatalkan",
+      );
+      refetchPending();
+    } catch (error) {
+      console.error(error);
+      toast.error(`Gagal ubah status: ${getErrorMessage(error, "Error")}`);
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  }
+
   const usedPct = mode === "budget" && budgetAmount > 0
     ? Math.round((budgetRecommendations.cost / budgetAmount) * 100)
     : 0;
 
   return (
     <div className="space-y-4">
+      <Card className="border-0 shadow-sm overflow-hidden">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                <Send className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-base">Status Pesanan Restock</h3>
+                <p className="text-xs text-muted-foreground">
+                  Pantau draft, pesanan yang sudah dikirim, dan tandai selesai saat barang datang
+                </p>
+              </div>
+            </div>
+            <Badge className="bg-primary/10 text-primary border-primary/20">
+              {pendingOrdersView.length} aktif
+            </Badge>
+          </div>
+
+          {pendingLoading ? (
+            <div className="rounded-xl border border-border/60 bg-muted/20 px-3 py-4 text-sm text-muted-foreground flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Memuat status pesanan...
+            </div>
+          ) : pendingOrdersView.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border/70 bg-muted/10 px-3 py-5 text-center">
+              <p className="text-sm font-medium">Belum ada pesanan restock aktif</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Setelah pesanan disimpan, daftar aktifnya muncul di sini.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {pendingOrdersView.map((order, index) => (
+                <div key={order.id} className="rounded-2xl border border-border/70 bg-card p-3.5 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-bold">Pesanan #{pendingOrdersView.length - index}</span>
+                        <Badge className={getPendingStatusClasses(order.status)}>
+                          {formatPendingStatus(order.status)}
+                        </Badge>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {format(new Date(order.orderedAt), "d MMM yyyy, HH:mm", { locale: idLocale })}
+                        {order.notes ? ` • ${order.notes}` : ""}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-extrabold tabular-nums">{formatRp(order.totalCost)}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {order.itemCount} item • {order.totalQty} pcs
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5">
+                    {order.items.slice(0, 6).map((item) => (
+                      <span
+                        key={`${order.id}-${item.kode}`}
+                        className="inline-flex items-center gap-1 rounded-full bg-muted/60 px-2.5 py-1 text-[11px] font-medium"
+                      >
+                        <span className="font-mono font-bold">{item.kode}</span>
+                        <span className="text-muted-foreground">{item.qty} pcs</span>
+                      </span>
+                    ))}
+                    {order.items.length > 6 && (
+                      <span className="inline-flex items-center rounded-full bg-muted/60 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+                        +{order.items.length - 6} item lagi
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {order.status === "pending" && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => updatePendingOrderStatus(order.id, "sent")}
+                          disabled={updatingOrderId === order.id}
+                          className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-50"
+                        >
+                          {updatingOrderId === order.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                          Sudah Dikirim
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updatePendingOrderStatus(order.id, "cancelled")}
+                          disabled={updatingOrderId === order.id}
+                          className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-bold text-muted-foreground transition-all hover:bg-muted disabled:opacity-50"
+                        >
+                          Batalkan
+                        </button>
+                      </>
+                    )}
+
+                    {order.status === "sent" && (
+                      <button
+                        type="button"
+                        onClick={() => updatePendingOrderStatus(order.id, "received")}
+                        disabled={updatingOrderId === order.id}
+                        className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 text-xs font-bold text-white shadow-sm transition-all hover:opacity-90 disabled:opacity-50"
+                      >
+                        {updatingOrderId === order.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                        Barang Sudah Datang
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card className="border-0 shadow-sm overflow-hidden">
         <CardContent className="p-4 space-y-4">
           <div className="flex items-center gap-3">
