@@ -88,13 +88,35 @@ function getInventorySummary(products: ProductWithDetails[] | undefined): Invent
 }
 
 function DashboardHeader({ summary }: { summary: InventorySummary }) {
+  const navigate = useNavigate();
   const focusCount = summary.kosong + summary.kritis;
+  const hasUrgentStock = focusCount > 0;
+  const statusLabel = hasUrgentStock ? "Perlu tindakan hari ini" : "Stok utama terkendali";
+  const statusTone = hasUrgentStock
+    ? "border-red-400/25 bg-red-400/10 text-red-100"
+    : "border-emerald-400/25 bg-emerald-400/10 text-emerald-100";
 
   return (
     <header className="overflow-hidden rounded-xl border border-slate-800 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.28),transparent_34%),linear-gradient(135deg,#020617,#0f172a)] text-white">
-      <div className="p-4 md:p-5">
-        <p className="text-sm font-semibold text-blue-300">{getGreeting()}, Boss</p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight md:text-3xl">Hari ini mulai dari sini</h1>
+      <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end md:p-5">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-blue-300">{getGreeting()}, Boss</p>
+            <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${statusTone}`}>
+              {statusLabel}
+            </span>
+          </div>
+          <h1 className="mt-2 text-2xl font-black tracking-tight md:text-3xl">
+            {hasUrgentStock ? `${formatNumber(focusCount)} kode rawan` : "Mulai dari kontrol stok"}
+          </h1>
+        </div>
+        <Button
+          className="h-11 rounded-lg bg-white text-slate-950 hover:bg-blue-50"
+          onClick={() => navigate("/analisa")}
+        >
+          Mulai Analisa Restock
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
       </div>
       <div className="grid grid-cols-3 gap-2 border-t border-white/10 bg-white/[0.04] p-3 text-xs text-slate-400">
         <div className="rounded-lg bg-red-500/10 px-3 py-2">
@@ -175,7 +197,7 @@ function WorkQueue({ summary, metrics }: { summary: InventorySummary; metrics: T
       title: "Restock darurat",
       value: `${urgentCount} kode`,
       detail: `${summary.kosong} kosong, ${summary.kritis} kritis`,
-      action: "Buka Analisa",
+      action: "Analisa 4 hari",
       icon: AlertTriangle,
       tone: "text-destructive",
       onClick: () => navigate("/analisa"),
@@ -184,7 +206,7 @@ function WorkQueue({ summary, metrics }: { summary: InventorySummary; metrics: T
       title: "Cek stok menipis",
       value: `${summary.warning} kode`,
       detail: "Pastikan fisik sama dengan sistem sebelum belanja",
-      action: "Buka Stok",
+      action: "Cek Stok",
       icon: ListChecks,
       tone: "text-warning",
       onClick: () => navigate("/stok?kategori=2 Ons"),
@@ -233,6 +255,48 @@ function WorkQueue({ summary, metrics }: { summary: InventorySummary; metrics: T
               </p>
             </div>
           </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function DailyPulse({ summary, metrics }: { summary: InventorySummary; metrics: TodayMetrics }) {
+  const urgentCount = summary.kosong + summary.kritis;
+  const items = [
+    {
+      label: "Kode rawan",
+      value: `${formatNumber(urgentCount)} kode`,
+      helper: "kosong + kritis",
+      tone: urgentCount > 0 ? "text-destructive" : "text-success",
+    },
+    {
+      label: "Keluar hari ini",
+      value: `${formatNumber(metrics.pcs)} pcs`,
+      helper: "barang terkirim",
+      tone: "text-foreground",
+    },
+    {
+      label: "Masuk hari ini",
+      value: `${formatNumber(metrics.stockInPcs)} pcs`,
+      helper: `${metrics.stockInEntries} entri`,
+      tone: "text-primary",
+    },
+  ];
+
+  return (
+    <section className="rounded-xl border border-border bg-card">
+      <div className="border-b border-border px-4 py-3">
+        <h2 className="text-base font-black">Ringkasan operasional</h2>
+        <p className="text-xs text-muted-foreground">Angka kecil untuk cek ritme hari ini.</p>
+      </div>
+      <div className="grid grid-cols-3 divide-x divide-border">
+        {items.map((item) => (
+          <div key={item.label} className="px-3 py-4">
+            <p className="text-xs font-semibold text-muted-foreground">{item.label}</p>
+            <p className={`mt-1 text-lg font-black tabular-nums ${item.tone}`}>{item.value}</p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">{item.helper}</p>
+          </div>
         ))}
       </div>
     </section>
@@ -470,22 +534,6 @@ const Dashboard = () => {
     refetchInterval: 30000,
   });
 
-  const sevenDaysAgoUtc = new Date(todayStartUtc.getTime() - 6 * 86400000);
-
-  const { data: weekSales } = useQuery({
-    queryKey: ["dashboard_week_sales", todayWibStr],
-    queryFn: async () => {
-      const headers = await getAuthHeaders();
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/stock_out?select=qty_kirim,total_harga,created_at&created_at=gte.${sevenDaysAgoUtc.toISOString()}&created_at=lt.${tomorrowStartUtc.toISOString()}&order=created_at.asc`,
-        { headers }
-      );
-      if (!res.ok) throw new Error(await res.text());
-      return res.json() as Promise<{ qty_kirim: number; total_harga: number; created_at: string }[]>;
-    },
-    refetchInterval: 60000,
-  });
-
   const omzetHariIni = todaySales?.reduce((sum, row) => sum + row.total_harga, 0) ?? 0;
   const pcsHariIni = todaySales?.reduce((sum, row) => sum + row.qty_kirim, 0) ?? 0;
   const modalHariIni = todaySales?.reduce((sum, row) => {
@@ -514,37 +562,6 @@ const Dashboard = () => {
     stockInCost: stockInCostHariIni,
   };
 
-  const chartData = (() => {
-    const toWibDateStr = (isoStr: string) => {
-      const utc = new Date(isoStr).getTime();
-      const wib = new Date(utc + WIB_OFFSET_MS);
-      return `${wib.getUTCFullYear()}-${String(wib.getUTCMonth() + 1).padStart(2, "0")}-${String(wib.getUTCDate()).padStart(2, "0")}`;
-    };
-    const toWibLabel = (date: Date) => {
-      const wib = new Date(date.getTime() + WIB_OFFSET_MS);
-      const dayNames = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
-      return `${dayNames[wib.getUTCDay()]} ${wib.getUTCDate()}`;
-    };
-
-    const days: { label: string; date: string; omzet: number; pcs: number }[] = [];
-    const now = new Date();
-    for (let i = 6; i >= 0; i--) {
-      const day = new Date(now.getTime() - i * 86400000);
-      days.push({ label: toWibLabel(day), date: toWibDateStr(day.toISOString()), omzet: 0, pcs: 0 });
-    }
-
-    weekSales?.forEach((sale) => {
-      const saleDate = toWibDateStr(sale.created_at);
-      const day = days.find((d) => d.date === saleDate);
-      if (day) {
-        day.omzet += sale.total_harga;
-        day.pcs += sale.qty_kirim;
-      }
-    });
-
-    return days;
-  })();
-
   if (isLoading) return <DashboardSkeleton />;
 
   return (
@@ -555,6 +572,8 @@ const Dashboard = () => {
         <CriticalStockAlert />
         <WorkQueue summary={summary} metrics={todayMetrics} />
       </div>
+
+      <DailyPulse summary={summary} metrics={todayMetrics} />
     </div>
   );
 };
