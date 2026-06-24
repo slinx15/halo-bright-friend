@@ -434,8 +434,24 @@ const Analisa = () => {
 
         {/* ══════════ RESTOCK ══════════ */}
         <TabsContent value="restock" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
+          <Tabs defaultValue="recommendations" className="w-full">
+            <TabsList className="grid h-auto w-full grid-cols-3 rounded-xl bg-muted/50 p-1">
+              <TabsTrigger value="recommendations" className="min-h-10 rounded-lg px-2 text-[11px] font-semibold data-[state=active]:shadow-sm md:text-xs">
+                <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Daftar </span>Restock
+              </TabsTrigger>
+              <TabsTrigger value="predictions" className="min-h-10 rounded-lg px-2 text-[11px] font-semibold data-[state=active]:shadow-sm md:text-xs">
+                <Clock className="mr-1.5 h-3.5 w-3.5" />
+                Prediksi Habis
+              </TabsTrigger>
+              <TabsTrigger value="low-stock" className="min-h-10 rounded-lg px-2 text-[11px] font-semibold data-[state=active]:shadow-sm md:text-xs">
+                <ArrowDown className="mr-1.5 h-3.5 w-3.5" />
+                Stok Terendah
+              </TabsTrigger>
+            </TabsList>
+
           {/* Inline filter bar */}
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="mt-4 flex flex-wrap items-center gap-1.5">
             {FILTER_CHIPS.map((chip) => {
               const isActive = filter === chip.key;
               const count = chip.key === "ALL"
@@ -459,6 +475,7 @@ const Analisa = () => {
             })}
           </div>
 
+          <TabsContent value="recommendations" className="mt-4 space-y-4">
           <div key={`s-${filterKey}`} className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground animate-fade-in">
             <span>Ditampilkan: <strong className="text-foreground">{filtered.length}</strong></span>
             <span className="text-border">|</span>
@@ -657,6 +674,9 @@ const Analisa = () => {
             </div>
           )}
 
+          </TabsContent>
+
+          <TabsContent value="predictions" className="mt-4">
           <Card className="border-0 shadow-sm p-5 space-y-4 animate-fade-in" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
             <SectionHeader icon={Clock} title="Prediksi Kehabisan Stok" subtitle="Berdasarkan velocity saat ini" />
             {[
@@ -717,8 +737,10 @@ const Analisa = () => {
             ))}
             <p className="text-xs text-muted-foreground">Aman ({`> ${RULES.ATTENTION_DAYS} hari`}): {predSafe.length} item</p>
           </Card>
+          </TabsContent>
 
           {/* Low Stock */}
+          <TabsContent value="low-stock" className="mt-4">
           <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
             <SectionHeader icon={ArrowDown} title={filter === "ALL" ? "10 Stok Paling Sedikit" : `Stok Paling Sedikit - ${FILTER_CHIPS.find((chip) => chip.key === filter)?.label}`} />
             {scopedLowStock.length === 0 ? (
@@ -780,6 +802,8 @@ const Analisa = () => {
             </>
             )}
           </Card>
+          </TabsContent>
+          </Tabs>
         </TabsContent>
 
         {/* ══════════ PENJUALAN (grouped: Penjualan + Profit) ══════════ */}
