@@ -292,6 +292,14 @@ const Analisa = () => {
   const deadStock = useMemo(() => calcDeadStock(products, stockOutData), [products, stockOutData]);
   const lowStock = useMemo(() => calcLowStock(products, stockOutData), [products, stockOutData]);
   const predictions = useMemo(() => calcPredictions(products, stockOutData), [products, stockOutData]);
+  const filteredProductIds = useMemo(() => new Set(filtered.map((item) => item.productId)), [filtered]);
+  const scopedPredictions = useMemo(() => (
+    filter === "ALL" ? predictions : predictions.filter((item) => filteredProductIds.has(item.productId))
+  ), [filter, predictions, filteredProductIds]);
+  const scopedLowStock = useMemo(() => {
+    if (filter === "ALL") return lowStock;
+    return calcLowStock(products.filter((product) => filteredProductIds.has(product.id)), stockOutData);
+  }, [filter, filteredProductIds, lowStock, products, stockOutData]);
   const profitItems = useMemo(() => calcProfit(products, stockOutData), [products, stockOutData]);
   const tokoItems = useMemo(() => calcTokoAnalysis(products, stockOutData), [products, stockOutData]);
   const budgetEstimates = useMemo(() => DAYS_PRESETS.map((days) => buildBudgetEstimateFromAnalyses(analyses, days)), [analyses]);
@@ -301,10 +309,11 @@ const Analisa = () => {
     return <AnalisaSkeleton />;
   }
 
-  const predCritical = predictions.filter(p => p.urgency === "critical");
-  const predWarning = predictions.filter(p => p.urgency === "warning");
-  const predAttention = predictions.filter(p => p.urgency === "attention");
-  const predSafe = predictions.filter(p => p.urgency === "safe");
+  const predCritical = scopedPredictions.filter(p => p.urgency === "critical");
+  const predWarning = scopedPredictions.filter(p => p.urgency === "warning");
+  const predAttention = scopedPredictions.filter(p => p.urgency === "attention");
+  const predSafe = scopedPredictions.filter(p => p.urgency === "safe");
+  const activeFilterLabel = FILTER_CHIPS.find((chip) => chip.key === filter)?.label ?? "Semua";
 
   const totalTW = trendItems.reduce((s, t) => s + t.thisWeek, 0);
   const totalLW = trendItems.reduce((s, t) => s + t.lastWeek, 0);
@@ -453,7 +462,7 @@ const Analisa = () => {
           <div key={`s-${filterKey}`} className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground animate-fade-in">
             <span>Ditampilkan: <strong className="text-foreground">{filtered.length}</strong></span>
             <span className="text-border">|</span>
-            <span>Perlu reorder: <strong className="text-foreground">{needsReorder}</strong></span>
+            <span>Filter: <strong className="text-foreground">{activeFilterLabel}</strong></span>
           </div>
 
           <div key={filterKey} className="hidden md:block animate-fade-in">
@@ -711,10 +720,16 @@ const Analisa = () => {
 
           {/* Low Stock */}
           <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
-            <SectionHeader icon={ArrowDown} title="10 Stok Paling Sedikit" />
+            <SectionHeader icon={ArrowDown} title={filter === "ALL" ? "10 Stok Paling Sedikit" : `Stok Paling Sedikit - ${FILTER_CHIPS.find((chip) => chip.key === filter)?.label}`} />
+            {scopedLowStock.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+                Tidak ada stok dalam filter ini.
+              </p>
+            ) : (
+            <>
             {isMobile ? (
               <div className="space-y-2">
-                {lowStock.map((l, i) => {
+                {scopedLowStock.map((l, i) => {
                   const label = l.stok === 0 ? "Kosong" : l.stok < 10 ? "Tipis" : "Aman";
                   return (
                     <div key={l.productId} className={`rounded-xl border p-3 transition-all active:scale-[0.99] animate-fade-in ${
@@ -748,7 +763,7 @@ const Analisa = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {lowStock.map((l, i) => {
+                    {scopedLowStock.map((l, i) => {
                       return (
                         <TableRow key={l.productId}>
                           <TableCell className="text-xs">{i + 1}</TableCell>
@@ -761,6 +776,8 @@ const Analisa = () => {
                   </TableBody>
                 </Table>
               </div>
+            )}
+            </>
             )}
           </Card>
         </TabsContent>
