@@ -95,9 +95,6 @@ function DashboardHeader({ summary }: { summary: InventorySummary }) {
       <div className="p-4 md:p-5">
         <p className="text-sm font-semibold text-blue-300">{getGreeting()}, Boss</p>
         <h1 className="mt-1 text-2xl font-black tracking-tight md:text-3xl">Hari ini mulai dari sini</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-          Ada {formatNumber(focusCount)} kode yang perlu dibereskan dulu. Sisanya bisa menyusul setelah stok merah aman.
-        </p>
       </div>
       <div className="grid grid-cols-3 gap-2 border-t border-white/10 bg-white/[0.04] p-3 text-xs text-slate-400">
         <div className="rounded-lg bg-red-500/10 px-3 py-2">
