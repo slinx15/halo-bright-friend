@@ -1,9 +1,11 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useState, useMemo, useEffect, useCallback, useDeferredValue, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
@@ -12,7 +14,7 @@ import {
   ShoppingCart, Clock, Trophy, Activity,
   Wallet, Flame, TrendingUp,
   Calculator, CheckCircle2, ChevronLeft, ChevronRight, Sparkles, Palette, Calendar as CalendarIcon, Users,
-  Plus, Send, Loader2, Lock
+  Plus, Send, Loader2, Lock, Search, RotateCcw
 } from "lucide-react";
 import { useSalesAnalysis } from "@/hooks/useSalesAnalysis";
 import { analyzeAllProducts, getStatusCounts, calculateTrendData, RULES, type DosStatus, type ProductAnalysis } from "@/lib/stockAnalyticsEngine";
@@ -30,6 +32,7 @@ import ReviewAI from "@/components/analisa/ReviewAI";
 import ColorTrendAnalysis from "@/components/analisa/ColorTrendAnalysis";
 import HariRamaiAnalysis from "@/components/analisa/HariRamaiAnalysis";
 import RepeatCustomerAnalysis from "@/components/analisa/RepeatCustomerAnalysis";
+import { filterAndSortAnalyses, type RestockFilter, type RestockSort } from "@/lib/analysisView";
 
 
 // ─── Formatting Helpers ───────────────────────────────────
@@ -53,10 +56,9 @@ function urgencyIcon(days: number) {
 
 // ─── Types ────────────────────────────────────────────────
 
-type FilterChip = "ALL" | "CRITICAL" | "WARNING" | "ATTENTION" | "SAFE";
+type AnalysisSection = "restock" | "penjualan" | "toko" | "planning" | "insight";
+type RestockView = "recommendations" | "predictions" | "low-stock";
 type PriorityLevel = "critical" | "high" | "medium" | "safe";
-
-const PRIORITY_ORDER: Record<PriorityLevel, number> = { critical: 0, high: 1, medium: 2, safe: 3 };
 
 function getPriorityLevel(status: DosStatus): PriorityLevel {
   if (status === "CRITICAL") return "critical";
@@ -79,23 +81,17 @@ const PRIORITY_ROW_BG: Record<PriorityLevel, string> = {
   safe: "",
 };
 
-const PRIORITY_LEGEND = [
-  { color: "bg-destructive", label: "Kritis", desc: "stok hampir habis" },
-  { color: "bg-warning", label: "Segera Habis", desc: "perlu perhatian" },
-  { color: "bg-accent", label: "Perhatian", desc: "monitor" },
-  { color: "bg-success", label: "Aman", desc: "stok cukup" },
-];
-
-const FILTER_CHIPS: { key: FilterChip; label: string; icon: string; activeClass: string }[] = [
-  { key: "CRITICAL", label: "Kritis", icon: "🔴", activeClass: "bg-destructive text-destructive-foreground" },
-  { key: "WARNING", label: "< 4 Hari", icon: "🟠", activeClass: "bg-warning text-warning-foreground" },
-  { key: "ATTENTION", label: "Pantau", icon: "🟡", activeClass: "bg-accent text-accent-foreground" },
-  { key: "SAFE", label: "Aman", icon: "🟢", activeClass: "bg-success text-success-foreground" },
-  { key: "ALL", label: "Semua", icon: "🔵", activeClass: "bg-primary text-primary-foreground" },
+const FILTER_CHIPS: { key: RestockFilter; label: string; activeClass: string }[] = [
+  { key: "ALL", label: "Semua", activeClass: "bg-primary text-primary-foreground" },
+  { key: "CRITICAL", label: "Kritis", activeClass: "bg-destructive text-destructive-foreground" },
+  { key: "WARNING", label: "Segera", activeClass: "bg-warning text-warning-foreground" },
+  { key: "ATTENTION", label: "Pantau", activeClass: "bg-accent text-accent-foreground" },
+  { key: "SAFE", label: "Aman", activeClass: "bg-success text-success-foreground" },
+  { key: "OUT_OF_STOCK", label: "Kosong", activeClass: "bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900" },
 ];
 
 const STATUS_BADGE: Record<DosStatus, { label: string; className: string }> = {
-  CRITICAL: { label: "CRITICAL", className: "bg-destructive/15 text-destructive border-destructive/30" },
+  CRITICAL: { label: "KRITIS", className: "bg-destructive/15 text-destructive border-destructive/30" },
   WARNING: { label: "SEGERA", className: "bg-warning/15 text-warning border-warning/30" },
   ATTENTION: { label: "PERHATIAN", className: "bg-accent/15 text-accent-foreground border-accent/30" },
   SAFE: { label: "AMAN", className: "bg-success/15 text-success border-success/30" },
@@ -114,6 +110,68 @@ function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementTyp
         {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
       </div>
     </div>
+  );
+}
+
+type BudgetEstimate = ReturnType<typeof buildBudgetEstimateFromAnalyses>;
+
+function RestockEstimateList({
+  estimates,
+  expandedDays,
+  onToggle,
+}: {
+  estimates: BudgetEstimate[];
+  expandedDays: number | null;
+  onToggle: (days: number) => void;
+}) {
+  return (
+    <Card className="border-0 p-5 shadow-sm">
+      <div className="space-y-3">
+        <SectionHeader icon={DollarSign} title="Estimasi Budget Restock" subtitle="Pilih periode untuk melihat daftar pembelian." />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+          {estimates.map((estimate) => {
+            const label = estimate.days === 4 ? "1 siklus" : estimate.days === 7 ? "1 minggu" : estimate.days === 14 ? "2 minggu" : estimate.days === 21 ? "3 minggu" : "1 bulan";
+            const isExpanded = expandedDays === estimate.days;
+            return (
+              <div key={estimate.days}>
+                <button
+                  type="button"
+                  onClick={() => onToggle(estimate.days)}
+                  aria-expanded={isExpanded}
+                  className={`w-full rounded-xl p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    isExpanded ? "bg-primary/10 ring-1 ring-primary/30" : "bg-muted/30 hover:bg-muted/50"
+                  }`}
+                >
+                  <p className="text-xs text-muted-foreground">{estimate.days} hari | {label}</p>
+                  <p className="mt-1 text-lg font-bold tabular-nums">{formatRp(estimate.cost)}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">{estimate.items} item | {estimate.qty} pcs</p>
+                </button>
+                {isExpanded && (
+                  <div className="mt-2 max-h-[400px] space-y-1 overflow-y-auto rounded-lg border bg-background p-2">
+                    <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 border-b px-1 pb-1 text-[10px] font-medium text-muted-foreground">
+                      <span>Kode</span><span className="text-right">Stok</span><span className="text-right">Beli</span><span className="text-right">Biaya</span>
+                    </div>
+                    {estimate.details.map((detail) => (
+                      <div key={detail.productId} className={`grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-2 rounded px-1 py-1 text-xs ${
+                        detail.daysLeft <= RULES.CRITICAL_DAYS ? "bg-destructive/10" : detail.isBestSeller ? "bg-primary/5" : ""
+                      }`}>
+                        <span className="flex items-center gap-1 truncate font-mono text-[11px]">{detail.daysLeft <= RULES.CRITICAL_DAYS ? "!" : detail.isBestSeller ? "*" : ""}{detail.kode}</span>
+                        <span className={`text-right tabular-nums ${detail.stok === 0 ? "font-bold text-destructive" : detail.stok <= 5 ? "text-warning" : ""}`}>{detail.stok}</span>
+                        <span className="text-right font-semibold tabular-nums">{detail.qty}</span>
+                        <span className="text-right tabular-nums text-muted-foreground">{formatRp(detail.cost)}</span>
+                      </div>
+                    ))}
+                    <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 border-t px-1 pt-1 text-xs font-bold">
+                      <span>Total</span><span /><span className="text-right tabular-nums">{estimate.qty}</span><span className="text-right tabular-nums">{formatRp(estimate.cost)}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </Card>
   );
 }
 
@@ -143,7 +201,12 @@ function MobileRankedCard({ rank, kode, isBestSeller, children, borderClass, ind
 
 const Analisa = () => {
   const { products, stockOutData, isLoading } = useSalesAnalysis();
-  const [filter, setFilter] = useState<FilterChip>("ALL");
+  const [activeSection, setActiveSection] = useState<AnalysisSection>("restock");
+  const [restockView, setRestockView] = useState<RestockView>("recommendations");
+  const [filter, setFilter] = useState<RestockFilter>("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+  const [restockSort, setRestockSort] = useState<RestockSort>("priority");
   const [filterKey, setFilterKey] = useState(0);
   const [visibleCount, setVisibleCount] = useState(30);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -219,10 +282,10 @@ const Analisa = () => {
 
   const counts = useMemo(() => getStatusCounts(analyses), [analyses]);
 
-  const filtered = useMemo(() => {
-    const base = filter === "ALL" ? analyses : analyses.filter((a) => a.dosStatus === filter);
-    return [...base].sort((a, b) => PRIORITY_ORDER[getPriorityLevel(a.dosStatus)] - PRIORITY_ORDER[getPriorityLevel(b.dosStatus)]);
-  }, [analyses, filter]);
+  const filtered = useMemo(
+    () => filterAndSortAnalyses(analyses, filter, deferredSearchQuery, restockSort),
+    [analyses, filter, deferredSearchQuery, restockSort],
+  );
 
   const paginatedFiltered = useMemo(() =>
     filtered.slice(0, visibleCount),
@@ -248,16 +311,18 @@ const Analisa = () => {
   // Reset visible count when filter changes
   useEffect(() => {
     setVisibleCount(30);
-  }, [filter]);
+  }, [filter, deferredSearchQuery, restockSort]);
+
+  const resetRestockControls = useCallback(() => {
+    setFilter("ALL");
+    setSearchQuery("");
+    setRestockSort("priority");
+    setVisibleCount(30);
+  }, []);
 
   // Action Summary computed values
-  const criticalCount = counts.critical;
-  const warningCount = counts.warning;
   const zeroStockCount = useMemo(() => analyses.filter(a => a.isStockOut).length, [analyses]);
-  const totalRestockCost = useMemo(() => {
-    const items = filter === "ALL" ? analyses : filtered;
-    return items.reduce((s, a) => s + a.cost, 0);
-  }, [analyses, filtered, filter]);
+  const totalRestockCost = useMemo(() => analyses.reduce((sum, item) => sum + item.cost, 0), [analyses]);
   const needsReorder = useMemo(() => analyses.filter((a) => a.recommendedQty > 0).length, [analyses]);
 
   const topSellers = useMemo(() => {
@@ -293,13 +358,14 @@ const Analisa = () => {
   const lowStock = useMemo(() => calcLowStock(products, stockOutData), [products, stockOutData]);
   const predictions = useMemo(() => calcPredictions(products, stockOutData), [products, stockOutData]);
   const filteredProductIds = useMemo(() => new Set(filtered.map((item) => item.productId)), [filtered]);
+  const hasDefaultRestockScope = filter === "ALL" && deferredSearchQuery.trim() === "";
   const scopedPredictions = useMemo(() => (
-    filter === "ALL" ? predictions : predictions.filter((item) => filteredProductIds.has(item.productId))
-  ), [filter, predictions, filteredProductIds]);
+    hasDefaultRestockScope ? predictions : predictions.filter((item) => filteredProductIds.has(item.productId))
+  ), [hasDefaultRestockScope, predictions, filteredProductIds]);
   const scopedLowStock = useMemo(() => {
-    if (filter === "ALL") return lowStock;
+    if (hasDefaultRestockScope) return lowStock;
     return calcLowStock(products.filter((product) => filteredProductIds.has(product.id)), stockOutData);
-  }, [filter, filteredProductIds, lowStock, products, stockOutData]);
+  }, [hasDefaultRestockScope, filteredProductIds, lowStock, products, stockOutData]);
   const profitItems = useMemo(() => calcProfit(products, stockOutData), [products, stockOutData]);
   const tokoItems = useMemo(() => calcTokoAnalysis(products, stockOutData), [products, stockOutData]);
   const budgetEstimates = useMemo(() => DAYS_PRESETS.map((days) => buildBudgetEstimateFromAnalyses(analyses, days)), [analyses]);
@@ -321,97 +387,40 @@ const Analisa = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto w-full overflow-y-auto overflow-x-hidden pb-24 md:pb-6">
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/* 🔴 ACTION SUMMARY BAR — STICKY */}
-      {/* ═══════════════════════════════════════════════════════ */}
-      <div className="sticky top-0 z-20 bg-background/95 pb-3 -mx-4 px-4 md:-mx-6 md:px-6 pt-2 overflow-hidden">
-        {/* Header */}
-        <div className="mb-3 overflow-hidden rounded-xl border border-slate-800 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.24),transparent_34%),linear-gradient(135deg,#020617,#0f172a)] text-white">
-          <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end md:p-5">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm font-semibold text-blue-300">Analisa Restock</p>
-                <span className="rounded-full border border-red-400/25 bg-red-400/10 px-2.5 py-1 text-xs font-bold text-red-100">
-                  {needsReorder > 0 ? `${needsReorder} perlu restock` : "Stok terkendali"}
-                </span>
-              </div>
-              <h1 className="mt-2 text-2xl font-black tracking-tight md:text-3xl">
-                {needsReorder > 0 ? `${needsReorder} kode perlu keputusan` : "Pantau ritme stok"}
-              </h1>
-              <p className="mt-1 text-xs font-medium text-slate-300 md:text-sm">
-                {analyses.length} SKU, WMA {RULES.WMA_PERIOD1_DAYS} hari, siklus {RULES.CYCLE_DAYS} hari.
-              </p>
-            </div>
-            <Button
-              className="h-11 rounded-lg bg-white text-slate-950 hover:bg-blue-50"
-              onClick={() => { setFilter("CRITICAL"); setFilterKey(k => k + 1); setVisibleCount(30); }}
-            >
-              Fokus Kritis
-              <ArrowDown className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
+      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-border/70 pb-4">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight">Analisa</h1>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {analyses.length} SKU | WMA {RULES.WMA_PERIOD1_DAYS} hari
+          </p>
         </div>
-
-        {/* 4-Card Action Grid */}
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-          <button
-            onClick={() => setFilter(filter === "CRITICAL" ? "ALL" : "CRITICAL")}
-            className={`relative overflow-hidden rounded-xl border border-border bg-card p-3.5 text-left transition-colors hover:bg-destructive/[0.03] active:scale-[0.98] ${
-              filter === "CRITICAL" ? "ring-2 ring-destructive" : ""
-            }`}
-            style={{ animationDelay: "0ms", animationFillMode: "both" }}
-          >
-            <AlertTriangle className="h-5 w-5 text-destructive" />
-            <p className="mt-1 text-2xl font-black tabular-nums text-destructive">{criticalCount || "-"}</p>
-            <p className="mt-0.5 text-[11px] font-semibold text-destructive">Harus Restock</p>
-          </button>
-
-          <button
-            onClick={() => setFilter(filter === "WARNING" ? "ALL" : "WARNING")}
-            className={`relative overflow-hidden rounded-xl border border-border bg-card p-3.5 text-left transition-colors hover:bg-warning/[0.04] active:scale-[0.98] ${
-              filter === "WARNING" ? "ring-2 ring-warning" : ""
-            }`}
-            style={{ animationDelay: "60ms", animationFillMode: "both" }}
-          >
-            <Clock className="h-5 w-5 text-amber-700 dark:text-amber-400" />
-            <p className="mt-1 text-2xl font-black tabular-nums text-amber-700 dark:text-amber-400">{warningCount || "-"}</p>
-            <p className="mt-0.5 text-[11px] font-semibold text-amber-700 dark:text-amber-300">Segera Habis</p>
-          </button>
-
-          <button
-            onClick={() => setFilter(filter === "CRITICAL" ? "ALL" : "CRITICAL")}
-            className="relative overflow-hidden rounded-xl border border-border bg-card p-3.5 text-left transition-colors hover:bg-muted/40 active:scale-[0.98]"
-            style={{ animationDelay: "120ms", animationFillMode: "both" }}
-          >
-            <Package className="h-5 w-5 text-foreground/80" />
-            <p className="mt-1 text-2xl font-black tabular-nums">{zeroStockCount || "-"}</p>
-            <p className="mt-0.5 text-[11px] font-semibold text-foreground/70">Stok Kosong</p>
-          </button>
-
-          <div
-            className="relative overflow-hidden rounded-xl border border-border bg-card p-3.5 text-left"
-            style={{ animationDelay: "180ms", animationFillMode: "both" }}
-          >
-            <Wallet className="h-5 w-5 text-primary" />
-            <p className="mt-1 truncate text-base font-black tabular-nums">{formatRp(totalRestockCost)}</p>
-            <p className="mt-0.5 text-[11px] font-semibold text-foreground/70">Modal Restock</p>
-          </div>
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-destructive/10 px-3 font-semibold text-destructive">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            {needsReorder} perlu restock
+          </span>
+          <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-primary/10 px-3 font-semibold text-primary">
+            <Wallet className="h-3.5 w-3.5" />
+            {formatRp(totalRestockCost)}
+          </span>
         </div>
-      </div>
+      </header>
 
       {/* MAIN CONTENT — TABS */}
-      <Tabs defaultValue="restock" className="w-full">
-        <div className="rounded-xl bg-card border border-border p-1">
-          <TabsList className="grid grid-cols-3 w-full bg-transparent h-auto p-0 gap-1">
+      <Tabs value={activeSection} onValueChange={(value) => setActiveSection(value as AnalysisSection)} className="w-full">
+        <div className="rounded-xl border border-border bg-card p-1">
+          <TabsList className="grid h-auto w-full grid-cols-5 gap-1 bg-transparent p-0">
             {[
-              { value: "restock", icon: ShoppingCart, label: "Restock", mobileLabel: "Restock", badge: needsReorder > 0 ? needsReorder : null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
-              { value: "penjualan", icon: Trophy, label: "Penjualan", mobileLabel: "Jual", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
-              { value: "insight", icon: BarChart3, label: "Lainnya", mobileLabel: "Lainnya", badge: null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
+              { value: "restock", icon: ShoppingCart, label: "Restock", badge: needsReorder > 0 ? needsReorder : null },
+              { value: "penjualan", icon: Trophy, label: "Jual", badge: null },
+              { value: "toko", icon: Users, label: "Pelanggan", badge: null },
+              { value: "planning", icon: Calculator, label: "Rencana", badge: null },
+              { value: "insight", icon: BarChart3, label: "Insight", badge: null },
             ].map(tab => (
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className={`relative rounded-xl ${tab.activeColor} data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] data-[state=inactive]:hover:bg-muted/60 text-[11px] md:text-xs px-1.5 md:px-3 py-2.5 font-semibold gap-1 md:gap-1.5 transition-all duration-200 ease-out flex flex-col md:flex-row items-center`}
+                className="relative flex min-h-12 flex-col items-center gap-1 rounded-lg px-1 py-2 text-[9px] font-semibold transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground sm:flex-row sm:justify-center sm:text-xs"
               >
                 <div className="relative">
                   <tab.icon className="h-4 w-4 shrink-0" />
@@ -421,9 +430,9 @@ const Analisa = () => {
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] md:text-xs leading-tight">{tab.mobileLabel}</span>
+                <span className="leading-tight">{tab.label}</span>
                 {tab.badge && (
-                  <Badge variant="destructive" className="hidden md:flex ml-0.5 h-4 min-w-[16px] px-1 text-[9px] rounded-full shrink-0 animate-pulse">
+                  <Badge variant="destructive" className="ml-0.5 hidden h-4 min-w-[16px] shrink-0 rounded-full px-1 text-[9px] sm:flex">
                     {tab.badge}
                   </Badge>
                 )}
@@ -434,11 +443,12 @@ const Analisa = () => {
 
         {/* ══════════ RESTOCK ══════════ */}
         <TabsContent value="restock" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
-          <Tabs defaultValue="recommendations" className="w-full">
+          <Tabs value={restockView} onValueChange={(value) => setRestockView(value as RestockView)} className="w-full">
             <TabsList className="grid h-auto w-full grid-cols-3 rounded-xl bg-muted/50 p-1">
               <TabsTrigger value="recommendations" className="min-h-10 rounded-lg px-2 text-[11px] font-semibold data-[state=active]:shadow-sm md:text-xs">
                 <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Daftar </span>Restock
+                <span className="hidden sm:inline">Daftar Restock</span>
+                <span className="sm:hidden">Restock</span>
               </TabsTrigger>
               <TabsTrigger value="predictions" className="min-h-10 rounded-lg px-2 text-[11px] font-semibold data-[state=active]:shadow-sm md:text-xs">
                 <Clock className="mr-1.5 h-3.5 w-3.5" />
@@ -450,30 +460,63 @@ const Analisa = () => {
               </TabsTrigger>
             </TabsList>
 
-          {/* Inline filter bar */}
-          <div className="mt-4 flex flex-wrap items-center gap-1.5">
-            {FILTER_CHIPS.map((chip) => {
-              const isActive = filter === chip.key;
-              const count = chip.key === "ALL"
-                ? analyses.length
-                : counts[chip.key.toLowerCase() as keyof typeof counts];
-              return (
-                <button
-                  key={chip.key}
-                  onClick={() => { setFilter(chip.key); setFilterKey(k => k + 1); setVisibleCount(30); }}
-                  className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all duration-200 ${
-                    isActive
-                      ? `${chip.activeClass} shadow-sm`
-                      : "bg-muted/40 text-muted-foreground hover:bg-muted/70 active:scale-95"
-                  }`}
-                >
-                  <span className="text-xs">●</span>
-                  {chip.label}
-                  <span className={`text-[10px] tabular-nums ${isActive ? "opacity-90" : "opacity-50"}`}>{count}</span>
-                </button>
-              );
-            })}
-          </div>
+            <div className="sticky top-0 z-10 -mx-1 mt-3 space-y-2 border-y border-border/60 bg-background/95 px-1 py-2 backdrop-blur-sm">
+              <div className="flex gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Cari kode atau nama"
+                    aria-label="Cari kode atau nama produk"
+                    className="h-10 rounded-lg pl-9"
+                  />
+                </div>
+                {restockView === "recommendations" && (
+                  <Select value={restockSort} onValueChange={(value) => setRestockSort(value as RestockSort)}>
+                    <SelectTrigger className="h-10 w-[118px] rounded-lg text-xs sm:w-[160px]" aria-label="Urutkan daftar restock">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="priority">Prioritas</SelectItem>
+                      <SelectItem value="stock">Stok terendah</SelectItem>
+                      <SelectItem value="velocity">Paling laris</SelectItem>
+                      <SelectItem value="cost">Biaya terbesar</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                {(filter !== "ALL" || searchQuery || restockSort !== "priority") && (
+                  <Button type="button" variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={resetRestockControls} aria-label="Reset filter">
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
+                {FILTER_CHIPS.map((chip) => {
+                  const isActive = filter === chip.key;
+                  const count = chip.key === "ALL"
+                    ? analyses.length
+                    : chip.key === "OUT_OF_STOCK"
+                      ? zeroStockCount
+                      : counts[chip.key.toLowerCase() as keyof typeof counts];
+                  return (
+                    <button
+                      key={chip.key}
+                      type="button"
+                      onClick={() => { setFilter(chip.key); setFilterKey((key) => key + 1); setVisibleCount(30); }}
+                      aria-pressed={isActive}
+                      className={`inline-flex min-h-9 items-center justify-center gap-1 rounded-lg px-2 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                        isActive ? chip.activeClass : "bg-muted/45 text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {chip.label}
+                      <span className="text-[10px] tabular-nums opacity-70">{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
           <TabsContent value="recommendations" className="mt-4 space-y-4">
           <div key={`s-${filterKey}`} className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground animate-fade-in">
@@ -530,7 +573,6 @@ const Analisa = () => {
                               <span className="text-sm">{a.kode}</span>
                               {a.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
                               {a.isStockOut && <span className="text-xs">🚨</span>}
-                              {priority === "critical" && <span className="text-[10px] font-bold text-destructive">Kritis</span>}
                             </div>
                             <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">{a.nama}</div>
                           </TableCell>
@@ -570,7 +612,8 @@ const Analisa = () => {
                       <TableRow>
                         <TableCell colSpan={10} className="text-center text-muted-foreground py-16">
                           <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                          <p className="text-sm">Tidak ada produk dalam kategori ini</p>
+                          <p className="text-sm">Produk tidak ditemukan</p>
+                          <Button type="button" variant="outline" size="sm" className="mt-3" onClick={resetRestockControls}>Reset filter</Button>
                         </TableCell>
                       </TableRow>
                     )}
@@ -585,7 +628,8 @@ const Analisa = () => {
             {paginatedFiltered.length === 0 ? (
               <div className="text-center py-16">
                 <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                <p className="text-sm text-muted-foreground">Tidak ada produk dalam kategori ini</p>
+                <p className="text-sm text-muted-foreground">Produk tidak ditemukan</p>
+                <Button type="button" variant="outline" size="sm" className="mt-3" onClick={resetRestockControls}>Reset filter</Button>
               </div>
             ) : (
               paginatedFiltered.map((a, idx) => {
@@ -808,20 +852,23 @@ const Analisa = () => {
 
         {/* ══════════ PENJUALAN (grouped: Penjualan + Profit) ══════════ */}
         <TabsContent value="penjualan" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
-          <Tabs defaultValue="laris" className="w-full">
-            <TabsList className="w-full grid grid-cols-2 h-9 rounded-xl bg-muted/50">
-              <TabsTrigger value="laris" className="text-xs rounded-lg data-[state=active]:shadow-sm"><Trophy className="h-3.5 w-3.5 mr-1" />Laris</TabsTrigger>
+          <Tabs defaultValue="summary" className="w-full">
+            <TabsList className="grid h-10 w-full grid-cols-3 rounded-xl bg-muted/50">
+              <TabsTrigger value="summary" className="rounded-lg text-xs data-[state=active]:shadow-sm"><Activity className="mr-1 h-3.5 w-3.5" />Ringkasan</TabsTrigger>
+              <TabsTrigger value="terlaris" className="rounded-lg text-xs data-[state=active]:shadow-sm"><Trophy className="mr-1 h-3.5 w-3.5" />Terlaris</TabsTrigger>
               <TabsTrigger value="profit" className="text-xs rounded-lg data-[state=active]:shadow-sm"><DollarSign className="h-3.5 w-3.5 mr-1" />Profit</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="laris" className="space-y-4 mt-3">
+            <TabsContent value="summary" className="mt-3 space-y-4">
               <SalesTrendCharts
                 stockOutData={stockOutData}
                 topSellers={topSellers}
                 trendItems={trendItems}
                 isMobile={isMobile}
               />
+            </TabsContent>
 
+            <TabsContent value="terlaris" className="space-y-4 mt-3">
               <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
                 <SectionHeader icon={Trophy} title={`${RULES.DISPLAY_TOP_ITEMS} Barang Paling Laris`} subtitle="30 hari terakhir" />
                 {isMobile ? (
@@ -1011,7 +1058,7 @@ const Analisa = () => {
           </Tabs>
         </TabsContent>
 
-        {/* Toko content merged into Insight tab below */}
+        {/* ══════════ PELANGGAN ══════════ */}
         <TabsContent value="toko" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Tabs defaultValue="top-toko" className="w-full">
             <TabsList className="w-full grid grid-cols-2 h-9 rounded-xl bg-muted/50">
@@ -1098,16 +1145,44 @@ const Analisa = () => {
           </Tabs>
         </TabsContent>
 
-        {/* ══════════ INSIGHT (grouped: Ringkasan + Hari + Tren + Dead + Budget + Review) ══════════ */}
+        {/* ══════════ PERENCANAAN ══════════ */}
+        <TabsContent value="planning" className="mt-4 space-y-4 animate-fade-in" style={{ animationFillMode: "both" }}>
+          <Tabs defaultValue="estimate" className="w-full">
+            <TabsList className="grid h-10 w-full grid-cols-3 rounded-xl bg-muted/50 p-1">
+              <TabsTrigger value="estimate" className="rounded-lg text-xs data-[state=active]:shadow-sm"><DollarSign className="mr-1 h-3.5 w-3.5" />Estimasi</TabsTrigger>
+              <TabsTrigger value="budget" className="rounded-lg text-xs data-[state=active]:shadow-sm"><Calculator className="mr-1 h-3.5 w-3.5" />Budget</TabsTrigger>
+              <TabsTrigger value="review" className="rounded-lg text-xs data-[state=active]:shadow-sm"><Sparkles className="mr-1 h-3.5 w-3.5" />Review AI</TabsTrigger>
+            </TabsList>
+            <TabsContent value="estimate" className="mt-3">
+              <RestockEstimateList
+                estimates={budgetEstimates}
+                expandedDays={expandedBudgetDays}
+                onToggle={(days) => setExpandedBudgetDays((current) => current === days ? null : days)}
+              />
+            </TabsContent>
+            <TabsContent value="budget" className="mt-3 space-y-4">
+              <AnalisaBudgetPlanner
+                analyses={analyses}
+                budgetAmount={budgetAmount}
+                setBudgetAmount={setBudgetAmount}
+                budgetDays={budgetDays}
+                setBudgetDays={setBudgetDays}
+              />
+            </TabsContent>
+            <TabsContent value="review" className="mt-3 space-y-4">
+              <ReviewAI budgetEstimates={budgetEstimates} />
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
+
+        {/* ══════════ INSIGHT ══════════ */}
         <TabsContent value="insight" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Tabs defaultValue="ringkasan" className="w-full">
-            <TabsList className="w-full grid grid-cols-3 md:grid-cols-6 h-auto rounded-xl bg-muted/50 gap-1 p-1">
+            <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-xl bg-muted/50 p-1 sm:grid-cols-4">
               <TabsTrigger value="ringkasan" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm py-2"><BarChart3 className="h-3.5 w-3.5 mr-1 shrink-0" />Ringkasan</TabsTrigger>
               <TabsTrigger value="hari" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm py-2"><CalendarIcon className="h-3.5 w-3.5 mr-1 shrink-0" />Hari</TabsTrigger>
               <TabsTrigger value="tren" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm py-2"><Palette className="h-3.5 w-3.5 mr-1 shrink-0" />Tren</TabsTrigger>
               <TabsTrigger value="dead" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground py-2"><Skull className="h-3.5 w-3.5 mr-1 shrink-0" />Dead</TabsTrigger>
-              <TabsTrigger value="budget" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm py-2"><Calculator className="h-3.5 w-3.5 mr-1 shrink-0" />Budget</TabsTrigger>
-              <TabsTrigger value="review" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm py-2"><Sparkles className="h-3.5 w-3.5 mr-1 shrink-0" />Review</TabsTrigger>
             </TabsList>
 
             <TabsContent value="ringkasan" className="space-y-4 mt-3">
@@ -1129,59 +1204,6 @@ const Analisa = () => {
                   </div>
                 ))}
               </div>
-
-              <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
-                <SectionHeader icon={DollarSign} title="Estimasi Budget Restock" subtitle="Buka detail untuk lihat item yang membentuk total budget." />
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {budgetEstimates.map((e) => {
-                    const label = e.days === 4 ? "1 siklus" : e.days === 7 ? "1 minggu" : e.days === 14 ? "2 minggu" : e.days === 21 ? "3 minggu" : "1 bulan";
-                    const isExpanded = expandedBudgetDays === e.days;
-                    return (
-                      <div key={e.days} className="space-y-0">
-                        <button
-                          onClick={() => setExpandedBudgetDays(isExpanded ? null : e.days)}
-                          className={`w-full text-left p-4 rounded-xl space-y-1 transition-colors ${
-                            isExpanded ? "bg-primary/10 ring-1 ring-primary/30" : "bg-muted/30 hover:bg-muted/50"
-                          }`}
-                        >
-                          <p className="text-xs text-muted-foreground">{e.days} hari | {label}</p>
-                          <p className="text-lg font-bold tabular-nums">{formatRp(e.cost)}</p>
-                          <p className="text-[11px] text-muted-foreground">{e.items} item | {e.qty} pcs | <span className="underline">Lihat daftar</span></p>
-                        </button>
-                        {isExpanded && (
-                          <div className="mt-2 rounded-lg border bg-background p-2 space-y-1 max-h-[400px] overflow-y-auto">
-                            <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 text-[10px] text-muted-foreground font-medium px-1 pb-1 border-b">
-                              <span>Kode</span>
-                              <span className="text-right">Stok</span>
-                              <span className="text-right">Beli</span>
-                              <span className="text-right">Biaya</span>
-                            </div>
-                            {e.details.map((d) => (
-                              <div key={d.productId} className={`grid grid-cols-[1fr_auto_auto_auto] gap-x-2 items-center text-xs px-1 py-1 rounded ${
-                                d.daysLeft <= RULES.CRITICAL_DAYS ? "bg-destructive/10" : d.isBestSeller ? "bg-primary/5" : ""
-                              }`}>
-                                <span className="font-mono text-[11px] truncate flex items-center gap-1">
-                                  {d.daysLeft <= RULES.CRITICAL_DAYS ? "!" : d.isBestSeller ? "*" : ""}
-                                  {d.kode}
-                                </span>
-                                <span className={`text-right tabular-nums ${d.stok === 0 ? "text-destructive font-bold" : d.stok <= 5 ? "text-warning" : ""}`}>{d.stok}</span>
-                                <span className="text-right tabular-nums font-semibold">{d.qty}</span>
-                                <span className="text-right tabular-nums text-muted-foreground">{formatRp(d.cost)}</span>
-                              </div>
-                            ))}
-                            <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 text-xs font-bold px-1 pt-1 border-t">
-                              <span>Total</span>
-                              <span></span>
-                              <span className="text-right tabular-nums">{e.qty}</span>
-                              <span className="text-right tabular-nums">{formatRp(e.cost)}</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
 
               <Card className="border-0 shadow-sm animate-fade-in" style={{ animationDelay: "300ms", animationFillMode: "both" }}>
                 <CardContent className="p-4 space-y-1.5 text-xs text-muted-foreground">
@@ -1282,19 +1304,6 @@ const Analisa = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="budget" className="space-y-4 mt-3">
-              <AnalisaBudgetPlanner
-                analyses={analyses}
-                budgetAmount={budgetAmount}
-                setBudgetAmount={setBudgetAmount}
-                budgetDays={budgetDays}
-                setBudgetDays={setBudgetDays}
-              />
-            </TabsContent>
-
-            <TabsContent value="review" className="space-y-4 mt-3">
-              <ReviewAI budgetEstimates={budgetEstimates} />
-            </TabsContent>
           </Tabs>
         </TabsContent>
       </Tabs>
