@@ -214,12 +214,12 @@ function WorkQueue({ summary, metrics }: { summary: InventorySummary; metrics: T
           {urgentCount > 0 ? "Ada prioritas" : "Terkendali"}
         </Badge>
       </div>
-      <div className="space-y-2 p-2">
+      <div className="grid gap-2 p-2">
         {rows.map((row) => (
           <button
             key={row.title}
             onClick={row.onClick}
-            className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-muted/40"
+            className="grid w-full grid-cols-[auto_1fr] gap-3 rounded-xl border border-border/70 bg-background/60 p-3 text-left transition-colors hover:border-primary/25 hover:bg-muted/35 sm:grid-cols-[auto_1fr_auto] sm:items-center"
           >
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
               <row.icon className={`h-4 w-4 ${row.tone}`} />
@@ -228,7 +228,7 @@ function WorkQueue({ summary, metrics }: { summary: InventorySummary; metrics: T
               <p className="font-bold leading-tight">{row.title}</p>
               <p className="mt-0.5 truncate text-xs text-muted-foreground">{row.detail}</p>
             </div>
-            <div className="text-right">
+            <div className="col-span-2 flex items-center justify-between rounded-lg bg-card px-3 py-2 sm:col-span-1 sm:block sm:bg-transparent sm:px-0 sm:py-0 sm:text-right">
               <p className="font-black tabular-nums">{row.value}</p>
               <p className="mt-0.5 inline-flex items-center gap-1 text-xs font-semibold text-primary">
                 {row.action}

@@ -69,7 +69,7 @@ export function CriticalStockAlert() {
         </Badge>
       </div>
 
-      <div className="space-y-2 p-2">
+      <div className="grid gap-2 p-2">
         {criticalItems.map((item) => (
           <CriticalItemRow key={item.productId} item={item} />
         ))}
@@ -95,7 +95,7 @@ function CriticalItemRow({ item }: { item: ProductAnalysis }) {
   const isEmergency = item.daysOfStock < 1;
 
   return (
-    <article className="grid gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-muted/35 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+    <article className="grid gap-3 rounded-xl border border-border/70 bg-background/60 p-3 transition-colors hover:border-destructive/20 hover:bg-destructive/[0.025] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-mono text-base font-bold text-foreground">{item.kode}</span>
