@@ -247,8 +247,8 @@ const BarangMasuk = () => {
       </div>
 
       {/* ── Input Card ── */}
-      <Card className="card-premium overflow-hidden border-success/15 shadow-[0_16px_40px_rgba(34,197,94,0.06)]">
-        <CardHeader className="pb-3 bg-gradient-to-r from-success/15 via-success/5 to-transparent">
+      <Card className="card-premium overflow-hidden border-success/20 bg-gradient-to-b from-success/5 via-card to-card shadow-[0_16px_40px_rgba(34,197,94,0.08)]">
+        <CardHeader className="pb-3 bg-gradient-to-r from-success/20 via-success/10 to-transparent border-b border-success/10">
           <CardTitle className="text-base font-bold flex items-center gap-2">
             <PackagePlus className="h-4 w-4 text-success" />
             Input Barang Masuk
@@ -269,11 +269,11 @@ const BarangMasuk = () => {
               <div
                 key={i}
                 className={cn(
-                  "rounded-xl border p-3 space-y-2 transition-all duration-200",
+                  "rounded-xl border p-3 space-y-2 transition-all duration-200 shadow-sm",
                   item.productId
-                    ? "border-success/30 bg-success/[0.03] shadow-sm"
+                    ? "border-success/30 bg-gradient-to-br from-success/8 via-card to-card"
                     : item.kode && !item.productId
-                    ? "border-destructive/30 bg-destructive/[0.03]"
+                    ? "border-destructive/30 bg-gradient-to-br from-destructive/8 via-card to-card"
                     : "border-border/60 hover:border-border"
                 )}
               >
@@ -317,21 +317,21 @@ const BarangMasuk = () => {
                 )}
                 {/* Stack preview */}
                 {item.productId && item.qty > 0 && (
-                  <div className="bg-muted/30 rounded-md p-2 space-y-1">
+                  <div className="rounded-xl border border-success/15 bg-gradient-to-r from-success/10 via-primary/5 to-warning/10 p-2.5 space-y-1 shadow-sm">
                     <div className="flex items-center gap-2 text-[11px]">
-                      <span className="text-muted-foreground font-medium">Masuk:</span>
+                      <span className="text-success font-semibold">Masuk</span>
                       <TumpukanBadges stacks={previewNewStacks} kode={item.productKode || item.kode} compact />
                     </div>
                     {currentStacks.length > 0 && (
                       <div className="flex items-center gap-2 text-[11px]">
-                        <span className="text-muted-foreground font-medium">Sekarang:</span>
+                        <span className="text-muted-foreground font-medium">Sekarang</span>
                         <TumpukanBadges stacks={currentStacks} kode={item.productKode || item.kode} compact />
                       </div>
                     )}
                     <div className="flex items-center gap-2 text-[11px]">
-                      <span className="text-foreground font-semibold">Setelah:</span>
+                      <span className="text-foreground font-semibold">Setelah</span>
                       <TumpukanBadges stacks={previewMerged} kode={item.productKode || item.kode} compact />
-                      <Badge variant="secondary" className="text-[9px] rounded-full px-1.5">
+                      <Badge variant="secondary" className="text-[9px] rounded-full px-1.5 bg-primary text-primary-foreground">
                         = {previewMerged.reduce((s, v) => s + v, 0)}
                       </Badge>
                     </div>
@@ -374,7 +374,7 @@ const BarangMasuk = () => {
           <Button
             onClick={handleSubmit}
             disabled={submitting || validCount === 0}
-            className="w-full rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-success hover:bg-success/90"
+            className="w-full rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-gradient-to-r from-success via-emerald-500 to-primary"
           >
             <Send className="h-5 w-5 mr-2" />
             {submitting ? "Menyimpan..." : `Simpan Barang Masuk${validCount > 0 ? ` (${validCount} item)` : ""}`}
