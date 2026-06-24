@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, ArrowRight, CheckCircle2, Clock, Flame, TrendingDown } from "lucide-react";
+import { AlertTriangle, ArrowRight, CheckCircle2 } from "lucide-react";
 import { useSalesAnalysis } from "@/hooks/useSalesAnalysis";
 import { analyzeAllProducts, type ProductAnalysis } from "@/lib/stockAnalyticsEngine";
 import { formatNumber } from "@/lib/formatters";
@@ -69,7 +69,7 @@ export function CriticalStockAlert() {
         </Badge>
       </div>
 
-      <div className="grid gap-2 p-2">
+      <div className="divide-y divide-border">
         {criticalItems.map((item) => (
           <CriticalItemRow key={item.productId} item={item} />
         ))}
@@ -95,42 +95,15 @@ function CriticalItemRow({ item }: { item: ProductAnalysis }) {
   const isEmergency = item.daysOfStock < 1;
 
   return (
-    <article className="grid gap-3 rounded-xl border border-border/70 bg-background/60 p-3 transition-colors hover:border-destructive/20 hover:bg-destructive/[0.025] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+    <article className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 transition-colors hover:bg-destructive/[0.025]">
       <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-base font-bold text-foreground">{item.kode}</span>
-          {item.isBestSeller && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
-              <Flame className="h-3 w-3" />
-              Laris
-            </span>
-          )}
-          <span
-            className={
-              isEmergency
-                ? "inline-flex items-center gap-1 rounded-full bg-destructive px-2 py-0.5 text-xs font-bold text-destructive-foreground"
-                : "inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-bold text-destructive"
-            }
-          >
-            <Clock className="h-3 w-3" />
-            {dosText}
-          </span>
-        </div>
-
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-          <span>
-            Stok <strong className="text-foreground">{formatNumber(item.currentStock)}</strong>
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <TrendingDown className="h-3.5 w-3.5" />
-            {item.velocity.toFixed(1)} pcs/hari
-          </span>
-        </div>
+        <p className="font-mono text-base font-bold text-foreground">{item.kode}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">{isEmergency ? "Habis hari ini" : `Sisa ${dosText}`}</p>
       </div>
 
       {item.recommendedQty > 0 && (
-        <div className="flex items-center justify-between rounded-lg bg-primary/8 px-3 py-2 sm:min-w-[132px] sm:flex-col sm:items-start">
-          <span className="text-xs font-medium text-muted-foreground">Saran beli</span>
+        <div className="text-right">
+          <span className="block text-xs font-medium text-muted-foreground">Saran beli</span>
           <strong className="text-sm text-primary">+{formatNumber(item.recommendedQty)} pcs</strong>
         </div>
       )}

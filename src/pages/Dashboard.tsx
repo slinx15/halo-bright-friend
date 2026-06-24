@@ -91,25 +91,25 @@ function DashboardHeader({ summary }: { summary: InventorySummary }) {
   const focusCount = summary.kosong + summary.kritis;
 
   return (
-    <header className="overflow-hidden rounded-xl border border-primary/15 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.13),transparent_36%),linear-gradient(135deg,hsl(var(--card)),hsl(var(--background)))]">
+    <header className="overflow-hidden rounded-xl border border-slate-800 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.28),transparent_34%),linear-gradient(135deg,#020617,#0f172a)] text-white">
       <div className="p-4 md:p-5">
-        <p className="text-sm font-semibold text-primary">{getGreeting()}, Boss</p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-foreground md:text-3xl">Hari ini mulai dari sini</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+        <p className="text-sm font-semibold text-blue-300">{getGreeting()}, Boss</p>
+        <h1 className="mt-1 text-2xl font-black tracking-tight md:text-3xl">Hari ini mulai dari sini</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
           Ada {formatNumber(focusCount)} kode yang perlu dibereskan dulu. Sisanya bisa menyusul setelah stok merah aman.
         </p>
       </div>
-      <div className="grid grid-cols-3 gap-2 border-t border-primary/10 bg-card/60 p-3 text-xs text-muted-foreground">
-        <div className="rounded-lg bg-destructive/8 px-3 py-2">
-          <span className="block text-base font-black text-destructive">{formatNumber(focusCount)} kode</span>
+      <div className="grid grid-cols-3 gap-2 border-t border-white/10 bg-white/[0.04] p-3 text-xs text-slate-400">
+        <div className="rounded-lg bg-red-500/10 px-3 py-2">
+          <span className="block text-base font-black text-red-300">{formatNumber(focusCount)} kode</span>
           bereskan dulu
         </div>
-        <div className="rounded-lg bg-warning/10 px-3 py-2">
-          <span className="block text-base font-black text-warning">{formatNumber(summary.warning)} kode</span>
+        <div className="rounded-lg bg-amber-400/10 px-3 py-2">
+          <span className="block text-base font-black text-amber-300">{formatNumber(summary.warning)} kode</span>
           cek setelahnya
         </div>
-        <div className="rounded-lg bg-success/10 px-3 py-2">
-          <span className="block text-base font-black text-success">{formatNumber(summary.aman)} kode</span>
+        <div className="rounded-lg bg-emerald-400/10 px-3 py-2">
+          <span className="block text-base font-black text-emerald-300">{formatNumber(summary.aman)} kode</span>
           masih aman
         </div>
       </div>
@@ -205,7 +205,7 @@ function WorkQueue({ summary, metrics }: { summary: InventorySummary; metrics: T
 
   return (
     <section className="rounded-xl border border-border bg-card">
-      <div className="flex items-center justify-between px-4 pb-2 pt-4">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div>
           <h2 className="text-base font-black">Kerjakan berurutan</h2>
           <p className="text-xs text-muted-foreground">Biar tidak loncat-loncat saat toko mulai ramai.</p>
@@ -214,12 +214,12 @@ function WorkQueue({ summary, metrics }: { summary: InventorySummary; metrics: T
           {urgentCount > 0 ? "Ada prioritas" : "Terkendali"}
         </Badge>
       </div>
-      <div className="grid gap-2 p-2">
+      <div className="divide-y divide-border">
         {rows.map((row) => (
           <button
             key={row.title}
             onClick={row.onClick}
-            className="grid w-full grid-cols-[auto_1fr] gap-3 rounded-xl border border-border/70 bg-background/60 p-3 text-left transition-colors hover:border-primary/25 hover:bg-muted/35 sm:grid-cols-[auto_1fr_auto] sm:items-center"
+            className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/35"
           >
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
               <row.icon className={`h-4 w-4 ${row.tone}`} />
@@ -228,7 +228,7 @@ function WorkQueue({ summary, metrics }: { summary: InventorySummary; metrics: T
               <p className="font-bold leading-tight">{row.title}</p>
               <p className="mt-0.5 truncate text-xs text-muted-foreground">{row.detail}</p>
             </div>
-            <div className="col-span-2 flex items-center justify-between rounded-lg bg-card px-3 py-2 sm:col-span-1 sm:block sm:bg-transparent sm:px-0 sm:py-0 sm:text-right">
+            <div className="text-right">
               <p className="font-black tabular-nums">{row.value}</p>
               <p className="mt-0.5 inline-flex items-center gap-1 text-xs font-semibold text-primary">
                 {row.action}
@@ -554,12 +554,10 @@ const Dashboard = () => {
     <div className="mx-auto w-full max-w-[1360px] space-y-4 p-4 pb-24 md:p-6 md:pb-6">
       <DashboardHeader summary={summary} />
 
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <WorkQueue summary={summary} metrics={todayMetrics} />
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
         <CriticalStockAlert />
+        <WorkQueue summary={summary} metrics={todayMetrics} />
       </div>
-
-      <TodayLedger metrics={todayMetrics} />
     </div>
   );
 };
