@@ -97,7 +97,7 @@ function DashboardHeader({ summary }: { summary: InventorySummary }) {
     : "border-emerald-400/25 bg-emerald-400/10 text-emerald-100";
 
   return (
-    <header className="overflow-hidden rounded-xl border border-slate-800 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.28),transparent_34%),linear-gradient(135deg,#020617,#0f172a)] text-white">
+    <header className="overflow-hidden rounded-xl border border-slate-800 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.28),transparent_34%),radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.16),transparent_28%),linear-gradient(135deg,#020617,#0f172a)] text-white">
       <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end md:p-5">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -118,17 +118,17 @@ function DashboardHeader({ summary }: { summary: InventorySummary }) {
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>
-      <div className="grid grid-cols-3 gap-2 border-t border-white/10 bg-white/[0.04] p-3 text-xs text-slate-400">
-        <div className="rounded-lg bg-red-500/10 px-3 py-2">
-          <span className="block text-base font-black text-red-300">{formatNumber(focusCount)} kode</span>
+      <div className="grid grid-cols-3 gap-2 border-t border-white/10 bg-white/[0.05] p-3 text-xs text-slate-400">
+        <div className="rounded-lg border border-red-400/20 bg-red-500/10 px-3 py-2">
+          <span className="block text-base font-black text-red-200">{formatNumber(focusCount)} kode</span>
           bereskan dulu
         </div>
-        <div className="rounded-lg bg-amber-400/10 px-3 py-2">
-          <span className="block text-base font-black text-amber-300">{formatNumber(summary.warning)} kode</span>
+        <div className="rounded-lg border border-amber-400/20 bg-amber-400/10 px-3 py-2">
+          <span className="block text-base font-black text-amber-200">{formatNumber(summary.warning)} kode</span>
           cek setelahnya
         </div>
-        <div className="rounded-lg bg-emerald-400/10 px-3 py-2">
-          <span className="block text-base font-black text-emerald-300">{formatNumber(summary.aman)} kode</span>
+        <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-3 py-2">
+          <span className="block text-base font-black text-emerald-200">{formatNumber(summary.aman)} kode</span>
           masih aman
         </div>
       </div>
@@ -144,28 +144,32 @@ function StatusStrip({ summary }: { summary: InventorySummary }) {
       value: summary.kosong,
       helper: "isi ulang dulu",
       icon: PackageX,
-      className: "border-destructive/30 bg-destructive/[0.06] text-destructive",
+      className: "border-destructive/30 bg-gradient-to-br from-destructive/10 to-background text-destructive",
+      iconClass: "bg-destructive/10 text-destructive",
     },
     {
       label: "Kritis",
       value: summary.kritis,
       helper: "stok 1-5 pcs",
       icon: AlertTriangle,
-      className: "border-orange-500/30 bg-orange-500/[0.07] text-orange-600",
+      className: "border-orange-500/30 bg-gradient-to-br from-orange-500/10 to-background text-orange-600",
+      iconClass: "bg-orange-500/10 text-orange-600",
     },
     {
       label: "Perlu cek",
       value: summary.warning,
       helper: "stok 6-15 pcs",
       icon: Activity,
-      className: "border-warning/30 bg-warning/[0.08] text-warning",
+      className: "border-warning/30 bg-gradient-to-br from-warning/10 to-background text-warning",
+      iconClass: "bg-warning/10 text-warning",
     },
     {
       label: "Aman",
       value: summary.aman,
       helper: "stok cukup",
       icon: CheckCircle2,
-      className: "border-success/30 bg-success/[0.07] text-success",
+      className: "border-success/30 bg-gradient-to-br from-success/10 to-background text-success",
+      iconClass: "bg-success/10 text-success",
     },
   ];
 
@@ -175,14 +179,16 @@ function StatusStrip({ summary }: { summary: InventorySummary }) {
         <button
           key={item.label}
           onClick={() => navigate("/stok?kategori=2 Ons")}
-          className={`flex min-h-[82px] items-center justify-between rounded-lg border px-3 py-2 text-left transition-colors hover:bg-muted/40 ${item.className}`}
+          className={`flex min-h-[82px] items-center justify-between rounded-xl border px-3 py-2 text-left transition-all hover:-translate-y-0.5 hover:shadow-md ${item.className}`}
         >
           <div>
             <p className="text-2xl font-black leading-none tabular-nums">{item.value}</p>
             <p className="mt-1 text-sm font-bold text-foreground">{item.label}</p>
             <p className="text-xs text-muted-foreground">{item.helper}</p>
           </div>
-          <item.icon className="h-5 w-5" />
+          <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${item.iconClass}`}>
+            <item.icon className="h-5 w-5" />
+          </span>
         </button>
       ))}
     </section>
@@ -200,6 +206,9 @@ function WorkQueue({ summary, metrics }: { summary: InventorySummary; metrics: T
       action: "Analisa 4 hari",
       icon: AlertTriangle,
       tone: "text-destructive",
+      wrap: "border-destructive/20 bg-gradient-to-br from-destructive/10 via-destructive/5 to-background",
+      iconWrap: "bg-destructive/10 text-destructive",
+      actionTone: "text-destructive",
       onClick: () => navigate("/analisa"),
     },
     {
@@ -209,6 +218,9 @@ function WorkQueue({ summary, metrics }: { summary: InventorySummary; metrics: T
       action: "Cek Stok",
       icon: ListChecks,
       tone: "text-warning",
+      wrap: "border-warning/20 bg-gradient-to-br from-warning/10 via-warning/5 to-background",
+      iconWrap: "bg-warning/10 text-warning",
+      actionTone: "text-warning",
       onClick: () => navigate("/stok?kategori=2 Ons"),
     },
     {
@@ -218,12 +230,15 @@ function WorkQueue({ summary, metrics }: { summary: InventorySummary; metrics: T
       action: "Input Masuk",
       icon: PackagePlus,
       tone: "text-primary",
+      wrap: "border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-background",
+      iconWrap: "bg-primary/10 text-primary",
+      actionTone: "text-primary",
       onClick: () => navigate("/masuk"),
     },
   ];
 
   return (
-    <section className="rounded-xl border border-border bg-card">
+    <section className="overflow-hidden rounded-xl border border-border bg-card">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div>
           <h2 className="text-base font-black">Kerjakan berurutan</h2>
@@ -238,9 +253,9 @@ function WorkQueue({ summary, metrics }: { summary: InventorySummary; metrics: T
           <button
             key={row.title}
             onClick={row.onClick}
-            className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/35"
+            className={`grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-3 text-left transition-all hover:brightness-[1.01] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] ${row.wrap}`}
           >
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
+            <span className={`flex h-9 w-9 items-center justify-center rounded-full ${row.iconWrap}`}>
               <row.icon className={`h-4 w-4 ${row.tone}`} />
             </span>
             <div className="min-w-0">
@@ -249,7 +264,7 @@ function WorkQueue({ summary, metrics }: { summary: InventorySummary; metrics: T
             </div>
             <div className="text-right">
               <p className="font-black tabular-nums">{row.value}</p>
-              <p className="mt-0.5 inline-flex items-center gap-1 text-xs font-semibold text-primary">
+              <p className={`mt-0.5 inline-flex items-center gap-1 text-xs font-semibold ${row.actionTone}`}>
                 {row.action}
                 <ChevronRight className="h-3.5 w-3.5" />
               </p>
@@ -285,14 +300,17 @@ function DailyPulse({ summary, metrics }: { summary: InventorySummary; metrics: 
   ];
 
   return (
-    <section className="rounded-xl border border-border bg-card">
-      <div className="border-b border-border px-4 py-3">
+    <section className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="border-b border-border bg-gradient-to-r from-background via-primary/5 to-success/5 px-4 py-3">
         <h2 className="text-base font-black">Ringkasan operasional</h2>
         <p className="text-xs text-muted-foreground">Angka kecil untuk cek ritme hari ini.</p>
       </div>
-      <div className="grid grid-cols-3 divide-x divide-border">
+      <div className="grid grid-cols-3 gap-px bg-border">
         {items.map((item) => (
-          <div key={item.label} className="px-3 py-4">
+          <div
+            key={item.label}
+            className={`px-3 py-4 ${item.label === "Kode rawan" ? "bg-destructive/5" : item.label === "Keluar hari ini" ? "bg-background" : "bg-primary/5"}`}
+          >
             <p className="text-xs font-semibold text-muted-foreground">{item.label}</p>
             <p className={`mt-1 text-lg font-black tabular-nums ${item.tone}`}>{item.value}</p>
             <p className="mt-0.5 text-[11px] text-muted-foreground">{item.helper}</p>
@@ -312,16 +330,21 @@ function TodayLedger({ metrics }: { metrics: TodayMetrics }) {
   ];
 
   return (
-    <section className="rounded-lg border border-border bg-card">
-      <div className="border-b border-border px-4 py-3">
+    <section className="overflow-hidden rounded-lg border border-border bg-card">
+      <div className="border-b border-border bg-gradient-to-r from-background via-primary/5 to-warning/5 px-4 py-3">
         <h2 className="text-base font-black">Transaksi hari ini</h2>
         <p className="text-xs text-muted-foreground">Angka operasional, bukan pajangan.</p>
       </div>
-      <div className="grid grid-cols-2 divide-x divide-y divide-border md:grid-cols-4 md:divide-y-0">
+      <div className="grid grid-cols-2 gap-px bg-border md:grid-cols-4">
         {rows.map((row) => (
-          <div key={row.label} className="p-4">
+          <div
+            key={row.label}
+            className={`p-4 ${row.label === "Omzet" ? "bg-primary/5" : row.label === "Profit" ? "bg-success/5" : row.label === "Pcs terjual" ? "bg-background" : "bg-warning/5"}`}
+          >
             <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-              <row.icon className="h-4 w-4" />
+              <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${row.label === "Profit" ? "bg-success/10 text-success" : row.label === "Margin" ? "bg-warning/10 text-warning" : row.label === "Omzet" ? "bg-primary/10 text-primary" : "bg-muted text-foreground"}`}>
+                <row.icon className="h-4 w-4" />
+              </span>
               {row.label}
             </div>
             <p className={`text-xl font-black tabular-nums ${row.tone}`}>{row.value}</p>
@@ -461,15 +484,15 @@ function SalesChartPanel({ chartData }: { chartData: { label: string; omzet: num
 function QuickActions() {
   const navigate = useNavigate();
   const actions = [
-    { icon: PackagePlus, label: "Barang Masuk", path: "/masuk", tone: "text-success" },
-    { icon: PackageMinus, label: "Barang Keluar", path: "/keluar", tone: "text-destructive" },
-    { icon: ClipboardCheck, label: "Stock Opname", path: "/opname", tone: "text-warning" },
-    { icon: Package, label: "Cek Stok", path: "/stok?kategori=2 Ons", tone: "text-primary" },
+    { icon: PackagePlus, label: "Barang Masuk", path: "/masuk", tone: "text-success", wrap: "from-success/10 to-background border-success/15", chip: "bg-success/10 text-success" },
+    { icon: PackageMinus, label: "Barang Keluar", path: "/keluar", tone: "text-destructive", wrap: "from-destructive/10 to-background border-destructive/15", chip: "bg-destructive/10 text-destructive" },
+    { icon: ClipboardCheck, label: "Stock Opname", path: "/opname", tone: "text-warning", wrap: "from-warning/10 to-background border-warning/15", chip: "bg-warning/10 text-warning" },
+    { icon: Package, label: "Cek Stok", path: "/stok?kategori=2 Ons", tone: "text-primary", wrap: "from-primary/10 to-background border-primary/15", chip: "bg-primary/10 text-primary" },
   ];
 
   return (
-    <section className="rounded-lg border border-border bg-card">
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+    <section className="overflow-hidden rounded-lg border border-border bg-card">
+      <div className="flex items-center justify-between border-b border-border bg-gradient-to-r from-background via-primary/5 to-warning/5 px-4 py-3">
         <h2 className="text-base font-black">Aksi cepat</h2>
         <p className="hidden text-xs text-muted-foreground sm:block">Jalur masuk ke kerja harian.</p>
       </div>
@@ -478,10 +501,12 @@ function QuickActions() {
           <button
             key={action.path}
             onClick={() => navigate(action.path)}
-            className="flex min-h-[76px] items-center justify-center gap-2 bg-card px-3 py-3 text-sm font-bold transition-colors hover:bg-muted/35"
+            className={`flex min-h-[78px] items-center justify-center gap-2 bg-gradient-to-br px-3 py-3 text-sm font-bold transition-all hover:brightness-[1.02] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] ${action.wrap}`}
           >
-            <action.icon className={`h-5 w-5 ${action.tone}`} strokeWidth={2.3} />
-            {action.label}
+            <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${action.chip}`}>
+              <action.icon className={`h-5 w-5 ${action.tone}`} strokeWidth={2.3} />
+            </span>
+            <span className={action.tone}>{action.label}</span>
           </button>
         ))}
       </div>
