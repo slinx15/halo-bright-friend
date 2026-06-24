@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/PageHeader";
 import {
   FileText,
   CalendarIcon,
@@ -18,6 +19,7 @@ import {
   Share2,
   Store,
   ArrowLeft,
+  ReceiptText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.jpg";
@@ -108,6 +110,18 @@ const Nota = () => {
     });
   }, [history, search, dateFilter]);
 
+  const summary = useMemo(() => {
+    return groups.reduce(
+      (acc, g) => {
+        acc.totalNota += 1;
+        acc.totalQty += g.totalQty;
+        acc.totalHarga += g.totalHarga;
+        return acc;
+      },
+      { totalNota: 0, totalQty: 0, totalHarga: 0 },
+    );
+  }, [groups]);
+
   const [isSharing, setIsSharing] = useState(false);
 
   const handleShareWA = useCallback(async () => {
@@ -159,32 +173,36 @@ const Nota = () => {
   if (selectedNota) {
     return (
       <div className="p-4 md:p-6 max-w-[800px] mx-auto space-y-4 animate-fade-in">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-xl"
-            onClick={() => setSelectedNota(null)}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-lg font-extrabold">Nota Penjualan</h1>
-            <p className="text-xs text-muted-foreground">
-              {selectedNota.toko} | {selectedNota.dateLabel}
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="rounded-xl gap-1.5 text-success border-success hover:bg-success/10"
-            onClick={handleShareWA}
-            disabled={isSharing}
-          >
-            <Share2 className="h-4 w-4" />
-            {isSharing ? "Memproses..." : "WhatsApp"}
-          </Button>
-        </div>
+        <PageHeader
+          icon={FileText}
+          iconColor="text-primary"
+          iconBg="bg-primary/10"
+          title="Nota Penjualan"
+          subtitle={`${selectedNota.toko} • ${selectedNota.dateLabel}`}
+          actions={
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-xl gap-1.5"
+                onClick={() => setSelectedNota(null)}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Kembali
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-xl gap-1.5 text-success border-success hover:bg-success/10"
+                onClick={handleShareWA}
+                disabled={isSharing}
+              >
+                <Share2 className="h-4 w-4" />
+                {isSharing ? "Memproses..." : "WhatsApp"}
+              </Button>
+            </>
+          }
+        />
 
         {/* Printable content */}
         <div ref={printRef}>
@@ -317,23 +335,31 @@ const Nota = () => {
   // List view
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center gap-3.5">
-        <div className="p-3 rounded-2xl bg-primary/10 shadow-sm">
-          <FileText className="h-6 w-6 text-primary" />
+      <PageHeader
+        icon={ReceiptText}
+        iconColor="text-primary"
+        iconBg="bg-primary/10"
+        title="Nota Penjualan"
+        subtitle="Lihat & cetak nota per toko per hari"
+      />
+
+      <div className="grid gap-2.5 md:grid-cols-3">
+        <div className="card-premium bg-primary/5 p-3 text-center">
+          <p className="text-2xl font-extrabold text-primary tabular-nums">{summary.totalNota}</p>
+          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Nota Tersaring</p>
         </div>
-        <div className="space-y-0.5">
-          <h1 className="text-xl font-extrabold tracking-tight leading-tight">
-            Nota Penjualan
-          </h1>
-          <p className="text-muted-foreground text-xs font-medium">
-            Lihat & cetak nota per toko per hari
-          </p>
+        <div className="card-premium bg-success/5 p-3 text-center">
+          <p className="text-2xl font-extrabold text-success tabular-nums">{formatNumber(summary.totalQty)}</p>
+          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Qty Total</p>
+        </div>
+        <div className="card-premium bg-warning/5 p-3 text-center">
+          <p className="text-lg font-extrabold text-foreground tabular-nums truncate">{formatRupiah(summary.totalHarga)}</p>
+          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Omzet Total</p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2">
+      <div className="rounded-2xl border border-border/60 bg-card p-3 shadow-sm flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input

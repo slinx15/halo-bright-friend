@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/PageHeader";
 import { formatRupiah, formatNumber } from "@/lib/formatters";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useProducts } from "@/hooks/useProducts";
@@ -241,23 +242,15 @@ export default function DashboardKeuangan() {
 
   return (
     <div className="min-h-full w-full max-w-[1400px] mx-auto space-y-5 p-4 pb-[calc(9rem+env(safe-area-inset-bottom))] md:p-6 md:pb-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3.5">
-          <div className="p-3 rounded-2xl bg-primary/10 shadow-sm">
-            <Wallet className="h-6 w-6 text-primary" />
-          </div>
-          <div className="space-y-0.5">
-            <h1 className="text-xl font-extrabold tracking-tight leading-tight">
-              Dashboard Keuangan
-            </h1>
-            <p className="text-muted-foreground text-xs font-medium">
-              Ringkasan omzet, modal & profit
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        icon={Wallet}
+        iconColor="text-primary"
+        iconBg="bg-primary/10"
+        title="Dashboard Keuangan"
+        subtitle="Ringkasan omzet, modal & profit"
+      />
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 rounded-2xl border border-border/70 bg-card px-2 py-2 shadow-sm">
         <Calendar className="h-4 w-4 text-muted-foreground" />
         {periods.map((periodOption) => (
           <button

@@ -59,7 +59,7 @@ const AppSidebar = () => {
   const navigate = useNavigate();
 
   return (
-    <aside className="hidden md:flex flex-col w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border min-h-screen">
+    <aside className="hidden md:flex flex-col w-64 bg-sidebar/95 text-sidebar-foreground border-r border-sidebar-border/80 min-h-screen backdrop-blur-sm">
       {/* Brand */}
       <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border">
         <div className="h-10 w-10 rounded-xl overflow-hidden ring-2 ring-sidebar-primary/20">
@@ -80,15 +80,15 @@ const AppSidebar = () => {
       </div>
 
       {/* Nav with groups */}
-      <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto scrollbar-hide">
+      <nav className="flex-1 px-3 py-3 space-y-3 overflow-y-auto scrollbar-hide">
         {groups.map((group) => {
           const items = navItems.filter((i) => i.group === group.key);
           if (items.length === 0) return null;
           if (group.key === "admin" && role !== "admin") return null;
           return (
-            <div key={group.key} className={group.label ? "pt-4 first:pt-0" : ""}>
+            <div key={group.key} className="rounded-2xl border border-sidebar-border/60 bg-sidebar-accent/10 p-2">
               {group.label && (
-                <p className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30">
+                <p className="px-2 pb-2 text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/35">
                   {group.label}
                 </p>
               )}
@@ -99,7 +99,7 @@ const AppSidebar = () => {
                     key={item.path}
                     onClick={() => navigate(item.path)}
                     className={cn(
-                      "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ease-out relative native-press",
+                      "flex items-center gap-3 w-full px-3 py-2.5 rounded-2xl text-sm font-medium transition-all duration-200 ease-out relative native-press",
                       active
                         ? "bg-sidebar-accent text-sidebar-primary font-bold shadow-inner-glow"
                         : "text-sidebar-foreground/55 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
@@ -119,13 +119,13 @@ const AppSidebar = () => {
       </nav>
 
       {/* User info */}
-      <div className="px-4 py-4 border-t border-sidebar-border">
-        <div className="mb-3 rounded-xl border border-sidebar-border/60 bg-sidebar-accent/40 px-3 py-2">
+      <div className="px-4 py-4 border-t border-sidebar-border/80">
+        <div className="mb-3 rounded-2xl border border-sidebar-border/60 bg-sidebar-accent/30 px-3 py-2.5">
           <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/35">Akses Cepat</p>
           <p className="mt-1 text-xs text-sidebar-foreground/55">Gunakan Analisa untuk keputusan restock, lalu lanjut ke Review sebelum kirim pesanan.</p>
         </div>
         <div className="flex items-center gap-3 mb-3">
-          <div className="h-9 w-9 rounded-xl bg-sidebar-primary/10 flex items-center justify-center ring-1 ring-sidebar-primary/20">
+          <div className="h-9 w-9 rounded-2xl bg-sidebar-primary/10 flex items-center justify-center ring-1 ring-sidebar-primary/20">
             <User className="h-4 w-4 text-sidebar-primary" />
           </div>
           <div className="flex-1 min-w-0">
@@ -139,7 +139,7 @@ const AppSidebar = () => {
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-start text-sidebar-foreground/45 hover:text-sidebar-primary-foreground hover:bg-sidebar-accent rounded-xl"
+          className="w-full justify-start rounded-2xl text-sidebar-foreground/45 hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
           onClick={doLogout}
         >
           <LogOut className="h-4 w-4 mr-2" />

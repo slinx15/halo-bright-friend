@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/PageHeader";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Package, Search, AlertTriangle, TrendingUp, BoxIcon, ShieldAlert, Loader2, Trash2, Download } from "lucide-react";
 import * as XLSX from "xlsx";
@@ -168,7 +169,31 @@ const Stok = () => {
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*]:[animation-fill-mode:both]">
       {/* ── Premium Header ── */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+      <PageHeader
+        icon={Package}
+        iconColor="text-primary"
+        iconBg="bg-primary/10"
+        title="Manajemen Stok"
+        subtitle={`${formatNumber(totalItems)} produk • ${formatNumber(totalStok)} total pcs`}
+        actions={
+          <>
+            <Button variant="outline" size="sm" className="h-10 rounded-xl" onClick={exportStokToExcel}>
+              <Download className="h-4 w-4 mr-1.5" />
+              Export
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-10 rounded-xl text-destructive border-destructive/30 hover:bg-destructive/10"
+              onClick={() => setShowResetDialog(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-1.5" />
+              Reset Stok
+            </Button>
+          </>
+        }
+      />
+      <div className="hidden flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div className="flex items-start gap-3.5">
           <div className="p-3 rounded-2xl bg-primary/10 shadow-sm">
             <Package className="h-6 w-6 text-primary" />
@@ -247,7 +272,7 @@ const Stok = () => {
 
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-        <div className="card-premium bg-primary/5 p-3.5 transition-all duration-150 md:hover:shadow-md md:hover:-translate-y-[1px]">
+        <div className="card-premium border border-primary/20 bg-gradient-to-br from-primary/15 via-primary/8 to-card p-3.5 transition-all duration-150 md:hover:shadow-md md:hover:-translate-y-[1px]">
           <div className="flex items-center gap-2 mb-1.5">
             <BoxIcon className="h-4 w-4 text-primary" />
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Total Stok</span>
@@ -255,7 +280,7 @@ const Stok = () => {
           <p className="text-2xl font-extrabold tabular-nums text-foreground">{formatNumber(totalStok)}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">{formatNumber(totalItems)} SKU</p>
         </div>
-        <div className="card-premium bg-success/5 p-3.5 transition-all duration-150 md:hover:shadow-md md:hover:-translate-y-[1px]">
+        <div className="card-premium border border-success/20 bg-gradient-to-br from-success/15 via-success/8 to-card p-3.5 transition-all duration-150 md:hover:shadow-md md:hover:-translate-y-[1px]">
           <div className="flex items-center gap-2 mb-1.5">
             <TrendingUp className="h-4 w-4 text-success" />
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Nilai Stok</span>
@@ -263,7 +288,7 @@ const Stok = () => {
           <p className="text-xl font-extrabold tabular-nums text-success truncate">{formatRupiah(nilaiStok)}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">Berdasarkan harga modal</p>
         </div>
-        <div className="card-premium bg-warning/5 p-3.5 transition-all duration-150 md:hover:shadow-md md:hover:-translate-y-[1px]">
+        <div className="card-premium border border-warning/20 bg-gradient-to-br from-warning/15 via-warning/8 to-card p-3.5 transition-all duration-150 md:hover:shadow-md md:hover:-translate-y-[1px]">
           <div className="flex items-center gap-2 mb-1.5">
             <AlertTriangle className="h-4 w-4 text-warning" />
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Warning</span>
@@ -271,7 +296,7 @@ const Stok = () => {
           <p className="text-2xl font-extrabold tabular-nums text-foreground">{warning}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">Stok 6-15 pcs</p>
         </div>
-        <div className="card-premium bg-destructive/5 p-3.5 transition-all duration-150 md:hover:shadow-md md:hover:-translate-y-[1px]">
+        <div className="card-premium border border-destructive/20 bg-gradient-to-br from-destructive/15 via-destructive/8 to-card p-3.5 transition-all duration-150 md:hover:shadow-md md:hover:-translate-y-[1px]">
           <div className="flex items-center gap-2 mb-1.5">
             <ShieldAlert className="h-4 w-4 text-destructive" />
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Kritis / Kosong</span>
@@ -282,23 +307,23 @@ const Stok = () => {
       </div>
 
       <div className="grid gap-2.5 md:grid-cols-3">
-        <div className="rounded-2xl border border-border/60 bg-card px-4 py-3">
+        <div className="rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/8 via-card to-card px-4 py-3 shadow-sm">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Fokus Hari Ini</p>
           <p className="mt-1 text-sm font-semibold text-foreground">{kosong + kritis > 0 ? "Prioritaskan stok kosong dan kritis lebih dulu." : "Stok relatif aman, lanjut cek warning dan nilai stok."}</p>
         </div>
-        <div className="rounded-2xl border border-border/60 bg-card px-4 py-3">
+        <div className="rounded-2xl border border-success/15 bg-gradient-to-br from-success/8 via-card to-card px-4 py-3 shadow-sm">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Filter Aktif</p>
           <p className="mt-1 text-sm font-semibold text-foreground">{kategoriFilter === "Semua" ? "Semua kategori" : kategoriFilter}</p>
         </div>
-        <div className="rounded-2xl border border-border/60 bg-card px-4 py-3">
+        <div className="rounded-2xl border border-warning/15 bg-gradient-to-br from-warning/8 via-card to-card px-4 py-3 shadow-sm">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Pencarian</p>
           <p className="mt-1 text-sm font-semibold text-foreground">{search.trim() ? `Kata kunci: ${search}` : "Belum ada kata kunci"}</p>
         </div>
       </div>
 
       {/* ── Daftar Stok ── */}
-      <Card className="rounded-2xl shadow-md border-0 overflow-hidden">
-        <CardHeader className="pb-3 bg-gradient-to-r from-primary/5 to-transparent">
+      <Card className="rounded-2xl shadow-md border border-border/60 overflow-hidden">
+        <CardHeader className="pb-3 bg-gradient-to-r from-primary/15 via-primary/5 to-warning/10">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <CardTitle className="text-base font-bold flex items-center gap-2">
               <Package className="h-4 w-4 text-primary" />
@@ -323,10 +348,10 @@ const Stok = () => {
                     key={cat}
                     onClick={() => { setKategoriFilter(cat); setVisibleCount(PAGE_SIZE); }}
                     className={cn(
-                      "relative flex shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all duration-200",
+                      "relative flex shrink-0 items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition-all duration-200",
                       isActive
-                        ? "bg-primary text-primary-foreground shadow-md shadow-primary/25 scale-[1.02]"
-                        : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground hover:scale-[1.02] active:scale-95"
+                        ? "bg-primary text-primary-foreground border-primary/30 shadow-md shadow-primary/25 scale-[1.02]"
+                        : "bg-muted/60 text-muted-foreground border-border/50 hover:bg-muted hover:text-foreground hover:scale-[1.02] active:scale-95"
                     )}
                   >
                     <span>{cat}</span>

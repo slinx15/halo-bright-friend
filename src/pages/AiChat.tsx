@@ -153,11 +153,11 @@ const AiChat = () => {
   const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); sendMessage(input); };
 
   return (
-    <div className="flex min-h-[calc(100svh-5.5rem)] md:min-h-[calc(100vh-2rem)] max-w-[1400px] mx-auto w-full">
+    <div className="flex min-h-[calc(100svh-5.5rem)] md:min-h-[calc(100vh-2rem)] max-w-[1400px] mx-auto w-full gap-3 p-3 md:p-4">
       {/* Sidebar - Conversation List */}
       {showSidebar && (
-        <div className={`${isMobile ? "absolute inset-0 z-50 bg-background" : "w-72 border-r border-border"} flex flex-col`}>
-          <div className="p-3 flex items-center justify-between border-b border-border">
+        <div className={`${isMobile ? "absolute inset-0 z-50 bg-card" : "w-72 rounded-2xl border border-border/60 bg-card shadow-sm"} flex flex-col overflow-hidden`}>
+          <div className="p-3 flex items-center justify-between border-b border-border/60 bg-muted/20">
             <h3 className="font-bold text-sm">Percakapan</h3>
             <div className="flex gap-1">
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowMemory(!showMemory)}>
@@ -179,7 +179,7 @@ const AiChat = () => {
               <h4 className="font-semibold text-xs text-muted-foreground uppercase tracking-wide">Memory AI ({memories.length})</h4>
               {memories.length === 0 && <p className="text-xs text-muted-foreground">Belum ada memory. AI akan otomatis menyimpan hal-hal penting dari percakapan.</p>}
               {memories.map(m => (
-                <div key={m.id} className="text-xs bg-muted/40 rounded-lg p-2.5 group relative">
+                <div key={m.id} className="text-xs rounded-2xl border border-border/60 bg-muted/40 p-2.5 group relative">
                   <div className="flex items-center gap-1 mb-1">
                     <span>{CATEGORY_LABELS[m.category]?.emoji || "\u{1F4CC}"}</span>
                     <span className="font-semibold text-[10px] uppercase text-muted-foreground">{CATEGORY_LABELS[m.category]?.label || m.category}</span>
@@ -192,11 +192,11 @@ const AiChat = () => {
               ))}
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto p-2">
               {conversations.map(c => (
                 <div
                   key={c.id}
-                  className={`flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-muted/50 transition-colors group ${activeId === c.id ? "bg-muted/60" : ""}`}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-2xl cursor-pointer hover:bg-muted/50 transition-colors group ${activeId === c.id ? "bg-muted/60 shadow-sm" : ""}`}
                   onClick={() => { loadMessages(c.id); if (isMobile) setShowSidebar(false); }}
                 >
                   <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -215,7 +215,7 @@ const AiChat = () => {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="flex flex-wrap items-center gap-3 p-4 pb-2">
+        <div className="mx-3 mt-3 flex flex-wrap items-center gap-3 rounded-2xl border border-border/60 bg-card px-4 py-3 shadow-sm">
           {(!showSidebar || isMobile) && (
             <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => setShowSidebar(true)}>
               <ChevronLeft className="h-5 w-5" />
@@ -247,7 +247,7 @@ const AiChat = () => {
         </div>
 
         {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 space-y-3 pb-2">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pt-3 space-y-3 pb-2">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full gap-5 py-8">
               <div className={`p-4 rounded-2xl ${researchMode ? "bg-primary/10" : "bg-primary/5"}`}>
@@ -307,8 +307,8 @@ const AiChat = () => {
 
         {/* Input */}
         <div className="p-4 pt-2 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-4">
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <Input ref={inputRef} value={input} onChange={e => setInput(e.target.value)} placeholder={researchMode ? "Riset apa? (misal: harga benang Ivory di Shopee)" : "Tanya AI tentang bisnis kamu..."} disabled={isLoading} className="rounded-xl h-12 text-base" autoComplete="off" />
+          <form onSubmit={handleSubmit} className="flex gap-2 rounded-2xl border border-border/60 bg-card p-2 shadow-sm">
+            <Input ref={inputRef} value={input} onChange={e => setInput(e.target.value)} placeholder={researchMode ? "Riset apa? (misal: harga benang Ivory di Shopee)" : "Tanya AI tentang bisnis kamu..."} disabled={isLoading} className="h-12 rounded-xl border-0 bg-transparent text-base shadow-none focus-visible:ring-0" autoComplete="off" />
             <Button type="submit" disabled={isLoading || !input.trim()} className="rounded-xl h-12 w-12 shrink-0 press-scale">
               <Send className="h-5 w-5" />
             </Button>

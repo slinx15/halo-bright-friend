@@ -18,6 +18,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/PageHeader";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { BulkOpnameInput, type BulkOpnameInputHandle } from "@/components/opname/BulkOpnameInput";
 import { OcrUpload } from "@/components/OcrUpload";
@@ -214,7 +215,20 @@ const Opname = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*]:[animation-fill-mode:both]">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <PageHeader
+        icon={ClipboardCheck}
+        iconColor="text-warning"
+        iconBg="bg-warning/10"
+        title="Stock Opname"
+        subtitle="Rekonsiliasi stok sistem vs fisik"
+        actions={
+          <>
+            <VoiceOpnameInput onResult={(items) => bulkRef.current?.handleVoiceResult(items)} />
+            <OcrUpload mode="opname" onResult={(items) => bulkRef.current?.handleOcrResult(items)} />
+          </>
+        }
+      />
+      <div className="hidden flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3.5 min-w-0">
           <div className="p-3 rounded-2xl bg-warning/10 shadow-sm shrink-0">
             <ClipboardCheck className="h-6 w-6 text-warning" />

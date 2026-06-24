@@ -67,7 +67,7 @@ const MobileNav = () => {
         <div className="md:hidden fixed inset-0 z-[60]" onClick={() => setMoreOpen(false)}>
           <div className="absolute inset-0 bg-background/72 backdrop-blur-[2px]" />
           <div
-            className="absolute bottom-[calc(3.5rem+env(safe-area-inset-bottom))] left-3 right-3 max-h-[calc(100svh-7rem-env(safe-area-inset-bottom))] overflow-y-auto overscroll-y-contain rounded-[1.15rem] border border-border/70 bg-background/98 p-2 space-y-0.5 shadow-[0_24px_60px_rgba(15,23,42,0.18)] ring-1 ring-black/5 animate-slide-up scrollbar-hide"
+            className="absolute bottom-[calc(3.5rem+env(safe-area-inset-bottom))] left-3 right-3 max-h-[calc(100svh-7rem-env(safe-area-inset-bottom))] overflow-y-auto overscroll-y-contain rounded-[1.15rem] border border-border/70 bg-card/98 p-2 space-y-0.5 shadow-[0_24px_60px_rgba(15,23,42,0.18)] ring-1 ring-black/5 animate-slide-up scrollbar-hide"
             style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -122,7 +122,7 @@ const MobileNav = () => {
       )}
 
       {/* Bottom nav bar — glass effect */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border/40 bg-background/92 shadow-[0_-10px_35px_rgba(15,23,42,0.12)] backdrop-blur-xl pb-[env(safe-area-inset-bottom)]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border/60 bg-card/96 shadow-[0_-12px_40px_rgba(15,23,42,0.16)] backdrop-blur-xl pb-[env(safe-area-inset-bottom)]">
         <div className="flex justify-around items-end px-2 pt-1.5 pb-1">
           {primaryNav.map((item) => {
             const active = item.activePath

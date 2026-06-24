@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { PageHeader } from "@/components/PageHeader";
 import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle, Download, Loader2, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { useProducts } from "@/hooks/useProducts";
@@ -145,19 +146,16 @@ const ImportHistori = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*]:[animation-fill-mode:both]">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-2.5 rounded-xl bg-primary/10">
-          <FileSpreadsheet className="h-6 w-6 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Import & Export</h1>
-          <p className="text-muted-foreground text-sm">Kelola data penjualan masuk & keluar</p>
-        </div>
-      </div>
+      <PageHeader
+        icon={FileSpreadsheet}
+        iconColor="text-primary"
+        iconBg="bg-primary/10"
+        title="Import & Export"
+        subtitle="Kelola data penjualan masuk & keluar"
+      />
 
       <Tabs defaultValue="import" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 rounded-xl h-11">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="import" className="rounded-lg font-semibold">
             <Upload className="h-4 w-4 mr-1.5" /> Import
           </TabsTrigger>

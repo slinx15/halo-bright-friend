@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 // Table imports removed — riwayat sekarang grouped per tanggal (collapsible)
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/PageHeader";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -323,7 +324,15 @@ const BarangKeluar = () => {
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*:nth-child(5)]:![animation-delay:200ms] [&>*]:[animation-fill-mode:both]">
       {/* ── Header ── */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <PageHeader
+        icon={PackageMinus}
+        iconColor="text-destructive"
+        iconBg="bg-destructive/10"
+        title="Barang Keluar"
+        subtitle="Catat penjualan / pengiriman"
+        actions={<OcrUpload mode="keluar" onResult={handleOcrResult} />}
+      />
+      <div className="hidden flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3.5 sm:items-center">
           <div className="p-3 rounded-2xl bg-destructive/10 shadow-sm">
             <PackageMinus className="h-6 w-6 text-destructive" />
@@ -340,38 +349,38 @@ const BarangKeluar = () => {
 
       {/* ── KPI Strip ── */}
       <div className="grid grid-cols-3 gap-2.5">
-        <div className="card-premium bg-destructive/5 p-3 text-center">
+        <div className="card-premium border border-destructive/20 bg-gradient-to-br from-destructive/15 via-destructive/8 to-card p-3 text-center shadow-[0_10px_24px_rgba(239,68,68,0.08)]">
           <p className="text-2xl font-extrabold text-destructive tabular-nums">{todaySummary.count}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Transaksi</p>
         </div>
-        <div className="card-premium bg-warning/5 p-3 text-center">
+        <div className="card-premium border border-warning/20 bg-gradient-to-br from-warning/15 via-warning/8 to-card p-3 text-center shadow-[0_10px_24px_rgba(245,158,11,0.08)]">
           <p className="text-2xl font-extrabold text-foreground tabular-nums">{formatNumber(todaySummary.qty)}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Qty Hari Ini</p>
         </div>
-        <div className="card-premium bg-success/5 p-3 text-center">
+        <div className="card-premium border border-success/20 bg-gradient-to-br from-success/15 via-success/8 to-card p-3 text-center shadow-[0_10px_24px_rgba(34,197,94,0.08)]">
           <p className="text-lg font-extrabold text-success tabular-nums truncate">{formatRupiah(todaySummary.revenue)}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Omzet Hari Ini</p>
         </div>
       </div>
 
       <div className="grid gap-2.5 md:grid-cols-3">
-        <div className="rounded-2xl border border-border/60 bg-card px-4 py-3">
+        <div className="rounded-2xl border border-destructive/15 bg-gradient-to-br from-destructive/8 via-card to-card px-4 py-3 shadow-sm">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Fokus Input</p>
           <p className="mt-1 text-sm font-semibold text-foreground">Isi toko, tanggal, lalu pastikan qty kirim dan harga sudah sesuai sebelum simpan.</p>
         </div>
-        <div className="rounded-2xl border border-border/60 bg-card px-4 py-3">
+        <div className="rounded-2xl border border-warning/15 bg-gradient-to-br from-warning/8 via-card to-card px-4 py-3 shadow-sm">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Item Valid</p>
           <p className="mt-1 text-sm font-semibold text-foreground">{validCount > 0 ? `${validCount} item siap dikirim` : "Belum ada item valid"}</p>
         </div>
-        <div className="rounded-2xl border border-border/60 bg-card px-4 py-3">
+        <div className="rounded-2xl border border-success/15 bg-gradient-to-br from-success/8 via-card to-card px-4 py-3 shadow-sm">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Nilai Draft</p>
           <p className="mt-1 text-sm font-semibold text-foreground">{validCount > 0 ? formatRupiah(totalRevenue) : "Belum ada nilai draft"}</p>
         </div>
       </div>
 
       {/* ── Input Card ── */}
-      <Card className="card-premium overflow-hidden">
-        <CardHeader className="pb-3 bg-gradient-to-r from-destructive/5 to-transparent">
+      <Card className="card-premium overflow-hidden border-destructive/15 shadow-[0_16px_40px_rgba(239,68,68,0.06)]">
+        <CardHeader className="pb-3 bg-gradient-to-r from-destructive/15 via-destructive/5 to-transparent">
           <CardTitle className="text-base font-bold flex items-center gap-2">
             <PackageMinus className="h-4 w-4 text-destructive" />
             Input Barang Keluar
@@ -641,7 +650,7 @@ const BarangKeluar = () => {
 
           {/* Summary */}
           {validCount > 0 && (
-            <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-3 space-y-2">
+            <div className="rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-warning/10 p-3 space-y-2 shadow-sm">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Ringkasan draft</span>
                 <span className="font-extrabold text-primary tabular-nums">{formatRupiah(totalRevenue)}</span>
