@@ -81,13 +81,13 @@ const PRIORITY_ROW_BG: Record<PriorityLevel, string> = {
   safe: "",
 };
 
-const FILTER_CHIPS: { key: RestockFilter; label: string; activeClass: string }[] = [
-  { key: "ALL", label: "Semua", activeClass: "bg-primary text-primary-foreground shadow-[0_8px_18px_hsl(var(--primary)/0.28)]" },
-  { key: "CRITICAL", label: "Kritis", activeClass: "bg-destructive text-destructive-foreground shadow-[0_8px_18px_hsl(var(--destructive)/0.25)]" },
-  { key: "WARNING", label: "Segera", activeClass: "bg-warning text-warning-foreground shadow-[0_8px_18px_hsl(var(--warning)/0.22)]" },
-  { key: "ATTENTION", label: "Pantau", activeClass: "bg-accent text-accent-foreground shadow-[0_8px_18px_hsl(var(--accent)/0.22)]" },
-  { key: "SAFE", label: "Aman", activeClass: "bg-success text-success-foreground shadow-[0_8px_18px_hsl(var(--success)/0.24)]" },
-  { key: "OUT_OF_STOCK", label: "Kosong", activeClass: "bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900" },
+const FILTER_CHIPS: { key: RestockFilter; label: string; activeClass: string; inactiveClass: string }[] = [
+  { key: "ALL", label: "Semua", activeClass: "bg-primary text-primary-foreground shadow-[0_8px_18px_hsl(var(--primary)/0.28)]", inactiveClass: "bg-primary/10 text-primary border-primary/20" },
+  { key: "CRITICAL", label: "Kritis", activeClass: "bg-destructive text-destructive-foreground shadow-[0_8px_18px_hsl(var(--destructive)/0.25)]", inactiveClass: "bg-destructive/10 text-destructive border-destructive/20" },
+  { key: "WARNING", label: "Segera", activeClass: "bg-warning text-warning-foreground shadow-[0_8px_18px_hsl(var(--warning)/0.22)]", inactiveClass: "bg-warning/10 text-warning border-warning/20" },
+  { key: "ATTENTION", label: "Pantau", activeClass: "bg-accent text-accent-foreground shadow-[0_8px_18px_hsl(var(--accent)/0.22)]", inactiveClass: "bg-accent/10 text-accent-foreground border-accent/20" },
+  { key: "SAFE", label: "Aman", activeClass: "bg-success text-success-foreground shadow-[0_8px_18px_hsl(var(--success)/0.24)]", inactiveClass: "bg-success/10 text-success border-success/20" },
+  { key: "OUT_OF_STOCK", label: "Kosong", activeClass: "bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900", inactiveClass: "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700" },
 ];
 
 const STATUS_BADGE: Record<DosStatus, { label: string; className: string }> = {
@@ -444,17 +444,17 @@ const Analisa = () => {
         {/* ══════════ RESTOCK ══════════ */}
         <TabsContent value="restock" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Tabs value={restockView} onValueChange={(value) => setRestockView(value as RestockView)} className="w-full">
-            <TabsList className="grid h-auto w-full grid-cols-3 rounded-2xl border border-border/75 bg-gradient-to-r from-primary/10 via-background to-warning/10 p-1 shadow-[0_8px_18px_rgba(15,23,42,0.05)] dark:from-primary/15 dark:via-slate-900/80 dark:to-warning/10">
-              <TabsTrigger value="recommendations" className="min-h-10 rounded-xl px-2 text-[11px] font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-[0_10px_22px_hsl(var(--primary)/0.22)] md:text-xs">
+            <TabsList className="grid h-auto w-full grid-cols-3 rounded-2xl border border-border/75 bg-gradient-to-r from-primary/10 via-warning/5 to-success/10 p-1 shadow-[0_8px_18px_rgba(15,23,42,0.05)] dark:from-primary/15 dark:via-slate-900/80 dark:to-success/10">
+              <TabsTrigger value="recommendations" className="min-h-10 rounded-xl border border-primary/15 bg-primary/8 px-2 text-[11px] font-semibold text-primary/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-[0_10px_22px_hsl(var(--primary)/0.22)] md:text-xs">
                 <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Daftar Restock</span>
                 <span className="sm:hidden">Restock</span>
               </TabsTrigger>
-              <TabsTrigger value="predictions" className="min-h-10 rounded-xl px-2 text-[11px] font-semibold data-[state=active]:bg-warning data-[state=active]:text-warning-foreground data-[state=active]:shadow-[0_10px_22px_hsl(var(--warning)/0.24)] md:text-xs">
+              <TabsTrigger value="predictions" className="min-h-10 rounded-xl border border-warning/15 bg-warning/10 px-2 text-[11px] font-semibold text-warning/80 data-[state=active]:bg-warning data-[state=active]:text-warning-foreground data-[state=active]:shadow-[0_10px_22px_hsl(var(--warning)/0.24)] md:text-xs">
                 <Clock className="mr-1.5 h-3.5 w-3.5" />
                 Prediksi Habis
               </TabsTrigger>
-              <TabsTrigger value="low-stock" className="min-h-10 rounded-xl px-2 text-[11px] font-semibold data-[state=active]:bg-success data-[state=active]:text-success-foreground data-[state=active]:shadow-[0_10px_22px_hsl(var(--success)/0.24)] md:text-xs">
+              <TabsTrigger value="low-stock" className="min-h-10 rounded-xl border border-success/15 bg-success/10 px-2 text-[11px] font-semibold text-success/80 data-[state=active]:bg-success data-[state=active]:text-success-foreground data-[state=active]:shadow-[0_10px_22px_hsl(var(--success)/0.24)] md:text-xs">
                 <ArrowDown className="mr-1.5 h-3.5 w-3.5" />
                 Stok Terendah
               </TabsTrigger>
@@ -509,7 +509,7 @@ const Analisa = () => {
                     className={`inline-flex min-h-9 items-center justify-center gap-1 rounded-xl border px-2 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                         isActive
                           ? `${chip.activeClass} border-transparent`
-                          : "border-border/70 bg-white/95 text-muted-foreground shadow-[0_1px_2px_rgba(15,23,42,0.03)] hover:bg-white dark:bg-slate-950/65"
+                          : `${chip.inactiveClass} shadow-[0_1px_2px_rgba(15,23,42,0.03)] hover:brightness-[0.98]`
                       }`}
                     >
                       {chip.label}
