@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Flame, TrendingUp, TrendingDown, Minus, Package, Clock, Activity, ShoppingCart, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronDown, Flame, TrendingUp, TrendingDown, Minus, Package, Clock, Activity, ShoppingCart, X } from "lucide-react";
 import type { ProductAnalysis, TrendInfo } from "@/lib/stockAnalyticsEngine";
 
 interface ProductDetailExpandProps {
@@ -15,10 +15,10 @@ interface ProductDetailExpandProps {
 }
 
 const STATUS_INFO: Record<string, { label: string; color: string; desc: string }> = {
-  CRITICAL: { label: "🔴 Kritis", color: "text-destructive", desc: "Harus segera restock!" },
-  WARNING: { label: "🟠 Segera Habis", color: "text-warning", desc: "Perlu perhatian, stok menipis" },
-  ATTENTION: { label: "🟡 Perhatian", color: "text-accent-foreground", desc: "Stok masih cukup tapi perlu dipantau" },
-  SAFE: { label: "🟢 Aman", color: "text-success", desc: "Stok masih cukup untuk beberapa hari" },
+  CRITICAL: { label: "Kritis", color: "text-destructive", desc: "Harus segera restock" },
+  WARNING: { label: "Segera Habis", color: "text-warning", desc: "Stok menipis dan perlu perhatian" },
+  ATTENTION: { label: "Perhatian", color: "text-accent-foreground", desc: "Stok masih cukup, tetapi perlu dipantau" },
+  SAFE: { label: "Aman", color: "text-success", desc: "Stok masih cukup untuk beberapa hari" },
 };
 
 function formatRp(n: number): string {
@@ -29,8 +29,8 @@ function formatDaysNatural(d: number): string {
   if (d >= 999) return "Sangat lama (stok banyak)";
   if (d < 1) return "Kurang dari 1 hari!";
   const rounded = Math.round(d);
-  if (rounded <= 1) return "± 1 hari lagi";
-  return `± ${rounded} hari lagi`;
+  if (rounded <= 1) return "Sekitar 1 hari";
+  return `Sekitar ${rounded} hari`;
 }
 
 function formatVelocityNatural(v: number): string {
@@ -67,13 +67,18 @@ function formatLastSale(dateStr: string | null | undefined): string {
 
 export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDate, lastDayBuyers, prevSaleDate, prevDayBuyers }: ProductDetailExpandProps) {
   const contentRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   // Lock body scroll when open
   useEffect(() => {
     if (open) {
+      previousFocusRef.current = document.activeElement as HTMLElement | null;
       document.body.style.overflow = "hidden";
+      requestAnimationFrame(() => closeButtonRef.current?.focus());
     } else {
       document.body.style.overflow = "";
+      previousFocusRef.current?.focus();
     }
     return () => { document.body.style.overflow = ""; };
   }, [open]);
@@ -90,6 +95,23 @@ export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDa
 
   const status = STATUS_INFO[item.dosStatus] || STATUS_INFO.SAFE;
   const trend = formatTrendNatural(trendInfo?.change ?? 0);
+  const isUrgent = item.dosStatus === "CRITICAL" || item.dosStatus === "WARNING" || item.daysOfStock <= 3;
+  const urgencyLabel = item.dosStatus === "CRITICAL"
+    ? "Darurat"
+    : isUrgent
+      ? "Segera"
+      : "Bisa ditunda";
+  const recommendationReasons: string[] = [];
+
+  if (item.currentStock === 0) {
+    recommendationReasons.push("Stok sudah habis");
+  } else if (item.daysOfStock <= 1) {
+    recommendationReasons.push("Stok tersisa kurang dari 1 hari");
+  } else {
+    recommendationReasons.push(`Stok bertahan sekitar ${Math.round(item.daysOfStock)} hari`);
+  }
+  if (item.velocity > 0) recommendationReasons.push(`Terjual ${item.velocity.toFixed(1)} pcs per hari`);
+  if (item.isBestSeller) recommendationReasons.push("Termasuk produk laris");
 
   const statusGradient =
     item.dosStatus === "CRITICAL" ? "from-destructive/10 via-background to-background" :
@@ -101,7 +123,7 @@ export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDa
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
+        className={`fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
           open ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
         onClick={onClose}
@@ -109,7 +131,11 @@ export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDa
 
       {/* Expanding panel */}
       <div
-        className={`fixed inset-0 z-50 flex flex-col transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="product-detail-title"
+        aria-hidden={!open}
+        className={`fixed inset-0 z-[70] flex flex-col justify-end transition-all duration-300 ease-out motion-reduce:transition-none sm:justify-center sm:py-4 ${
           open
             ? "opacity-100 translate-y-0 scale-100"
             : "opacity-0 translate-y-8 scale-95 pointer-events-none"
@@ -117,22 +143,25 @@ export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDa
       >
         <div
           ref={contentRef}
-          className={`flex-1 bg-background overflow-y-auto overscroll-contain rounded-t-[20px] mt-6 sm:mt-4 sm:mx-auto sm:max-w-lg sm:rounded-2xl sm:mb-4 shadow-2xl`}
+          className="w-full overflow-y-auto overscroll-contain rounded-t-[20px] bg-background shadow-2xl sm:mx-auto sm:max-w-lg sm:rounded-2xl"
           style={{ maxHeight: "calc(100dvh - 24px)", WebkitOverflowScrolling: "touch" }}
         >
           {/* Hero header with gradient */}
           <div className={`relative bg-gradient-to-b ${statusGradient} px-5 pt-5 pb-4`}>
             {/* Close button */}
             <button
+              ref={closeButtonRef}
+              type="button"
+              aria-label="Tutup detail produk"
               onClick={onClose}
-              className="absolute top-4 right-4 h-8 w-8 rounded-full bg-muted/80 backdrop-blur flex items-center justify-center hover:bg-muted transition-colors active:scale-90"
+              className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-muted/80 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95"
             >
               <X className="h-4 w-4" />
             </button>
 
             {/* Product identity */}
             <div className="flex items-start gap-3 pr-10">
-              <div className={`h-12 w-12 rounded-2xl flex items-center justify-center text-lg font-black shrink-0 ${
+              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-lg font-black ${
                 item.dosStatus === "CRITICAL" ? "bg-destructive/15 text-destructive" :
                 item.dosStatus === "WARNING" ? "bg-warning/15 text-warning" :
                 item.dosStatus === "ATTENTION" ? "bg-accent/15 text-accent-foreground" :
@@ -142,7 +171,7 @@ export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDa
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-black tracking-tight">{item.kode}</h2>
+                  <h2 id="product-detail-title" className="text-xl font-black tracking-tight">{item.kode}</h2>
                   {item.isBestSeller && <Flame className="h-5 w-5 text-warning" />}
                   {item.isStockOut && <span className="text-base">🚨</span>}
                 </div>
@@ -157,146 +186,75 @@ export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDa
           </div>
 
           {/* Content body */}
-          <div className="px-5 pb-32 space-y-4">
-            {/* Status message */}
-            <div className={`rounded-2xl border p-4 -mt-1 ${
-              item.dosStatus === "CRITICAL" ? "bg-destructive/5 border-destructive/20" :
-              item.dosStatus === "WARNING" ? "bg-warning/5 border-warning/20" :
-              "bg-muted/30 border-border/50"
+          <div className="space-y-4 px-5 pb-8">
+            <section className={`rounded-xl border p-4 ${
+              isUrgent ? "border-destructive/25 bg-destructive/5" : "border-primary/20 bg-primary/5"
             }`}>
-              <p className="text-sm font-medium">{status.desc}</p>
-            </div>
-
-            {/* Key metrics - large cards */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-2xl bg-muted/40 p-4 space-y-1.5">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <Package className="h-3.5 w-3.5" />
-                  <span className="text-[11px] font-medium uppercase tracking-wider">Stok Sekarang</span>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground">Saran beli</p>
+                  <p className={`mt-1 text-3xl font-black tabular-nums ${isUrgent ? "text-destructive" : "text-primary"}`}>
+                    {item.recommendedQty > 0 ? `${item.recommendedQty} pcs` : "Belum perlu"}
+                  </p>
                 </div>
-                <p className={`text-3xl font-black tabular-nums leading-none ${item.currentStock === 0 ? "text-destructive" : ""}`}>
-                  {item.currentStock}
-                </p>
-                <p className="text-[11px] text-muted-foreground">pcs tersisa</p>
-              </div>
-
-              <div className="rounded-2xl bg-muted/40 p-4 space-y-1.5">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <Clock className="h-3.5 w-3.5" />
-                  <span className="text-[11px] font-medium uppercase tracking-wider">Bertahan</span>
-                </div>
-                <p className={`text-lg font-black leading-tight ${
-                  item.daysOfStock <= 2 ? "text-destructive" :
-                  item.daysOfStock <= 4 ? "text-warning" :
-                  item.daysOfStock <= 7 ? "text-accent-foreground" :
-                  "text-success"
+                <Badge className={`border-0 px-2.5 py-1 text-[10px] font-bold ${
+                  isUrgent ? "bg-destructive/15 text-destructive" : "bg-success/15 text-success"
                 }`}>
-                  {formatDaysNatural(item.daysOfStock)}
-                </p>
+                  {isUrgent ? <AlertTriangle className="mr-1 h-3 w-3" /> : <CheckCircle2 className="mr-1 h-3 w-3" />}
+                  {urgencyLabel}
+                </Badge>
               </div>
-            </div>
-
-            {/* Info rows */}
-            <div className="space-y-3">
-              <InfoRow
-                icon={<Activity className="h-4 w-4" />}
-                label="Kecepatan Jual"
-                value={formatVelocityNatural(item.velocity)}
-                sub={item.wmaInfo && item.wmaInfo.totalDays > 0
-                  ? `Dihitung dari data ${item.wmaInfo.totalDays} hari penjualan`
-                  : undefined}
-              />
-
-              <SaleDateBlock
-                label="Terakhir Laku"
-                dateStr={lastSaleDate}
-                buyers={lastDayBuyers}
-              />
-
-              {prevSaleDate && (
-                <SaleDateBlock
-                  label="Sebelumnya"
-                  dateStr={prevSaleDate}
-                  buyers={prevDayBuyers}
-                />
-              )}
-
-              <div className="rounded-2xl border border-border/50 p-4 space-y-2">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <TrendingUp className="h-4 w-4" />
-                  <span className="text-[11px] font-medium uppercase tracking-wider">Tren Minggu Ini</span>
-                </div>
-                <div className={`flex items-center gap-2 ${trend.color}`}>
-                  {trend.icon}
-                  <p className="text-sm font-bold">{trend.text}</p>
-                </div>
-                {trendInfo && (trendInfo.thisWeek > 0 || trendInfo.lastWeek > 0) && (
-                  <p className="text-[11px] text-muted-foreground">
-                    Minggu ini: {trendInfo.thisWeek} pcs · Minggu lalu: {trendInfo.lastWeek} pcs
-                  </p>
-                )}
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-border/50 pt-3 text-xs">
+                <span><strong>{formatRp(item.cost)}</strong> estimasi biaya</span>
+                <span className="text-muted-foreground">Target {item.targetDays} hari</span>
               </div>
-            </div>
+              <p className="mt-2 text-xs text-muted-foreground">{status.desc}.</p>
+            </section>
 
-            {/* Restock recommendation */}
-            {item.recommendedQty > 0 && (() => {
-              // Determine urgency
-              const isUrgent = item.dosStatus === "CRITICAL" || item.dosStatus === "WARNING" || item.daysOfStock <= 3;
-              const urgencyLabel = item.dosStatus === "CRITICAL" ? "🚨 DARURAT" : item.dosStatus === "WARNING" ? "⚠️ SEGERA" : item.daysOfStock <= 3 ? "⚠️ SEGERA" : "📋 BISA DITUNDA";
-              const urgencyColor = isUrgent ? "bg-destructive/10 border-destructive/30" : "bg-primary/5 border-primary/20";
-              const urgencyTextColor = isUrgent ? "text-destructive" : "text-primary";
+            <section className="grid grid-cols-3 divide-x divide-border rounded-xl border border-border/60 bg-card">
+              <Metric icon={<Package className="h-3.5 w-3.5" />} label="Stok" value={`${item.currentStock}`} danger={item.currentStock === 0} />
+              <Metric icon={<Clock className="h-3.5 w-3.5" />} label="Bertahan" value={formatDaysNatural(item.daysOfStock)} danger={item.daysOfStock <= 2} />
+              <Metric icon={<Activity className="h-3.5 w-3.5" />} label="Laku/hari" value={item.velocity > 0 ? item.velocity.toFixed(1) : "-"} />
+            </section>
 
-              // Build data-driven reasoning
-              const reasons: string[] = [];
-              if (item.currentStock === 0) {
-                reasons.push("Stok sudah habis total, pelanggan tidak bisa beli");
-              } else if (item.daysOfStock <= 1) {
-                reasons.push(`Stok hanya cukup ${item.daysOfStock < 1 ? "kurang dari 1 hari" : "1 hari"} lagi`);
-              } else if (item.daysOfStock <= 3) {
-                reasons.push(`Stok hanya bertahan ± ${Math.round(item.daysOfStock)} hari lagi`);
-              } else {
-                reasons.push(`Stok masih cukup ± ${Math.round(item.daysOfStock)} hari`);
-              }
-
-              if (item.velocity > 0) {
-                reasons.push(`Terjual rata-rata ${item.velocity.toFixed(1)} pcs/hari`);
-              }
-
-              const trendChange = trendInfo?.change ?? item.trendChange ?? 0;
-              if (trendChange > 0.1) {
-                reasons.push(`Penjualan naik ${Math.round(trendChange * 100)}% minggu ini — permintaan meningkat`);
-              } else if (trendChange < -0.1) {
-                reasons.push(`Penjualan turun ${Math.abs(Math.round(trendChange * 100))}% minggu ini`);
-              }
-
-              if (item.isBestSeller) {
-                reasons.push("Produk ini termasuk best seller");
-              }
-
-              return (
-                <div className={`rounded-2xl border p-4 space-y-3 ${urgencyColor}`}>
-                  <div className="flex items-center justify-between">
-                    <p className="text-[11px] font-medium uppercase tracking-wider text-primary">💡 Saran Beli</p>
-                    <Badge className={`text-[10px] font-bold rounded-full px-2.5 border-0 ${isUrgent ? "bg-destructive/15 text-destructive" : "bg-success/15 text-success"}`}>
-                      {urgencyLabel}
-                    </Badge>
-                  </div>
-                  <p className={`text-2xl font-black ${urgencyTextColor}`}>{item.recommendedQty} pcs</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    Estimasi biaya: {formatRp(item.cost)} · Target stok {item.targetDays} hari
-                  </p>
-                  {/* Data-driven reasoning */}
-                  <div className="border-t border-border/40 pt-2.5 space-y-1">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Alasan:</p>
-                    {reasons.map((r, i) => (
-                      <p key={i} className="text-[11px] text-foreground/80 flex items-start gap-1.5">
-                        <span className="shrink-0 mt-0.5">•</span> {r}
-                      </p>
-                    ))}
-                  </div>
+            <details className="group rounded-xl border border-border/60 bg-card">
+              <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-4 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+                Detail penjualan
+                <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
+              </summary>
+              <div className="space-y-4 border-t border-border/60 px-4 py-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Kecepatan jual</p>
+                  <p className="mt-1 text-sm font-semibold">{formatVelocityNatural(item.velocity)}</p>
+                  {item.wmaInfo && item.wmaInfo.totalDays > 0 && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">Data dari {item.wmaInfo.totalDays} hari penjualan</p>
+                  )}
                 </div>
-              );
-            })()}
+
+                <div>
+                  <p className="text-xs text-muted-foreground">Tren minggu ini</p>
+                  <div className={`mt-1 flex items-center gap-2 ${trend.color}`}>
+                    {trend.icon}
+                    <p className="text-sm font-semibold">{trend.text}</p>
+                  </div>
+                  {trendInfo && (trendInfo.thisWeek > 0 || trendInfo.lastWeek > 0) && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Minggu ini {trendInfo.thisWeek} pcs | minggu lalu {trendInfo.lastWeek} pcs
+                    </p>
+                  )}
+                </div>
+
+                <SaleDateBlock label="Terakhir laku" dateStr={lastSaleDate} buyers={lastDayBuyers} />
+                {prevSaleDate && <SaleDateBlock label="Penjualan sebelumnya" dateStr={prevSaleDate} buyers={prevDayBuyers} />}
+
+                <div>
+                  <p className="text-xs text-muted-foreground">Dasar rekomendasi</p>
+                  <ul className="mt-1.5 space-y-1 text-sm">
+                    {recommendationReasons.map((reason) => <li key={reason}>• {reason}</li>)}
+                  </ul>
+                </div>
+              </div>
+            </details>
           </div>
         </div>
       </div>
@@ -306,16 +264,16 @@ export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDa
 
 function SaleDateBlock({ label, dateStr, buyers }: { label: string; dateStr?: string | null; buyers?: { toko: string; qty: number }[] | null }) {
   return (
-    <div className="rounded-2xl border border-border/50 p-4 space-y-1.5">
+    <div>
       <div className="flex items-center gap-1.5 text-muted-foreground">
-        <ShoppingCart className="h-4 w-4" />
-        <span className="text-[11px] font-medium uppercase tracking-wider">{label}</span>
+        <ShoppingCart className="h-3.5 w-3.5" />
+        <span className="text-xs">{label}</span>
       </div>
-      <p className="text-sm font-bold">{formatLastSale(dateStr)}</p>
+      <p className="mt-1 text-sm font-semibold">{formatLastSale(dateStr)}</p>
       {buyers && buyers.length > 0 && (
         <div className="space-y-1 pt-1">
           {buyers.filter(b => b.toko).map((b, i) => (
-            <div key={i} className="flex items-center justify-between text-[12px]">
+            <div key={`${b.toko}-${i}`} className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">🏪 {b.toko}</span>
               <span className="font-semibold tabular-nums">{b.qty} pcs</span>
             </div>
@@ -326,15 +284,14 @@ function SaleDateBlock({ label, dateStr, buyers }: { label: string; dateStr?: st
   );
 }
 
-function InfoRow({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
+function Metric({ icon, label, value, danger = false }: { icon: React.ReactNode; label: string; value: string; danger?: boolean }) {
   return (
-    <div className="rounded-2xl border border-border/50 p-4 space-y-1.5">
-      <div className="flex items-center gap-1.5 text-muted-foreground">
+    <div className="min-w-0 px-2.5 py-3 text-center sm:px-4">
+      <div className="flex items-center justify-center gap-1 text-muted-foreground">
         {icon}
-        <span className="text-[11px] font-medium uppercase tracking-wider">{label}</span>
+        <span className="text-[10px] font-medium">{label}</span>
       </div>
-      <p className="text-sm font-bold">{value}</p>
-      {sub && <p className="text-[11px] text-muted-foreground">{sub}</p>}
+      <p className={`mt-1 truncate text-sm font-bold tabular-nums ${danger ? "text-destructive" : "text-foreground"}`}>{value}</p>
     </div>
   );
 }
