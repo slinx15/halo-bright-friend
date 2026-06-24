@@ -216,18 +216,20 @@ const BarangMasuk = () => {
       </div>
 
       {/* ── KPI Strip ── */}
-      <div className="grid grid-cols-3 gap-2.5">
-        <div className="card-premium border border-success/20 bg-gradient-to-br from-success/15 via-success/8 to-card p-3 text-center shadow-[0_10px_24px_rgba(34,197,94,0.08)]">
-          <p className="text-2xl font-extrabold text-success tabular-nums">{items.length}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Baris</p>
-        </div>
-        <div className="card-premium border border-primary/20 bg-gradient-to-br from-primary/15 via-primary/8 to-card p-3 text-center shadow-[0_10px_24px_rgba(37,99,235,0.08)]">
-          <p className="text-2xl font-extrabold text-primary tabular-nums">{validCount}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Valid</p>
-        </div>
-        <div className="card-premium border border-warning/20 bg-gradient-to-br from-warning/15 via-warning/8 to-card p-3 text-center shadow-[0_10px_24px_rgba(245,158,11,0.08)]">
-          <p className="text-2xl font-extrabold text-foreground tabular-nums">{formatNumber(totalQty)}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Total</p>
+      <div className="rounded-3xl border border-border/70 bg-card/90 p-2 shadow-sm">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-2xl bg-success/10 px-3 py-3 text-center">
+            <p className="text-[11px] font-medium text-muted-foreground">Baris</p>
+            <p className="mt-0.5 text-2xl font-extrabold text-success tabular-nums leading-none">{items.length}</p>
+          </div>
+          <div className="rounded-2xl bg-primary/10 px-3 py-3 text-center">
+            <p className="text-[11px] font-medium text-muted-foreground">Valid</p>
+            <p className="mt-0.5 text-2xl font-extrabold text-primary tabular-nums leading-none">{validCount}</p>
+          </div>
+          <div className="rounded-2xl bg-warning/10 px-3 py-3 text-center">
+            <p className="text-[11px] font-medium text-muted-foreground">Total</p>
+            <p className="mt-0.5 text-2xl font-extrabold text-foreground tabular-nums leading-none">{formatNumber(totalQty)}</p>
+          </div>
         </div>
       </div>
 
