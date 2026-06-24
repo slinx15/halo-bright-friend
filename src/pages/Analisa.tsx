@@ -408,7 +408,7 @@ const Analisa = () => {
 
       {/* MAIN CONTENT — TABS */}
       <Tabs value={activeSection} onValueChange={(value) => setActiveSection(value as AnalysisSection)} className="w-full">
-        <div className="rounded-xl border border-border bg-card p-1">
+        <div className="rounded-2xl border border-border/70 bg-card/95 p-1.5 shadow-sm">
           <TabsList className="grid h-auto w-full grid-cols-5 gap-1 bg-transparent p-0">
             {[
               { value: "restock", icon: ShoppingCart, label: "Restock", badge: needsReorder > 0 ? needsReorder : null },
@@ -444,23 +444,23 @@ const Analisa = () => {
         {/* ══════════ RESTOCK ══════════ */}
         <TabsContent value="restock" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Tabs value={restockView} onValueChange={(value) => setRestockView(value as RestockView)} className="w-full">
-            <TabsList className="grid h-auto w-full grid-cols-3 rounded-xl bg-muted/50 p-1">
-              <TabsTrigger value="recommendations" className="min-h-10 rounded-lg px-2 text-[11px] font-semibold data-[state=active]:shadow-sm md:text-xs">
+            <TabsList className="grid h-auto w-full grid-cols-3 rounded-2xl border border-border/60 bg-card/90 p-1 shadow-sm">
+              <TabsTrigger value="recommendations" className="min-h-10 rounded-xl px-2 text-[11px] font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm md:text-xs">
                 <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Daftar Restock</span>
                 <span className="sm:hidden">Restock</span>
               </TabsTrigger>
-              <TabsTrigger value="predictions" className="min-h-10 rounded-lg px-2 text-[11px] font-semibold data-[state=active]:shadow-sm md:text-xs">
+              <TabsTrigger value="predictions" className="min-h-10 rounded-xl px-2 text-[11px] font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm md:text-xs">
                 <Clock className="mr-1.5 h-3.5 w-3.5" />
                 Prediksi Habis
               </TabsTrigger>
-              <TabsTrigger value="low-stock" className="min-h-10 rounded-lg px-2 text-[11px] font-semibold data-[state=active]:shadow-sm md:text-xs">
+              <TabsTrigger value="low-stock" className="min-h-10 rounded-xl px-2 text-[11px] font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm md:text-xs">
                 <ArrowDown className="mr-1.5 h-3.5 w-3.5" />
                 Stok Terendah
               </TabsTrigger>
             </TabsList>
 
-            <div className="sticky top-0 z-10 -mx-1 mt-3 space-y-2 border-y border-border/60 bg-background/95 px-1 py-2 backdrop-blur-sm">
+            <div className="sticky top-0 z-10 mt-3 space-y-3 rounded-2xl border border-border/60 bg-card/95 px-3 py-3 shadow-sm ring-1 ring-black/5 backdrop-blur-sm">
               <div className="flex gap-2">
                 <div className="relative min-w-0 flex-1">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -469,12 +469,12 @@ const Analisa = () => {
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder="Cari kode atau nama"
                     aria-label="Cari kode atau nama produk"
-                    className="h-10 rounded-lg pl-9"
+                    className="h-10 rounded-xl border-border/70 bg-background/95 pl-9 shadow-none"
                   />
                 </div>
                 {restockView === "recommendations" && (
                   <Select value={restockSort} onValueChange={(value) => setRestockSort(value as RestockSort)}>
-                    <SelectTrigger className="h-10 w-[118px] rounded-lg text-xs sm:w-[160px]" aria-label="Urutkan daftar restock">
+                    <SelectTrigger className="h-10 w-[118px] rounded-xl border-border/70 bg-background/95 text-xs shadow-none sm:w-[160px]" aria-label="Urutkan daftar restock">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -506,8 +506,10 @@ const Analisa = () => {
                       type="button"
                       onClick={() => { setFilter(chip.key); setFilterKey((key) => key + 1); setVisibleCount(30); }}
                       aria-pressed={isActive}
-                      className={`inline-flex min-h-9 items-center justify-center gap-1 rounded-lg px-2 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                        isActive ? chip.activeClass : "bg-muted/45 text-muted-foreground hover:bg-muted"
+                    className={`inline-flex min-h-9 items-center justify-center gap-1 rounded-xl border px-2 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                        isActive
+                          ? `${chip.activeClass} border-transparent shadow-sm`
+                          : "border-border/60 bg-background/90 text-muted-foreground hover:bg-muted/70"
                       }`}
                     >
                       {chip.label}
