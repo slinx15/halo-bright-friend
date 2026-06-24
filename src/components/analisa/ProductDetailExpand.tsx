@@ -206,7 +206,7 @@ export function ProductDetailExpand({ open, onClose, item, trendInfo, lastSaleDa
               </div>
               <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-border/50 pt-3 text-xs">
                 <span><strong>{formatRp(item.cost)}</strong> estimasi biaya</span>
-                <span className="text-muted-foreground">Target {item.targetDays} hari</span>
+                <span className="text-muted-foreground">Cakupan aman {item.targetDays} hari</span>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">{status.desc}.</p>
             </section>
