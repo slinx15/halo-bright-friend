@@ -231,23 +231,8 @@ const BarangMasuk = () => {
         </div>
       </div>
 
-      <div className="grid gap-2.5 md:grid-cols-3">
-        <div className="rounded-3xl border border-success/15 bg-gradient-to-br from-success/8 via-card to-card px-4 py-4 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Ringkas</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">Isi kode, qty, lalu simpan.</p>
-        </div>
-        <div className="rounded-3xl border border-primary/15 bg-gradient-to-br from-primary/8 via-card to-card px-4 py-4 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Siap Simpan</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">{validCount > 0 ? `${validCount} item` : "Belum ada item"}</p>
-        </div>
-        <div className="rounded-3xl border border-warning/15 bg-gradient-to-br from-warning/8 via-card to-card px-4 py-4 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Catatan</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">{catatan.trim() ? "Sudah ada" : "Kosong"}</p>
-        </div>
-      </div>
-
       {/* ── Input Card ── */}
-      <Card className="card-premium overflow-hidden border-success/20 bg-gradient-to-b from-success/5 via-card to-card shadow-[0_16px_40px_rgba(34,197,94,0.08)]">
+      <Card className="card-premium mt-1 overflow-hidden border-success/20 bg-gradient-to-b from-success/5 via-card to-card shadow-[0_16px_40px_rgba(34,197,94,0.08)] rounded-3xl">
         <CardHeader className="pb-4 bg-gradient-to-r from-success/20 via-success/10 to-transparent border-b border-success/10">
           <CardTitle className="text-base font-bold flex items-center gap-2">
             <PackagePlus className="h-4 w-4 text-success" />
@@ -269,7 +254,7 @@ const BarangMasuk = () => {
               <div
                 key={i}
                 className={cn(
-                  "rounded-2xl border p-3.5 space-y-2.5 transition-all duration-200 shadow-sm",
+                  "rounded-3xl border p-3.5 space-y-2.5 transition-all duration-200 shadow-sm",
                   item.productId
                     ? "border-success/30 bg-gradient-to-br from-success/8 via-card to-card"
                     : item.kode && !item.productId
