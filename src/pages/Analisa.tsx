@@ -500,11 +500,11 @@ const Analisa = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="font-semibold tracking-tight">
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1 [&>span.text-xs]:hidden">
                               <span className="text-sm">{a.kode}</span>
                               {a.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
                               {a.isStockOut && <span className="text-xs">🚨</span>}
-                              {priority === "critical" && <span className="text-[10px] font-bold text-destructive">HOT</span>}
+                              {priority === "critical" && <span className="text-[10px] font-bold text-destructive">Kritis</span>}
                             </div>
                             <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">{a.nama}</div>
                           </TableCell>
@@ -563,26 +563,22 @@ const Analisa = () => {
               </div>
             ) : (
               paginatedFiltered.map((a, idx) => {
-                const globalIdx = idx;
                 const badge = STATUS_BADGE[a.dosStatus];
                 const priority = getPriorityLevel(a.dosStatus);
                 const isZeroStock = a.currentStock === 0;
-                const ringClass =
-                  a.dosStatus === "CRITICAL" ? "border-l-[3px] border-l-destructive border-border/60" :
-                  a.dosStatus === "WARNING" ? "border-l-[3px] border-l-warning border-border/60" :
-                  a.dosStatus === "ATTENTION" ? "border-l-[3px] border-l-accent border-border/60" : "border-l-[3px] border-l-success border-border/60";
 
                 return (
                   <button
                     key={a.productId}
                     onClick={() => openProductDrawer(a)}
-                    className={`rounded-xl border bg-card p-3.5 transition-all active:scale-[0.99] w-full text-left ${ringClass} ${PRIORITY_ROW_BG[priority]} animate-fade-in`}
+                    className={`rounded-xl border bg-card p-3.5 transition-all active:scale-[0.99] w-full text-left [&>div>div>span.text-xs]:hidden ${
+                      priority === "critical" ? "border-destructive/25 bg-destructive/[0.035]" : "border-border/60"
+                    } animate-fade-in`}
                     style={{ animationDelay: `${Math.min(idx * 30, 300)}ms`, animationFillMode: "both" }}
                   >
                     <div className="flex items-center justify-between mb-2.5">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="font-bold text-sm truncate">{a.kode}</span>
-                        {priority === "critical" && <span className="text-[10px] font-bold text-destructive">HOT</span>}
                         {a.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning shrink-0" />}
                         {a.isStockOut && <span className="text-xs shrink-0">🚨</span>}
                         <Badge variant="outline" className={`text-[9px] font-semibold shrink-0 ${badge.className}`}>
