@@ -315,37 +315,43 @@ const Analisa = () => {
       {/* ═══════════════════════════════════════════════════════ */}
       {/* 🔴 ACTION SUMMARY BAR — STICKY */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md pb-3 -mx-4 px-4 md:-mx-6 md:px-6 pt-2 overflow-hidden">
+      <div className="sticky top-0 z-20 bg-background/95 pb-3 -mx-4 px-4 md:-mx-6 md:px-6 pt-2 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-primary/10">
-              <BarChart3 className="h-5 w-5 text-primary" />
-            </div>
+        <div className="mb-3 overflow-hidden rounded-xl border border-slate-800 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.24),transparent_34%),linear-gradient(135deg,#020617,#0f172a)] text-white">
+          <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end md:p-5">
             <div>
-              <h1 className="text-lg md:text-xl font-extrabold tracking-tight">Analisa</h1>
-              <p className="text-[11px] font-medium text-foreground/70">
-                {analyses.length} SKU | WMA {RULES.WMA_PERIOD1_DAYS} hari | siklus {RULES.CYCLE_DAYS} hari
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold text-blue-300">Analisa Restock</p>
+                <span className="rounded-full border border-red-400/25 bg-red-400/10 px-2.5 py-1 text-xs font-bold text-red-100">
+                  {needsReorder > 0 ? `${needsReorder} perlu restock` : "Stok terkendali"}
+                </span>
+              </div>
+              <h1 className="mt-2 text-2xl font-black tracking-tight md:text-3xl">
+                {needsReorder > 0 ? `${needsReorder} kode perlu keputusan` : "Pantau ritme stok"}
+              </h1>
+              <p className="mt-1 text-xs font-medium text-slate-300 md:text-sm">
+                {analyses.length} SKU, WMA {RULES.WMA_PERIOD1_DAYS} hari, siklus {RULES.CYCLE_DAYS} hari.
               </p>
             </div>
+            <Button
+              className="h-11 rounded-lg bg-white text-slate-950 hover:bg-blue-50"
+              onClick={() => { setFilter("CRITICAL"); setFilterKey(k => k + 1); setVisibleCount(30); }}
+            >
+              Fokus Kritis
+              <ArrowDown className="ml-2 h-4 w-4" />
+            </Button>
           </div>
-          {needsReorder > 0 && (
-            <Badge className="bg-red-700 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm dark:bg-red-600">
-              {needsReorder} perlu restock
-            </Badge>
-          )}
         </div>
 
         {/* 4-Card Action Grid */}
         <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           <button
             onClick={() => setFilter(filter === "CRITICAL" ? "ALL" : "CRITICAL")}
-            className={`relative overflow-hidden card-premium bg-destructive/5 p-3.5 text-left transition-all duration-200 active:scale-[0.97] animate-fade-in ${
-              filter === "CRITICAL" ? "ring-2 ring-destructive shadow-md" : ""
+            className={`relative overflow-hidden rounded-xl border border-border bg-card p-3.5 text-left transition-colors hover:bg-destructive/[0.03] active:scale-[0.98] ${
+              filter === "CRITICAL" ? "ring-2 ring-destructive" : ""
             }`}
             style={{ animationDelay: "0ms", animationFillMode: "both" }}
           >
-            <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-destructive/8" />
             <AlertTriangle className="h-5 w-5 text-destructive" />
             <p className="mt-1 text-2xl font-black tabular-nums text-destructive">{criticalCount || "-"}</p>
             <p className="mt-0.5 text-[11px] font-semibold text-destructive">Harus Restock</p>
@@ -353,12 +359,11 @@ const Analisa = () => {
 
           <button
             onClick={() => setFilter(filter === "WARNING" ? "ALL" : "WARNING")}
-            className={`relative overflow-hidden card-premium bg-amber-50 p-3.5 text-left transition-all duration-200 active:scale-[0.97] animate-fade-in dark:bg-amber-950/20 ${
-              filter === "WARNING" ? "ring-2 ring-warning shadow-md" : ""
+            className={`relative overflow-hidden rounded-xl border border-border bg-card p-3.5 text-left transition-colors hover:bg-warning/[0.04] active:scale-[0.98] ${
+              filter === "WARNING" ? "ring-2 ring-warning" : ""
             }`}
             style={{ animationDelay: "60ms", animationFillMode: "both" }}
           >
-            <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-amber-200/30 dark:bg-amber-700/15" />
             <Clock className="h-5 w-5 text-amber-700 dark:text-amber-400" />
             <p className="mt-1 text-2xl font-black tabular-nums text-amber-700 dark:text-amber-400">{warningCount || "-"}</p>
             <p className="mt-0.5 text-[11px] font-semibold text-amber-700 dark:text-amber-300">Segera Habis</p>
@@ -366,20 +371,18 @@ const Analisa = () => {
 
           <button
             onClick={() => setFilter(filter === "CRITICAL" ? "ALL" : "CRITICAL")}
-            className="relative overflow-hidden card-premium bg-muted/30 p-3.5 text-left transition-all duration-200 active:scale-[0.97] animate-fade-in"
+            className="relative overflow-hidden rounded-xl border border-border bg-card p-3.5 text-left transition-colors hover:bg-muted/40 active:scale-[0.98]"
             style={{ animationDelay: "120ms", animationFillMode: "both" }}
           >
-            <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-muted/40" />
             <Package className="h-5 w-5 text-foreground/80" />
             <p className="mt-1 text-2xl font-black tabular-nums">{zeroStockCount || "-"}</p>
             <p className="mt-0.5 text-[11px] font-semibold text-foreground/70">Stok Kosong</p>
           </button>
 
           <div
-            className="relative overflow-hidden card-premium bg-primary/5 p-3.5 text-left animate-fade-in"
+            className="relative overflow-hidden rounded-xl border border-border bg-card p-3.5 text-left"
             style={{ animationDelay: "180ms", animationFillMode: "both" }}
           >
-            <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-primary/5" />
             <Wallet className="h-5 w-5 text-primary" />
             <p className="mt-1 truncate text-base font-black tabular-nums">{formatRp(totalRestockCost)}</p>
             <p className="mt-0.5 text-[11px] font-semibold text-foreground/70">Modal Restock</p>
@@ -389,7 +392,7 @@ const Analisa = () => {
 
       {/* MAIN CONTENT — TABS */}
       <Tabs defaultValue="restock" className="w-full">
-        <div className="rounded-2xl bg-card/80 backdrop-blur-sm border border-border/40 shadow-md p-1.5">
+        <div className="rounded-xl bg-card border border-border p-1">
           <TabsList className="grid grid-cols-3 w-full bg-transparent h-auto p-0 gap-1">
             {[
               { value: "restock", icon: ShoppingCart, label: "Restock", mobileLabel: "Restock", badge: needsReorder > 0 ? needsReorder : null, activeColor: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" },
@@ -439,7 +442,7 @@ const Analisa = () => {
                       : "bg-muted/40 text-muted-foreground hover:bg-muted/70 active:scale-95"
                   }`}
                 >
-                  <span className="text-xs">{chip.icon}</span>
+                  <span className="text-xs">●</span>
                   {chip.label}
                   <span className={`text-[10px] tabular-nums ${isActive ? "opacity-90" : "opacity-50"}`}>{count}</span>
                 </button>
