@@ -307,23 +307,23 @@ const Stok = () => {
       </div>
 
       <div className="grid gap-2.5 md:grid-cols-3">
-        <div className="rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/8 via-card to-card px-4 py-3 shadow-sm">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Fokus Hari Ini</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">{kosong + kritis > 0 ? "Prioritaskan stok kosong dan kritis lebih dulu." : "Stok relatif aman, lanjut cek warning dan nilai stok."}</p>
+        <div className="rounded-3xl border border-primary/15 bg-gradient-to-br from-primary/8 via-card to-card px-4 py-4 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Hari Ini</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">{kosong + kritis > 0 ? "Prioritaskan stok kosong dan kritis." : "Stok relatif aman."}</p>
         </div>
-        <div className="rounded-2xl border border-success/15 bg-gradient-to-br from-success/8 via-card to-card px-4 py-3 shadow-sm">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Filter Aktif</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">{kategoriFilter === "Semua" ? "Semua kategori" : kategoriFilter}</p>
+        <div className="rounded-3xl border border-success/15 bg-gradient-to-br from-success/8 via-card to-card px-4 py-4 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Kategori</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">{kategoriFilter === "Semua" ? "Semua" : kategoriFilter}</p>
         </div>
-        <div className="rounded-2xl border border-warning/15 bg-gradient-to-br from-warning/8 via-card to-card px-4 py-3 shadow-sm">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Pencarian</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">{search.trim() ? `Kata kunci: ${search}` : "Belum ada kata kunci"}</p>
+        <div className="rounded-3xl border border-warning/15 bg-gradient-to-br from-warning/8 via-card to-card px-4 py-4 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Cari</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">{search.trim() ? search : "Kosong"}</p>
         </div>
       </div>
 
       {/* ── Daftar Stok ── */}
-      <Card className="rounded-2xl shadow-md border border-border/60 overflow-hidden">
-        <CardHeader className="pb-3 bg-gradient-to-r from-primary/15 via-primary/5 to-warning/10">
+      <Card className="rounded-3xl shadow-md border border-border/60 overflow-hidden">
+        <CardHeader className="pb-4 bg-gradient-to-r from-primary/15 via-primary/5 to-warning/10 border-b border-border/60">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <CardTitle className="text-base font-bold flex items-center gap-2">
               <Package className="h-4 w-4 text-primary" />
@@ -348,7 +348,7 @@ const Stok = () => {
                     key={cat}
                     onClick={() => { setKategoriFilter(cat); setVisibleCount(PAGE_SIZE); }}
                     className={cn(
-                      "relative flex shrink-0 items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition-all duration-200",
+                      "relative flex shrink-0 items-center gap-1.5 rounded-2xl border px-3.5 py-2 text-xs font-bold transition-all duration-200",
                       isActive
                         ? "bg-primary text-primary-foreground border-primary/30 shadow-md shadow-primary/25 scale-[1.02]"
                         : "bg-muted/60 text-muted-foreground border-border/50 hover:bg-muted hover:text-foreground hover:scale-[1.02] active:scale-95"

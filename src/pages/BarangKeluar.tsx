@@ -364,23 +364,23 @@ const BarangKeluar = () => {
       </div>
 
       <div className="grid gap-2.5 md:grid-cols-3">
-        <div className="rounded-2xl border border-destructive/15 bg-gradient-to-br from-destructive/8 via-card to-card px-4 py-3 shadow-sm">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Fokus Input</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">Isi toko, tanggal, lalu pastikan qty kirim dan harga sudah sesuai sebelum simpan.</p>
+        <div className="rounded-3xl border border-destructive/15 bg-gradient-to-br from-destructive/8 via-card to-card px-4 py-4 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Ringkas</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">Isi toko, tanggal, lalu simpan.</p>
         </div>
-        <div className="rounded-2xl border border-warning/15 bg-gradient-to-br from-warning/8 via-card to-card px-4 py-3 shadow-sm">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Item Valid</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">{validCount > 0 ? `${validCount} item siap dikirim` : "Belum ada item valid"}</p>
+        <div className="rounded-3xl border border-warning/15 bg-gradient-to-br from-warning/8 via-card to-card px-4 py-4 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Siap Kirim</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">{validCount > 0 ? `${validCount} item` : "Belum ada item"}</p>
         </div>
-        <div className="rounded-2xl border border-success/15 bg-gradient-to-br from-success/8 via-card to-card px-4 py-3 shadow-sm">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Nilai Draft</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">{validCount > 0 ? formatRupiah(totalRevenue) : "Belum ada nilai draft"}</p>
+        <div className="rounded-3xl border border-success/15 bg-gradient-to-br from-success/8 via-card to-card px-4 py-4 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Nilai Draft</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">{validCount > 0 ? formatRupiah(totalRevenue) : "Kosong"}</p>
         </div>
       </div>
 
       {/* ── Input Card ── */}
-      <Card className="card-premium overflow-hidden border-destructive/15 shadow-[0_16px_40px_rgba(239,68,68,0.06)]">
-        <CardHeader className="pb-3 bg-gradient-to-r from-destructive/15 via-destructive/5 to-transparent">
+      <Card className="card-premium overflow-hidden border-destructive/15 bg-gradient-to-b from-destructive/5 via-card to-card shadow-[0_16px_40px_rgba(239,68,68,0.06)]">
+        <CardHeader className="pb-4 bg-gradient-to-r from-destructive/15 via-destructive/5 to-transparent border-b border-destructive/10">
           <CardTitle className="text-base font-bold flex items-center gap-2">
             <PackageMinus className="h-4 w-4 text-destructive" />
             Input Barang Keluar
@@ -650,7 +650,7 @@ const BarangKeluar = () => {
 
           {/* Summary */}
           {validCount > 0 && (
-            <div className="rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-warning/10 p-3 space-y-2 shadow-sm">
+            <div className="rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-warning/10 p-3.5 space-y-2 shadow-sm">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Ringkasan draft</span>
                 <span className="font-extrabold text-primary tabular-nums">{formatRupiah(totalRevenue)}</span>
