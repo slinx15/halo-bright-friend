@@ -55,27 +55,27 @@ export function CriticalStockAlert() {
   }
 
   return (
-    <section className="overflow-hidden rounded-xl border border-destructive/25 bg-card">
-      <div className="flex items-start justify-between gap-3 border-b border-destructive/15 bg-destructive/[0.04] px-4 py-3">
+    <section className="overflow-hidden rounded-xl border border-destructive/20 bg-card">
+      <div className="flex items-start justify-between gap-3 bg-destructive/[0.035] px-4 py-4">
         <div>
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-destructive" />
-            <h2 className="font-semibold text-foreground">Stok kritis</h2>
+            <h2 className="font-semibold text-foreground">Yang paling rawan</h2>
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">Tiga kode paling darurat hari ini.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Cek 3 kode ini sebelum yang lain.</p>
         </div>
         <Badge variant="destructive" className="rounded-full">
           {criticalItems.length} item
         </Badge>
       </div>
 
-      <div className="divide-y divide-border">
+      <div className="space-y-2 p-2">
         {criticalItems.map((item) => (
           <CriticalItemRow key={item.productId} item={item} />
         ))}
       </div>
 
-      <div className="border-t border-border bg-muted/20 p-3">
+      <div className="border-t border-border bg-muted/15 p-3">
         <Button
           variant="outline"
           size="sm"
@@ -95,7 +95,7 @@ function CriticalItemRow({ item }: { item: ProductAnalysis }) {
   const isEmergency = item.daysOfStock < 1;
 
   return (
-    <article className="grid gap-3 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+    <article className="grid gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-muted/35 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-mono text-base font-bold text-foreground">{item.kode}</span>
@@ -129,7 +129,7 @@ function CriticalItemRow({ item }: { item: ProductAnalysis }) {
       </div>
 
       {item.recommendedQty > 0 && (
-        <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 sm:min-w-[132px] sm:flex-col sm:items-start">
+        <div className="flex items-center justify-between rounded-lg bg-primary/8 px-3 py-2 sm:min-w-[132px] sm:flex-col sm:items-start">
           <span className="text-xs font-medium text-muted-foreground">Saran beli</span>
           <strong className="text-sm text-primary">+{formatNumber(item.recommendedQty)} pcs</strong>
         </div>

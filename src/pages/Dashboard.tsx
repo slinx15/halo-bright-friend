@@ -88,29 +88,29 @@ function getInventorySummary(products: ProductWithDetails[] | undefined): Invent
 }
 
 function DashboardHeader({ summary }: { summary: InventorySummary }) {
+  const focusCount = summary.kosong + summary.kritis;
+
   return (
-    <header className="overflow-hidden rounded-xl border border-slate-900 bg-slate-950 text-white">
+    <header className="overflow-hidden rounded-xl border border-primary/15 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.13),transparent_36%),linear-gradient(135deg,hsl(var(--card)),hsl(var(--background)))]">
       <div className="p-4 md:p-5">
-        <div>
-          <p className="text-sm font-medium text-slate-300">{getGreeting()}, Boss</p>
-          <h1 className="mt-1 text-2xl font-black tracking-tight md:text-3xl">Papan Kerja Hari Ini</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-            Mulai dari yang merah dulu: stok kosong, kritis, lalu cek barang yang menipis sebelum belanja.
-          </p>
-        </div>
+        <p className="text-sm font-semibold text-primary">{getGreeting()}, Boss</p>
+        <h1 className="mt-1 text-2xl font-black tracking-tight text-foreground md:text-3xl">Hari ini mulai dari sini</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+          Ada {formatNumber(focusCount)} kode yang perlu dibereskan dulu. Sisanya bisa menyusul setelah stok merah aman.
+        </p>
       </div>
-      <div className="grid grid-cols-3 border-t border-white/10 bg-white/[0.03] text-xs text-slate-300">
-        <div className="border-r border-white/10 px-4 py-3">
-          <span className="block font-bold text-white">{formatNumber(summary.kosong + summary.kritis)} kode</span>
-          harus ditangani
+      <div className="grid grid-cols-3 gap-2 border-t border-primary/10 bg-card/60 p-3 text-xs text-muted-foreground">
+        <div className="rounded-lg bg-destructive/8 px-3 py-2">
+          <span className="block text-base font-black text-destructive">{formatNumber(focusCount)} kode</span>
+          bereskan dulu
         </div>
-        <div className="border-r border-white/10 px-4 py-3">
-          <span className="block font-bold text-white">{formatNumber(summary.warning)} kode</span>
-          perlu dicek
+        <div className="rounded-lg bg-warning/10 px-3 py-2">
+          <span className="block text-base font-black text-warning">{formatNumber(summary.warning)} kode</span>
+          cek setelahnya
         </div>
-        <div className="px-4 py-3">
-          <span className="block font-bold text-white">{formatNumber(summary.aman)} kode</span>
-          aman dijual
+        <div className="rounded-lg bg-success/10 px-3 py-2">
+          <span className="block text-base font-black text-success">{formatNumber(summary.aman)} kode</span>
+          masih aman
         </div>
       </div>
     </header>
@@ -204,24 +204,26 @@ function WorkQueue({ summary, metrics }: { summary: InventorySummary; metrics: T
   ];
 
   return (
-    <section className="rounded-lg border border-border bg-card">
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+    <section className="rounded-xl border border-border bg-card">
+      <div className="flex items-center justify-between px-4 pb-2 pt-4">
         <div>
-          <h2 className="text-base font-black">Urutan kerja</h2>
-          <p className="text-xs text-muted-foreground">Bagian ini yang paling layak dikerjakan dulu.</p>
+          <h2 className="text-base font-black">Kerjakan berurutan</h2>
+          <p className="text-xs text-muted-foreground">Biar tidak loncat-loncat saat toko mulai ramai.</p>
         </div>
-        <Badge className="rounded-md border-primary/20 bg-primary/8 text-primary">
+        <Badge className="rounded-full border-primary/20 bg-primary/8 text-primary">
           {urgentCount > 0 ? "Ada prioritas" : "Terkendali"}
         </Badge>
       </div>
-      <div className="divide-y divide-border">
+      <div className="space-y-2 p-2">
         {rows.map((row) => (
           <button
             key={row.title}
             onClick={row.onClick}
-            className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/35"
+            className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-muted/40"
           >
-            <row.icon className={`h-5 w-5 ${row.tone}`} />
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
+              <row.icon className={`h-4 w-4 ${row.tone}`} />
+            </span>
             <div className="min-w-0">
               <p className="font-bold leading-tight">{row.title}</p>
               <p className="mt-0.5 truncate text-xs text-muted-foreground">{row.detail}</p>
