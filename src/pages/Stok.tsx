@@ -62,15 +62,17 @@ const Stok = () => {
   useEffect(() => {
     const paramKategori = searchParams.get("kategori");
     const paramStatus = searchParams.get("status");
-    if (paramKategori && paramKategori !== kategoriFilter) {
+    if (paramKategori) {
       setKategoriFilter(paramKategori);
       setVisibleCount(PAGE_SIZE);
     }
-    if (paramStatus && paramStatus !== statusFilter) {
+    if (paramStatus) {
       setStatusFilter(paramStatus);
       setVisibleCount(PAGE_SIZE);
     }
-  }, [kategoriFilter, statusFilter, searchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
 
 
   const exportStokToExcel = () => {
