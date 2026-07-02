@@ -167,6 +167,17 @@ function CommandCenter({
             </button>
           ))}
         </div>
+        <div className="px-1 pt-1.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-between rounded-lg text-xs font-semibold hover:bg-muted"
+            onClick={() => navigate("/analisa")}
+          >
+            Lihat analisa lengkap
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
