@@ -17,7 +17,7 @@ import {
   Sunset,
   TrendingUp,
 } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, Cell, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
