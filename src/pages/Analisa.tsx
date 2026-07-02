@@ -698,14 +698,19 @@ const Analisa = () => {
                     } animate-fade-in`}
                     style={{ animationDelay: `${Math.min(idx * 30, 300)}ms`, animationFillMode: "both" }}
                   >
-                    <div className="flex items-center justify-between mb-2.5">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-bold text-sm truncate">{a.kode}</span>
-                        {a.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning shrink-0" />}
-                        {a.isStockOut && <span className="text-xs shrink-0">🚨</span>}
-                        <Badge variant="outline" className={`text-[9px] font-semibold shrink-0 ${badge.className}`}>
-                          {badge.label}
-                        </Badge>
+                    <div className="flex items-start justify-between mb-2.5 gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-bold text-sm truncate">{a.kode}</span>
+                          {a.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning shrink-0" />}
+                          {a.isStockOut && <span className="text-xs shrink-0">🚨</span>}
+                          <Badge variant="outline" className={`text-[9px] font-semibold shrink-0 ${badge.className}`}>
+                            {badge.label}
+                          </Badge>
+                        </div>
+                        {a.nama && (
+                          <p className="mt-1 text-[11px] text-muted-foreground truncate">{a.nama}</p>
+                        )}
                       </div>
                       <div className="text-right shrink-0 pl-2">
                         <span className={`font-mono font-extrabold text-lg leading-none tabular-nums ${
@@ -719,6 +724,7 @@ const Analisa = () => {
                         <p className="text-[9px] text-muted-foreground">sisa</p>
                       </div>
                     </div>
+
 
                     <div className="grid grid-cols-3 gap-3 text-center">
                       <div>
