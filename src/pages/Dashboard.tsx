@@ -98,6 +98,18 @@ function CommandCenter({
 
   const summary = getInventorySummary(products);
 
+  const kritisProducts = products
+    .filter((product) => {
+      const jumlah = product.stock?.jumlah ?? 0;
+      return jumlah > 0 && jumlah <= 5;
+    })
+    .sort((a, b) => (a.stock?.jumlah ?? 0) - (b.stock?.jumlah ?? 0))
+    .slice(0, 2);
+
+  const kosongProducts = products
+    .filter((product) => (product.stock?.jumlah ?? 0) === 0)
+    .slice(0, 2);
+
   const cards = [
     {
       label: "Kosong",
@@ -105,6 +117,8 @@ function CommandCenter({
       lightBg: "bg-destructive/8",
       lightText: "text-destructive",
       icon: AlertTriangle,
+      status: "kosong",
+      preview: kosongProducts.map((product) => product.nama),
     },
     {
       label: "Kritis",
@@ -112,6 +126,8 @@ function CommandCenter({
       lightBg: "bg-orange-500/8",
       lightText: "text-orange-600",
       icon: ShieldAlert,
+      status: "kritis",
+      preview: kritisProducts.map((product) => `${product.nama} (${product.stock?.jumlah ?? 0})`),
     },
     {
       label: "Warning",
@@ -119,6 +135,8 @@ function CommandCenter({
       lightBg: "bg-warning/8",
       lightText: "text-amber-600",
       icon: TrendingUp,
+      status: "warning",
+      preview: [],
     },
     {
       label: "Aman",
@@ -126,6 +144,8 @@ function CommandCenter({
       lightBg: "bg-success/8",
       lightText: "text-success",
       icon: CheckCircle2,
+      status: "aman",
+      preview: [],
     },
   ];
 
@@ -147,8 +167,8 @@ function CommandCenter({
         {cards.map((card) => (
           <button
             key={card.label}
-            onClick={() => navigate("/stok?kategori=2 Ons")}
-            className={`card-premium flex flex-col items-center gap-1 p-3 transition-all duration-200 ${card.lightBg}`}
+            onClick={() => navigate(`/stok?kategori=2 Ons&status=${card.status}`)}
+            className={`card-premium flex flex-col items-center gap-1 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.97] ${card.lightBg}`}
           >
             <div className="rounded-full bg-background/80 p-1.5 shadow-sm">
               <card.icon className={`h-3.5 w-3.5 ${card.lightText}`} strokeWidth={2.3} />
@@ -158,9 +178,39 @@ function CommandCenter({
           </button>
         ))}
       </div>
+
+      {(kosongProducts.length > 0 || kritisProducts.length > 0) && (
+        <div className="grid grid-cols-2 gap-2 pt-1">
+          {kosongProducts.length > 0 && (
+            <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-2.5">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-destructive">Kosong</p>
+              <ul className="mt-1 space-y-0.5">
+                {kosongProducts.map((product) => (
+                  <li key={product.id} className="truncate text-[11px] font-medium text-foreground/80">
+                    · {product.nama}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {kritisProducts.length > 0 && (
+            <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-2.5">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-orange-600">Stok Menipis</p>
+              <ul className="mt-1 space-y-0.5">
+                {kritisProducts.map((product) => (
+                  <li key={product.id} className="truncate text-[11px] font-medium text-foreground/80">
+                    · {product.nama} <span className="text-muted-foreground">({product.stock?.jumlah ?? 0})</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
+
 
 function HeroKpi({
   omzet,
