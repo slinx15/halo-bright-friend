@@ -736,13 +736,14 @@ const Analisa = () => {
                       <div>
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Beli</p>
                         {a.recommendedQty > 0 ? (
-                          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-primary text-primary-foreground font-bold text-sm">
-                            {a.recommendedQty}
+                          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-primary text-primary-foreground font-bold text-xs">
+                            {a.recommendedQty} <span className="ml-0.5 text-[9px] font-medium opacity-80">pcs</span>
                           </span>
                         ) : (
                           <p className="text-sm text-muted-foreground/40">—</p>
                         )}
                       </div>
+
                       <div>
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Biaya</p>
                         <p className="font-mono text-xs font-semibold tabular-nums">
