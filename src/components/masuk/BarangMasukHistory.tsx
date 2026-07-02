@@ -46,26 +46,30 @@ export function BarangMasukHistory({ history, isLoading }: BarangMasukHistoryPro
   return (
     <Card className="overflow-hidden rounded-[1.6rem] border-border/70 bg-card shadow-sm">
       <Collapsible defaultOpen>
-        <CardHeader className="border-b border-border/60 bg-[linear-gradient(180deg,hsl(var(--muted)/0.45),transparent)] pb-4">
+        <CardHeader className="border-b border-border/60 pb-3 pt-4">
           <CollapsibleTrigger asChild>
-            <button className="flex min-h-[44px] w-full items-start justify-between gap-3 text-left">
-              <div className="min-w-0">
-                <CardTitle className="flex items-center gap-2 text-base font-bold">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  Riwayat Barang Masuk
-                </CardTitle>
-                <p className="mt-1 text-xs font-medium text-muted-foreground">
-                  Pantau transaksi harian dan total modal masuk
-                </p>
+            <button className="flex min-h-[44px] w-full items-center justify-between gap-3 text-left">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <div className="rounded-lg bg-primary/10 p-1.5">
+                  <Clock className="h-4 w-4 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <CardTitle className="text-sm font-extrabold">Riwayat Barang Masuk</CardTitle>
+                  <p className="text-[10px] font-medium text-muted-foreground">
+                    Pantau transaksi harian
+                  </p>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2">
                 {history.length > 0 && (
-                  <Badge variant="secondary" className="rounded-full px-2.5 text-[10px] font-bold">
+                  <Badge variant="secondary" className="rounded-full px-2 text-[10px] font-bold">
                     {history.length} entri
                   </Badge>
                 )}
-                <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+                <div className="rounded-full bg-muted p-1">
+                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+                </div>
               </div>
             </button>
           </CollapsibleTrigger>
