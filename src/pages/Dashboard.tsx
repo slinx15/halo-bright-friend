@@ -150,36 +150,40 @@ function CommandCenter({
   ];
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-3 px-1">
-        <div className="flex items-center gap-1.5">
-          <Package className="h-3.5 w-3.5 text-primary" />
-          <span className="text-xs font-medium text-muted-foreground">{formatNumber(summary.totalItems)} item</span>
+    <Card className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+      <CardHeader className="flex flex-row items-center justify-between px-4 py-3 pb-2">
+        <div className="flex items-center gap-2">
+          <div className="rounded-lg bg-primary/10 p-1.5">
+            <Package className="h-4 w-4 text-primary" />
+          </div>
+          <CardTitle className="text-sm font-semibold">Status Stok</CardTitle>
         </div>
-        <span className="text-border">·</span>
-        <div className="flex items-center gap-1.5">
-          <TrendingUp className="h-3.5 w-3.5 text-success" />
-          <span className="text-xs font-medium text-muted-foreground">{formatNumber(summary.totalStok)} stok</span>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>{formatNumber(summary.totalItems)} item</span>
+          <span className="text-border">·</span>
+          <span>{formatNumber(summary.totalStok)} stok</span>
         </div>
-      </div>
-
-      <div className="grid grid-cols-4 gap-2">
-        {cards.map((card) => (
-          <button
-            key={card.label}
-            onClick={() => navigate(`/stok?kategori=2 Ons&status=${card.status}`)}
-            className={`card-premium flex flex-col items-center gap-1 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.97] ${card.lightBg}`}
-          >
-            <div className="rounded-full bg-background/80 p-1.5 shadow-sm">
-              <card.icon className={`h-3.5 w-3.5 ${card.lightText}`} strokeWidth={2.3} />
-            </div>
-            <span className={`text-2xl font-black leading-none tabular-nums ${card.lightText}`}>{card.count}</span>
-            <span className="text-[10px] font-semibold leading-tight text-muted-foreground">{card.label}</span>
-          </button>
-        ))}
-      </div>
-
-    </div>
+      </CardHeader>
+      <CardContent className="p-1.5 pt-0">
+        <div className="grid grid-cols-4 divide-x divide-border overflow-hidden rounded-xl border bg-card">
+          {cards.map((card) => (
+            <button
+              key={card.label}
+              onClick={() => navigate(`/stok?kategori=2 Ons&status=${card.status}`)}
+              className="group flex flex-col items-center justify-center gap-2 py-3.5 px-1 text-center transition-colors hover:bg-muted/60 active:bg-muted"
+            >
+              <div className={`rounded-full p-1.5 ${card.lightBg}`}>
+                <card.icon className={`h-4 w-4 ${card.lightText}`} strokeWidth={2.2} />
+              </div>
+              <span className={`text-xl font-black tabular-nums ${card.lightText}`}>{card.count}</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {card.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
