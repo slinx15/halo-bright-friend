@@ -338,10 +338,11 @@ Deno.serve(async (req) => {
     }
 
     return jsonResponse({
-      success: failed.length === 0,
+      success: failed.length === 0 && ambiguous.length === 0,
       inserted,
       skipped: rows.length - preparedRows.length,
       not_found: notFound,
+      ambiguous,
       failed,
     });
   } catch (error) {
