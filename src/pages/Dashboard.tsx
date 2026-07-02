@@ -555,13 +555,11 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
-
-        <QuickActions />
+        <div className="md:col-span-1">
+          <QuickActions />
+        </div>
       </div>
 
-      <div className="hidden animate-fade-in md:block" style={{ animationDelay: "350ms", animationFillMode: "both" }}>
-        <QuickActions />
-      </div>
     </div>
   );
 };
