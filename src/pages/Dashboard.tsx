@@ -23,7 +23,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
 import { AiInsightsCard } from "@/components/AiInsightsCard";
-import { CriticalStockAlert } from "@/components/CriticalStockAlert";
+
 import { DashboardSkeleton } from "@/components/LoadingSkeletons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
