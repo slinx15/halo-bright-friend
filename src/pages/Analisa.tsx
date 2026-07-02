@@ -628,7 +628,7 @@ const Analisa = () => {
                               <span className="text-sm">{a.kode}</span>
                               {a.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
                             </div>
-                            {a.nama && a.nama.trim().toLowerCase() !== `${a.kode} ${a.kategori ?? ""}`.trim().toLowerCase() && (
+                            {a.nama && a.nama.trim().toLowerCase() !== a.kode.trim().toLowerCase() && !a.nama.trim().toLowerCase().startsWith(`${a.kode.trim().toLowerCase()} `) && (
                               <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">{a.nama}</div>
                             )}
                           </TableCell>
