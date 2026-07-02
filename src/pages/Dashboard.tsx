@@ -179,34 +179,6 @@ function CommandCenter({
         ))}
       </div>
 
-      {(kosongProducts.length > 0 || kritisProducts.length > 0) && (
-        <div className="grid grid-cols-2 gap-2 pt-1">
-          {kosongProducts.length > 0 && (
-            <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-2.5">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-destructive">Kosong</p>
-              <ul className="mt-1 space-y-0.5">
-                {kosongProducts.map((product) => (
-                  <li key={product.id} className="truncate text-[11px] font-medium text-foreground/80">
-                    · {product.nama}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {kritisProducts.length > 0 && (
-            <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-2.5">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-orange-600">Stok Menipis</p>
-              <ul className="mt-1 space-y-0.5">
-                {kritisProducts.map((product) => (
-                  <li key={product.id} className="truncate text-[11px] font-medium text-foreground/80">
-                    · {product.nama} <span className="text-muted-foreground">({product.stock?.jumlah ?? 0})</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
