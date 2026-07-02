@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import {
   ArrowUpRight,
+  ArrowRight,
   AlertTriangle,
   BarChart3,
   CheckCircle2,
