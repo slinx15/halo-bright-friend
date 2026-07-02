@@ -231,24 +231,60 @@ const BarangMasuk = () => {
         </div>
       </section>
 
-      {/* KPI CARDS — konsisten dengan Dashboard (card-premium + label manusiawi) */}
-      <section className="grid grid-cols-3 gap-2.5">
-        <div className="card-premium rounded-2xl p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Draft</p>
-          <p className="mt-1 text-2xl font-extrabold leading-none tabular-nums">{items.length}</p>
-          <p className="mt-1 text-[11px] text-muted-foreground">Baris input</p>
+      {/* KPI CARDS — Vibrant status cards (stacked, icon + label kiri, angka kanan) */}
+      <section className="space-y-2.5">
+        {/* Draft */}
+        <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition-transform active:scale-[0.98]">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-warning/10 text-warning">
+              <FileEdit className="h-6 w-6" strokeWidth={2} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Draft</p>
+              <p className="text-xs text-muted-foreground">Menunggu diisi</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <span className="text-3xl font-extrabold tabular-nums text-foreground">{items.length}</span>
+            <span className="block text-[10px] font-bold uppercase tracking-tight text-muted-foreground">Baris</span>
+          </div>
         </div>
-        <div className="card-premium rounded-2xl p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-success">Siap Simpan</p>
-          <p className="mt-1 text-2xl font-extrabold leading-none tabular-nums text-success">{validCount}</p>
-          <p className="mt-1 text-[11px] text-muted-foreground">Item valid</p>
+
+        {/* Siap Simpan */}
+        <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition-transform active:scale-[0.98]">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-success/10 text-success">
+              <CheckCircle2 className="h-6 w-6" strokeWidth={2} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Siap Simpan</p>
+              <p className="text-xs font-medium text-success">Item valid</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <span className="text-3xl font-extrabold tabular-nums text-foreground">{validCount}</span>
+            <span className="block text-[10px] font-bold uppercase tracking-tight text-muted-foreground">Item</span>
+          </div>
         </div>
-        <div className="card-premium rounded-2xl p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-primary">Total Pcs</p>
-          <p className="mt-1 text-2xl font-extrabold leading-none tabular-nums text-primary">{formatNumber(totalQty)}</p>
-          <p className="mt-1 text-[11px] text-muted-foreground">Akan masuk</p>
+
+        {/* Total Pcs — filled primary */}
+        <div className="flex items-center justify-between rounded-2xl bg-primary p-4 shadow-lg shadow-primary/20 transition-transform active:scale-[0.98]">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-foreground/15 text-primary-foreground">
+              <Boxes className="h-6 w-6" strokeWidth={2} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-primary-foreground">Total Pcs</p>
+              <p className="text-xs text-primary-foreground/75">Akan masuk</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <span className="text-3xl font-extrabold tabular-nums text-primary-foreground">{formatNumber(totalQty)}</span>
+            <span className="block text-[10px] font-bold uppercase tracking-tight text-primary-foreground/70">Pcs</span>
+          </div>
         </div>
       </section>
+
 
       {/* INPUT FORM */}
       <Card className="overflow-hidden rounded-2xl border bg-card shadow-sm">
