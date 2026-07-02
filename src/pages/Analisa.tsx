@@ -82,12 +82,12 @@ const PRIORITY_ROW_BG: Record<PriorityLevel, string> = {
 };
 
 const FILTER_CHIPS: { key: RestockFilter; label: string; activeClass: string; inactiveClass: string }[] = [
-  { key: "ALL", label: "Semua", activeClass: "bg-primary text-primary-foreground shadow-[0_8px_18px_hsl(var(--primary)/0.28)]", inactiveClass: "bg-primary/10 text-primary border-primary/20" },
-  { key: "CRITICAL", label: "Kritis", activeClass: "bg-destructive text-destructive-foreground shadow-[0_8px_18px_hsl(var(--destructive)/0.25)]", inactiveClass: "bg-destructive/10 text-destructive border-destructive/20" },
-  { key: "WARNING", label: "Segera", activeClass: "bg-warning text-warning-foreground shadow-[0_8px_18px_hsl(var(--warning)/0.22)]", inactiveClass: "bg-warning/10 text-warning border-warning/20" },
-  { key: "ATTENTION", label: "Pantau", activeClass: "bg-accent text-accent-foreground shadow-[0_8px_18px_hsl(var(--accent)/0.22)]", inactiveClass: "bg-accent/10 text-accent-foreground border-accent/20" },
-  { key: "SAFE", label: "Aman", activeClass: "bg-success text-success-foreground shadow-[0_8px_18px_hsl(var(--success)/0.24)]", inactiveClass: "bg-success/10 text-success border-success/20" },
-  { key: "OUT_OF_STOCK", label: "Kosong", activeClass: "bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900", inactiveClass: "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700" },
+  { key: "ALL", label: "Semua", activeClass: "bg-primary/12 text-primary border-primary/25 shadow-sm", inactiveClass: "bg-background text-muted-foreground border-border/70" },
+  { key: "CRITICAL", label: "Kritis", activeClass: "bg-destructive/12 text-destructive border-destructive/25 shadow-sm", inactiveClass: "bg-background text-muted-foreground border-border/70" },
+  { key: "WARNING", label: "Segera", activeClass: "bg-warning/12 text-warning border-warning/25 shadow-sm", inactiveClass: "bg-background text-muted-foreground border-border/70" },
+  { key: "ATTENTION", label: "Pantau", activeClass: "bg-accent/12 text-accent-foreground border-accent/25 shadow-sm", inactiveClass: "bg-background text-muted-foreground border-border/70" },
+  { key: "SAFE", label: "Aman", activeClass: "bg-success/12 text-success border-success/25 shadow-sm", inactiveClass: "bg-background text-muted-foreground border-border/70" },
+  { key: "OUT_OF_STOCK", label: "Kosong", activeClass: "bg-slate-100 text-slate-800 border-slate-300 shadow-sm dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700", inactiveClass: "bg-background text-muted-foreground border-border/70" },
 ];
 
 const STATUS_BADGE: Record<DosStatus, { label: string; className: string }> = {
@@ -395,11 +395,11 @@ const Analisa = () => {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-destructive/10 px-3 font-semibold text-destructive">
+          <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-destructive/15 bg-destructive/[0.06] px-3 font-semibold text-destructive">
             <AlertTriangle className="h-3.5 w-3.5" />
             {needsReorder} perlu restock
           </span>
-          <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-primary/10 px-3 font-semibold text-primary">
+          <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-primary/15 bg-primary/[0.06] px-3 font-semibold text-primary">
             <Wallet className="h-3.5 w-3.5" />
             {formatRp(totalRestockCost)}
           </span>
@@ -408,8 +408,8 @@ const Analisa = () => {
 
       {/* MAIN CONTENT — TABS */}
       <Tabs value={activeSection} onValueChange={(value) => setActiveSection(value as AnalysisSection)} className="w-full">
-        <div className="rounded-2xl border border-border/80 bg-gradient-to-r from-primary/10 via-background to-warning/10 p-1.5 shadow-[0_8px_24px_rgba(15,23,42,0.06)] dark:from-primary/15 dark:via-slate-900/80 dark:to-warning/10">
-          <TabsList className="grid h-auto w-full grid-cols-5 gap-1 rounded-2xl border border-border/70 bg-card p-1 shadow-sm">
+        <div className="rounded-2xl border border-border/80 bg-card/90 p-1.5 shadow-sm">
+          <TabsList className="grid h-auto w-full grid-cols-5 gap-1 rounded-2xl border border-border/60 bg-muted/30 p-1">
             {[
               { value: "restock", icon: ShoppingCart, label: "Restock", badge: needsReorder > 0 ? needsReorder : null },
               { value: "penjualan", icon: Trophy, label: "Jual", badge: null },
@@ -420,7 +420,7 @@ const Analisa = () => {
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className="relative flex min-h-12 flex-col items-center gap-1 rounded-lg px-1 py-2 text-[9px] font-semibold transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-[0_10px_24px_hsl(var(--primary)/0.24)] sm:flex-row sm:justify-center sm:text-xs"
+                className="relative flex min-h-12 flex-col items-center gap-1 rounded-xl border border-transparent px-1 py-2 text-[9px] font-semibold text-muted-foreground transition-colors data-[state=active]:border-primary/15 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm sm:flex-row sm:justify-center sm:text-xs"
               >
                 <div className="relative">
                   <tab.icon className="h-4 w-4 shrink-0" />
@@ -445,22 +445,22 @@ const Analisa = () => {
         <TabsContent value="restock" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Tabs value={restockView} onValueChange={(value) => setRestockView(value as RestockView)} className="w-full">
             <TabsList className="grid h-auto w-full grid-cols-3 rounded-2xl border border-border/75 bg-card/90 p-1 shadow-sm dark:bg-card/80">
-              <TabsTrigger value="recommendations" className="min-h-10 rounded-xl border border-primary/15 bg-primary/8 px-2 text-[11px] font-semibold text-primary/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-[0_10px_22px_hsl(var(--primary)/0.22)] md:text-xs">
+              <TabsTrigger value="recommendations" className="min-h-10 rounded-xl border border-transparent bg-transparent px-2 text-[11px] font-semibold text-muted-foreground data-[state=active]:border-primary/15 data-[state=active]:bg-primary/[0.08] data-[state=active]:text-primary data-[state=active]:shadow-none md:text-xs">
                 <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Daftar Restock</span>
                 <span className="sm:hidden">Restock</span>
               </TabsTrigger>
-              <TabsTrigger value="predictions" className="min-h-10 rounded-xl border border-warning/15 bg-warning/10 px-2 text-[11px] font-semibold text-warning/80 data-[state=active]:bg-warning data-[state=active]:text-warning-foreground data-[state=active]:shadow-[0_10px_22px_hsl(var(--warning)/0.24)] md:text-xs">
+              <TabsTrigger value="predictions" className="min-h-10 rounded-xl border border-transparent bg-transparent px-2 text-[11px] font-semibold text-muted-foreground data-[state=active]:border-warning/15 data-[state=active]:bg-warning/[0.10] data-[state=active]:text-warning md:text-xs">
                 <Clock className="mr-1.5 h-3.5 w-3.5" />
                 Prediksi Habis
               </TabsTrigger>
-              <TabsTrigger value="low-stock" className="min-h-10 rounded-xl border border-success/15 bg-success/10 px-2 text-[11px] font-semibold text-success/80 data-[state=active]:bg-success data-[state=active]:text-success-foreground data-[state=active]:shadow-[0_10px_22px_hsl(var(--success)/0.24)] md:text-xs">
+              <TabsTrigger value="low-stock" className="min-h-10 rounded-xl border border-transparent bg-transparent px-2 text-[11px] font-semibold text-muted-foreground data-[state=active]:border-success/15 data-[state=active]:bg-success/[0.10] data-[state=active]:text-success md:text-xs">
                 <ArrowDown className="mr-1.5 h-3.5 w-3.5" />
                 Stok Terendah
               </TabsTrigger>
             </TabsList>
 
-            <div className="sticky top-0 z-10 mt-3 space-y-3 rounded-2xl border border-border/75 bg-gradient-to-br from-background via-primary/5 to-warning/10 px-3 py-3 shadow-[0_8px_18px_rgba(15,23,42,0.05)] ring-1 ring-black/5 backdrop-blur-sm dark:from-slate-900/90 dark:via-slate-900/75 dark:to-primary/10">
+            <div className="sticky top-0 z-10 mt-3 space-y-3 rounded-2xl border border-border/75 bg-card/95 px-3 py-3 shadow-sm backdrop-blur-sm">
               <div className="flex gap-2">
                 <div className="relative min-w-0 flex-1">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -508,8 +508,8 @@ const Analisa = () => {
                       aria-pressed={isActive}
                     className={`inline-flex min-h-9 items-center justify-center gap-1 rounded-xl border px-2 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                         isActive
-                          ? `${chip.activeClass} border-transparent`
-                          : `${chip.inactiveClass} shadow-[0_1px_2px_rgba(15,23,42,0.03)] hover:brightness-[0.98]`
+                          ? chip.activeClass
+                          : `${chip.inactiveClass} hover:bg-muted/50`
                       }`}
                     >
                       {chip.label}
