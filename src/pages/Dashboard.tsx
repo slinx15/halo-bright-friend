@@ -175,8 +175,9 @@ function HeroKpi({
   margin: number;
   hpp: number;
 }) {
+  const marginPositive = margin >= 0;
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid grid-cols-3 gap-2.5">
       <div
         className="relative col-span-2 overflow-hidden rounded-2xl p-4 text-primary-foreground shadow-premium-lg"
         style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(217 91% 40%))" }}
@@ -189,34 +190,35 @@ function HeroKpi({
             <span className="text-xs font-medium opacity-80">Omzet Hari Ini</span>
           </div>
           <p className="text-2xl font-extrabold tracking-tight tabular-nums">{formatRupiah(omzet)}</p>
-          {margin > 0 && (
-            <div className="mt-1.5 flex items-center gap-1">
-              <ArrowUpRight className="h-3 w-3" />
-              <span className="text-[11px] font-semibold opacity-90">margin {margin}%</span>
-            </div>
-          )}
+          <div className="mt-1.5 flex items-center gap-1">
+            <ArrowUpRight className={`h-3 w-3 ${marginPositive ? "" : "rotate-180"}`} />
+            <span className="text-[11px] font-semibold opacity-90">margin {margin}%</span>
+          </div>
         </div>
       </div>
 
       <div className="card-premium flex flex-col justify-between p-4">
         <div className="mb-1 flex items-center gap-1.5">
           <ShoppingCart className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Terjual</span>
         </div>
         <div>
           <p className="text-2xl font-extrabold tracking-tight tabular-nums">{formatNumber(pcs)}</p>
-          <span className="text-[10px] font-medium text-muted-foreground">pcs terjual</span>
+          <span className="text-[10px] font-medium text-muted-foreground">pcs hari ini</span>
         </div>
       </div>
 
-      <div className="card-premium col-span-3 p-3.5">
+      <div className="card-premium col-span-3 p-4">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="rounded-lg bg-success/10 p-1.5">
-              <TrendingUp className="h-4 w-4 text-success" />
+          <div className="flex items-center gap-2.5">
+            <div className={`rounded-xl p-2 ${profit >= 0 ? "bg-success/10" : "bg-destructive/10"}`}>
+              <TrendingUp className={`h-5 w-5 ${profit >= 0 ? "text-success" : "text-destructive rotate-180"}`} />
             </div>
             <div>
               <p className="text-[11px] font-medium text-muted-foreground">Profit Hari Ini</p>
-              <p className="text-lg font-extrabold tracking-tight tabular-nums">{formatRupiah(profit)}</p>
+              <p className={`text-xl font-extrabold tracking-tight tabular-nums ${profit >= 0 ? "text-success" : "text-destructive"}`}>
+                {formatRupiah(profit)}
+              </p>
             </div>
           </div>
           <div className="text-right">
@@ -228,6 +230,7 @@ function HeroKpi({
     </div>
   );
 }
+
 
 function QuickActions() {
   const navigate = useNavigate();
