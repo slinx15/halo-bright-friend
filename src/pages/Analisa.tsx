@@ -697,22 +697,21 @@ const Analisa = () => {
                   <button
                     key={a.productId}
                     onClick={() => openProductDrawer(a)}
-                    className={`rounded-xl border bg-card p-3.5 transition-all active:scale-[0.99] w-full text-left [&>div>div>span.text-xs]:hidden ${
+                    className={`rounded-xl border bg-card p-3.5 transition-all active:scale-[0.99] w-full text-left ${
                       priority === "critical" ? "border-destructive/25 bg-destructive/[0.035]" : "border-border/60"
                     } animate-fade-in`}
                     style={{ animationDelay: `${Math.min(idx * 30, 300)}ms`, animationFillMode: "both" }}
                   >
                     <div className="flex items-start justify-between mb-2.5 gap-2">
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 min-w-0">
+                        <div className="flex items-center gap-2 min-w-0 flex-wrap">
                           <span className="font-bold text-sm truncate">{a.kode}</span>
                           {a.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning shrink-0" />}
-                          {a.isStockOut && <span className="text-xs shrink-0">🚨</span>}
                           <Badge variant="outline" className={`text-[9px] font-semibold shrink-0 ${badge.className}`}>
                             {badge.label}
                           </Badge>
                         </div>
-                        {a.nama && (
+                        {a.nama && a.nama.trim().toLowerCase() !== a.kode.trim().toLowerCase() && !a.nama.trim().toLowerCase().startsWith(`${a.kode.trim().toLowerCase()} `) && (
                           <p className="mt-1 text-[11px] text-muted-foreground truncate">{a.nama}</p>
                         )}
                       </div>
