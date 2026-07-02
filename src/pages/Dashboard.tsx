@@ -477,11 +477,12 @@ const Dashboard = () => {
                     contentStyle={{
                       borderRadius: 12,
                       fontSize: 11,
-                      border: "1px solid hsl(213 25% 90%)",
-                      boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
-                      background: "hsl(210 40% 99%)",
-                      color: "hsl(222 47% 11%)",
+                      border: "1px solid hsl(var(--border))",
+                      boxShadow: "0 8px 32px hsl(var(--foreground) / 0.08)",
+                      background: "hsl(var(--popover))",
+                      color: "hsl(var(--popover-foreground))",
                     }}
+
                   />
                   <Bar dataKey="omzet" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
                 </BarChart>
