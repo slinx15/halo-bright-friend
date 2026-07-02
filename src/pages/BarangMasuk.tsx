@@ -231,56 +231,47 @@ const BarangMasuk = () => {
         </div>
       </section>
 
-      {/* KPI CARDS — Vibrant status cards (stacked, icon + label kiri, angka kanan) */}
-      <section className="space-y-2.5">
+      {/* KPI CARDS — Vibrant status cards (horizontal, 3 kolom) */}
+      <section className="grid grid-cols-3 gap-2.5">
         {/* Draft */}
-        <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition-transform active:scale-[0.98]">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-warning/10 text-warning">
-              <FileEdit className="h-6 w-6" strokeWidth={2} />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">Draft</p>
-              <p className="text-xs text-muted-foreground">Menunggu diisi</p>
-            </div>
+        <div className="flex flex-col items-center justify-between rounded-2xl border border-border/60 bg-card p-3 shadow-sm transition-transform active:scale-[0.98]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/10 text-warning">
+            <FileEdit className="h-5 w-5" strokeWidth={2} />
           </div>
-          <div className="text-right">
-            <span className="text-3xl font-extrabold tabular-nums text-foreground">{items.length}</span>
-            <span className="block text-[10px] font-bold uppercase tracking-tight text-muted-foreground">Baris</span>
+          <div className="my-1.5 text-center">
+            <span className="text-2xl font-extrabold tabular-nums text-foreground leading-none">{items.length}</span>
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] font-bold uppercase tracking-tight text-foreground/90">Draft</p>
+            <p className="text-[9px] text-muted-foreground">Menunggu</p>
           </div>
         </div>
 
         {/* Siap Simpan */}
-        <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition-transform active:scale-[0.98]">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-success/10 text-success">
-              <CheckCircle2 className="h-6 w-6" strokeWidth={2} />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">Siap Simpan</p>
-              <p className="text-xs font-medium text-success">Item valid</p>
-            </div>
+        <div className="flex flex-col items-center justify-between rounded-2xl border border-border/60 bg-card p-3 shadow-sm transition-transform active:scale-[0.98]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10 text-success">
+            <CheckCircle2 className="h-5 w-5" strokeWidth={2} />
           </div>
-          <div className="text-right">
-            <span className="text-3xl font-extrabold tabular-nums text-foreground">{validCount}</span>
-            <span className="block text-[10px] font-bold uppercase tracking-tight text-muted-foreground">Item</span>
+          <div className="my-1.5 text-center">
+            <span className="text-2xl font-extrabold tabular-nums text-foreground leading-none">{validCount}</span>
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] font-bold uppercase tracking-tight text-success">Valid</p>
+            <p className="text-[9px] text-muted-foreground">Item</p>
           </div>
         </div>
 
         {/* Total Pcs — filled primary */}
-        <div className="flex items-center justify-between rounded-2xl bg-primary p-4 shadow-lg shadow-primary/20 transition-transform active:scale-[0.98]">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-foreground/15 text-primary-foreground">
-              <Boxes className="h-6 w-6" strokeWidth={2} />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-primary-foreground">Total Pcs</p>
-              <p className="text-xs text-primary-foreground/75">Akan masuk</p>
-            </div>
+        <div className="flex flex-col items-center justify-between rounded-2xl bg-primary p-3 shadow-lg shadow-primary/20 transition-transform active:scale-[0.98]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-foreground/15 text-primary-foreground">
+            <Boxes className="h-5 w-5" strokeWidth={2} />
           </div>
-          <div className="text-right">
-            <span className="text-3xl font-extrabold tabular-nums text-primary-foreground">{formatNumber(totalQty)}</span>
-            <span className="block text-[10px] font-bold uppercase tracking-tight text-primary-foreground/70">Pcs</span>
+          <div className="my-1.5 text-center">
+            <span className="text-2xl font-extrabold tabular-nums text-primary-foreground leading-none">{formatNumber(totalQty)}</span>
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] font-bold uppercase tracking-tight text-primary-foreground">Total</p>
+            <p className="text-[9px] text-primary-foreground/75">Pcs</p>
           </div>
         </div>
       </section>
