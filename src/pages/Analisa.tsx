@@ -571,10 +571,13 @@ const Analisa = () => {
             </div>
 
           <TabsContent value="recommendations" className="mt-4 space-y-4">
-          <div key={`s-${filterKey}`} className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground animate-fade-in">
-            <span>Ditampilkan: <strong className="text-foreground">{filtered.length}</strong></span>
-            <span className="text-border">|</span>
-            <span>Filter: <strong className="text-foreground">{activeFilterLabel}</strong></span>
+          <div key={`s-${filterKey}`} className="flex items-center gap-2 animate-fade-in">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-2.5 py-1 text-[11px] text-muted-foreground">
+              <span className="font-semibold text-foreground tabular-nums">{filtered.length}</span> produk
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-2.5 py-1 text-[11px] text-muted-foreground">
+              Filter: <span className="font-semibold text-foreground">{activeFilterLabel}</span>
+            </span>
           </div>
 
           <div key={filterKey} className="hidden md:block animate-fade-in">
