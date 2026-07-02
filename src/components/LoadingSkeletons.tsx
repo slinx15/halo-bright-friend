@@ -156,31 +156,54 @@ export function QuickActionsSkeleton() {
   );
 }
 
-/** Dashboard full loading skeleton */
+/** Dashboard full loading skeleton — mirrors current layout */
 export function DashboardSkeleton() {
   return (
-    <PageSkeleton>
-      {/* Command chips */}
-      <div className="flex gap-2">
-        <Skeleton className="h-10 w-32 rounded-2xl" />
-        <Skeleton className="h-10 w-28 rounded-2xl" />
-        <Skeleton className="h-10 w-36 rounded-2xl" />
+    <div className="mx-auto w-full max-w-[1400px] space-y-5 p-4 pb-24 md:space-y-6 md:p-6 md:pb-6 animate-in fade-in duration-300">
+      {/* Header greeting */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1.5">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-7 w-40" />
+          <Skeleton className="h-3 w-48" />
+          <Skeleton className="h-3 w-36" />
+        </div>
+        <Skeleton className="h-6 w-14 rounded-full" />
       </div>
-      <KpiSkeleton />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Hero KPI grid */}
+      <div className="grid grid-cols-3 gap-2.5">
+        <Skeleton className="col-span-2 h-24 rounded-2xl" />
+        <Skeleton className="h-24 rounded-2xl" />
+        <Skeleton className="col-span-3 h-20 rounded-2xl" />
+      </div>
+      {/* Critical + AI */}
+      <AlertCardSkeleton />
+      <Skeleton className="h-32 w-full rounded-2xl" />
+      {/* Command center */}
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-32" />
+        <div className="grid grid-cols-4 gap-2">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-20 rounded-2xl" />
+          ))}
+        </div>
+      </div>
+      {/* Barang masuk */}
+      <div className="grid grid-cols-3 gap-2.5">
+        <Skeleton className="col-span-2 h-20 rounded-2xl" />
+        <Skeleton className="h-20 rounded-2xl" />
+      </div>
+      {/* Chart + Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="md:col-span-2">
           <ChartSkeleton />
         </div>
-        <AlertCardSkeleton />
+        <QuickActionsSkeleton />
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <KpiSkeleton count={1} />
-        <KpiSkeleton count={1} />
-      </div>
-      <QuickActionsSkeleton />
-    </PageSkeleton>
+    </div>
   );
 }
+
 
 /** Stok page loading skeleton */
 export function StokSkeleton() {
