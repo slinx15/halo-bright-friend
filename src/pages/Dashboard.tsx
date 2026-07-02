@@ -482,12 +482,9 @@ const Dashboard = () => {
       </div>
 
       <div className="animate-fade-in" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
-        <CriticalStockAlert />
+        <CommandCenter products={products} isLoading={isLoading} />
       </div>
 
-      <div className="animate-fade-in" style={{ animationDelay: "150ms", animationFillMode: "both" }}>
-        <AiInsightsCard />
-      </div>
 
       <div className="animate-fade-in" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
         <CommandCenter products={products} isLoading={isLoading} />
