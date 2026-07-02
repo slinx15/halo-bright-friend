@@ -496,11 +496,6 @@ const Dashboard = () => {
         <CommandCenter products={products} isLoading={isLoading} />
       </div>
 
-
-      <div className="animate-fade-in" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
-        <CommandCenter products={products} isLoading={isLoading} />
-      </div>
-
       <div className="animate-fade-in" style={{ animationDelay: "225ms", animationFillMode: "both" }}>
         <div className="grid grid-cols-3 gap-2.5">
           <div className="card-premium col-span-2 p-4 transition-transform duration-200 hover:-translate-y-0.5">
