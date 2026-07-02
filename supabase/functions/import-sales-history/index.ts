@@ -186,39 +186,84 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: getErrorMessage(aliasesError, "Failed to fetch product aliases") }, 500);
     }
 
-    const productByKode = new Map<string, ProductLookup>();
+    // Index produk berdasarkan kode (bisa banyak kategori per kode)
+    const productsByKode = new Map<string, ProductRecord[]>();
     const typedProducts = products as ProductRecord[];
     const typedAliases = (aliases ?? []) as ProductAliasRecord[];
 
     for (const product of typedProducts) {
-      const hargaNormal = getHargaNormal(product.prices);
       const key = product.kode.toUpperCase();
-      const existing = productByKode.get(key);
-
-      if (!existing || product.kategori === "2 Ons") {
-        productByKode.set(key, { id: product.id, harga_normal: hargaNormal });
-      }
+      const list = productsByKode.get(key) ?? [];
+      list.push(product);
+      productsByKode.set(key, list);
     }
 
+    // Alias tetap satu-ke-satu (alias sudah menunjuk ke product_id spesifik)
+    const aliasLookup = new Map<string, ProductLookup>();
     for (const alias of typedAliases) {
       const matchedProduct = typedProducts.find((product) => product.id === alias.product_id);
       if (!matchedProduct) continue;
-
-      productByKode.set(alias.alias.toUpperCase(), {
+      aliasLookup.set(alias.alias.toUpperCase(), {
         id: matchedProduct.id,
         harga_normal: getHargaNormal(matchedProduct.prices),
       });
     }
 
+    const CATEGORY_SUFFIX_RE = /\s+(2\s*ONS|3\s*ONS|5\s*ONS|18\s*GRAM)$/i;
+    const CATEGORY_LABELS: Record<string, string> = {
+      "2 ONS": "2 Ons",
+      "3 ONS": "3 Ons",
+      "5 ONS": "5 Ons",
+      "18 GRAM": "18 Gram",
+    };
+
+    function resolveProduct(rawKode: string): { product?: ProductLookup; reason?: string } {
+      const upper = rawKode.trim().toUpperCase();
+      if (!upper) return { reason: "kode kosong" };
+
+      // 1. Alias exact match
+      const aliased = aliasLookup.get(upper);
+      if (aliased) return { product: aliased };
+
+      // 2. Pisahkan suffix kategori kalau ada (mis. "R400 18 GRAM")
+      const suffixMatch = upper.match(CATEGORY_SUFFIX_RE);
+      const explicitCategory = suffixMatch
+        ? CATEGORY_LABELS[suffixMatch[1].replace(/\s+/g, " ").toUpperCase()]
+        : null;
+      const baseKode = suffixMatch ? upper.replace(CATEGORY_SUFFIX_RE, "").trim() : upper;
+
+      const candidates = productsByKode.get(baseKode) ?? productsByKode.get(upper) ?? [];
+      if (candidates.length === 0) return { reason: "kode tidak ditemukan" };
+
+      // 3. Jika ada kategori eksplisit dari suffix, wajib match
+      if (explicitCategory) {
+        const match = candidates.find((p) => (p.kategori ?? "").toLowerCase() === explicitCategory.toLowerCase());
+        if (!match) return { reason: `kategori ${explicitCategory} tidak ada untuk kode ${baseKode}` };
+        return { product: { id: match.id, harga_normal: getHargaNormal(match.prices) } };
+      }
+
+      // 4. Tanpa suffix: kalau cuma 1 kategori, aman. Kalau lebih dari 1, tolak (ambigu).
+      if (candidates.length === 1) {
+        const p = candidates[0];
+        return { product: { id: p.id, harga_normal: getHargaNormal(p.prices) } };
+      }
+
+      const kategoriList = candidates.map((p) => p.kategori || "-").join(", ");
+      return { reason: `kode ambigu (${candidates.length} kategori: ${kategoriList}) — tambahkan suffix ukuran` };
+    }
+
     const notFound: string[] = [];
+    const ambiguous: ImportFailure[] = [];
     const preparedRows: PreparedImportRow[] = [];
 
     for (const row of rows) {
       const kode = (row.kode || "").trim().toUpperCase();
-      const product = productByKode.get(kode);
+      const { product, reason } = resolveProduct(kode);
 
       if (!product) {
-        if (kode && !notFound.includes(kode)) {
+        if (reason && reason.startsWith("kode ambigu")) {
+          ambiguous.push({ kode, tanggal: row.tanggal || "", error: reason });
+        } else if (kode && !notFound.includes(kode)) {
           notFound.push(kode);
         }
         continue;
