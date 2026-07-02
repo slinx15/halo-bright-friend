@@ -388,7 +388,7 @@ const Dashboard = () => {
   if (isLoading) return <DashboardSkeleton />;
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] space-y-4 p-4 pb-24 md:p-6 md:pb-6">
+    <div className="mx-auto w-full max-w-[1400px] space-y-5 p-4 pb-24 md:space-y-6 md:p-6 md:pb-6">
       <div className="animate-fade-in">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
