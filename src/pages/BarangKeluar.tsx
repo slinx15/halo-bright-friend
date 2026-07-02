@@ -370,14 +370,16 @@ const BarangKeluar = () => {
     <div className="mx-auto w-full max-w-[1400px] space-y-5 p-4 md:p-6 [&>*]:animate-fade-in [&>*]:[animation-fill-mode:both] [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*:nth-child(5)]:![animation-delay:200ms]">
       <section className="flex items-center justify-between gap-3 rounded-[1.35rem] border border-border/70 bg-card/95 px-4 py-4 shadow-sm">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="rounded-2xl bg-destructive/10 p-3 shadow-sm">
-            <PackageMinus className="h-5 w-5 text-destructive" />
+    <div className="mx-auto w-full max-w-[1400px] space-y-4 p-4 pb-32 md:space-y-5 md:p-6 md:pb-6 [&>*]:animate-fade-in [&>*]:[animation-fill-mode:both] [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*:nth-child(5)]:![animation-delay:200ms]">
+      {/* HEADER — ringkas, ikon di kiri, tombol Scan Nota compact */}
+      <section className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="rounded-lg bg-destructive/10 p-1.5">
+            <PackageMinus className="h-4 w-4 text-destructive" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-lg font-extrabold leading-tight tracking-tight text-foreground sm:text-xl">
-              Barang Keluar
-            </h1>
-            <p className="text-sm text-muted-foreground">Catat penjualan dan pengiriman dengan stok tetap terjaga</p>
+            <h1 className="text-lg font-extrabold leading-tight tracking-tight">Barang Keluar</h1>
+            <p className="text-xs text-muted-foreground">Catat penjualan dengan cepat</p>
           </div>
         </div>
         <div className="shrink-0">
@@ -385,89 +387,62 @@ const BarangKeluar = () => {
         </div>
       </section>
 
-      <section className="rounded-[1.35rem] border border-border/70 bg-card/95 p-2 shadow-sm">
-        <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-2xl border border-destructive/15 bg-destructive/10 px-3 py-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-destructive/80">Transaksi</p>
-            <p className="mt-1 text-2xl font-extrabold leading-none text-destructive tabular-nums">{todaySummary.count}</p>
-            <p className="mt-1 text-[11px] text-destructive/75">Hari ini</p>
+      {/* KPI CARDS — Vibrant status cards (horizontal, 3 kolom) */}
+      <section className="grid grid-cols-3 gap-2.5">
+        {/* Transaksi */}
+        <div className="flex flex-col items-center justify-between rounded-2xl border border-border/60 bg-card p-3 shadow-sm transition-transform active:scale-[0.98]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+            <FileEdit className="h-5 w-5" strokeWidth={2} />
           </div>
-          <div className="rounded-2xl border border-warning/15 bg-warning/10 px-3 py-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/70">Qty</p>
-            <p className="mt-1 text-2xl font-extrabold leading-none text-foreground tabular-nums">{formatNumber(todaySummary.qty)}</p>
-            <p className="mt-1 text-[11px] text-foreground/60">Keluar hari ini</p>
+          <div className="my-1.5 text-center">
+            <span className="text-2xl font-extrabold tabular-nums text-foreground leading-none">{todaySummary.count}</span>
           </div>
-          <div className="rounded-2xl border border-primary/15 bg-primary/10 px-3 py-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/80">Omzet</p>
-            <p className="mt-1 truncate text-xl font-extrabold leading-none text-primary tabular-nums">
-              {formatRupiah(todaySummary.revenue)}
-            </p>
-            <p className="mt-1 text-[11px] text-primary/75">Total hari ini</p>
+          <div className="text-center">
+            <p className="text-[10px] font-bold uppercase tracking-tight text-foreground/90">Transaksi</p>
+            <p className="text-[9px] text-muted-foreground">Hari ini</p>
+          </div>
+        </div>
+
+        {/* Qty */}
+        <div className="flex flex-col items-center justify-between rounded-2xl border border-border/60 bg-card p-3 shadow-sm transition-transform active:scale-[0.98]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/10 text-warning">
+            <Boxes className="h-5 w-5" strokeWidth={2} />
+          </div>
+          <div className="my-1.5 text-center">
+            <span className="text-2xl font-extrabold tabular-nums text-foreground leading-none">{formatNumber(todaySummary.qty)}</span>
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] font-bold uppercase tracking-tight text-foreground/90">Qty</p>
+            <p className="text-[9px] text-muted-foreground">Keluar</p>
+          </div>
+        </div>
+
+        {/* Omzet — filled primary */}
+        <div className="flex flex-col items-center justify-between rounded-2xl bg-primary p-3 shadow-lg shadow-primary/20 transition-transform active:scale-[0.98]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-foreground/15 text-primary-foreground">
+            <Wallet className="h-5 w-5" strokeWidth={2} />
+          </div>
+          <div className="my-1.5 text-center">
+            <span className="truncate text-xl font-extrabold tabular-nums text-primary-foreground leading-none">{formatRupiah(todaySummary.revenue)}</span>
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] font-bold uppercase tracking-tight text-primary-foreground">Omzet</p>
+            <p className="text-[9px] text-primary-foreground/75">Hari ini</p>
           </div>
         </div>
       </section>
 
-      <Card className="overflow-hidden rounded-[1.6rem] border-border/70 bg-card shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base font-bold">
+      {/* INPUT FORM */}
+      <Card className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+        <CardHeader className="flex flex-row items-center gap-2 px-4 py-3 pb-2">
+          <div className="rounded-lg bg-destructive/10 p-1.5">
             <PackageMinus className="h-4 w-4 text-destructive" />
-            Input Barang Keluar
-          </CardTitle>
+          </div>
+          <CardTitle className="text-sm font-semibold">Input Barang Keluar</CardTitle>
         </CardHeader>
 
-        <CardContent className="space-y-4 pt-1">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <div>
-              <Label className="text-xs font-semibold text-muted-foreground">Nama Toko / Pelanggan</Label>
-              <Input
-                value={globalToko}
-                onChange={(event) => setGlobalToko(event.target.value)}
-                placeholder="Nama toko atau pelanggan..."
-                className="mt-1 rounded-xl border-border/70 bg-card"
-              />
-            </div>
-            <div>
-              <Label className="text-xs font-semibold text-muted-foreground">Tanggal</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "mt-1 w-full justify-start rounded-xl border-border/70 bg-card text-left font-normal",
-                      !tanggal && "text-muted-foreground",
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {selectedDateLabel}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={tanggal}
-                    onSelect={setTanggal}
-                    initialFocus
-                    className="pointer-events-auto p-3"
-                  />
-                </PopoverContent>
-              </Popover>
-              {tanggal && (
-                <button onClick={() => setTanggal(undefined)} className="mt-0.5 text-[10px] text-primary hover:underline">
-                  Reset ke hari ini
-                </button>
-              )}
-            </div>
-            <div>
-              <Label className="text-xs font-semibold text-muted-foreground">Catatan (opsional)</Label>
-              <Textarea
-                value={catatan}
-                onChange={(event) => setCatatan(event.target.value)}
-                placeholder="Catatan..."
-                rows={1}
-                className="mt-1 rounded-xl border-border/70 bg-card"
-              />
-            </div>
-          </div>
+        <CardContent className="space-y-3 px-4 pb-4 pt-1">
+
 
           {validItemsForHarga.length > 0 && (
             <Dialog open={hargaDialogOpen} onOpenChange={setHargaDialogOpen}>
