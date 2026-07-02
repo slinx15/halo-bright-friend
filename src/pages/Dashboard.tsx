@@ -615,9 +615,15 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="animate-fade-in" style={{ animationDelay: "225ms", animationFillMode: "both" }}>
+      <div className="animate-fade-in space-y-2" style={{ animationDelay: "300ms", animationFillMode: "both" }}>
+        <div className="flex items-center gap-2 px-1">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Insight AI</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
         <AiInsightsCard />
       </div>
+
 
     </div>
   );
