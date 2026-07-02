@@ -16,14 +16,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
-  PackageMinus,
-  Send,
-  CheckCircle2,
+  Boxes,
   CalendarIcon,
-  Trash2,
+  CheckCircle2,
+  ChevronDown,
+  FileEdit,
+  PackageMinus,
   Plus,
+  Send,
   SlidersHorizontal,
+  Trash2,
+  Wallet,
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { formatNumber, formatRupiah } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { OcrUpload } from "@/components/OcrUpload";
