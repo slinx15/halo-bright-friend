@@ -496,27 +496,30 @@ const Dashboard = () => {
         <CommandCenter products={products} isLoading={isLoading} />
       </div>
 
-      <div className="animate-fade-in" style={{ animationDelay: "225ms", animationFillMode: "both" }}>
-        <div className="grid grid-cols-3 gap-2.5">
-          <div className="card-premium col-span-2 p-4 transition-transform duration-200 hover:-translate-y-0.5">
-            <div className="mb-1 flex items-center gap-1.5">
-              <PackagePlus className="h-3.5 w-3.5 text-primary" />
-              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Barang Masuk</span>
+      <div className="animate-fade-in" style={{ animationDelay: "150ms", animationFillMode: "both" }}>
+        <Card className="card-premium overflow-hidden rounded-2xl">
+          <CardHeader className="flex flex-row items-center justify-between px-4 py-3 pb-2">
+            <div className="flex items-center gap-2">
+              <div className="rounded-lg bg-success/10 p-1.5">
+                <PackagePlus className="h-4 w-4 text-success" />
+              </div>
+              <CardTitle className="text-sm font-semibold">Barang Masuk Hari Ini</CardTitle>
             </div>
-            <div className="flex items-baseline gap-2">
-              <p className="text-2xl font-extrabold tracking-tight tabular-nums">{formatNumber(stockInPcsHariIni)}</p>
-              <span className="text-[11px] font-medium text-muted-foreground">pcs · {stockInEntries} entri</span>
+            <span className="text-xs font-medium text-muted-foreground">{stockInEntries} entri</span>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-3 px-4 pb-4 pt-1">
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Jumlah</p>
+              <p className="mt-0.5 text-2xl font-extrabold tracking-tight tabular-nums">{formatNumber(stockInPcsHariIni)} <span className="text-xs font-medium text-muted-foreground">pcs</span></p>
             </div>
-          </div>
-          <div className="card-premium flex flex-col justify-between p-4 transition-transform duration-200 hover:-translate-y-0.5">
-            <div className="mb-1 flex items-center gap-1.5">
-              <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Modal</span>
+            <div className="text-right">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Modal</p>
+              <p className="mt-0.5 text-2xl font-extrabold tracking-tight tabular-nums text-primary">{formatRupiah(stockInCostHariIni)}</p>
             </div>
-            <p className="text-lg font-extrabold tracking-tight tabular-nums text-primary">{formatRupiah(stockInCostHariIni)}</p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
+
 
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
