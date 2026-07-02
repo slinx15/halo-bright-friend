@@ -542,7 +542,7 @@ const Analisa = () => {
                 )}
               </div>
 
-              <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
+              <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-6 sm:overflow-visible sm:px-0">
                 {FILTER_CHIPS.map((chip) => {
                   const isActive = filter === chip.key;
                   const count = chip.key === "ALL"
@@ -556,7 +556,7 @@ const Analisa = () => {
                       type="button"
                       onClick={() => { setFilter(chip.key); setFilterKey((key) => key + 1); setVisibleCount(30); }}
                       aria-pressed={isActive}
-                    className={`inline-flex min-h-9 items-center justify-center gap-1 rounded-xl border px-2 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    className={`inline-flex min-h-9 shrink-0 items-center justify-center gap-1 rounded-xl border px-3 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-2 ${
                         isActive
                           ? chip.activeClass
                           : `${chip.inactiveClass} hover:bg-muted/50`
