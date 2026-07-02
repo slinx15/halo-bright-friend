@@ -624,12 +624,13 @@ const Analisa = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="font-semibold tracking-tight">
-                            <div className="flex items-center gap-1 [&>span.text-xs]:hidden">
+                            <div className="flex items-center gap-1">
                               <span className="text-sm">{a.kode}</span>
                               {a.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
-                              {a.isStockOut && <span className="text-xs">🚨</span>}
                             </div>
-                            <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">{a.nama}</div>
+                            {a.nama && a.nama.trim().toLowerCase() !== `${a.kode} ${a.kategori ?? ""}`.trim().toLowerCase() && (
+                              <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">{a.nama}</div>
+                            )}
                           </TableCell>
                           <TableCell className={`text-right font-mono text-sm tabular-nums ${isZeroStock ? "text-destructive font-bold" : ""}`}>
                             {a.currentStock}
