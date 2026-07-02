@@ -387,11 +387,25 @@ const Dashboard = () => {
 
   if (isLoading) return <DashboardSkeleton />;
 
+  const summary = getInventorySummary(products);
+  const kritisCount = summary.kosong + summary.kritis;
+  const todayDateStr = nowWib.toLocaleDateString("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+
+  const weekTotal = chartData.reduce((sum, day) => sum + day.omzet, 0);
+  const weekAvg = weekTotal / 7;
+  const bestOmzet = chartData.reduce((max, day) => Math.max(max, day.omzet), 0);
+
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-5 p-4 pb-24 md:space-y-6 md:p-6 md:pb-6">
       <div className="animate-fade-in">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-2">
               <p className="text-sm font-medium text-muted-foreground">{getGreeting()}, Boss</p>
               <div className="rounded-full bg-primary/10 p-1">
@@ -399,23 +413,41 @@ const Dashboard = () => {
               </div>
             </div>
             <h1 className="text-xl font-extrabold tracking-tight">Dashboard</h1>
+            <p className="text-[11px] font-medium text-muted-foreground">{todayDateStr} · WIB</p>
+            <p className="text-xs font-semibold text-foreground/80">
+              Omzet {formatRupiah(omzetHariIni)}
+              {kritisCount > 0 && (
+                <>
+                  {" · "}
+                  <span className="text-destructive">{kritisCount} stok perlu perhatian</span>
+                </>
+              )}
+            </p>
           </div>
-          <div className="glass hidden rounded-full border border-border/20 px-3 py-1.5 text-xs text-muted-foreground md:flex md:items-center md:gap-2">
-            <span className="h-2 w-2 rounded-full bg-success" />
+          <div className="glass flex shrink-0 items-center gap-1.5 rounded-full border border-border/20 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground md:px-3 md:py-1.5 md:text-xs">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-success" />
             Live
           </div>
         </div>
       </div>
 
       <div className="animate-fade-in" style={{ animationDelay: "50ms", animationFillMode: "both" }}>
-        <CommandCenter products={products} isLoading={isLoading} />
-      </div>
-
-      <div className="animate-fade-in" style={{ animationDelay: "150ms", animationFillMode: "both" }}>
         <HeroKpi omzet={omzetHariIni} profit={profitHariIni} pcs={pcsHariIni} margin={marginPct} hpp={modalHariIni} />
       </div>
 
-      <div className="animate-fade-in" style={{ animationDelay: "175ms", animationFillMode: "both" }}>
+      <div className="animate-fade-in" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
+        <CriticalStockAlert />
+      </div>
+
+      <div className="animate-fade-in" style={{ animationDelay: "150ms", animationFillMode: "both" }}>
+        <AiInsightsCard />
+      </div>
+
+      <div className="animate-fade-in" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
+        <CommandCenter products={products} isLoading={isLoading} />
+      </div>
+
+      <div className="animate-fade-in" style={{ animationDelay: "225ms", animationFillMode: "both" }}>
         <Card className="card-premium">
           <CardContent className="p-3.5">
             <div className="flex items-center justify-between">
@@ -443,12 +475,21 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <Card className="card-premium md:col-span-2">
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm font-bold">
-              <div className="rounded-md bg-primary/10 p-1">
-                <BarChart3 className="h-3.5 w-3.5 text-primary" />
+            <div className="flex items-start justify-between gap-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-bold">
+                <div className="rounded-md bg-primary/10 p-1">
+                  <BarChart3 className="h-3.5 w-3.5 text-primary" />
+                </div>
+                Penjualan 7 Hari
+              </CardTitle>
+              <div className="text-right">
+                <p className="text-[10px] font-medium text-muted-foreground">Total</p>
+                <p className="text-xs font-bold tabular-nums text-foreground">{formatRupiah(weekTotal)}</p>
               </div>
-              Penjualan 7 Hari
-            </CardTitle>
+            </div>
+            <p className="text-[10px] font-medium text-muted-foreground">
+              Rata-rata {formatRupiah(Math.round(weekAvg))}/hari
+            </p>
           </CardHeader>
           <CardContent className="pb-3 pt-1">
             <div className="h-48 md:h-56">
@@ -482,20 +523,40 @@ const Dashboard = () => {
                       background: "hsl(var(--popover))",
                       color: "hsl(var(--popover-foreground))",
                     }}
-
                   />
-                  <Bar dataKey="omzet" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                  {weekAvg > 0 && (
+                    <ReferenceLine
+                      y={weekAvg}
+                      stroke="hsl(var(--muted-foreground))"
+                      strokeDasharray="4 4"
+                      strokeOpacity={0.6}
+                      label={{
+                        value: "rata-rata",
+                        position: "insideTopRight",
+                        fontSize: 9,
+                        fill: "hsl(var(--muted-foreground))",
+                      }}
+                    />
+                  )}
+                  <Bar dataKey="omzet" radius={[6, 6, 0, 0]}>
+                    {chartData.map((day, index) => (
+                      <Cell
+                        key={index}
+                        fill={
+                          day.omzet > 0 && day.omzet === bestOmzet
+                            ? "hsl(var(--success))"
+                            : "hsl(var(--primary))"
+                        }
+                      />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
 
-        <CriticalStockAlert />
-      </div>
-
-      <div className="animate-fade-in" style={{ animationDelay: "250ms", animationFillMode: "both" }}>
-        <AiInsightsCard />
+        <QuickActions />
       </div>
 
       <div className="hidden animate-fade-in md:block" style={{ animationDelay: "350ms", animationFillMode: "both" }}>
@@ -504,6 +565,7 @@ const Dashboard = () => {
     </div>
   );
 };
+
 
 export default Dashboard;
 
