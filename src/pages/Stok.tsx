@@ -326,14 +326,22 @@ const Stok = () => {
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-foreground/15 text-primary-foreground">
             <TrendingUp className="h-5 w-5" strokeWidth={2} />
           </div>
-          <div className="my-1.5 w-full px-0.5 text-center">
-            <span className="block truncate text-sm font-extrabold tabular-nums text-primary-foreground leading-tight">{formatRupiah(nilaiStok)}</span>
+          <div className="my-1.5 text-center">
+            <span className="text-2xl font-extrabold tabular-nums text-primary-foreground leading-none">
+              {nilaiStok >= 1_000_000_000
+                ? `${(nilaiStok / 1_000_000_000).toFixed(1).replace(".", ",")} M`
+                : nilaiStok >= 1_000_000
+                  ? `${(nilaiStok / 1_000_000).toFixed(1).replace(".", ",")} jt`
+                  : nilaiStok >= 1_000
+                    ? `${(nilaiStok / 1_000).toFixed(0)} rb`
+                    : formatNumber(nilaiStok)}
+            </span>
           </div>
-
           <div className="text-center">
-            <p className="text-[10px] font-bold uppercase tracking-tight text-primary-foreground">Nilai</p>
+            <p className="text-[10px] font-bold uppercase tracking-tight text-primary-foreground">Nilai (Rp)</p>
             <p className="text-[9px] text-primary-foreground/75">Harga modal</p>
           </div>
+
         </div>
       </section>
 
