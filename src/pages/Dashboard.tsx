@@ -299,23 +299,26 @@ function QuickActions() {
   ];
 
   return (
-    <Card className="card-premium">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-bold">Aksi Cepat</CardTitle>
+    <Card className="card-premium overflow-hidden rounded-2xl">
+      <CardHeader className="flex flex-row items-center gap-2 px-4 py-3 pb-2">
+        <div className="rounded-lg bg-primary/10 p-1.5">
+          <PackagePlus className="h-4 w-4 text-primary" />
+        </div>
+        <CardTitle className="text-sm font-semibold">Aksi Cepat</CardTitle>
       </CardHeader>
-      <CardContent className="pt-0">
-        <div className="grid grid-cols-4 gap-3">
+      <CardContent className="px-3 pb-3 pt-1">
+        <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
           {actions.map((action) => (
             <Button
               key={action.path}
               variant="outline"
-              className="h-auto flex-col gap-2 rounded-xl border-border/50 py-4 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md"
+              className="h-auto min-h-[76px] flex-col gap-2 rounded-xl border-border/60 py-3 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md"
               onClick={() => navigate(action.path)}
             >
               <div className={`rounded-lg p-2 ${action.bg}`}>
-                <action.icon className={`h-5 w-5 ${action.color}`} strokeWidth={2.5} />
+                <action.icon className={`h-5 w-5 ${action.color}`} strokeWidth={2.4} />
               </div>
-              <span className="text-xs font-semibold">{action.label}</span>
+              <span className="text-[11px] font-semibold leading-tight">{action.label}</span>
             </Button>
           ))}
         </div>
@@ -323,6 +326,7 @@ function QuickActions() {
     </Card>
   );
 }
+
 
 const Dashboard = () => {
   const { data: allProducts, isLoading } = useProducts();
