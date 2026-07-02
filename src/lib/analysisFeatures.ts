@@ -1,19 +1,11 @@
-/**
- * Analysis Features — Bot Parity
- * All analysis sub-features from the Telegram bot.
- */
-
 import type { ProductWithDetails } from "@/hooks/useProducts";
 import {
   type StockOutRecord,
-  type ProductAnalysis,
   RULES,
   calculateWMAVelocity,
   calculateTrendData,
-  isBlackWhiteCode,
 } from "./stockAnalyticsEngine";
-
-// ─── Types ────────────────────────────────────────────────
+import { calculateRestockRecommendation, getPlanningTargetDays } from "../../shared/restockCore";
 
 export interface TopSellerItem {
   kode: string;
@@ -115,14 +107,19 @@ export interface StatsData {
   criticalCount: number;
 }
 
-// ─── Helpers ──────────────────────────────────────────────
+const WIB_OFFSET = 7 * 3600000;
 
 function getHargaModal(p: ProductWithDetails): number {
-  return p.prices?.harga_modal || 7000;
+  return p.prices?.harga_modal ?? 0;
 }
 
-function getHargaNormal(p: ProductWithDetails): number {
-  return p.prices?.harga_normal || 0;
+function toWibDate(value: string | Date): Date {
+  return new Date(new Date(value).getTime() + WIB_OFFSET);
+}
+
+function startOfTodayWib(): Date {
+  const nowWib = toWibDate(new Date());
+  return new Date(Date.UTC(nowWib.getUTCFullYear(), nowWib.getUTCMonth(), nowWib.getUTCDate()));
 }
 
 function getUrgencyLevel(days: number): PredictionItem["urgency"] {
@@ -132,45 +129,37 @@ function getUrgencyLevel(days: number): PredictionItem["urgency"] {
   return "safe";
 }
 
-// ─── TOP SELLER ───────────────────────────────────────────
-
 export function calcTopSellers(
   products: ProductWithDetails[],
-  sales: StockOutRecord[]
+  sales: StockOutRecord[],
 ): TopSellerItem[] {
-  const t = new Date();
-  t.setHours(0, 0, 0, 0);
-  const thirtyAgo = new Date(t.getTime() - 30 * 86400000);
+  const todayWib = startOfTodayWib();
+  const thirtyAgo = new Date(todayWib.getTime() - 30 * 86400000);
   const wmaData = calculateWMAVelocity(sales, products);
-
-  const WIB_OFFSET = 7 * 3600000;
   const salesMap: Record<string, { qty: number; days: Set<string> }> = {};
-  for (const s of sales) {
-    if (new Date(s.created_at) < thirtyAgo) continue;
-    if (!salesMap[s.product_id]) salesMap[s.product_id] = { qty: 0, days: new Set() };
-    salesMap[s.product_id].qty += s.qty_kirim;
-    const wibDate = new Date(new Date(s.created_at).getTime() + WIB_OFFSET);
-    salesMap[s.product_id].days.add(wibDate.toISOString().slice(0, 10));
+
+  for (const sale of sales) {
+    if (toWibDate(sale.created_at) < thirtyAgo) continue;
+    if (!salesMap[sale.product_id]) salesMap[sale.product_id] = { qty: 0, days: new Set() };
+    salesMap[sale.product_id].qty += sale.qty_kirim;
+    salesMap[sale.product_id].days.add(toWibDate(sale.created_at).toISOString().slice(0, 10));
   }
 
   const items: TopSellerItem[] = [];
-  for (const p of products) {
-    const s = salesMap[p.id];
-    if (!s || s.qty === 0) continue;
-    const wma = wmaData[p.id];
-    // Use adjustedVelocity (maturity-dampened) for ranking
-    const vel = wma?.adjustedVelocity ?? (s.qty / 30);
-    const stok = p.stock?.jumlah ?? 0;
-    const daysLeft = vel > 0 ? stok / vel : 999;
+  for (const product of products) {
+    const saleData = salesMap[product.id];
+    if (!saleData || saleData.qty === 0) continue;
+    const velocity = wmaData[product.id]?.adjustedVelocity ?? saleData.qty / 30;
+    const stok = product.stock?.jumlah ?? 0;
     items.push({
-      kode: p.kode,
-      productId: p.id,
-      totalQty: s.qty,
-      days: s.days.size,
-      velocity: vel,
+      kode: product.kode,
+      productId: product.id,
+      totalQty: saleData.qty,
+      days: saleData.days.size,
+      velocity,
       stok,
-      daysLeft,
-      isBestSeller: vel >= RULES.BESTSELLER_VELOCITY,
+      daysLeft: velocity > 0 ? stok / velocity : 999,
+      isBestSeller: velocity >= RULES.BESTSELLER_VELOCITY,
     });
   }
 
@@ -178,28 +167,26 @@ export function calcTopSellers(
   return items.slice(0, RULES.DISPLAY_TOP_ITEMS);
 }
 
-// ─── TREND ────────────────────────────────────────────────
-
 export function calcTrend(
   products: ProductWithDetails[],
-  sales: StockOutRecord[]
+  sales: StockOutRecord[],
 ): TrendItem[] {
   const trendData = calculateTrendData(sales, products);
   const wmaData = calculateWMAVelocity(sales, products);
-
   const items: TrendItem[] = [];
-  for (const p of products) {
-    const t = trendData[p.id];
-    if (!t || (t.thisWeek === 0 && t.lastWeek === 0)) continue;
-    const vel = wmaData[p.id]?.adjustedVelocity ?? 0;
+
+  for (const product of products) {
+    const trend = trendData[product.id];
+    if (!trend || (trend.thisWeek === 0 && trend.lastWeek === 0)) continue;
+    const velocity = wmaData[product.id]?.adjustedVelocity ?? 0;
     items.push({
-      kode: p.kode,
-      productId: p.id,
-      thisWeek: t.thisWeek,
-      lastWeek: t.lastWeek,
-      changePct: t.change * 100,
-      velocity: vel,
-      isBestSeller: vel >= RULES.BESTSELLER_VELOCITY,
+      kode: product.kode,
+      productId: product.id,
+      thisWeek: trend.thisWeek,
+      lastWeek: trend.lastWeek,
+      changePct: trend.change * 100,
+      velocity,
+      isBestSeller: velocity >= RULES.BESTSELLER_VELOCITY,
     });
   }
 
@@ -207,40 +194,35 @@ export function calcTrend(
   return items;
 }
 
-// ─── DEAD STOCK ───────────────────────────────────────────
-
 export function calcDeadStock(
   products: ProductWithDetails[],
-  sales: StockOutRecord[]
+  sales: StockOutRecord[],
 ): DeadStockItem[] {
-  const t = new Date();
-  t.setHours(0, 0, 0, 0);
-  const deadThreshold = new Date(t.getTime() - RULES.DEAD_STOCK_DAYS * 86400000);
-
-  // Last sale date per product
+  const todayWib = startOfTodayWib();
+  const deadThreshold = new Date(todayWib.getTime() - RULES.DEAD_STOCK_DAYS * 86400000);
   const lastSale: Record<string, Date> = {};
-  for (const s of sales) {
-    if (s.qty_pesan <= 0) continue;
-    const d = new Date(s.created_at);
-    if (!lastSale[s.product_id] || d > lastSale[s.product_id]) {
-      lastSale[s.product_id] = d;
+
+  for (const sale of sales) {
+    if (sale.qty_pesan <= 0) continue;
+    const saleDate = toWibDate(sale.created_at);
+    if (!lastSale[sale.product_id] || saleDate > lastSale[sale.product_id]) {
+      lastSale[sale.product_id] = saleDate;
     }
   }
 
   const items: DeadStockItem[] = [];
-  for (const p of products) {
-    const stok = p.stock?.jumlah ?? 0;
+  for (const product of products) {
+    const stok = product.stock?.jumlah ?? 0;
     if (stok <= 0) continue;
-    const ls = lastSale[p.id];
-    if (!ls || ls < deadThreshold) {
-      const daysSince = ls ? Math.floor((t.getTime() - ls.getTime()) / 86400000) : 999;
+    const lastSaleDate = lastSale[product.id];
+    if (!lastSaleDate || lastSaleDate < deadThreshold) {
       items.push({
-        kode: p.kode,
-        productId: p.id,
+        kode: product.kode,
+        productId: product.id,
         stok,
-        daysSinceLastSale: daysSince,
-        lastSaleDate: ls ?? null,
-        nilai: stok * getHargaModal(p),
+        daysSinceLastSale: lastSaleDate ? Math.floor((todayWib.getTime() - lastSaleDate.getTime()) / 86400000) : 999,
+        lastSaleDate: lastSaleDate ?? null,
+        nilai: stok * getHargaModal(product),
       });
     }
   }
@@ -249,57 +231,46 @@ export function calcDeadStock(
   return items;
 }
 
-// ─── LOW STOCK ────────────────────────────────────────────
-
 export function calcLowStock(
   products: ProductWithDetails[],
-  sales: StockOutRecord[]
+  sales: StockOutRecord[],
 ): LowStockItem[] {
   const wmaData = calculateWMAVelocity(sales, products);
-
-  const items: LowStockItem[] = products.map((p) => {
-    const vel = wmaData[p.id]?.adjustedVelocity ?? 0;
-    return {
-      kode: p.kode,
-      productId: p.id,
-      stok: p.stock?.jumlah ?? 0,
-      velocity: vel,
-      isBestSeller: vel >= RULES.BESTSELLER_VELOCITY,
-    };
-  });
+  const items = products.map((product) => ({
+    kode: product.kode,
+    productId: product.id,
+    stok: product.stock?.jumlah ?? 0,
+    velocity: wmaData[product.id]?.adjustedVelocity ?? 0,
+    isBestSeller: (wmaData[product.id]?.adjustedVelocity ?? 0) >= RULES.BESTSELLER_VELOCITY,
+  }));
 
   items.sort((a, b) => a.stok - b.stok);
   return items.slice(0, 10);
 }
 
-// ─── PREDICTION ───────────────────────────────────────────
-
 export function calcPredictions(
   products: ProductWithDetails[],
-  sales: StockOutRecord[]
+  sales: StockOutRecord[],
 ): PredictionItem[] {
-  const t = new Date();
-  t.setHours(0, 0, 0, 0);
+  const todayWib = startOfTodayWib();
   const wmaData = calculateWMAVelocity(sales, products);
-
   const items: PredictionItem[] = [];
-  for (const p of products) {
-    const stok = p.stock?.jumlah ?? 0;
-    const vel = wmaData[p.id]?.adjustedVelocity ?? 0;
-    if (vel <= 0) continue;
 
-    const daysLeft = stok / vel;
-    const predictedDate = new Date(t.getTime() + daysLeft * 86400000);
+  for (const product of products) {
+    const stok = product.stock?.jumlah ?? 0;
+    const velocity = wmaData[product.id]?.adjustedVelocity ?? 0;
+    if (velocity <= 0) continue;
 
+    const daysLeft = stok / velocity;
     items.push({
-      kode: p.kode,
-      productId: p.id,
+      kode: product.kode,
+      productId: product.id,
       stok,
-      velocity: vel,
+      velocity,
       daysLeft,
-      predictedDate,
+      predictedDate: new Date(todayWib.getTime() + daysLeft * 86400000),
       urgency: getUrgencyLevel(daysLeft),
-      isBestSeller: vel >= RULES.BESTSELLER_VELOCITY,
+      isBestSeller: velocity >= RULES.BESTSELLER_VELOCITY,
     });
   }
 
@@ -307,45 +278,49 @@ export function calcPredictions(
   return items;
 }
 
-// ─── PROFIT ───────────────────────────────────────────────
-
 export function calcProfit(
   products: ProductWithDetails[],
-  sales: StockOutRecord[]
+  sales: StockOutRecord[],
 ): ProfitItem[] {
-  const t = new Date();
-  t.setHours(0, 0, 0, 0);
-  const thirtyAgo = new Date(t.getTime() - 30 * 86400000);
+  const todayWib = startOfTodayWib();
+  const thirtyAgo = new Date(todayWib.getTime() - 30 * 86400000);
   const wmaData = calculateWMAVelocity(sales, products);
+  const salesByProduct: Record<string, StockOutRecord[]> = {};
 
-  const salesMap: Record<string, number> = {};
-  for (const s of sales) {
-    if (new Date(s.created_at) < thirtyAgo) continue;
-    salesMap[s.product_id] = (salesMap[s.product_id] ?? 0) + s.qty_kirim;
+  for (const sale of sales) {
+    if (toWibDate(sale.created_at) < thirtyAgo) continue;
+    if (!salesByProduct[sale.product_id]) salesByProduct[sale.product_id] = [];
+    salesByProduct[sale.product_id].push(sale);
   }
 
   const items: ProfitItem[] = [];
-  for (const p of products) {
-    const qty = salesMap[p.id] ?? 0;
-    if (qty === 0) continue;
-    const modal = getHargaModal(p);
-    const jual = getHargaNormal(p);
-    if (jual === 0 || modal === 0) continue;
+  for (const product of products) {
+    const productSales = salesByProduct[product.id] || [];
+    if (productSales.length === 0) continue;
+
+    const totalQty = productSales.reduce((sum, sale) => sum + (sale.qty_kirim || 0), 0);
+    const totalRevenue = productSales.reduce(
+      (sum, sale) => sum + (sale.total_harga || sale.qty_kirim * (sale.harga_satuan || 0)),
+      0,
+    );
+    const modal = getHargaModal(product);
+    if (totalQty <= 0 || totalRevenue <= 0 || modal <= 0) continue;
+
+    const jual = totalRevenue / totalQty;
     const margin = jual - modal;
     if (margin <= 0) continue;
 
-    const vel = wmaData[p.id]?.adjustedVelocity ?? 0;
     items.push({
-      kode: p.kode,
-      productId: p.id,
-      totalQty: qty,
+      kode: product.kode,
+      productId: product.id,
+      totalQty,
       modal,
       jual,
       margin,
       marginPersen: (margin / modal) * 100,
-      totalProfit: qty * margin,
-      velocity: vel,
-      isBestSeller: vel >= RULES.BESTSELLER_VELOCITY,
+      totalProfit: totalRevenue - totalQty * modal,
+      velocity: wmaData[product.id]?.adjustedVelocity ?? 0,
+      isBestSeller: (wmaData[product.id]?.adjustedVelocity ?? 0) >= RULES.BESTSELLER_VELOCITY,
     });
   }
 
@@ -353,18 +328,13 @@ export function calcProfit(
   return items;
 }
 
-// ─── TOKO / CUSTOMER ──────────────────────────────────────
-
 export function calcTokoAnalysis(
   products: ProductWithDetails[],
-  sales: StockOutRecord[]
+  sales: StockOutRecord[],
 ): TokoItem[] {
-  const t = new Date();
-  t.setHours(0, 0, 0, 0);
-  const thirtyAgo = new Date(t.getTime() - 30 * 86400000);
-
-  const productMap = new Map(products.map((p) => [p.id, p]));
-
+  const todayWib = startOfTodayWib();
+  const thirtyAgo = new Date(todayWib.getTime() - 30 * 86400000);
+  const productMap = new Map(products.map((product) => [product.id, product]));
   const tokoData: Record<string, {
     totalQty: number;
     totalNilai: number;
@@ -373,43 +343,41 @@ export function calcTokoAnalysis(
     produkMap: Record<string, number>;
   }> = {};
 
-  for (const s of sales) {
-    if (new Date(s.created_at) < thirtyAgo) continue;
-    const toko = (s.toko ?? "").trim().toUpperCase();
+  for (const sale of sales) {
+    if (toWibDate(sale.created_at) < thirtyAgo) continue;
+    const toko = (sale.toko ?? "").trim().toUpperCase();
     if (!toko) continue;
 
     if (!tokoData[toko]) {
       tokoData[toko] = { totalQty: 0, totalNilai: 0, transaksiCount: 0, dates: new Set(), produkMap: {} };
     }
 
-    const td = tokoData[toko];
-    td.totalQty += s.qty_kirim;
-    td.transaksiCount++;
-    const wibDate = new Date(new Date(s.created_at).getTime() + 7 * 3600000);
-    td.dates.add(wibDate.toISOString().slice(0, 10));
+    const tokoRow = tokoData[toko];
+    tokoRow.totalQty += sale.qty_kirim;
+    tokoRow.totalNilai += sale.total_harga || sale.qty_kirim * (sale.harga_satuan || 0);
+    tokoRow.transaksiCount += 1;
+    tokoRow.dates.add(toWibDate(sale.created_at).toISOString().slice(0, 10));
 
-    const p = productMap.get(s.product_id);
-    const hargaJual = p?.prices?.harga_normal ?? 0;
-    td.totalNilai += s.qty_kirim * hargaJual;
-
-    const kode = p?.kode ?? s.product_id;
-    td.produkMap[kode] = (td.produkMap[kode] ?? 0) + s.qty_kirim;
+    const product = productMap.get(sale.product_id);
+    const kode = product?.kode ?? sale.product_id;
+    tokoRow.produkMap[kode] = (tokoRow.produkMap[kode] ?? 0) + sale.qty_kirim;
   }
 
   const items: TokoItem[] = [];
-  for (const nama in tokoData) {
-    const td = tokoData[nama];
-    const produkArr = Object.entries(td.produkMap)
-      .map(([k, q]) => ({ kode: k, qty: q }))
-      .sort((a, b) => b.qty - a.qty);
-    const favorit = produkArr.slice(0, 3).map((p) => p.kode);
+  for (const nama of Object.keys(tokoData)) {
+    const data = tokoData[nama];
+    const favorit = Object.entries(data.produkMap)
+      .map(([kode, qty]) => ({ kode, qty }))
+      .sort((a, b) => b.qty - a.qty)
+      .slice(0, 3)
+      .map((item) => item.kode);
 
     items.push({
       nama,
-      totalQty: td.totalQty,
-      totalNilai: td.totalNilai,
-      transaksiCount: td.transaksiCount,
-      hariAktif: td.dates.size,
+      totalQty: data.totalQty,
+      totalNilai: data.totalNilai,
+      transaksiCount: data.transaksiCount,
+      hariAktif: data.dates.size,
       favorit,
     });
   }
@@ -418,11 +386,9 @@ export function calcTokoAnalysis(
   return items;
 }
 
-// ─── BUDGET ESTIMATE ──────────────────────────────────────
-
 export function calcBudgetEstimates(
   products: ProductWithDetails[],
-  sales: StockOutRecord[]
+  sales: StockOutRecord[],
 ): BudgetEstimate[] {
   const wmaData = calculateWMAVelocity(sales, products);
   const targets = [4, 7, 14, 21, 30];
@@ -433,83 +399,64 @@ export function calcBudgetEstimates(
     let totalQty = 0;
     const details: BudgetEstimateItem[] = [];
 
-    for (const p of products) {
-      const stok = p.stock?.jumlah ?? 0;
-      const vel = wmaData[p.id]?.adjustedVelocity ?? 0;
-      if (vel <= 0) continue;
+    for (const product of products) {
+      const stok = product.stock?.jumlah ?? 0;
+      const velocity = wmaData[product.id]?.adjustedVelocity ?? 0;
+      if (velocity <= 0) continue;
 
-      const isBW = isBlackWhiteCode(p.kode);
-      const batchSize = isBW ? RULES.BATCH_BW : RULES.BATCH;
-      const minOrder = isBW ? RULES.BATCH_BW : RULES.MIN_ORDER_PER_CODE;
+      const recommendation = calculateRestockRecommendation({
+        kode: product.kode,
+        currentStock: stok,
+        velocity,
+        targetDays: getPlanningTargetDays(product.kode, targetDays),
+      });
+      if (recommendation.recommendedQty <= 0) continue;
 
-      const targetStock = Math.ceil(vel * targetDays);
-      const butuh = targetStock - stok;
-      if (butuh <= 0) continue;
-
-      const qtyToBuy = Math.max(minOrder, Math.ceil(butuh / batchSize) * batchSize);
-
-      // Safety clamp — same as engine
-      const maxReasonable = Math.ceil(vel * (targetDays + 3));
-      const projected = stok + qtyToBuy;
-      let finalQty = qtyToBuy;
-      if (projected > maxReasonable && finalQty > 0) {
-        const allowed = maxReasonable - stok;
-        finalQty = Math.max(0, Math.ceil(allowed / batchSize) * batchSize);
-      }
-      if (finalQty < minOrder) continue;
-
-      const price = getHargaModal(p);
-      const cost = finalQty * price;
-      const daysLeft = vel > 0 ? stok / vel : 999;
-
+      const unitPrice = getHargaModal(product);
+      const cost = recommendation.recommendedQty * unitPrice;
       totalCost += cost;
-      totalItems++;
-      totalQty += finalQty;
+      totalItems += 1;
+      totalQty += recommendation.recommendedQty;
       details.push({
-        kode: p.kode,
-        productId: p.id,
-        qty: finalQty,
-        unitPrice: price,
+        kode: product.kode,
+        productId: product.id,
+        qty: recommendation.recommendedQty,
+        unitPrice,
         cost,
         stok,
-        velocity: vel,
-        daysLeft,
-        isBestSeller: vel >= RULES.BESTSELLER_VELOCITY,
+        velocity,
+        daysLeft: velocity > 0 ? stok / velocity : 999,
+        isBestSeller: velocity >= RULES.BESTSELLER_VELOCITY,
       });
     }
 
-    // Sort by urgency (lowest daysLeft first)
     details.sort((a, b) => a.daysLeft - b.daysLeft);
-
     return { days: targetDays, cost: totalCost, items: totalItems, qty: totalQty, details };
   });
 }
 
-// ─── STATS ────────────────────────────────────────────────
-
 export function calcStats(
   products: ProductWithDetails[],
-  sales: StockOutRecord[]
+  sales: StockOutRecord[],
 ): StatsData {
   const wmaData = calculateWMAVelocity(sales, products);
-
   let totalStock = 0;
   let totalValue = 0;
   let outOfStock = 0;
   let bestSellerCount = 0;
   let criticalCount = 0;
 
-  for (const p of products) {
-    const stok = p.stock?.jumlah ?? 0;
-    const vel = wmaData[p.id]?.adjustedVelocity ?? 0;
-    const daysLeft = vel > 0 ? stok / vel : 999;
-    const harga = getHargaModal(p);
+  for (const product of products) {
+    const stok = product.stock?.jumlah ?? 0;
+    const velocity = wmaData[product.id]?.adjustedVelocity ?? 0;
+    const daysLeft = velocity > 0 ? stok / velocity : 999;
+    const harga = getHargaModal(product);
 
     totalStock += stok;
     totalValue += stok * harga;
-    if (stok === 0) outOfStock++;
-    if (vel >= RULES.BESTSELLER_VELOCITY) bestSellerCount++;
-    if (daysLeft <= RULES.CRITICAL_DAYS) criticalCount++;
+    if (stok === 0) outOfStock += 1;
+    if (velocity >= RULES.BESTSELLER_VELOCITY) bestSellerCount += 1;
+    if (daysLeft <= RULES.CRITICAL_DAYS) criticalCount += 1;
   }
 
   return {

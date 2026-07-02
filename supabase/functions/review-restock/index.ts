@@ -28,6 +28,21 @@ const HARD_MATURITY_CONFIG = {
 
 const WIB_OFFSET = 7 * 3600000;
 
+async function fetchAllRows(
+  fetchPage: (from: number, to: number) => Promise<{ data: any[] | null; error: unknown }>,
+  pageSize = 1000,
+) {
+  const rows: any[] = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await fetchPage(from, from + pageSize - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    rows.push(...data);
+    if (data.length < pageSize) break;
+  }
+  return rows;
+}
+
 interface SaleRecord { product_id: string; qty_pesan: number; created_at: string; }
 
 function computeWMAVelocity(sales: SaleRecord[], productId: string) {
@@ -171,25 +186,20 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Kirim minimal 1 item untuk di-review" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const isTopup = mode === "topup";
-
     // Match Analisa: use 56 days / 8 weeks of sales for more stable velocity.
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 56);
-    const queries: Promise<any>[] = [
+    const [productsRes, stockOut] = await Promise.all([
       supabase.from("products").select("id, kode, nama, kategori, stock(jumlah), prices(harga_modal, harga_normal, harga_grosir)").eq("is_active", true),
-      supabase.from("stock_out").select("product_id, qty_pesan, created_at").gte("created_at", cutoff.toISOString()).order("created_at", { ascending: false }).limit(5000),
-    ];
-    if (isTopup && ordered_at) {
-      queries.push(
-        supabase.from("stock_out").select("product_id, qty_pesan, created_at").gte("created_at", ordered_at).order("created_at", { ascending: false }).limit(5000)
-      );
-    }
-
-    const queryResults = await Promise.all(queries);
-    const [productsRes, stockOutRes] = queryResults;
-    const stockOutAfterOrder = isTopup && queryResults[2] ? queryResults[2].data || [] : [];
+      fetchAllRows((from, to) =>
+        supabase
+          .from("stock_out")
+          .select("product_id, qty_pesan, created_at")
+          .gte("created_at", cutoff.toISOString())
+          .order("created_at", { ascending: false })
+          .range(from, to),
+      ),
+    ]);
     const rawProducts = productsRes.data || [];
-    const stockOut = stockOutRes.data || [];
     const baselineMap: Record<string, number> = {};
     if (Array.isArray(baseline_items)) {
       for (const baselineItem of baseline_items) {

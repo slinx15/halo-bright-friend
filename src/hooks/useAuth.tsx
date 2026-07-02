@@ -26,12 +26,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .from("user_roles")
         .select("role")
         .eq("user_id", userId)
-        .maybeSingle();
+        .limit(10);
       if (error) {
         console.error("[fetchRole] error:", error.message);
         return null;
       }
-      return data?.role ?? null;
+      const roles = (data || []).map((row) => row.role);
+      if (roles.includes("admin")) return "admin";
+      return roles[0] ?? null;
     } catch (e) {
       console.error("[fetchRole] catch:", e);
       return null;

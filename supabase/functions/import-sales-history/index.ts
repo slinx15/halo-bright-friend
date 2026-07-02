@@ -12,6 +12,7 @@ type ParsedRow = {
   kode: string;
   pesanan: number;
   kiriman: number;
+  kategori?: string | null;
 };
 
 type ProductPrice = {
@@ -34,6 +35,8 @@ type ProductAliasRecord = {
 
 type ProductLookup = {
   id: string;
+  kode: string;
+  kategori: string | null;
   harga_normal: number;
 };
 
@@ -66,6 +69,18 @@ function jsonResponse(body: unknown, status = 200) {
 function getHargaNormal(prices: ProductPrice | ProductPrice[] | null) {
   const price = Array.isArray(prices) ? prices[0] : prices;
   return price?.harga_normal ?? 0;
+}
+
+function normalizeKode(value: string | null | undefined) {
+  return String(value || "").trim().toUpperCase();
+}
+
+function normalizeKategori(value: string | null | undefined) {
+  return String(value || "").trim().toUpperCase();
+}
+
+function buildLookupKey(kode: string, kategori?: string | null) {
+  return `${normalizeKode(kode)}::${normalizeKategori(kategori)}`;
 }
 
 function getErrorMessage(error: PostgrestError | Error | string | unknown, fallback = "Terjadi kesalahan") {
@@ -111,6 +126,14 @@ async function fetchAllStockOutIds(supabase: SupabaseClient) {
   return rows.map((row) => row.id);
 }
 
+const CATEGORY_SUFFIX_RE = /\s+(2\s*ONS|3\s*ONS|5\s*ONS|18\s*GRAM)$/i;
+const CATEGORY_LABELS: Record<string, string> = {
+  "2 ONS": "2 Ons",
+  "3 ONS": "3 Ons",
+  "5 ONS": "5 Ons",
+  "18 GRAM": "18 Gram",
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -148,13 +171,16 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
-    // Admin-only: import histori penjualan mengubah stok secara massal
-    const { data: roleData } = await adminSupabase
+    const { data: roleData, error: roleError } = await adminSupabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
       .eq("role", "admin")
       .maybeSingle();
+
+    if (roleError) {
+      return jsonResponse({ error: getErrorMessage(roleError, "Failed to validate role") }, 500);
+    }
 
     if (!roleData) {
       return jsonResponse({ error: "Forbidden: admin only" }, 403);
@@ -186,104 +212,141 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: getErrorMessage(aliasesError, "Failed to fetch product aliases") }, 500);
     }
 
-    // Index produk berdasarkan kode (bisa banyak kategori per kode)
-    const productsByKode = new Map<string, ProductRecord[]>();
+    const productByLookup = new Map<string, ProductLookup>();
+    const productsByKode = new Map<string, ProductLookup[]>();
+    const aliasLookup = new Map<string, ProductLookup>();
     const typedProducts = products as ProductRecord[];
     const typedAliases = (aliases ?? []) as ProductAliasRecord[];
 
     for (const product of typedProducts) {
-      const key = product.kode.toUpperCase();
-      const list = productsByKode.get(key) ?? [];
-      list.push(product);
-      productsByKode.set(key, list);
+      const lookup: ProductLookup = {
+        id: product.id,
+        kode: product.kode,
+        kategori: product.kategori,
+        harga_normal: getHargaNormal(product.prices),
+      };
+
+      productByLookup.set(buildLookupKey(product.kode, product.kategori), lookup);
+
+      const baseKey = normalizeKode(product.kode);
+      const variants = productsByKode.get(baseKey) || [];
+      variants.push(lookup);
+      productsByKode.set(baseKey, variants);
     }
 
-    // Alias tetap satu-ke-satu (alias sudah menunjuk ke product_id spesifik)
-    const aliasLookup = new Map<string, ProductLookup>();
     for (const alias of typedAliases) {
       const matchedProduct = typedProducts.find((product) => product.id === alias.product_id);
       if (!matchedProduct) continue;
-      aliasLookup.set(alias.alias.toUpperCase(), {
+
+      const lookup: ProductLookup = {
         id: matchedProduct.id,
+        kode: matchedProduct.kode,
+        kategori: matchedProduct.kategori,
         harga_normal: getHargaNormal(matchedProduct.prices),
-      });
+      };
+
+      aliasLookup.set(normalizeKode(alias.alias), lookup);
+      productByLookup.set(buildLookupKey(alias.alias, matchedProduct.kategori), lookup);
+
+      const aliasKey = normalizeKode(alias.alias);
+      const variants = productsByKode.get(aliasKey) || [];
+      variants.push(lookup);
+      productsByKode.set(aliasKey, variants);
     }
 
-    const CATEGORY_SUFFIX_RE = /\s+(2\s*ONS|3\s*ONS|5\s*ONS|18\s*GRAM)$/i;
-    const CATEGORY_LABELS: Record<string, string> = {
-      "2 ONS": "2 Ons",
-      "3 ONS": "3 Ons",
-      "5 ONS": "5 Ons",
-      "18 GRAM": "18 Gram",
-    };
-
-    function resolveProduct(rawKode: string): { product?: ProductLookup; reason?: string } {
-      const upper = rawKode.trim().toUpperCase();
+    function resolveProduct(rawKode: string, rawKategori?: string | null): { product?: ProductLookup; reason?: string } {
+      const upper = normalizeKode(rawKode);
+      const kategori = normalizeKategori(rawKategori);
       if (!upper) return { reason: "kode kosong" };
 
-      // 1. Alias exact match
-      const aliased = aliasLookup.get(upper);
-      if (aliased) return { product: aliased };
+      const exactAlias = kategori ? productByLookup.get(buildLookupKey(upper, kategori)) : null;
+      if (exactAlias) return { product: exactAlias };
 
-      // 2. Pisahkan suffix kategori kalau ada (mis. "R400 18 GRAM")
+      const aliased = aliasLookup.get(upper);
+      if (aliased && (!kategori || normalizeKategori(aliased.kategori) === kategori)) {
+        return { product: aliased };
+      }
+
       const suffixMatch = upper.match(CATEGORY_SUFFIX_RE);
-      const explicitCategory = suffixMatch
-        ? CATEGORY_LABELS[suffixMatch[1].replace(/\s+/g, " ").toUpperCase()]
-        : null;
+      const explicitCategory = kategori || (
+        suffixMatch
+          ? CATEGORY_LABELS[suffixMatch[1].replace(/\s+/g, " ").toUpperCase()]
+          : null
+      );
       const baseKode = suffixMatch ? upper.replace(CATEGORY_SUFFIX_RE, "").trim() : upper;
 
+      const exactMatch = explicitCategory ? productByLookup.get(buildLookupKey(baseKode, explicitCategory)) : null;
+      if (exactMatch) return { product: exactMatch };
+
       const candidates = productsByKode.get(baseKode) ?? productsByKode.get(upper) ?? [];
-      if (candidates.length === 0) return { reason: "kode tidak ditemukan" };
+      const uniqueCandidates = candidates.filter(
+        (candidate, index, arr) => arr.findIndex((item) => item.id === candidate.id) === index,
+      );
 
-      // 3. Jika ada kategori eksplisit dari suffix, wajib match
+      if (uniqueCandidates.length === 0) {
+        return { reason: "kode tidak ditemukan" };
+      }
+
       if (explicitCategory) {
-        const match = candidates.find((p) => (p.kategori ?? "").toLowerCase() === explicitCategory.toLowerCase());
-        if (!match) return { reason: `kategori ${explicitCategory} tidak ada untuk kode ${baseKode}` };
-        return { product: { id: match.id, harga_normal: getHargaNormal(match.prices) } };
+        const match = uniqueCandidates.find(
+          (candidate) => normalizeKategori(candidate.kategori) === normalizeKategori(explicitCategory),
+        );
+        if (!match) {
+          return { reason: `kategori ${explicitCategory} tidak ada untuk kode ${baseKode}` };
+        }
+        return { product: match };
       }
 
-      // 4. Tanpa suffix: kalau cuma 1 kategori, aman. Kalau lebih dari 1, tolak (ambigu).
-      if (candidates.length === 1) {
-        const p = candidates[0];
-        return { product: { id: p.id, harga_normal: getHargaNormal(p.prices) } };
+      if (uniqueCandidates.length === 1) {
+        return { product: uniqueCandidates[0] };
       }
 
-      const kategoriList = candidates.map((p) => p.kategori || "-").join(", ");
-      return { reason: `kode ambigu (${candidates.length} kategori: ${kategoriList}) — tambahkan suffix ukuran` };
+      return {
+        reason: `kode ambigu (${uniqueCandidates.length} kategori) — tambahkan kategori/ukuran yang lebih spesifik.`,
+      };
     }
 
     const notFound: string[] = [];
-    const ambiguous: ImportFailure[] = [];
+    const failed: ImportFailure[] = [];
     const preparedRows: PreparedImportRow[] = [];
 
     for (const row of rows) {
-      const kode = (row.kode || "").trim().toUpperCase();
-      const { product, reason } = resolveProduct(kode);
+      const kode = normalizeKode(row.kode);
+      const resolved = resolveProduct(kode, row.kategori);
 
-      if (!product) {
-        if (reason && reason.startsWith("kode ambigu")) {
-          ambiguous.push({ kode, tanggal: row.tanggal || "", error: reason });
-        } else if (kode && !notFound.includes(kode)) {
+      if (!resolved.product) {
+        if (resolved.reason?.includes("ambigu") || resolved.reason?.includes("kategori")) {
+          failed.push({
+            kode,
+            tanggal: row.tanggal,
+            error: resolved.reason,
+          });
+          continue;
+        }
+
+        if (kode && !notFound.includes(kode)) {
           notFound.push(kode);
         }
         continue;
       }
 
-      let createdAt: string;
       try {
-        createdAt = parseDate(row.tanggal).toISOString();
-      } catch {
-        createdAt = new Date().toISOString();
+        const createdAt = parseDate(row.tanggal).toISOString();
+        preparedRows.push({
+          createdAt,
+          kode,
+          qtyPesan: row.pesanan || 0,
+          qtyKirim: row.kiriman || 0,
+          toko: (row.toko || "").trim(),
+          product: resolved.product,
+        });
+      } catch (error) {
+        failed.push({
+          kode,
+          tanggal: row.tanggal,
+          error: getErrorMessage(error, "Tanggal tidak valid"),
+        });
       }
-
-      preparedRows.push({
-        createdAt,
-        kode,
-        qtyPesan: row.pesanan || 0,
-        qtyKirim: row.kiriman || 0,
-        toko: (row.toko || "").trim(),
-        product,
-      });
     }
 
     preparedRows.sort((left, right) => left.createdAt.localeCompare(right.createdAt));
@@ -311,7 +374,6 @@ Deno.serve(async (req) => {
     }
 
     let inserted = 0;
-    const failed: ImportFailure[] = [];
 
     for (const row of preparedRows) {
       const { error } = await userSupabase.rpc("register_stock_out", {
@@ -338,11 +400,10 @@ Deno.serve(async (req) => {
     }
 
     return jsonResponse({
-      success: failed.length === 0 && ambiguous.length === 0,
+      success: failed.length === 0,
       inserted,
       skipped: rows.length - preparedRows.length,
       not_found: notFound,
-      ambiguous,
       failed,
     });
   } catch (error) {
@@ -352,13 +413,13 @@ Deno.serve(async (req) => {
 });
 
 function parseDate(str: string): Date {
-  if (!str) return new Date();
+  if (!str?.trim()) throw new Error("Tanggal wajib diisi");
   const s = str.trim();
 
   const dmyTime = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
   if (dmyTime) {
     const year = dmyTime[3].length === 2 ? 2000 + parseInt(dmyTime[3], 10) : parseInt(dmyTime[3], 10);
-    return new Date(
+    const parsed = new Date(
       year,
       parseInt(dmyTime[2], 10) - 1,
       parseInt(dmyTime[1], 10),
@@ -366,18 +427,24 @@ function parseDate(str: string): Date {
       parseInt(dmyTime[5], 10),
       parseInt(dmyTime[6] || "0", 10),
     );
+    if (Number.isNaN(parsed.getTime())) throw new Error(`Format tanggal tidak valid: ${str}`);
+    return parsed;
   }
 
   const dmy = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
   if (dmy) {
     const year = dmy[3].length === 2 ? 2000 + parseInt(dmy[3], 10) : parseInt(dmy[3], 10);
-    return new Date(year, parseInt(dmy[2], 10) - 1, parseInt(dmy[1], 10), 12, 0, 0);
+    const parsed = new Date(year, parseInt(dmy[2], 10) - 1, parseInt(dmy[1], 10), 12, 0, 0);
+    if (Number.isNaN(parsed.getTime())) throw new Error(`Format tanggal tidak valid: ${str}`);
+    return parsed;
   }
 
   const ymd = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
   if (ymd) {
-    return new Date(parseInt(ymd[1], 10), parseInt(ymd[2], 10) - 1, parseInt(ymd[3], 10), 12, 0, 0);
+    const parsed = new Date(parseInt(ymd[1], 10), parseInt(ymd[2], 10) - 1, parseInt(ymd[3], 10), 12, 0, 0);
+    if (Number.isNaN(parsed.getTime())) throw new Error(`Format tanggal tidak valid: ${str}`);
+    return parsed;
   }
 
-  return new Date();
+  throw new Error(`Format tanggal tidak dikenali: ${str}`);
 }

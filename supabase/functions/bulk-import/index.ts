@@ -46,19 +46,19 @@ Deno.serve(async (req) => {
 
     const userId = userData.user.id;
 
-    // Use service role for DB operations (bypasses RLS)
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    // Check admin role
-    const { data: roleData } = await supabase
+    const { data: roleData, error: roleError } = await anonClient
       .from("user_roles")
       .select("role")
       .eq("user_id", userId)
       .eq("role", "admin")
       .maybeSingle();
+
+    if (roleError) {
+      return new Response(JSON.stringify({ error: roleError.message }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (!roleData) {
       return new Response(JSON.stringify({ error: "Forbidden: admin only" }), {
@@ -89,73 +89,25 @@ Deno.serve(async (req) => {
       }
     }
 
-    let totalInserted = 0;
-    const errors: string[] = [];
-    const BATCH = 50;
+    const { data, error } = await anonClient.rpc("bulk_upsert_products", {
+      p_rows: deduped,
+    });
 
-    for (let i = 0; i < deduped.length; i += BATCH) {
-      const chunk = deduped.slice(i, i + BATCH);
-      const batchNum = Math.floor(i / BATCH) + 1;
-
-      try {
-        // Insert products
-        const { data: prods, error: prodError } = await supabase
-          .from("products")
-          .insert(
-            chunk.map((r) => ({
-              kode: r.kode.toUpperCase(),
-              nama: r.kode.toUpperCase(),
-              kategori: r.kategori || null,
-            }))
-          )
-          .select("id");
-
-        if (prodError || !prods) {
-          errors.push(`Batch ${batchNum}: ${prodError?.message || "no data"}`);
-          continue;
-        }
-
-        totalInserted += prods.length;
-
-        // Insert prices
-        const { error: priceError } = await supabase.from("prices").insert(
-          prods.map((p, idx) => ({
-            product_id: p.id,
-            harga_modal: chunk[idx].modal || 0,
-            harga_normal: chunk[idx].normal || 0,
-            harga_grosir: chunk[idx].grosir || 0,
-          }))
-        );
-
-        if (priceError) {
-          errors.push(`Batch ${batchNum} prices: ${priceError.message}`);
-        }
-
-        // Insert stock (only if > 0)
-        const stockRows = prods
-          .map((p, idx) => ({
-            product_id: p.id,
-            jumlah: chunk[idx].stok || 0,
-          }))
-          .filter((s) => s.jumlah > 0);
-
-        if (stockRows.length > 0) {
-          const { error: stockError } = await supabase.from("stock").insert(stockRows);
-          if (stockError) {
-            errors.push(`Batch ${batchNum} stock: ${stockError.message}`);
-          }
-        }
-      } catch (err) {
-        errors.push(`Batch ${batchNum}: ${(err as Error).message}`);
-      }
+    if (error) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     return new Response(
       JSON.stringify({
-        success: true,
-        totalInserted,
+        success: data?.success ?? true,
+        totalInserted: data?.totalInserted ?? deduped.length,
         totalRequested: deduped.length,
-        errors,
+        insertedCount: data?.insertedCount ?? 0,
+        updatedCount: data?.updatedCount ?? 0,
+        errors: [],
       }),
       {
         status: 200,

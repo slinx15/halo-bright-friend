@@ -19,6 +19,22 @@ const RULES = {
 
 const COLOR_BLACK = ["BLK", "BLCK", "HITAM", "BLACK"];
 const COLOR_WHITE = ["WHT", "PUTIH", "WHITE"];
+const WIB_OFFSET = 7 * 3600000;
+
+async function fetchAllRows(
+  fetchPage: (from: number, to: number) => Promise<{ data: any[] | null; error: unknown }>,
+  pageSize = 1000,
+) {
+  const rows: any[] = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await fetchPage(from, from + pageSize - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    rows.push(...data);
+    if (data.length < pageSize) break;
+  }
+  return rows;
+}
 
 function isBlackWhite(kode: string): boolean {
   const upper = kode.toUpperCase();
@@ -33,7 +49,7 @@ function computeVelocity(sales: any[], productId: string): number {
   const daily: Record<string, number> = {};
   for (const s of sales) {
     if (s.product_id !== productId) continue;
-    const key = s.created_at.slice(0, 10);
+    const key = new Date(new Date(s.created_at).getTime() + WIB_OFFSET).toISOString().slice(0, 10);
     daily[key] = (daily[key] ?? 0) + s.qty_pesan;
   }
 
@@ -91,19 +107,26 @@ serve(async (req) => {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 30);
 
-    const [productsRes, stockOutRes] = await Promise.all([
+    const [productsRes, stockOut] = await Promise.all([
       supabase.from("products").select("id, kode, nama, kategori, stock(jumlah), prices(harga_modal, harga_normal)").eq("is_active", true),
-      supabase.from("stock_out").select("product_id, qty_kirim, qty_pesan, total_harga, toko, created_at").gte("created_at", cutoff.toISOString()).order("created_at", { ascending: false }).limit(5000),
+      fetchAllRows((from, to) =>
+        supabase
+          .from("stock_out")
+          .select("product_id, qty_kirim, qty_pesan, total_harga, toko, created_at")
+          .gte("created_at", cutoff.toISOString())
+          .order("created_at", { ascending: false })
+          .range(from, to),
+      ),
     ]);
 
     const rawProducts = productsRes.data || [];
-    const stockOut = stockOutRes.data || [];
 
-    const products = rawProducts.map((p: any) => {
+    const allProducts = rawProducts.map((p: any) => {
       const stk = Array.isArray(p.stock) ? p.stock[0] : p.stock;
       const prc = Array.isArray(p.prices) ? p.prices[0] : p.prices;
       return { ...p, _stok: stk?.jumlah ?? 0, _modal: prc?.harga_modal ?? 0 };
     });
+    const products = allProducts.filter((p: any) => p.kategori === "2 Ons");
 
     // Compute analysis for each product
     const analyses = products.map((p: any) => {
@@ -130,7 +153,7 @@ serve(async (req) => {
     // Sales stats
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const recentSales = stockOut.filter((s: any) => new Date(s.created_at) >= sevenDaysAgo);
+    const recentSales = stockOut.filter((s: any) => new Date(new Date(s.created_at).getTime() + WIB_OFFSET) >= sevenDaysAgo);
     const totalOmzet = recentSales.reduce((s: number, r: any) => s + (r.total_harga || 0), 0);
     const totalPcs = recentSales.reduce((s: number, r: any) => s + (r.qty_pesan || 0), 0);
 
@@ -138,7 +161,7 @@ serve(async (req) => {
     const fourteenDaysAgo = new Date();
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
     const lastWeekSales = stockOut.filter((s: any) => {
-      const d = new Date(s.created_at);
+      const d = new Date(new Date(s.created_at).getTime() + WIB_OFFSET);
       return d >= fourteenDaysAgo && d < sevenDaysAgo;
     });
     const lastWeekOmzet = lastWeekSales.reduce((s: number, r: any) => s + (r.total_harga || 0), 0);

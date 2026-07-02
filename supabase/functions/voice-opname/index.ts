@@ -8,6 +8,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+const MAX_AUDIO_BASE64_CHARS = 12_000_000;
+const ALLOWED_AUDIO_MIME = new Set(["audio/webm", "audio/mp4", "audio/ogg", "audio/wav", "audio/mpeg"]);
+
 interface ParsedItem {
   kode: string;
   qty: number;
@@ -54,8 +57,20 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+    if (audio_base64.length > MAX_AUDIO_BASE64_CHARS) {
+      return new Response(
+        JSON.stringify({ error: "Ukuran audio terlalu besar. Potong rekaman lalu coba lagi." }),
+        { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     const audioMime = mime_type || "audio/webm";
+    if (!ALLOWED_AUDIO_MIME.has(audioMime)) {
+      return new Response(
+        JSON.stringify({ error: "Format audio tidak didukung" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
     const codesHint = Array.isArray(master_codes) && master_codes.length > 0
       ? `\n\nDaftar kode produk yang valid (gunakan ini untuk koreksi typo / kode terdekat):\n${master_codes.slice(0, 800).join(", ")}`
       : "";
@@ -152,7 +167,7 @@ Return SELALU dalam format tool call extract_opname_items.${codesHint}`;
         );
       }
       return new Response(
-        JSON.stringify({ error: "AI gateway error", detail: txt }),
+        JSON.stringify({ error: "AI gateway error" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }

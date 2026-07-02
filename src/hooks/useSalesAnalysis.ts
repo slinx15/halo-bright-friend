@@ -2,15 +2,16 @@ import { useQuery } from "@tanstack/react-query";
 import { useProducts } from "@/hooks/useProducts";
 import type { StockOutRecord } from "@/lib/stockAnalyticsEngine";
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/lib/supabaseEnv";
+import { supabase } from "@/integrations/supabase/client";
 
 const SUPABASE_KEY = SUPABASE_PUBLISHABLE_KEY;
 
-function getAuthToken(): string {
-  const storageKey = Object.keys(localStorage).find(k => k.includes("auth-token"));
-  if (!storageKey) return "";
+async function getAuthToken(): Promise<string> {
   try {
-    const parsed = JSON.parse(localStorage.getItem(storageKey) || "");
-    return parsed.access_token || parsed?.currentSession?.access_token || "";
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return session?.access_token || "";
   } catch {
     return "";
   }
@@ -24,7 +25,7 @@ function useStockOutData() {
       cutoff.setDate(cutoff.getDate() - 56); // 8 weeks for more stable averages
       const cutoffStr = cutoff.toISOString();
 
-      const token = getAuthToken();
+      const token = await getAuthToken();
       let allData: StockOutRecord[] = [];
       let offset = 0;
       const limit = 1000;

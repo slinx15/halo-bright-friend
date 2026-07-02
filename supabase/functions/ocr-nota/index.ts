@@ -7,6 +7,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const MAX_IMAGE_BASE64_CHARS = 8_000_000;
+const ALLOWED_MODES = new Set(["masuk", "keluar", "opname", "review"]);
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -32,6 +35,19 @@ serve(async (req) => {
 
     const { image_base64, mode, master_codes } = await req.json();
     if (!image_base64) throw new Error("image_base64 is required");
+    if (typeof image_base64 !== "string") throw new Error("image_base64 must be a string");
+    if (image_base64.length > MAX_IMAGE_BASE64_CHARS) {
+      return new Response(
+        JSON.stringify({ error: "Ukuran gambar terlalu besar. Kompres atau crop lalu coba lagi." }),
+        { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (mode && !ALLOWED_MODES.has(mode)) {
+      return new Response(
+        JSON.stringify({ error: "Mode OCR tidak valid" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Build master codes hint for AI - only send BASE codes (without category suffix)
     let codesHint = "";

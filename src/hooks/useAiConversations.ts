@@ -21,28 +21,37 @@ export function useAiConversations() {
   // Load conversation list
   const loadConversations = useCallback(async () => {
     if (!user) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("ai_conversations")
       .select("id, title, created_at, updated_at")
       .eq("user_id", user.id)
       .order("updated_at", { ascending: false })
       .limit(50);
+    if (error) throw error;
     setConversations(data || []);
   }, [user]);
 
-  useEffect(() => { loadConversations(); }, [loadConversations]);
+  useEffect(() => {
+    loadConversations().catch((error) => {
+      console.error("Failed to load conversations:", error);
+    });
+  }, [loadConversations]);
 
   // Load messages for a conversation
   const loadMessages = useCallback(async (convId: string) => {
     setLoading(true);
-    const { data } = await supabase
-      .from("ai_messages")
-      .select("role, content")
-      .eq("conversation_id", convId)
-      .order("created_at", { ascending: true });
-    setMessages((data || []) as Msg[]);
-    setActiveId(convId);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from("ai_messages")
+        .select("role, content")
+        .eq("conversation_id", convId)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      setMessages((data || []) as Msg[]);
+      setActiveId(convId);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   // Create new conversation
@@ -62,14 +71,17 @@ export function useAiConversations() {
 
   // Save a message
   const saveMessage = useCallback(async (convId: string, role: "user" | "assistant", content: string) => {
-    await supabase.from("ai_messages").insert({ conversation_id: convId, role, content });
+    const { error: insertError } = await supabase.from("ai_messages").insert({ conversation_id: convId, role, content });
+    if (insertError) throw insertError;
     // Update conversation timestamp
-    await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
+    const { error: updateError } = await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
+    if (updateError) throw updateError;
   }, []);
 
   // Delete a conversation
   const deleteConversation = useCallback(async (convId: string) => {
-    await supabase.from("ai_conversations").delete().eq("id", convId);
+    const { error } = await supabase.from("ai_conversations").delete().eq("id", convId);
+    if (error) throw error;
     if (activeId === convId) { setActiveId(null); setMessages([]); }
     await loadConversations();
   }, [activeId, loadConversations]);

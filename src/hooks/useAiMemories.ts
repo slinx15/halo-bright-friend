@@ -18,20 +18,26 @@ export function useAiMemories() {
 
   const loadMemories = useCallback(async () => {
     if (!user) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("ai_memories")
       .select("id, category, content, is_active, created_at")
       .eq("user_id", user.id)
       .eq("is_active", true)
       .order("created_at", { ascending: false })
       .limit(100);
+    if (error) throw error;
     setMemories(data || []);
   }, [user]);
 
-  useEffect(() => { loadMemories(); }, [loadMemories]);
+  useEffect(() => {
+    loadMemories().catch((error) => {
+      console.error("Failed to load memories:", error);
+    });
+  }, [loadMemories]);
 
   const deleteMemory = useCallback(async (id: string) => {
-    await supabase.from("ai_memories").update({ is_active: false }).eq("id", id);
+    const { error } = await supabase.from("ai_memories").update({ is_active: false }).eq("id", id);
+    if (error) throw error;
     setMemories(prev => prev.filter(m => m.id !== id));
   }, []);
 
@@ -39,14 +45,18 @@ export function useAiMemories() {
   const extractMemories = useCallback(async (messages: { role: string; content: string }[], conversationId: string | null) => {
     if (messages.length < 2) return;
     try {
-      await fetch(`${SUPABASE_URL}/functions/v1/ai-chat`, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-chat`, {
         method: "POST",
         headers: await getAuthHeaders(),
         body: JSON.stringify({ messages, conversation_id: conversationId, extract_memories: true }),
       });
-      // Reload memories after extraction
-      setTimeout(() => loadMemories(), 2000);
-    } catch { /* silently fail */ }
+      if (!response.ok) {
+        throw new Error(`Memory extraction failed: ${response.status}`);
+      }
+      await loadMemories();
+    } catch (error) {
+      console.error("Memory extraction error:", error);
+    }
   }, [loadMemories]);
 
   return { memories, loadMemories, deleteMemory, extractMemories };

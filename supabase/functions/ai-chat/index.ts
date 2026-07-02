@@ -7,6 +7,21 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function fetchAllRows(
+  fetchPage: (from: number, to: number) => Promise<{ data: any[] | null; error: unknown }>,
+  pageSize = 1000,
+) {
+  const rows: any[] = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await fetchPage(from, from + pageSize - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    rows.push(...data);
+    if (data.length < pageSize) break;
+  }
+  return rows;
+}
+
 // ─── Engine Rules (EXACT parity with web app stockAnalyticsEngine.ts) ───
 const RULES = {
   CYCLE_DAYS: 3, SAFETY_STOCK: 1, SAFETY_BW: 2,
@@ -165,15 +180,16 @@ atau [] jika tidak ada yang perlu diingat.`;
             const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
             const newMemories = JSON.parse(cleaned);
             if (Array.isArray(newMemories) && newMemories.length > 0) {
-              for (const mem of newMemories) {
-                if (mem.category && mem.content) {
-                  await supabase.from("ai_memories").insert({
-                    user_id: user.id,
-                    category: mem.category,
-                    content: mem.content,
-                    source_conversation_id: conversation_id || null,
-                  });
-                }
+              const sanitized = newMemories
+                .filter((mem) => mem?.category && mem?.content)
+                .map((mem) => ({
+                  user_id: user.id,
+                  category: mem.category,
+                  content: mem.content,
+                  source_conversation_id: conversation_id || null,
+                }));
+              if (sanitized.length > 0) {
+                await supabase.from("ai_memories").insert(sanitized);
               }
             }
           } catch { /* parsing failed, skip */ }
@@ -185,15 +201,27 @@ atau [] jika tidak ada yang perlu diingat.`;
 
     // ─── Fetch business data ───
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
-    const [productsRes, stockOutRes, stockInRes] = await Promise.all([
+    const [productsRes, stockOut, stockIn] = await Promise.all([
       supabase.from("products").select("id, kode, nama, kategori, stock(jumlah, tumpukan_detail), prices(harga_modal, harga_normal, harga_grosir, harga_grosir2)").eq("is_active", true),
-      supabase.from("stock_out").select("product_id, qty_kirim, qty_pesan, total_harga, harga_satuan, harga_type, toko, created_at").gte("created_at", cutoff.toISOString()).order("created_at", { ascending: false }).limit(5000),
-      supabase.from("stock_in").select("product_id, qty, catatan, created_at").gte("created_at", cutoff.toISOString()).order("created_at", { ascending: false }).limit(2000),
+      fetchAllRows((from, to) =>
+        supabase
+          .from("stock_out")
+          .select("product_id, qty_kirim, qty_pesan, total_harga, harga_satuan, harga_type, toko, created_at")
+          .gte("created_at", cutoff.toISOString())
+          .order("created_at", { ascending: false })
+          .range(from, to),
+      ),
+      fetchAllRows((from, to) =>
+        supabase
+          .from("stock_in")
+          .select("product_id, qty, catatan, created_at")
+          .gte("created_at", cutoff.toISOString())
+          .order("created_at", { ascending: false })
+          .range(from, to),
+      ),
     ]);
 
     const rawProducts = productsRes.data || [];
-    const stockOut = stockOutRes.data || [];
-    const stockIn = stockInRes.data || [];
     const allProducts: ProductData[] = rawProducts.map((p: any) => {
       const stk = Array.isArray(p.stock) ? p.stock[0] : p.stock;
       const prc = Array.isArray(p.prices) ? p.prices[0] : p.prices;
@@ -259,7 +287,6 @@ atau [] jika tidak ada yang perlu diingat.`;
     const warningList = warning.slice(0, 10).map((a: any) => `${a.kode}: stok ${a.stok}, laku ${a.velocity}/hari, cukup ${a.dos} hari, order ${a.rekomendasi} pcs`).join("\n");
     const bestSellerList = bestSellers.slice(0, 10).map((a: any) => `${a.kode}: laku ${a.velocity}/hari, stok ${a.stok}, cukup ${a.dos} hari`).join("\n");
     const restockSummary = needRestock.slice(0, 20).map((a: any) => `${a.kode}: order ${a.rekomendasi} pcs (${a.dosStatus === "CRITICAL" ? "darurat" : a.dosStatus === "WARNING" ? "menipis" : "pantau"}, laku ${a.velocity}/hari, stok ${a.stok})`).join("\n");
-    const allProductsList = allSizeProducts.map((p: any) => { const a = analyses.find((x: any) => x.kode === p.kode); return a ? `${p.kode}|${p.nama}|stok:${p._stok}|laku:${a.velocity}/hari|cukup:${a.dos}hari|status:${a.dosStatus}|order:${a.rekomendasi}|modal:${p._hargaModal}|normal:${p._hargaNormal}|grosir:${p._hargaGrosir}|grosir2:${p._hargaGrosir2}|kat:${p.kategori}` : `${p.kode}|${p.nama}|stok:${p._stok}|modal:${p._hargaModal}|normal:${p._hargaNormal}|grosir:${p._hargaGrosir}|grosir2:${p._hargaGrosir2}|kat:${p.kategori || '-'}`; }).join("\n");
 
     // ─── Hari Ramai Analysis ───
     const HARI_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -321,6 +348,7 @@ atau [] jika tidak ada yang perlu diingat.`;
     const atRiskCustomers = customerAnalysis.filter(c => c.status === "mulai_hilang");
     const lostCustomers = customerAnalysis.filter(c => c.status === "hilang");
     const vipCustomers = customerAnalysis.filter(c => c.status === "VIP");
+    const repeatSummaryBlock = `ANALISA PELANGGAN (${customerAnalysis.length} toko): VIP ${vipCustomers.length} | Mulai hilang ${atRiskCustomers.length} | Hilang ${lostCustomers.length}`;
     const repeatBlock = `ANALISA PELANGGAN (${customerAnalysis.length} toko):\nVIP: ${vipCustomers.length} | Mulai hilang: ${atRiskCustomers.length} | Hilang: ${lostCustomers.length}\n` +
       (atRiskCustomers.length > 0 ? `⚠️ MULAI HILANG:\n${atRiskCustomers.map(c => `${c.nama}: siklus ${c.siklus}hr, terakhir ${c.lastOrder}, terlambat ${c.terlambat}hr, beli ${c.totalQty}pcs, favorit: ${c.favs}`).join("\n")}\n` : "") +
       (lostCustomers.length > 0 ? `🚨 HILANG:\n${lostCustomers.map(c => `${c.nama}: siklus ${c.siklus}hr, terakhir ${c.lastOrder}, terlambat ${c.terlambat}hr, beli ${c.totalQty}pcs, favorit: ${c.favs}`).join("\n")}\n` : "") +
@@ -568,9 +596,16 @@ Konten: rumus 80/20 (80% value, 20% jualan), jangan hard-selling, storytelling p
     };
 
     // ─── Topic Detection ───
+    function getRecentUserText(msgs: { role: string; content: string }[]) {
+      return msgs
+        .filter((m) => m.role === "user")
+        .slice(-3)
+        .map((m) => m.content.toLowerCase())
+        .join(" ");
+    }
+
     function detectTopics(msgs: { role: string; content: string }[]): string[] {
-      // Use last 3 user messages for context
-      const recentUserMsgs = msgs.filter(m => m.role === "user").slice(-3).map(m => m.content.toLowerCase()).join(" ");
+      const recentUserMsgs = getRecentUserText(msgs);
       const matched: string[] = [];
       for (const [key, mod] of Object.entries(KNOWLEDGE_MODULES)) {
         if (mod.keywords.some(kw => recentUserMsgs.includes(kw))) {
@@ -585,6 +620,40 @@ Konten: rumus 80/20 (80% value, 20% jualan), jangan hard-selling, storytelling p
     const jamSekarang = now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
 
     const detectedTopics = detectTopics(messages);
+    const recentUserText = getRecentUserText(messages);
+    const recentUserTextUpper = recentUserText.toUpperCase();
+    const asksCustomerDetail = /(pelanggan|customer|toko|langgan|repeat|vip|hilang|tanggal|transaksi)/.test(recentUserText);
+    const asksPricingDetail = /(harga|modal|hpp|margin|profit|grosir|normal)/.test(recentUserText);
+    const asksInventoryDetail = /(stok|restock|barang|kode|warna|produk|opname|kosong|habis|supplier)/.test(recentUserText);
+    const asksDailyOpsDetail = /(hari ini|omzet|profit|penjualan|barang masuk|modal masuk|hpp|arus|masuk|keluar)/.test(recentUserText);
+    const mentionedProducts = allSizeProducts
+      .filter((product) => recentUserTextUpper.includes(product.kode.toUpperCase()))
+      .slice(0, 12);
+    const contextualProducts = mentionedProducts.length > 0
+      ? mentionedProducts
+      : (asksInventoryDetail || asksPricingDetail ? allSizeProducts.filter((product) => product.kategori === "2 Ons").slice(0, 30) : []);
+    const productContextBlock = contextualProducts.length > 0
+      ? contextualProducts.map((product: any) => {
+          const analysis = analyses.find((item: any) => item.kode === product.kode);
+          if (asksPricingDetail) {
+            return analysis
+              ? `${product.kode}|${product.nama}|kat:${product.kategori || "-"}|stok:${product._stok}|status:${analysis.dosStatus}|order:${analysis.rekomendasi}|modal:${product._hargaModal}|normal:${product._hargaNormal}|grosir:${product._hargaGrosir}|grosir2:${product._hargaGrosir2}`
+              : `${product.kode}|${product.nama}|kat:${product.kategori || "-"}|stok:${product._stok}|modal:${product._hargaModal}|normal:${product._hargaNormal}|grosir:${product._hargaGrosir}|grosir2:${product._hargaGrosir2}`;
+          }
+          return analysis
+            ? `${product.kode}|${product.nama}|kat:${product.kategori || "-"}|stok:${product._stok}|laku:${analysis.velocity}/hari|cukup:${analysis.dos}hari|status:${analysis.dosStatus}|order:${analysis.rekomendasi}`
+            : `${product.kode}|${product.nama}|kat:${product.kategori || "-"}|stok:${product._stok}`;
+        }).join("\n")
+      : "";
+    const customerContextSection = asksCustomerDetail
+      ? `\n${customerPrefsBlock}\n\nDETAIL PENJUALAN PER PELANGGAN PER TANGGAL (30 hari, WIB):\n${tokoDateBlock}`
+      : "";
+    const productContextSection = productContextBlock
+      ? `\nPRODUK TERKAIT PERTANYAAN:\n${productContextBlock}`
+      : "";
+    const dailyOpsSection = asksDailyOpsDetail
+      ? `\n${dailyFinancialsBlock}\n\n${stockInBlock}`
+      : "";
     // Fallback: if 0-1 topics detected or ambiguous, send all modules
     const useAllModules = detectedTopics.length === 0 || detectedTopics.length > 5;
     const selectedModules = useAllModules
@@ -680,32 +749,26 @@ ${memoryBlock}
 
 ═══ ${todayBlock} ═══
 
-═══ ${dailyFinancialsBlock} ═══
-
-═══ ${stockInBlock} ═══
-
 ═══ DATA TOKO BOSS (REAL-TIME, STOK & ANALISA = HANYA 2 ONS) ═══
 ${products.length} produk 2 Ons aktif | Total semua ukuran: ${allSizeProducts.length} produk | Omzet 7 hari: Rp ${totalOmzet7d.toLocaleString("id-ID")} (${totalPcs7d} pcs)
 KONTEKS UKURAN: 2 Ons=stok di rumah, 3 Ons/5 Ons/18 Gram=pesan dulu ke supplier. 3 Ons hanya Hitam & Putih.
 Best seller: ${bestSellerList || "-"}
-Top pelanggan: ${topCustomers.join("; ") || "-"}
+Top pelanggan: ${asksCustomerDetail ? (topCustomers.join("; ") || "-") : "dibuka jika pertanyaan memang butuh detail pelanggan"}
 Produk darurat: ${criticalList || "Aman"}
 Total perlu order: ${needRestock.length} produk, ${totalRestockQty} pcs, ~Rp ${totalRestockCost.toLocaleString("id-ID")}
 
 ═══ ${hariRamaiBlock} ═══
 
-═══ ${repeatBlock} ═══
+═══ ${repeatSummaryBlock} ═══
 
 ═══ ${trendBlock} ═══
 
 ═══ ${profitBlock} ═══
 
-═══ ${customerPrefsBlock} ═══
-
 ═══ ${alertsBlock} ═══
-
-═══ DETAIL PENJUALAN PER PELANGGAN PER TANGGAL (30 hari, WIB) ═══
-${tokoDateBlock}
+${customerContextSection}
+${productContextSection}
+${dailyOpsSection}
 
 ═══ RULES RISET ═══
 - MINIMAL 1000-2000 kata untuk riset yang thorough & actionable
@@ -740,15 +803,11 @@ ${memoryBlock}
 
 ═══ ${todayBlock} ═══
 
-═══ ${dailyFinancialsBlock} ═══
-
-═══ ${stockInBlock} ═══
-
 ═══ DATA TOKO (STOK & ANALISA = HANYA 2 ONS) ═══
 ${products.length} produk 2 Ons aktif, stok total ${products.reduce((s, p) => s + p._stok, 0)} pcs | ${products.filter(p => p._stok === 0).length} stok kosong | ${critical.length} DARURAT(1-2 hari) | ${warning.length} MENIPIS(3-4 hari) | ${bestSellers.length} best seller(≥5/hari) | Perlu order: ${needRestock.length} produk, ${totalRestockQty} pcs, ~Rp ${totalRestockCost.toLocaleString("id-ID")}
 Total semua ukuran: ${allSizeProducts.length} produk (termasuk 3 Ons, 5 Ons, 18 Gram)
 
-Omzet 7 hari: Rp ${totalOmzet7d.toLocaleString("id-ID")} (${totalPcs7d} pcs) | Top pelanggan: ${topCustomers.join("; ") || "-"}
+Omzet 7 hari: Rp ${totalOmzet7d.toLocaleString("id-ID")} (${totalPcs7d} pcs) | ${asksCustomerDetail ? `Top pelanggan: ${topCustomers.join("; ") || "-"}` : "Detail pelanggan dibuka hanya saat pertanyaan memang butuh"}
 
 DARURAT: ${criticalList || "Aman 👍"}
 MENIPIS: ${warningList || "-"}
@@ -757,21 +816,16 @@ ORDER: ${restockSummary || "-"}
 
 ${hariRamaiBlock}
 
-${repeatBlock}
+${repeatSummaryBlock}
 
 ${trendBlock}
 
 ${profitBlock}
 
-${customerPrefsBlock}
-
 ${alertsBlock}
-
-DETAIL PENJUALAN PER PELANGGAN PER TANGGAL (30 hari, WIB):
-${tokoDateBlock}
-
-SEMUA PRODUK (semua ukuran, termasuk 3 level harga: normal/grosir/grosir2):
-${allProductsList}
+${customerContextSection}
+${productContextSection}
+${dailyOpsSection}
 
 ═══ RULES ═══
 - Laju dari data 30 hari. "cukup X hari"=stok÷laju/hari. Order dibulatkan ke 25 (50 utk BW), min 25 pcs.
@@ -784,7 +838,7 @@ ${allProductsList}
 - KRITIS: Hitung total qty dan omzet dari item-item yang tertulis, JANGAN mengalikan atau menambahkan angka sembarangan.
 - KRITIS: Kalau boss tanya "barang masuk hari ini", "stok masuk", "total masuk", gunakan data BARANG MASUK HARI INI di atas. Data ini dari tabel stock_in (barang yang diterima/ditambah ke gudang), BUKAN dari stock_out.
 - KRITIS: Kalau boss tanya "penjualan hari ini", "omzet hari ini", "profit hari ini", atau "berapa toko hari ini", gunakan data PENJUALAN HARI INI di atas. Data ini sudah dihitung pakai timezone WIB.
-- KRITIS: Kalau boss tanya "harga barang masuk", "modal masuk", "biaya masuk", gunakan harga_modal dari data produk di SEMUA PRODUK. Data barang masuk sudah menyertakan harga modal per item (@Rp...). JANGAN mengarang harga — selalu ambil dari data yang tersedia.
+- KRITIS: Kalau boss tanya "harga barang masuk", "modal masuk", "biaya masuk", gunakan harga_modal dari data PRODUK TERKAIT PERTANYAAN atau detail barang masuk bila blok itu tersedia. JANGAN mengarang harga — selalu ambil dari data yang tersedia.
 - KRITIS: Harga modal (harga_modal) adalah harga beli/kulak dari supplier. Harga normal/grosir/grosir2 adalah harga jual ke pelanggan. Jangan tertukar!`;
 
     const systemPrompt = research_mode ? researchSystemPrompt : normalSystemPrompt;

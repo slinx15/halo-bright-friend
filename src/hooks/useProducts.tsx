@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/lib/supabaseEnv";
+import { supabase } from "@/integrations/supabase/client";
 import { normalizeRelation, type ProductRowWithRelations } from "@/lib/supabaseRows";
 
 export interface ProductWithDetails {
@@ -12,15 +13,12 @@ export interface ProductWithDetails {
   prices?: { harga_modal: number; harga_normal: number; harga_grosir: number; harga_grosir2: number };
 }
 
-function getAuthToken(): string {
-  const storageKey = Object.keys(localStorage).find(k => k.includes("auth-token"));
-  if (!storageKey) return "";
+async function getAuthToken(): Promise<string> {
   try {
-    const parsed = JSON.parse(localStorage.getItem(storageKey) || "") as {
-      access_token?: string;
-      currentSession?: { access_token?: string };
-    };
-    return parsed.access_token || parsed?.currentSession?.access_token || "";
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return session?.access_token || "";
   } catch {
     return "";
   }
@@ -29,7 +27,7 @@ function getAuthToken(): string {
 const SUPABASE_KEY = SUPABASE_PUBLISHABLE_KEY;
 
 async function fetchFromSupabase<T>(path: string): Promise<T> {
-  const token = getAuthToken();
+  const token = await getAuthToken();
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     headers: {
       "apikey": SUPABASE_KEY,

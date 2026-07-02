@@ -93,9 +93,12 @@ function toDateKey(d: Date): string {
 }
 
 function today(): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
+  const nowWib = new Date(Date.now() + 7 * 3600000);
+  return new Date(Date.UTC(nowWib.getUTCFullYear(), nowWib.getUTCMonth(), nowWib.getUTCDate()));
+}
+
+function toWibDate(value: string | Date): Date {
+  return new Date(new Date(value).getTime() + 7 * 3600000);
 }
 
 // ─── WMA Velocity (EXACT bot parity) ─────────────────────
@@ -243,7 +246,7 @@ export function calculateTrendData(
 
   for (const s of allSales) {
     if (!productIdSet.has(s.product_id)) continue;
-    const d = new Date(s.created_at);
+    const d = toWibDate(s.created_at);
     if (d >= weekAgo) {
       thisWeek[s.product_id] = (thisWeek[s.product_id] ?? 0) + s.qty_kirim;
     } else if (d >= twoWeeksAgo && d < weekAgo) {
@@ -283,7 +286,7 @@ function getFirstSaleDate(sales: StockOutRecord[], productId: string): Date | nu
   let earliest: Date | null = null;
   for (const s of sales) {
     if (s.product_id !== productId) continue;
-    const d = new Date(s.created_at);
+    const d = toWibDate(s.created_at);
     if (!earliest || d < earliest) earliest = d;
   }
   return earliest;
@@ -292,7 +295,7 @@ function getFirstSaleDate(sales: StockOutRecord[], productId: string): Date | nu
 // ─── Get Harga Modal ──────────────────────────────────────
 
 function getHargaModal(product: ProductWithDetails): number {
-  return product.prices?.harga_modal || 7000;
+  return product.prices?.harga_modal ?? 0;
 }
 
 // ─── Main Analysis (EXACT bot parity) ────────────────────
@@ -327,7 +330,6 @@ export function analyzeAllProducts(
     const isNew = ageDays < RULES.NEW_PRODUCT_WAIT_DAYS;
 
     const wma = wmaData[product.id];
-    const rawVelocity = isNew ? RULES.NEW_PRODUCT_DEFAULT_VEL : (wma?.velocity ?? 0);
     const velocity = isNew ? RULES.NEW_PRODUCT_DEFAULT_VEL : (wma?.adjustedVelocity ?? 0);
 
     // Bot parity: slow mover skip

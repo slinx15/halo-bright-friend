@@ -91,8 +91,6 @@ export function BulkInputDialog() {
         stok: parseInt(r.stok) || 0,
       }));
 
-      console.log("[BulkImport] Payload ready:", payload.length, "rows");
-
       // Get auth token directly from localStorage to bypass SDK lock
       setProgress(15);
       setProgressLabel("Mengambil token auth...");
@@ -112,7 +110,6 @@ export function BulkInputDialog() {
 
       // Fallback: try supabase.auth.getSession() with a timeout
       if (!accessToken) {
-        console.log("[BulkImport] Trying getSession fallback...");
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise<never>((_, reject) => 
           setTimeout(() => reject(new Error("Auth timeout")), 5000)
@@ -121,7 +118,7 @@ export function BulkInputDialog() {
           const { data: sessionData } = await Promise.race([sessionPromise, timeoutPromise]);
           accessToken = sessionData?.session?.access_token || "";
         } catch (e) {
-          console.warn("[BulkImport] getSession timed out, using stored token");
+          // Fall back to the stored token if session refresh is blocked
         }
       }
 
@@ -129,7 +126,6 @@ export function BulkInputDialog() {
         throw new Error("Tidak bisa mendapatkan token auth. Coba logout dan login ulang.");
       }
 
-      console.log("[BulkImport] Token obtained, sending to edge function...");
       setProgress(20);
       setProgressLabel(`Mengimport ${payload.length} produk...`);
 
@@ -147,22 +143,17 @@ export function BulkInputDialog() {
         body: JSON.stringify({ rows: payload }),
       });
 
-      console.log("[BulkImport] Response status:", response.status);
-
       if (!response.ok) {
         const errBody = await response.text();
-        console.error("[BulkImport] Error response:", errBody);
         throw new Error(`Server error ${response.status}: ${errBody}`);
       }
 
       const data = await response.json();
-      console.log("[BulkImport] Result:", data);
 
       setProgress(100);
       setProgressLabel("Selesai!");
 
       if (data.errors && data.errors.length > 0) {
-        console.error("[BulkImport] Errors:", data.errors);
         toast({
           title: "Sebagian Gagal",
           description: `${data.totalInserted} berhasil, ${data.errors.length} batch gagal`,
@@ -179,7 +170,6 @@ export function BulkInputDialog() {
       setOpen(false);
       queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch (err: unknown) {
-      console.error("[BulkImport] Error:", err);
       toast({ title: "Error", description: getErrorMessage(err), variant: "destructive" });
     }
     setSubmitting(false);
