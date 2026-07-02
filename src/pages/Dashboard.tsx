@@ -528,23 +528,24 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <Card className="card-premium md:col-span-2">
-          <CardHeader className="pb-2">
+          <CardHeader className="px-4 py-3 pb-2">
             <div className="flex items-start justify-between gap-2">
-              <CardTitle className="flex items-center gap-2 text-sm font-bold">
-                <div className="rounded-md bg-primary/10 p-1">
-                  <BarChart3 className="h-3.5 w-3.5 text-primary" />
+              <div className="flex items-center gap-2">
+                <div className="rounded-lg bg-primary/10 p-1.5">
+                  <BarChart3 className="h-4 w-4 text-primary" />
                 </div>
-                Penjualan 7 Hari
-              </CardTitle>
+                <CardTitle className="text-sm font-semibold">Penjualan 7 Hari</CardTitle>
+              </div>
               <div className="text-right">
-                <p className="text-[10px] font-medium text-muted-foreground">Total</p>
-                <p className="text-xs font-bold tabular-nums text-foreground">{formatRupiah(weekTotal)}</p>
+                <p className="text-[11px] font-medium text-muted-foreground">Total</p>
+                <p className="text-sm font-bold tabular-nums text-foreground">{formatRupiah(weekTotal)}</p>
               </div>
             </div>
-            <p className="text-[10px] font-medium text-muted-foreground">
+            <p className="mt-1 text-[11px] font-medium text-muted-foreground">
               Rata-rata {formatRupiah(Math.round(weekAvg))}/hari
             </p>
           </CardHeader>
+
           <CardContent className="pb-3 pt-1">
             <div className="h-48 md:h-56">
               <ResponsiveContainer width="100%" height="100%">
