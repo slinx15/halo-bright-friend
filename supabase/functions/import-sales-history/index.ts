@@ -148,6 +148,18 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
+    // Admin-only: import histori penjualan mengubah stok secara massal
+    const { data: roleData } = await adminSupabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (!roleData) {
+      return jsonResponse({ error: "Forbidden: admin only" }, 403);
+    }
+
     const { rows, clear_before_import } = (await req.json()) as {
       rows: ParsedRow[];
       clear_before_import?: boolean;
