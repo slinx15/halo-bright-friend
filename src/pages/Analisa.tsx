@@ -386,25 +386,75 @@ const Analisa = () => {
   const overallChange = totalLW > 0 ? ((totalTW - totalLW) / totalLW * 100) : 0;
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto w-full overflow-y-auto overflow-x-hidden pb-24 md:pb-6">
-      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-border/70 pb-4">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight">Analisa</h1>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {analyses.length} SKU | WMA {RULES.WMA_PERIOD1_DAYS} hari
-          </p>
+    <div className="p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto w-full overflow-y-auto overflow-x-hidden pb-32 md:pb-6">
+      {/* HEADER — ringkas, ikon di kiri, konsisten dgn Masuk/Keluar/Stok */}
+      <section className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="rounded-lg bg-primary/10 p-1.5">
+            <BarChart3 className="h-4 w-4 text-primary" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-lg font-extrabold leading-tight tracking-tight">Analisa</h1>
+            <p className="text-xs text-muted-foreground">
+              {analyses.length} SKU · WMA {RULES.WMA_PERIOD1_DAYS} hari
+            </p>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-destructive/15 bg-destructive/[0.06] px-3 font-semibold text-destructive">
-            <AlertTriangle className="h-3.5 w-3.5" />
-            {needsReorder} perlu restock
-          </span>
-          <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-primary/15 bg-primary/[0.06] px-3 font-semibold text-primary">
-            <Wallet className="h-3.5 w-3.5" />
-            {formatRp(totalRestockCost)}
-          </span>
+      </section>
+
+      {/* KPI CARDS — Vibrant status cards (horizontal, 3 kolom) */}
+      <section className="grid grid-cols-3 gap-2.5">
+        {/* Perlu Restock */}
+        <div className="flex flex-col items-center justify-between rounded-2xl border border-border/60 bg-card p-3 shadow-sm transition-transform active:scale-[0.98]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+            <AlertTriangle className="h-5 w-5" strokeWidth={2} />
+          </div>
+          <div className="my-1.5 text-center">
+            <span className="text-2xl font-extrabold tabular-nums text-destructive leading-none">{needsReorder}</span>
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] font-bold uppercase tracking-tight text-destructive">Restock</p>
+            <p className="text-[9px] text-muted-foreground">Perlu diisi</p>
+          </div>
         </div>
-      </header>
+
+        {/* Total SKU */}
+        <div className="flex flex-col items-center justify-between rounded-2xl border border-border/60 bg-card p-3 shadow-sm transition-transform active:scale-[0.98]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/10 text-warning">
+            <Package className="h-5 w-5" strokeWidth={2} />
+          </div>
+          <div className="my-1.5 text-center">
+            <span className="text-2xl font-extrabold tabular-nums text-foreground leading-none">{analyses.length}</span>
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] font-bold uppercase tracking-tight text-foreground/90">Aktif</p>
+            <p className="text-[9px] text-muted-foreground">SKU dianalisa</p>
+          </div>
+        </div>
+
+        {/* Total Biaya — filled primary */}
+        <div className="flex flex-col items-center justify-between rounded-2xl bg-primary p-3 shadow-lg shadow-primary/20 transition-transform active:scale-[0.98]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-foreground/15 text-primary-foreground">
+            <Wallet className="h-5 w-5" strokeWidth={2} />
+          </div>
+          <div className="my-1.5 text-center">
+            <span className="text-2xl font-extrabold tabular-nums text-primary-foreground leading-none">
+              {totalRestockCost >= 1_000_000_000
+                ? `${(totalRestockCost / 1_000_000_000).toFixed(1).replace(".", ",")} M`
+                : totalRestockCost >= 1_000_000
+                  ? `${(totalRestockCost / 1_000_000).toFixed(1).replace(".", ",")} jt`
+                  : totalRestockCost >= 1_000
+                    ? `${(totalRestockCost / 1_000).toFixed(0)} rb`
+                    : totalRestockCost}
+            </span>
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] font-bold uppercase tracking-tight text-primary-foreground">Biaya (Rp)</p>
+            <p className="text-[9px] text-primary-foreground/75">Estimasi restock</p>
+          </div>
+        </div>
+      </section>
+
 
       {/* MAIN CONTENT — TABS */}
       <Tabs value={activeSection} onValueChange={(value) => setActiveSection(value as AnalysisSection)} className="w-full">
