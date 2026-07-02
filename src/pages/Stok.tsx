@@ -144,10 +144,17 @@ const Stok = () => {
           product.kode.toLowerCase().includes(search.toLowerCase()) ||
           product.nama.toLowerCase().includes(search.toLowerCase());
         const matchKategori = kategoriFilter === "Semua" || product.kategori === kategoriFilter;
-        return matchSearch && matchKategori;
+        const jumlah = product.stock?.jumlah ?? 0;
+        let matchStatus = true;
+        if (statusFilter === "kosong") matchStatus = jumlah === 0;
+        else if (statusFilter === "kritis") matchStatus = jumlah > 0 && jumlah <= 5;
+        else if (statusFilter === "warning") matchStatus = getStockStatus(jumlah) === "warning";
+        else if (statusFilter === "aman") matchStatus = getStockStatus(jumlah) === "aman";
+        return matchSearch && matchKategori && matchStatus;
       }) ?? [],
-    [products, search, kategoriFilter],
+    [products, search, kategoriFilter, statusFilter],
   );
+
 
   const visibleItems = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
   const hasMore = visibleCount < filtered.length;
