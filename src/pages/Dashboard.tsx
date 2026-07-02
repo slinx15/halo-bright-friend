@@ -225,12 +225,46 @@ function HeroKpi({
   margin: number;
   hpp: number;
 }) {
+  const navigate = useNavigate();
   const marginPositive = margin >= 0;
+  const isEmpty = omzet === 0 && pcs === 0;
+
+  if (isEmpty) {
+    return (
+      <div
+        className="relative overflow-hidden rounded-2xl p-5 text-primary-foreground shadow-premium-lg"
+        style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.75))" }}
+      >
+        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10" />
+        <div className="absolute -right-4 bottom-0 h-20 w-20 rounded-full bg-white/5" />
+        <div className="relative flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="mb-1 flex items-center gap-1.5">
+              <DollarSign className="h-3.5 w-3.5 opacity-80" />
+              <span className="text-xs font-medium opacity-80">Belum ada penjualan</span>
+            </div>
+            <p className="text-lg font-extrabold tracking-tight">Ayo mulai hari ini</p>
+            <p className="mt-0.5 text-[11px] opacity-80">Catat penjualan pertama untuk lihat omzet & profit</p>
+          </div>
+          <Button
+            size="sm"
+            variant="secondary"
+            className="shrink-0 shadow-md"
+            onClick={() => navigate("/keluar")}
+          >
+            <PackageMinus className="h-4 w-4" />
+            Catat Sekarang
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-3 gap-2.5">
       <div
-        className="relative col-span-2 overflow-hidden rounded-2xl p-4 text-primary-foreground shadow-premium-lg"
-        style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(217 91% 40%))" }}
+        className="relative col-span-2 overflow-hidden rounded-2xl p-4 text-primary-foreground shadow-premium-lg transition-transform duration-200 hover:-translate-y-0.5"
+        style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.7))" }}
       >
         <div className="absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/10" />
         <div className="absolute -right-2 bottom-0 h-16 w-16 rounded-full bg-white/5" />
@@ -247,7 +281,7 @@ function HeroKpi({
         </div>
       </div>
 
-      <div className="card-premium flex flex-col justify-between p-4">
+      <div className="card-premium flex flex-col justify-between p-4 transition-transform duration-200 hover:-translate-y-0.5">
         <div className="mb-1 flex items-center gap-1.5">
           <ShoppingCart className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Terjual</span>
@@ -258,7 +292,7 @@ function HeroKpi({
         </div>
       </div>
 
-      <div className="card-premium col-span-3 p-4">
+      <div className="card-premium col-span-3 p-4 transition-transform duration-200 hover:-translate-y-0.5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <div className={`rounded-xl p-2 ${profit >= 0 ? "bg-success/10" : "bg-destructive/10"}`}>
@@ -280,6 +314,7 @@ function HeroKpi({
     </div>
   );
 }
+
 
 
 function QuickActions() {
