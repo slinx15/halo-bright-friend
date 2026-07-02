@@ -49,7 +49,9 @@ const Stok = () => {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const initialKategori = searchParams.get("kategori") || "Semua";
+  const initialStatus = searchParams.get("status") || "semua";
   const [kategoriFilter, setKategoriFilter] = useState<string>(initialKategori);
+  const [statusFilter, setStatusFilter] = useState<string>(initialStatus);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resetConfirmText, setResetConfirmText] = useState("");
@@ -59,11 +61,17 @@ const Stok = () => {
 
   useEffect(() => {
     const paramKategori = searchParams.get("kategori");
+    const paramStatus = searchParams.get("status");
     if (paramKategori && paramKategori !== kategoriFilter) {
       setKategoriFilter(paramKategori);
       setVisibleCount(PAGE_SIZE);
     }
-  }, [kategoriFilter, searchParams]);
+    if (paramStatus && paramStatus !== statusFilter) {
+      setStatusFilter(paramStatus);
+      setVisibleCount(PAGE_SIZE);
+    }
+  }, [kategoriFilter, statusFilter, searchParams]);
+
 
   const exportStokToExcel = () => {
     if (!products || products.length === 0) return;
