@@ -601,6 +601,10 @@ const Dashboard = () => {
         </div>
       </div>
 
+      <div className="animate-fade-in" style={{ animationDelay: "225ms", animationFillMode: "both" }}>
+        <AiInsightsCard />
+      </div>
+
     </div>
   );
 };
