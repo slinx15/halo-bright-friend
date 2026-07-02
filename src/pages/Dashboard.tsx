@@ -533,29 +533,27 @@ const Dashboard = () => {
       </div>
 
       <div className="animate-fade-in" style={{ animationDelay: "225ms", animationFillMode: "both" }}>
-        <Card className="card-premium">
-          <CardContent className="p-3.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-primary/10 p-2">
-                  <PackagePlus className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-medium text-muted-foreground">Barang Masuk Hari Ini</p>
-                  <div className="flex items-baseline gap-2">
-                    <p className="text-lg font-extrabold tracking-tight tabular-nums">{formatNumber(stockInPcsHariIni)} pcs</p>
-                    <span className="text-[11px] text-muted-foreground">({stockInEntries} entri)</span>
-                  </div>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] font-medium text-muted-foreground">Total Modal</p>
-                <p className="text-sm font-bold tabular-nums text-primary">{formatRupiah(stockInCostHariIni)}</p>
-              </div>
+        <div className="grid grid-cols-3 gap-2.5">
+          <div className="card-premium col-span-2 p-4 transition-transform duration-200 hover:-translate-y-0.5">
+            <div className="mb-1 flex items-center gap-1.5">
+              <PackagePlus className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Barang Masuk</span>
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex items-baseline gap-2">
+              <p className="text-2xl font-extrabold tracking-tight tabular-nums">{formatNumber(stockInPcsHariIni)}</p>
+              <span className="text-[11px] font-medium text-muted-foreground">pcs · {stockInEntries} entri</span>
+            </div>
+          </div>
+          <div className="card-premium flex flex-col justify-between p-4 transition-transform duration-200 hover:-translate-y-0.5">
+            <div className="mb-1 flex items-center gap-1.5">
+              <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Modal</span>
+            </div>
+            <p className="text-lg font-extrabold tracking-tight tabular-nums text-primary">{formatRupiah(stockInCostHariIni)}</p>
+          </div>
+        </div>
       </div>
+
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <Card className="card-premium md:col-span-2">
