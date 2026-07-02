@@ -749,22 +749,102 @@ const BarangKeluar = () => {
 
           <Button
             variant="outline"
-            size="sm"
             onClick={addLine}
-            className="min-h-[44px] rounded-xl transition-all duration-150 active:scale-95"
+            className="h-11 w-full rounded-xl border-dashed text-sm font-semibold transition-all duration-150 active:scale-[0.98]"
           >
-            <Plus className="mr-1 h-4 w-4" />
+            <Plus className="mr-1.5 h-4 w-4" />
             Tambah Baris
           </Button>
 
+          {/* Toko selalu tampil (wajib) */}
+          <div>
+            <Label className="text-xs font-semibold text-muted-foreground">Nama Toko / Pelanggan</Label>
+            <Input
+              value={globalToko}
+              onChange={(event) => setGlobalToko(event.target.value)}
+              placeholder="Nama toko atau pelanggan..."
+              className="mt-1 h-11 rounded-xl border-border/70 bg-card"
+            />
+          </div>
+
+          {/* Opsi lanjutan (Tanggal & Catatan) — collapsed by default */}
+          <Collapsible>
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 w-full justify-between rounded-lg text-xs font-semibold text-muted-foreground hover:bg-muted"
+              >
+                <span>Opsi lanjutan {tanggal ? `· ${selectedDateLabel}` : ""} {catatan ? "· ada catatan" : ""}</span>
+                <ChevronDown className="h-3.5 w-3.5 transition-transform data-[state=open]:rotate-180" />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-2 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div>
+                  <Label className="text-xs font-semibold text-muted-foreground">Tanggal</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "mt-1 h-11 w-full justify-start rounded-xl border-border/70 bg-card text-left font-normal",
+                          !tanggal && "text-muted-foreground",
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {selectedDateLabel}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={tanggal}
+                        onSelect={setTanggal}
+                        initialFocus
+                        className="pointer-events-auto p-3"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {tanggal && (
+                    <button
+                      onClick={() => setTanggal(undefined)}
+                      className="mt-0.5 text-[10px] text-primary hover:underline"
+                    >
+                      Reset ke hari ini
+                    </button>
+                  )}
+                </div>
+
+                <div>
+                  <Label className="text-xs font-semibold text-muted-foreground">Catatan</Label>
+                  <Textarea
+                    value={catatan}
+                    onChange={(event) => setCatatan(event.target.value)}
+                    placeholder="Catatan..."
+                    rows={2}
+                    className="mt-1 rounded-xl border-border/70 bg-card"
+                  />
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Tombol Simpan — disabled state jelas abu-abu */}
           <Button
             onClick={handleSubmit}
             disabled={submitting || validCount === 0}
-            className="h-12 w-full rounded-2xl bg-destructive text-base font-bold shadow-md transition-all duration-150 active:scale-[0.98] hover:bg-destructive/90 hover:shadow-lg"
+            className={cn(
+              "h-12 w-full rounded-2xl text-base font-bold shadow-md transition-all duration-150 active:scale-[0.98]",
+              validCount === 0 || submitting
+                ? "bg-muted text-muted-foreground shadow-none hover:bg-muted"
+                : "bg-gradient-to-r from-destructive via-rose-500 to-primary text-primary-foreground hover:shadow-lg",
+            )}
           >
             <Send className="mr-2 h-5 w-5" />
-            {submitting ? "Menyimpan..." : `Simpan Barang Keluar${validCount > 0 ? ` (${validCount} item)` : ""}`}
+            {submitting ? "Menyimpan..." : validCount > 0 ? `Simpan ${validCount} Item` : "Belum ada item valid"}
           </Button>
+
         </CardContent>
       </Card>
 
