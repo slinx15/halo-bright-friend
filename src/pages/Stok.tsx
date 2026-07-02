@@ -21,7 +21,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { PageHeader } from "@/components/PageHeader";
 import {
   Dialog,
   DialogContent,
@@ -189,14 +188,21 @@ const Stok = () => {
 
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-5 p-4 md:p-6 [&>*]:animate-fade-in [&>*]:[animation-fill-mode:both] [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms]">
-      <PageHeader
-        icon={Package}
-        iconColor="text-primary"
-        iconBg="bg-primary/10"
-        title="Manajemen Stok"
-        subtitle={`${formatNumber(totalItems)} produk aktif dengan ${formatNumber(totalStok)} pcs tersimpan`}
-        actions={
-          <>
+      <section className="rounded-[1.75rem] border border-border/70 bg-card/95 p-4 shadow-sm md:p-5">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="rounded-2xl bg-primary/10 p-3 shadow-sm ring-1 ring-primary/10">
+              <Package className="h-5 w-5 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-xl font-extrabold tracking-tight text-foreground md:text-2xl">Manajemen Stok</h1>
+              <p className="text-sm text-muted-foreground">
+                {formatNumber(totalItems)} produk aktif dengan {formatNumber(totalStok)} pcs tersimpan
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" className="h-10 rounded-xl" onClick={exportStokToExcel}>
               <Download className="mr-1.5 h-4 w-4" />
               Export
@@ -210,9 +216,9 @@ const Stok = () => {
               <Trash2 className="mr-1.5 h-4 w-4" />
               Reset Stok
             </Button>
-          </>
-        }
-      />
+          </div>
+        </div>
+      </section>
 
       <Dialog
         open={showResetDialog}
@@ -299,23 +305,6 @@ const Stok = () => {
             <p className="text-2xl font-extrabold text-destructive tabular-nums">{kritis + kosong}</p>
             <p className="mt-1 text-[11px] text-muted-foreground">{kosong} kosong, {kritis} kritis</p>
           </div>
-        </div>
-      </section>
-
-      <section className="grid gap-2.5 md:grid-cols-3">
-        <div className="rounded-[1.35rem] border border-primary/15 bg-card px-4 py-4 shadow-sm">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Fokus</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">
-            {kosong + kritis > 0 ? "Prioritaskan stok kosong dan kritis lebih dulu." : "Mayoritas stok relatif aman."}
-          </p>
-        </div>
-        <div className="rounded-[1.35rem] border border-success/15 bg-card px-4 py-4 shadow-sm">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Kategori</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">{kategoriFilter === "Semua" ? "Semua kategori" : kategoriFilter}</p>
-        </div>
-        <div className="rounded-[1.35rem] border border-warning/15 bg-card px-4 py-4 shadow-sm">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Pencarian</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">{search.trim() ? search : "Belum ada keyword"}</p>
         </div>
       </section>
 

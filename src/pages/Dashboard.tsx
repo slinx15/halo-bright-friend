@@ -1,13 +1,20 @@
 import { useEffect } from "react";
 import {
   ArrowUpRight,
+  AlertTriangle,
   BarChart3,
+  CheckCircle2,
+  CloudSun,
   ClipboardCheck,
   DollarSign,
+  MoonStar,
   Package,
   PackageMinus,
   PackagePlus,
+  ShieldAlert,
   ShoppingCart,
+  Sun,
+  Sunset,
   TrendingUp,
 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -53,12 +60,12 @@ function getGreeting() {
   return "Selamat Malam";
 }
 
-function getGreetingEmoji() {
+function getGreetingIcon() {
   const hour = new Date().getHours();
-  if (hour < 11) return "??";
-  if (hour < 15) return "???";
-  if (hour < 18) return "??";
-  return "??";
+  if (hour < 11) return Sun;
+  if (hour < 15) return CloudSun;
+  if (hour < 18) return Sunset;
+  return MoonStar;
 }
 
 function getInventorySummary(products: ProductWithDetails[] | undefined): InventorySummary {
@@ -97,28 +104,28 @@ function CommandCenter({
       count: summary.kosong,
       lightBg: "bg-destructive/8",
       lightText: "text-destructive",
-      emoji: "??",
+      icon: AlertTriangle,
     },
     {
       label: "Kritis",
       count: summary.kritis,
       lightBg: "bg-orange-500/8",
       lightText: "text-orange-600",
-      emoji: "??",
+      icon: ShieldAlert,
     },
     {
       label: "Warning",
       count: summary.warning,
       lightBg: "bg-warning/8",
       lightText: "text-amber-600",
-      emoji: "??",
+      icon: TrendingUp,
     },
     {
       label: "Aman",
       count: summary.aman,
       lightBg: "bg-success/8",
       lightText: "text-success",
-      emoji: "?",
+      icon: CheckCircle2,
     },
   ];
 
@@ -129,7 +136,7 @@ function CommandCenter({
           <Package className="h-3.5 w-3.5 text-primary" />
           <span className="text-xs font-medium text-muted-foreground">{formatNumber(summary.totalItems)} item</span>
         </div>
-        <span className="text-border">·</span>
+        <span className="text-border">Â·</span>
         <div className="flex items-center gap-1.5">
           <TrendingUp className="h-3.5 w-3.5 text-success" />
           <span className="text-xs font-medium text-muted-foreground">{formatNumber(summary.totalStok)} stok</span>
@@ -143,7 +150,9 @@ function CommandCenter({
             onClick={() => navigate("/stok?kategori=2 Ons")}
             className={`card-premium flex flex-col items-center gap-1 p-3 transition-all duration-200 ${card.lightBg}`}
           >
-            <span className="text-lg leading-none">{card.emoji}</span>
+            <div className="rounded-full bg-background/80 p-1.5 shadow-sm">
+              <card.icon className={`h-3.5 w-3.5 ${card.lightText}`} strokeWidth={2.3} />
+            </div>
             <span className={`text-2xl font-black leading-none tabular-nums ${card.lightText}`}>{card.count}</span>
             <span className="text-[10px] font-semibold leading-tight text-muted-foreground">{card.label}</span>
           </button>
@@ -258,6 +267,7 @@ function QuickActions() {
 const Dashboard = () => {
   const { data: allProducts, isLoading } = useProducts();
   useStockNotifications();
+  const GreetingIcon = getGreetingIcon();
   const products = allProducts?.filter((product) => product.kategori === "2 Ons");
 
   const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
@@ -378,10 +388,13 @@ const Dashboard = () => {
     <div className="mx-auto w-full max-w-[1400px] space-y-4 p-4 pb-24 md:p-6 md:pb-6">
       <div className="animate-fade-in">
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">
-              {getGreeting()}, Boss {getGreetingEmoji()}
-            </p>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium text-muted-foreground">{getGreeting()}, Boss</p>
+              <div className="rounded-full bg-primary/10 p-1">
+                <GreetingIcon className="h-3.5 w-3.5 text-primary" strokeWidth={2.2} />
+              </div>
+            </div>
             <h1 className="text-xl font-extrabold tracking-tight">Dashboard</h1>
           </div>
           <div className="glass hidden rounded-full border border-border/20 px-3 py-1.5 text-xs text-muted-foreground md:flex md:items-center md:gap-2">
@@ -489,3 +502,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
