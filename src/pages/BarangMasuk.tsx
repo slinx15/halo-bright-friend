@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 
 import { OcrUpload } from "@/components/OcrUpload";
-import { PageHeader } from "@/components/PageHeader";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { BarangMasukHistory } from "@/components/masuk/BarangMasukHistory";
 import { Badge } from "@/components/ui/badge";
@@ -208,14 +207,22 @@ const BarangMasuk = () => {
 
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-5 p-4 md:p-6 [&>*]:animate-fade-in [&>*]:[animation-fill-mode:both] [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*:nth-child(5)]:![animation-delay:200ms]">
-      <PageHeader
-        icon={PackagePlus}
-        iconColor="text-success"
-        iconBg="bg-success/10"
-        title="Barang Masuk"
-        subtitle="Catat stok masuk dengan cepat dan tetap rapi"
-        actions={<OcrUpload mode="masuk" onResult={(ocrItems) => handleOcrResult(ocrItems as BarangMasukOcrItem[])} />}
-      />
+      <section className="flex items-center justify-between gap-3 rounded-[1.35rem] border border-border/70 bg-card/95 px-4 py-4 shadow-sm">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="rounded-2xl bg-success/10 p-3 shadow-sm">
+            <PackagePlus className="h-5 w-5 text-success" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-lg font-extrabold leading-tight tracking-tight text-foreground sm:text-xl">
+              Barang Masuk
+            </h1>
+            <p className="text-sm text-muted-foreground">Catat stok masuk dengan cepat dan tetap rapi</p>
+          </div>
+        </div>
+        <div className="shrink-0">
+          <OcrUpload mode="masuk" onResult={(ocrItems) => handleOcrResult(ocrItems as BarangMasukOcrItem[])} />
+        </div>
+      </section>
 
       <section className="rounded-[1.35rem] border border-border/70 bg-card/95 p-2 shadow-sm">
         <div className="grid grid-cols-3 gap-2">
@@ -237,21 +244,15 @@ const BarangMasuk = () => {
         </div>
       </section>
 
-      <Card className="overflow-hidden rounded-[1.6rem] border-success/15 bg-card shadow-sm">
-        <CardHeader className="border-b border-border/60 bg-[linear-gradient(180deg,hsl(var(--success)/0.10),transparent)] pb-4">
+      <Card className="overflow-hidden rounded-[1.6rem] border-border/70 bg-card shadow-sm">
+        <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base font-bold">
             <PackagePlus className="h-4 w-4 text-success" />
             Input Barang Masuk
           </CardTitle>
-          <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-muted-foreground">
-            <Badge variant="secondary" className="rounded-full px-2.5 py-1 text-[10px] font-semibold">
-              {selectedDateLabel}
-            </Badge>
-            <span>{validCount > 0 ? `${validCount} item siap disimpan` : "Isi kode dan qty untuk mulai input"}</span>
-          </div>
         </CardHeader>
 
-        <CardContent className="space-y-3 pt-4">
+        <CardContent className="space-y-3 pt-1">
           {items.map((item, index) => {
             const matchedProduct = products?.find((product) => product.id === item.productId);
             const currentStacks = (matchedProduct?.stock?.tumpukan_detail as number[]) ?? [];
@@ -266,7 +267,7 @@ const BarangMasuk = () => {
               <div
                 key={index}
                 className={cn(
-                  "space-y-2.5 rounded-[1.35rem] border p-3.5 transition-all duration-200",
+                  "space-y-2.5 rounded-[1.2rem] border p-3.5 transition-all duration-200",
                   item.productId
                     ? "border-success/25 bg-success/[0.045]"
                     : item.kode && !item.productId
@@ -274,32 +275,6 @@ const BarangMasuk = () => {
                       : "border-border/60 bg-background/55 hover:border-border",
                 )}
               >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                      Baris {index + 1}
-                    </p>
-                    {item.productName ? (
-                      <p className="truncate text-sm font-semibold text-foreground">{item.productName}</p>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">Ketik kode produk yang masuk</p>
-                    )}
-                  </div>
-                  {item.productId ? (
-                    <Badge className="rounded-full bg-success/15 px-2.5 text-[10px] font-semibold text-success hover:bg-success/15">
-                      Valid
-                    </Badge>
-                  ) : item.kode ? (
-                    <Badge className="rounded-full bg-destructive/15 px-2.5 text-[10px] font-semibold text-destructive hover:bg-destructive/15">
-                      Tidak cocok
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary" className="rounded-full px-2.5 text-[10px] font-semibold">
-                      Draft
-                    </Badge>
-                  )}
-                </div>
-
                 <div className="flex items-center gap-2">
                   <div className="min-w-0 flex-1">
                     <Input
@@ -389,38 +364,11 @@ const BarangMasuk = () => {
             variant="outline"
             size="sm"
             onClick={addLine}
-            className="min-h-[44px] rounded-2xl transition-all duration-150 active:scale-95"
+            className="min-h-[44px] rounded-xl transition-all duration-150 active:scale-95"
           >
             <Plus className="mr-1 h-4 w-4" />
             Tambah Baris
           </Button>
-
-          <div className="rounded-[1.35rem] border border-border/70 bg-background/70 p-3.5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Ringkasan Draft
-                </p>
-                <p className="mt-1 text-sm font-semibold text-foreground">
-                  {validCount > 0 ? `${validCount} item valid siap masuk` : "Belum ada item valid"}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-[11px] font-medium text-muted-foreground">Total pcs</p>
-                <p className="text-2xl font-extrabold text-foreground tabular-nums">{formatNumber(totalQty)}</p>
-              </div>
-            </div>
-            {(catatan || tanggal) && (
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                {tanggal && (
-                  <Badge variant="secondary" className="rounded-full px-2.5 py-1 text-[10px]">
-                    {selectedDateLabel}
-                  </Badge>
-                )}
-                {catatan && <span className="line-clamp-1">Catatan: {catatan}</span>}
-              </div>
-            )}
-          </div>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div>

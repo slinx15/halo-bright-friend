@@ -23,7 +23,7 @@ export function CriticalStockAlert() {
 
   if (isLoading) {
     return (
-      <section className="rounded-xl border border-border bg-card p-4">
+      <section className="card-premium rounded-2xl p-4">
         <div className="flex items-center justify-between">
           <Skeleton className="h-5 w-36" />
           <Skeleton className="h-7 w-16 rounded-full" />
@@ -39,7 +39,7 @@ export function CriticalStockAlert() {
 
   if (criticalItems.length === 0) {
     return (
-      <section className="rounded-xl border border-success/25 bg-success/5 p-4">
+      <section className="card-premium rounded-2xl p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
@@ -48,23 +48,27 @@ export function CriticalStockAlert() {
             </div>
             <p className="mt-1 text-sm text-muted-foreground">Tidak ada item yang diprediksi habis dalam 2 hari.</p>
           </div>
-          <Badge className="rounded-full bg-success text-success-foreground">Aman</Badge>
+          <Badge className="rounded-full border-success/20 bg-success/10 text-success">Aman</Badge>
         </div>
       </section>
     );
   }
 
   return (
-    <section className="overflow-hidden rounded-xl border border-destructive/20 bg-card">
-      <div className="flex items-start justify-between gap-3 bg-destructive/[0.035] px-4 py-4">
+    <section className="card-premium overflow-hidden rounded-2xl">
+      <div className="flex items-start justify-between gap-3 border-b border-border bg-muted/20 px-4 py-4">
         <div>
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-destructive" />
-            <h2 className="font-semibold text-foreground">Yang paling rawan</h2>
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/10">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+            </span>
+            <div>
+              <h2 className="font-semibold text-foreground">Yang paling rawan</h2>
+              <p className="mt-0.5 text-sm text-muted-foreground">Cek 3 kode ini sebelum yang lain.</p>
+            </div>
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">Cek 3 kode ini sebelum yang lain.</p>
         </div>
-        <Badge variant="destructive" className="rounded-full">
+        <Badge className="rounded-full border-destructive/20 bg-destructive/10 text-destructive">
           {criticalItems.length} item
         </Badge>
       </div>
@@ -75,11 +79,11 @@ export function CriticalStockAlert() {
         ))}
       </div>
 
-      <div className="border-t border-border bg-muted/15 p-3">
+      <div className="border-t border-border bg-muted/10 p-3">
         <Button
           variant="outline"
           size="sm"
-          className="h-10 w-full justify-between rounded-lg text-sm font-semibold"
+          className="h-10 w-full justify-between rounded-xl text-sm font-semibold"
           onClick={() => navigate("/analisa")}
         >
           Lihat analisa lengkap
@@ -95,7 +99,7 @@ function CriticalItemRow({ item }: { item: ProductAnalysis }) {
   const isEmergency = item.daysOfStock < 1;
 
   return (
-    <article className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 transition-colors hover:bg-destructive/[0.025]">
+    <article className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/20">
       <div className="min-w-0">
         <p className="font-mono text-base font-bold text-foreground">{item.kode}</p>
         <p className="mt-0.5 text-xs text-muted-foreground">{isEmergency ? "Habis hari ini" : `Sisa ${dosText}`}</p>

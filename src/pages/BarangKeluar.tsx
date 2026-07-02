@@ -10,24 +10,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-// Table imports removed — riwayat sekarang grouped per tanggal (collapsible)
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { PageHeader } from "@/components/PageHeader";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { PackageMinus, Send, CheckCircle2, CalendarIcon, Trash2, Plus, SlidersHorizontal } from "lucide-react";
+import {
+  PackageMinus,
+  Send,
+  CheckCircle2,
+  CalendarIcon,
+  Trash2,
+  Plus,
+  SlidersHorizontal,
+} from "lucide-react";
 import { formatNumber, formatRupiah } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { OcrUpload } from "@/components/OcrUpload";
 import { BarangKeluarHistory } from "@/components/keluar/BarangKeluarHistory";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
 import { deductFromStacks } from "@/lib/tumpukanUtils";
-// useIsMobile no longer needed — riwayat tampilan unified (grouped per tanggal)
 import { logActivity } from "@/lib/activityLogger";
 import { getErrorMessage } from "@/lib/errors";
-import { getTodayStockOutSummary, useStockOutHistory, type StockOutHistoryEntry } from "@/hooks/useStockOutHistory";
+import {
+  getTodayStockOutSummary,
+  useStockOutHistory,
+  type StockOutHistoryEntry,
+} from "@/hooks/useStockOutHistory";
 import { findProductMatch } from "@/lib/productMatcher";
 import { deleteStockOutTransaction, registerStockOut } from "@/lib/stockMutations";
 
@@ -66,68 +75,80 @@ const BarangKeluar = () => {
   const { data: history = [], isLoading: historyLoading } = useStockOutHistory();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  // isMobile no longer used after riwayat unification
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Multi-row input state
   const [items, setItems] = useState<LineItem[]>([createEmptyLineItem()]);
   const [globalToko, setGlobalToko] = useState("");
   const [catatan, setCatatan] = useState("");
   const [tanggal, setTanggal] = useState<Date | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
 
-  // Set Harga Sekaligus state
   const [hargaDialogOpen, setHargaDialogOpen] = useState(false);
   const [customWarnaHarga, setCustomWarnaHarga] = useState<number>(0);
   const [customWhtHarga, setCustomWhtHarga] = useState<number>(0);
   const [customBlckHarga, setCustomBlckHarga] = useState<number>(0);
 
-  // Categorize items for bulk price setting
-  const validItemsForHarga = useMemo(() => items.filter(i => i.productId), [items]);
-  const warnaItems = useMemo(() => validItemsForHarga.filter(i => {
-    const k = (i.productKode || i.kode).toUpperCase();
-    return !k.includes("WHT") && !k.includes("BLCK") && !k.includes("BLK");
-  }), [validItemsForHarga]);
-  const whtItems = useMemo(() => validItemsForHarga.filter(i => (i.productKode || i.kode).toUpperCase().includes("WHT")), [validItemsForHarga]);
-  const blckItems = useMemo(() => validItemsForHarga.filter(i => {
-    const k = (i.productKode || i.kode).toUpperCase();
-    return k.includes("BLCK") || k.includes("BLK");
-  }), [validItemsForHarga]);
+  const validItemsForHarga = useMemo(() => items.filter((item) => item.productId), [items]);
+  const warnaItems = useMemo(
+    () =>
+      validItemsForHarga.filter((item) => {
+        const kode = (item.productKode || item.kode).toUpperCase();
+        return !kode.includes("WHT") && !kode.includes("BLCK") && !kode.includes("BLK");
+      }),
+    [validItemsForHarga],
+  );
+  const whtItems = useMemo(
+    () => validItemsForHarga.filter((item) => (item.productKode || item.kode).toUpperCase().includes("WHT")),
+    [validItemsForHarga],
+  );
+  const blckItems = useMemo(
+    () =>
+      validItemsForHarga.filter((item) => {
+        const kode = (item.productKode || item.kode).toUpperCase();
+        return kode.includes("BLCK") || kode.includes("BLK");
+      }),
+    [validItemsForHarga],
+  );
 
-  // Helper: format price label for bulk dropdown (single value if uniform, range if varies)
-  const getBulkPriceLabel = useCallback((itemList: LineItem[], priceKey: "harga_normal" | "harga_grosir" | "harga_grosir2") => {
-    const prices = itemList
-      .map(i => products?.find(p => p.id === i.productId)?.prices?.[priceKey] ?? 0)
-      .filter(p => p > 0);
-    if (prices.length === 0) return "";
-    const min = Math.min(...prices);
-    const max = Math.max(...prices);
-    if (min === max) return ` (${formatRupiah(min)})`;
-    return ` (${formatRupiah(min)} - ${formatRupiah(max)})`;
-  }, [products]);
+  const getBulkPriceLabel = useCallback(
+    (itemList: LineItem[], priceKey: "harga_normal" | "harga_grosir" | "harga_grosir2") => {
+      const prices = itemList
+        .map((item) => products?.find((product) => product.id === item.productId)?.prices?.[priceKey] ?? 0)
+        .filter((price) => price > 0);
+      if (prices.length === 0) return "";
+      const min = Math.min(...prices);
+      const max = Math.max(...prices);
+      return min === max
+        ? ` (${formatRupiah(min)})`
+        : ` (${formatRupiah(min)} - ${formatRupiah(max)})`;
+    },
+    [products],
+  );
 
-  const applyBulkHarga = useCallback((filter: (k: string) => boolean, type: HargaType, customHarga?: number) => {
-    setItems(prev => prev.map(item => {
-      if (!item.productId) return item;
-      const k = (item.productKode || item.kode).toUpperCase();
-      if (!filter(k)) return item;
-      if (type === "custom" && customHarga && customHarga > 0) {
-        return { ...item, hargaType: "custom", customHarga };
-      }
-      if (type !== "custom") {
-        return { ...item, hargaType: type };
-      }
-      return item;
-    }));
-  }, []);
+  const applyBulkHarga = useCallback(
+    (filter: (kode: string) => boolean, type: HargaType, customHarga?: number) => {
+      setItems((prev) =>
+        prev.map((item) => {
+          if (!item.productId) return item;
+          const kode = (item.productKode || item.kode).toUpperCase();
+          if (!filter(kode)) return item;
+          if (type === "custom" && customHarga && customHarga > 0) {
+            return { ...item, hargaType: "custom", customHarga };
+          }
+          if (type !== "custom") {
+            return { ...item, hargaType: type };
+          }
+          return item;
+        }),
+      );
+    },
+    [],
+  );
 
-  // Auto-detect: search ALL products by kode (exact, base code, or nama)
-  const findProduct = (input: string) => {
-    return findProductMatch(products, { kode: input }) || undefined;
-  };
+  const findProduct = (input: string) => findProductMatch(products, { kode: input }) || undefined;
 
   const updateItem = <K extends keyof LineItem>(index: number, field: K, value: LineItem[K]) => {
-    setItems(prev => {
+    setItems((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
       if (field === "kode") {
@@ -141,41 +162,34 @@ const BarangKeluar = () => {
     });
   };
 
-  const addLine = () => setItems(prev => [...prev, createEmptyLineItem()]);
-  const removeLine = (i: number) => setItems(prev => prev.filter((_, idx) => idx !== i));
+  const addLine = () => setItems((prev) => [...prev, createEmptyLineItem()]);
+  const removeLine = (index: number) => setItems((prev) => prev.filter((_, idx) => idx !== index));
 
-  const getMatchedProduct = (item: LineItem) => products?.find(p => p.id === item.productId);
+  const getMatchedProduct = (item: LineItem) => products?.find((product) => product.id === item.productId);
 
   const getPrice = (item: LineItem) => {
-    const p = getMatchedProduct(item);
-    if (!p?.prices) return 0;
+    const product = getMatchedProduct(item);
+    if (!product?.prices) return 0;
     if (item.hargaType === "custom") return item.customHarga ?? 0;
-    if (item.hargaType === "grosir2") return p.prices.harga_grosir2;
-    if (item.hargaType === "grosir") return p.prices.harga_grosir;
-    return p.prices.harga_normal;
-  };
-
-  const getUnitLabel = (item: LineItem) => {
-    const p = getMatchedProduct(item);
-    return p?.kategori === "18 Gram" ? "pack" : "pcs";
+    if (item.hargaType === "grosir2") return product.prices.harga_grosir2;
+    if (item.hargaType === "grosir") return product.prices.harga_grosir;
+    return product.prices.harga_normal;
   };
 
   const todaySummary = useMemo(() => getTodayStockOutSummary(history), [history]);
 
   const handleSubmit = async () => {
-    const validItems = items.filter(i => i.productId && i.qtyKirim > 0);
+    const validItems = items.filter((item) => item.productId && item.qtyKirim > 0);
     if (validItems.length === 0) {
       toast({ title: "Error", description: "Tidak ada item valid", variant: "destructive" });
       return;
     }
 
-    // Validasi wajib: Toko, Tanggal, Harga
     const missingFields: string[] = [];
-    const tokoFilled = globalToko.trim() || validItems.every(i => i.toko.trim());
+    const tokoFilled = globalToko.trim() || validItems.every((item) => item.toko.trim());
     if (!tokoFilled) missingFields.push("Nama Toko");
     if (!tanggal) missingFields.push("Tanggal");
-    const hasZeroPrice = validItems.some(i => getPrice(i) <= 0);
-    if (hasZeroPrice) missingFields.push("Harga (ada item dengan harga Rp 0)");
+    if (validItems.some((item) => getPrice(item) <= 0)) missingFields.push("Harga (ada item dengan harga Rp 0)");
 
     if (missingFields.length > 0) {
       toast({
@@ -190,8 +204,6 @@ const BarangKeluar = () => {
     let successCount = 0;
     const errors: string[] = [];
     const successfulItems: LineItem[] = [];
-
-    // Track live stock per product for duplicate handling
     const liveStock = new Map<string, { jumlah: number; stacks: number[] }>();
 
     for (const item of validItems) {
@@ -204,17 +216,22 @@ const BarangKeluar = () => {
             stacks: [...((product.stock?.tumpukan_detail as number[]) ?? [])],
           });
         }
-        const currentStock = liveStock.get(product.id)!;
 
+        const currentStock = liveStock.get(product.id)!;
         if (item.qtyKirim > currentStock.jumlah) {
           errors.push(`${product.kode}: Stok tidak cukup (sisa ${currentStock.jumlah})`);
           continue;
         }
 
-        const price = getPrice(item);
-        const tokoName = item.toko.trim() || globalToko.trim() || "";
         const createdAt = tanggal
-          ? new Date(tanggal.getFullYear(), tanggal.getMonth(), tanggal.getDate(), 12, 0, 0).toISOString()
+          ? new Date(
+              tanggal.getFullYear(),
+              tanggal.getMonth(),
+              tanggal.getDate(),
+              12,
+              0,
+              0,
+            ).toISOString()
           : undefined;
 
         const result = await registerStockOut({
@@ -222,9 +239,9 @@ const BarangKeluar = () => {
           qtyPesan: item.qtyPesan,
           qtyKirim: item.qtyKirim,
           hargaType: item.hargaType === "custom" ? "custom" : item.hargaType,
-          hargaSatuan: price,
+          hargaSatuan: getPrice(item),
           catatan,
-          toko: tokoName,
+          toko: item.toko.trim() || globalToko.trim() || "",
           createdAt,
         });
 
@@ -233,6 +250,7 @@ const BarangKeluar = () => {
         currentStock.stacks = Array.isArray(result.new_tumpukan_detail)
           ? result.new_tumpukan_detail
           : deductFromStacks(currentStock.stacks, item.qtyKirim);
+
         successCount++;
         successfulItems.push(item);
       } catch (error) {
@@ -263,8 +281,8 @@ const BarangKeluar = () => {
     if (successCount > 0) {
       const successfulSet = new Set(successfulItems);
       const remainingItems = items.filter((item) => !successfulSet.has(item));
-      const hasPendingItems = remainingItems.some((item) =>
-        item.kode.trim() || item.productId || item.qtyPesan > 0 || item.qtyKirim > 0 || item.toko.trim(),
+      const hasPendingItems = remainingItems.some(
+        (item) => item.kode.trim() || item.productId || item.qtyPesan > 0 || item.qtyKirim > 0 || item.toko.trim(),
       );
 
       if (hasPendingItems) {
@@ -279,12 +297,18 @@ const BarangKeluar = () => {
       queryClient.invalidateQueries({ queryKey: ["stock_out_history"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     }
+
     setSubmitting(false);
   };
 
   const handleOcrResult = (ocrItems: BarangKeluarOcrItem[]) => {
     const newItems: LineItem[] = ocrItems.map((item) => {
-      const found = findProductMatch(products, { productId: item.productId, kode: item.kode, kategori: item.kategori });
+      const found = findProductMatch(products, {
+        productId: item.productId,
+        kode: item.kode,
+        kategori: item.kategori,
+      });
+
       return {
         kode: (found?.kode || item.kode || "").toUpperCase(),
         qtyPesan: item.qty_pesan || 0,
@@ -297,8 +321,9 @@ const BarangKeluar = () => {
         productKategori: found?.kategori,
       };
     });
-    setItems(prev => {
-      const existing = prev.filter(i => i.kode.trim());
+
+    setItems((prev) => {
+      const existing = prev.filter((item) => item.kode.trim());
       return [...existing, ...newItems];
     });
   };
@@ -307,121 +332,147 @@ const BarangKeluar = () => {
     setDeletingId(item.id);
     try {
       await deleteStockOutTransaction(item.id);
-      toast({ title: "Berhasil", description: `Transaksi ${item.products?.kode} dihapus, stok dikembalikan +${item.qty_kirim}` });
-      logActivity("stock_out_delete", `Hapus transaksi ${item.products?.kode} x${item.qty_kirim}`, { kode: item.products?.kode, qty: item.qty_kirim });
+      toast({
+        title: "Berhasil",
+        description: `Transaksi ${item.products?.kode} dihapus, stok dikembalikan +${item.qty_kirim}`,
+      });
+      logActivity("stock_out_delete", `Hapus transaksi ${item.products?.kode} x${item.qty_kirim}`, {
+        kode: item.products?.kode,
+        qty: item.qty_kirim,
+      });
       queryClient.invalidateQueries({ queryKey: ["stock_out_history"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch (error) {
-      toast({ title: "Error", description: getErrorMessage(error, "Gagal menghapus transaksi"), variant: "destructive" });
+      toast({
+        title: "Error",
+        description: getErrorMessage(error, "Gagal menghapus transaksi"),
+        variant: "destructive",
+      });
     }
     setDeletingId(null);
   };
 
-  const validCount = items.filter(i => i.productId && i.qtyKirim > 0).length;
-  const totalQty = items.filter(i => i.productId && i.qtyKirim > 0).reduce((s, i) => s + i.qtyKirim, 0);
-  const totalRevenue = items.filter(i => i.productId && i.qtyKirim > 0).reduce((s, i) => s + getPrice(i) * i.qtyKirim, 0);
+  const validCount = items.filter((item) => item.productId && item.qtyKirim > 0).length;
+  const totalQty = items
+    .filter((item) => item.productId && item.qtyKirim > 0)
+    .reduce((sum, item) => sum + item.qtyKirim, 0);
+  const totalRevenue = items
+    .filter((item) => item.productId && item.qtyKirim > 0)
+    .reduce((sum, item) => sum + getPrice(item) * item.qtyKirim, 0);
+  const selectedDateLabel = tanggal ? format(tanggal, "dd MMM yyyy", { locale: localeId }) : "Hari ini";
 
   return (
-    <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto w-full [&>*]:animate-fade-in [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*:nth-child(5)]:![animation-delay:200ms] [&>*]:[animation-fill-mode:both]">
-      {/* ── Header ── */}
-      <PageHeader
-        icon={PackageMinus}
-        iconColor="text-destructive"
-        iconBg="bg-destructive/10"
-        title="Barang Keluar"
-        subtitle="Catat penjualan / pengiriman"
-        actions={<OcrUpload mode="keluar" onResult={handleOcrResult} />}
-      />
-      <div className="hidden flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-3.5 sm:items-center">
-          <div className="p-3 rounded-2xl bg-destructive/10 shadow-sm">
-            <PackageMinus className="h-6 w-6 text-destructive" />
+    <div className="mx-auto w-full max-w-[1400px] space-y-5 p-4 md:p-6 [&>*]:animate-fade-in [&>*]:[animation-fill-mode:both] [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*:nth-child(5)]:![animation-delay:200ms]">
+      <section className="flex items-center justify-between gap-3 rounded-[1.35rem] border border-border/70 bg-card/95 px-4 py-4 shadow-sm">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="rounded-2xl bg-destructive/10 p-3 shadow-sm">
+            <PackageMinus className="h-5 w-5 text-destructive" />
           </div>
-          <div className="min-w-0 space-y-0.5">
-            <h1 className="text-xl font-extrabold tracking-tight leading-tight">Barang Keluar</h1>
-            <p className="text-muted-foreground text-xs font-medium">Catat penjualan / pengiriman</p>
+          <div className="min-w-0">
+            <h1 className="text-lg font-extrabold leading-tight tracking-tight text-foreground sm:text-xl">
+              Barang Keluar
+            </h1>
+            <p className="text-sm text-muted-foreground">Catat penjualan dan pengiriman dengan stok tetap terjaga</p>
           </div>
         </div>
-        <div className="w-full sm:w-auto">
+        <div className="shrink-0">
           <OcrUpload mode="keluar" onResult={handleOcrResult} />
         </div>
-      </div>
+      </section>
 
-      {/* ── KPI Strip ── */}
-      <div className="grid grid-cols-3 gap-2.5">
-        <div className="card-premium border border-destructive/20 bg-gradient-to-br from-destructive/15 via-destructive/8 to-card p-3 text-center shadow-[0_10px_24px_rgba(239,68,68,0.08)]">
-          <p className="text-2xl font-extrabold text-destructive tabular-nums">{todaySummary.count}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Transaksi</p>
+      <section className="rounded-[1.35rem] border border-border/70 bg-card/95 p-2 shadow-sm">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-2xl border border-destructive/15 bg-destructive/10 px-3 py-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-destructive/80">Transaksi</p>
+            <p className="mt-1 text-2xl font-extrabold leading-none text-destructive tabular-nums">{todaySummary.count}</p>
+            <p className="mt-1 text-[11px] text-destructive/75">Hari ini</p>
+          </div>
+          <div className="rounded-2xl border border-warning/15 bg-warning/10 px-3 py-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/70">Qty</p>
+            <p className="mt-1 text-2xl font-extrabold leading-none text-foreground tabular-nums">{formatNumber(todaySummary.qty)}</p>
+            <p className="mt-1 text-[11px] text-foreground/60">Keluar hari ini</p>
+          </div>
+          <div className="rounded-2xl border border-primary/15 bg-primary/10 px-3 py-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/80">Omzet</p>
+            <p className="mt-1 truncate text-xl font-extrabold leading-none text-primary tabular-nums">
+              {formatRupiah(todaySummary.revenue)}
+            </p>
+            <p className="mt-1 text-[11px] text-primary/75">Total hari ini</p>
+          </div>
         </div>
-        <div className="card-premium border border-warning/20 bg-gradient-to-br from-warning/15 via-warning/8 to-card p-3 text-center shadow-[0_10px_24px_rgba(245,158,11,0.08)]">
-          <p className="text-2xl font-extrabold text-foreground tabular-nums">{formatNumber(todaySummary.qty)}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Qty Hari Ini</p>
-        </div>
-        <div className="card-premium border border-success/20 bg-gradient-to-br from-success/15 via-success/8 to-card p-3 text-center shadow-[0_10px_24px_rgba(34,197,94,0.08)]">
-          <p className="text-lg font-extrabold text-success tabular-nums truncate">{formatRupiah(todaySummary.revenue)}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Omzet Hari Ini</p>
-        </div>
-      </div>
+      </section>
 
-      <div className="grid gap-2.5 md:grid-cols-3">
-        <div className="rounded-3xl border border-destructive/15 bg-gradient-to-br from-destructive/8 via-card to-card px-4 py-4 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Ringkas</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">Isi toko, tanggal, lalu simpan.</p>
-        </div>
-        <div className="rounded-3xl border border-warning/15 bg-gradient-to-br from-warning/8 via-card to-card px-4 py-4 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Siap Kirim</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">{validCount > 0 ? `${validCount} item` : "Belum ada item"}</p>
-        </div>
-        <div className="rounded-3xl border border-success/15 bg-gradient-to-br from-success/8 via-card to-card px-4 py-4 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Nilai Draft</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">{validCount > 0 ? formatRupiah(totalRevenue) : "Kosong"}</p>
-        </div>
-      </div>
-
-      {/* ── Input Card ── */}
-      <Card className="card-premium overflow-hidden border-destructive/15 bg-gradient-to-b from-destructive/5 via-card to-card shadow-[0_16px_40px_rgba(239,68,68,0.06)]">
-        <CardHeader className="pb-4 bg-gradient-to-r from-destructive/15 via-destructive/5 to-transparent border-b border-destructive/10">
-          <CardTitle className="text-base font-bold flex items-center gap-2">
+      <Card className="overflow-hidden rounded-[1.6rem] border-border/70 bg-card shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base font-bold">
             <PackageMinus className="h-4 w-4 text-destructive" />
             Input Barang Keluar
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 pt-4">
-          {/* Global: Toko + Tanggal */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+
+        <CardContent className="space-y-4 pt-1">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <div>
               <Label className="text-xs font-semibold text-muted-foreground">Nama Toko / Pelanggan</Label>
-              <Input value={globalToko} onChange={e => setGlobalToko(e.target.value)} placeholder="Nama toko atau pelanggan..." className="rounded-lg mt-1" />
+              <Input
+                value={globalToko}
+                onChange={(event) => setGlobalToko(event.target.value)}
+                placeholder="Nama toko atau pelanggan..."
+                className="mt-1 rounded-xl border-border/70 bg-card"
+              />
             </div>
             <div>
-              <Label className="text-xs font-semibold text-muted-foreground">Tanggal (opsional)</Label>
+              <Label className="text-xs font-semibold text-muted-foreground">Tanggal</Label>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-lg mt-1", !tanggal && "text-muted-foreground")}>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "mt-1 w-full justify-start rounded-xl border-border/70 bg-card text-left font-normal",
+                      !tanggal && "text-muted-foreground",
+                    )}
+                  >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {tanggal ? format(tanggal, "dd MMM yyyy", { locale: localeId }) : "Hari ini"}
+                    {selectedDateLabel}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={tanggal} onSelect={setTanggal} initialFocus className="p-3 pointer-events-auto" />
+                  <Calendar
+                    mode="single"
+                    selected={tanggal}
+                    onSelect={setTanggal}
+                    initialFocus
+                    className="pointer-events-auto p-3"
+                  />
                 </PopoverContent>
               </Popover>
-              {tanggal && <button onClick={() => setTanggal(undefined)} className="text-[10px] text-primary mt-0.5 hover:underline">Reset ke hari ini</button>}
+              {tanggal && (
+                <button onClick={() => setTanggal(undefined)} className="mt-0.5 text-[10px] text-primary hover:underline">
+                  Reset ke hari ini
+                </button>
+              )}
             </div>
             <div>
               <Label className="text-xs font-semibold text-muted-foreground">Catatan (opsional)</Label>
-              <Textarea value={catatan} onChange={e => setCatatan(e.target.value)} placeholder="Catatan..." rows={1} className="rounded-lg mt-1" />
+              <Textarea
+                value={catatan}
+                onChange={(event) => setCatatan(event.target.value)}
+                placeholder="Catatan..."
+                rows={1}
+                className="mt-1 rounded-xl border-border/70 bg-card"
+              />
             </div>
           </div>
 
-          {/* Set Harga Sekaligus */}
           {validItemsForHarga.length > 0 && (
             <Dialog open={hargaDialogOpen} onOpenChange={setHargaDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="w-full rounded-xl min-h-[40px] gap-2 text-sm font-semibold">
+                <Button variant="outline" size="sm" className="min-h-[44px] w-full rounded-2xl gap-2 font-semibold">
                   <SlidersHorizontal className="h-4 w-4" />
                   Atur Harga Sekaligus
-                  <Badge variant="secondary" className="text-[10px] ml-auto">{validItemsForHarga.length} item</Badge>
+                  <Badge variant="secondary" className="ml-auto rounded-full text-[10px]">
+                    {validItemsForHarga.length} item
+                  </Badge>
                 </Button>
               </DialogTrigger>
               <DialogContent className="rounded-2xl">
@@ -433,17 +484,19 @@ const BarangKeluar = () => {
                 </DialogHeader>
                 <div className="space-y-4 pt-2">
                   {warnaItems.length > 0 && (
-                    <div>
-                      <label className="text-xs text-muted-foreground font-medium">{`\u{1F3A8} Warna (${warnaItems.length} item)`}</label>
-                      <Select onValueChange={(v) => {
-                        const filter = (k: string) => !k.includes("WHT") && !k.includes("BLCK") && !k.includes("BLK");
-                        if (v === "custom") {
-                          if (customWarnaHarga > 0) applyBulkHarga(filter, "custom", customWarnaHarga);
-                        } else {
-                          applyBulkHarga(filter, v as HargaType);
-                        }
-                      }}>
-                        <SelectTrigger className="h-11 text-sm mt-1"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Warna ({warnaItems.length} item)</label>
+                      <Select
+                        onValueChange={(value) => {
+                          const filter = (kode: string) => !kode.includes("WHT") && !kode.includes("BLCK") && !kode.includes("BLK");
+                          if (value === "custom") {
+                            if (customWarnaHarga > 0) applyBulkHarga(filter, "custom", customWarnaHarga);
+                          } else {
+                            applyBulkHarga(filter, value as HargaType);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-11 text-sm"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="normal">Normal{getBulkPriceLabel(warnaItems, "harga_normal")}</SelectItem>
                           <SelectItem value="grosir">Grosir{getBulkPriceLabel(warnaItems, "harga_grosir")}</SelectItem>
@@ -451,116 +504,176 @@ const BarangKeluar = () => {
                           <SelectItem value="custom">Custom</SelectItem>
                         </SelectContent>
                       </Select>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <Input type="text" inputMode="numeric" className="h-9 text-sm flex-1" placeholder="Custom /pcs" value={customWarnaHarga || ""} onChange={(e) => setCustomWarnaHarga(parseInt(e.target.value) || 0)} />
-                        <Button size="sm" variant="secondary" className="h-9 text-xs shrink-0" disabled={!customWarnaHarga} onClick={() => {
-                          const filter = (k: string) => !k.includes("WHT") && !k.includes("BLCK") && !k.includes("BLK");
-                          applyBulkHarga(filter, "custom", customWarnaHarga);
-                        }}>Terapkan</Button>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          className="h-9 flex-1 text-sm"
+                          placeholder="Custom /pcs"
+                          value={customWarnaHarga || ""}
+                          onChange={(event) => setCustomWarnaHarga(parseInt(event.target.value, 10) || 0)}
+                        />
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-9 shrink-0 text-xs"
+                          disabled={!customWarnaHarga}
+                          onClick={() => {
+                            const filter = (kode: string) => !kode.includes("WHT") && !kode.includes("BLCK") && !kode.includes("BLK");
+                            applyBulkHarga(filter, "custom", customWarnaHarga);
+                          }}
+                        >
+                          Terapkan
+                        </Button>
                       </div>
                     </div>
                   )}
+
                   {whtItems.length > 0 && (
-                    <div>
-                      <label className="text-xs text-muted-foreground font-medium">{`\u2B1C WHT (${whtItems.length} item)`}</label>
-                      <Select onValueChange={(v) => {
-                        const filter = (k: string) => k.includes("WHT");
-                        if (v === "custom") {
-                          if (customWhtHarga > 0) applyBulkHarga(filter, "custom", customWhtHarga);
-                        } else {
-                          applyBulkHarga(filter, v as HargaType);
-                        }
-                      }}>
-                        <SelectTrigger className="h-11 text-sm mt-1"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">WHT ({whtItems.length} item)</label>
+                      <Select
+                        onValueChange={(value) => {
+                          const filter = (kode: string) => kode.includes("WHT");
+                          if (value === "custom") {
+                            if (customWhtHarga > 0) applyBulkHarga(filter, "custom", customWhtHarga);
+                          } else {
+                            applyBulkHarga(filter, value as HargaType);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-11 text-sm"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="normal">Normal{getBulkPriceLabel(whtItems, "harga_normal")}</SelectItem>
                           <SelectItem value="grosir">Grosir{getBulkPriceLabel(whtItems, "harga_grosir")}</SelectItem>
                           <SelectItem value="custom">Custom</SelectItem>
                         </SelectContent>
                       </Select>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <Input type="text" inputMode="numeric" className="h-9 text-sm flex-1" placeholder="Custom /pcs" value={customWhtHarga || ""} onChange={(e) => setCustomWhtHarga(parseInt(e.target.value) || 0)} />
-                        <Button size="sm" variant="secondary" className="h-9 text-xs shrink-0" disabled={!customWhtHarga} onClick={() => applyBulkHarga((k) => k.includes("WHT"), "custom", customWhtHarga)}>Terapkan</Button>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          className="h-9 flex-1 text-sm"
+                          placeholder="Custom /pcs"
+                          value={customWhtHarga || ""}
+                          onChange={(event) => setCustomWhtHarga(parseInt(event.target.value, 10) || 0)}
+                        />
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-9 shrink-0 text-xs"
+                          disabled={!customWhtHarga}
+                          onClick={() => applyBulkHarga((kode) => kode.includes("WHT"), "custom", customWhtHarga)}
+                        >
+                          Terapkan
+                        </Button>
                       </div>
                     </div>
                   )}
+
                   {blckItems.length > 0 && (
-                    <div>
-                      <label className="text-xs text-muted-foreground font-medium">{`\u2B1B BLCK (${blckItems.length} item)`}</label>
-                      <Select onValueChange={(v) => {
-                        const filter = (k: string) => k.includes("BLCK") || k.includes("BLK");
-                        if (v === "custom") {
-                          if (customBlckHarga > 0) applyBulkHarga(filter, "custom", customBlckHarga);
-                        } else {
-                          applyBulkHarga(filter, v as HargaType);
-                        }
-                      }}>
-                        <SelectTrigger className="h-11 text-sm mt-1"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">BLCK ({blckItems.length} item)</label>
+                      <Select
+                        onValueChange={(value) => {
+                          const filter = (kode: string) => kode.includes("BLCK") || kode.includes("BLK");
+                          if (value === "custom") {
+                            if (customBlckHarga > 0) applyBulkHarga(filter, "custom", customBlckHarga);
+                          } else {
+                            applyBulkHarga(filter, value as HargaType);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-11 text-sm"><SelectValue placeholder="Pilih harga..." /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="normal">Normal{getBulkPriceLabel(blckItems, "harga_normal")}</SelectItem>
                           <SelectItem value="grosir">Grosir{getBulkPriceLabel(blckItems, "harga_grosir")}</SelectItem>
                           <SelectItem value="custom">Custom</SelectItem>
                         </SelectContent>
                       </Select>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <Input type="text" inputMode="numeric" className="h-9 text-sm flex-1" placeholder="Custom /pcs" value={customBlckHarga || ""} onChange={(e) => setCustomBlckHarga(parseInt(e.target.value) || 0)} />
-                        <Button size="sm" variant="secondary" className="h-9 text-xs shrink-0" disabled={!customBlckHarga} onClick={() => applyBulkHarga((k) => k.includes("BLCK") || k.includes("BLK"), "custom", customBlckHarga)}>Terapkan</Button>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          className="h-9 flex-1 text-sm"
+                          placeholder="Custom /pcs"
+                          value={customBlckHarga || ""}
+                          onChange={(event) => setCustomBlckHarga(parseInt(event.target.value, 10) || 0)}
+                        />
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-9 shrink-0 text-xs"
+                          disabled={!customBlckHarga}
+                          onClick={() => applyBulkHarga((kode) => kode.includes("BLCK") || kode.includes("BLK"), "custom", customBlckHarga)}
+                        >
+                          Terapkan
+                        </Button>
                       </div>
                     </div>
                   )}
-                <Button className="w-full rounded-xl" onClick={() => setHargaDialogOpen(false)}>Selesai</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+
+                  <Button className="w-full rounded-xl" onClick={() => setHargaDialogOpen(false)}>
+                    Selesai
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           )}
 
-          {/* Item rows */}
-          {items.map((item, i) => {
+          {items.map((item, index) => {
             const matched = getMatchedProduct(item);
             const stok = matched?.stock?.jumlah ?? 0;
             const currentStacks = (matched?.stock?.tumpukan_detail as number[]) ?? [];
-            const overStock = matched && item.qtyKirim > stok;
-            const price = getPrice(item);
-            const total = price * item.qtyKirim;
-            const kategori = matched?.kategori;
-            const unitLabel = kategori === "18 Gram" ? "pack" : "pcs";
+            const overStock = !!matched && item.qtyKirim > stok;
+            const total = getPrice(item) * item.qtyKirim;
+            const unitLabel = matched?.kategori === "18 Gram" ? "pack" : "pcs";
 
             return (
               <div
-                key={i}
+                key={index}
                 className={cn(
-                  "rounded-xl border p-3 space-y-2 transition-all duration-200",
-                  !item.productId && item.kode ? "border-destructive/30 bg-destructive/[0.03]" :
-                  overStock ? "border-warning/30 bg-warning/[0.03]" :
-                  item.productId ? "border-success/30 bg-success/[0.03] shadow-sm" :
-                  "border-border/60 hover:border-border"
+                  "space-y-2.5 rounded-[1.2rem] border p-3.5 transition-all duration-200",
+                  !item.productId && item.kode
+                    ? "border-destructive/25 bg-destructive/[0.04]"
+                    : overStock
+                      ? "border-warning/25 bg-warning/[0.05]"
+                      : item.productId
+                        ? "border-primary/20 bg-primary/[0.035]"
+                        : "border-border/60 bg-background/55 hover:border-border",
                 )}
               >
-                {/* Row 1: Kode + Delete */}
-                <div className="flex gap-2 items-center">
-                  <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <div className="min-w-0 flex-1">
                     <Input
                       placeholder="Ketik kode produk..."
                       value={item.kode}
-                      onChange={e => updateItem(i, "kode", e.target.value.toUpperCase())}
+                      onChange={(event) => updateItem(index, "kode", event.target.value.toUpperCase())}
                       list="product-codes-out"
-                      className="rounded-lg font-mono"
+                      className="rounded-xl border-border/70 bg-card font-mono"
                     />
                   </div>
                   {items.length > 1 && (
-                    <Button variant="ghost" size="icon" onClick={() => removeLine(i)} className="shrink-0 text-destructive hover:bg-destructive/10 rounded-lg h-10 w-10">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeLine(index)}
+                      className="h-10 w-10 shrink-0 rounded-xl text-destructive hover:bg-destructive/10"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
                 </div>
 
-                {/* Product info */}
                 {matched && (
-                  <div className="flex items-center justify-between text-xs">
-                    <p className="text-success font-medium flex items-center gap-1 truncate">
-                      <CheckCircle2 className="h-3 w-3 shrink-0" /> {matched.nama}
-                      {kategori && kategori !== "2 Ons" && (
-                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0 ml-1">{kategori}</Badge>
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <p className="flex min-w-0 items-center gap-1 truncate font-medium text-primary">
+                      <CheckCircle2 className="h-3 w-3 shrink-0" />
+                      {matched.nama}
+                      {matched.kategori && matched.kategori !== "2 Ons" && (
+                        <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[9px]">
+                          {matched.kategori}
+                        </Badge>
                       )}
                     </p>
                     <span className={cn("font-bold tabular-nums", overStock ? "text-destructive" : "text-muted-foreground")}>
@@ -568,41 +681,47 @@ const BarangKeluar = () => {
                     </span>
                   </div>
                 )}
+
                 {item.kode && !item.productId && (
-                  <p className="text-xs text-destructive font-medium">Produk tidak ditemukan</p>
+                  <p className="text-xs font-medium text-destructive">Produk tidak ditemukan</p>
                 )}
 
-                {/* Row 2: Qty + Harga */}
                 {matched && (
-                  <div className="flex items-end gap-2">
-                    <div className="w-20">
-                      <label className="text-[9px] font-semibold text-muted-foreground uppercase">Pesan</label>
+                  <div className="grid grid-cols-[84px_84px_minmax(0,1fr)] items-end gap-2">
+                    <div>
+                      <label className="text-[9px] font-semibold uppercase text-muted-foreground">Pesan</label>
                       <Input
-                        type="text" inputMode="numeric"
-                        className="h-9 text-sm mt-0.5 text-center font-bold"
+                        type="text"
+                        inputMode="numeric"
+                        className="mt-0.5 h-9 rounded-xl text-center text-sm font-bold"
                         value={item.qtyPesan === 0 ? "" : item.qtyPesan}
-                        onChange={e => updateItem(i, "qtyPesan", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
+                        onChange={(event) => updateItem(index, "qtyPesan", event.target.value === "" ? 0 : parseInt(event.target.value, 10) || 0)}
                         placeholder="0"
                       />
                     </div>
-                    <div className="w-20">
-                      <label className="text-[9px] font-semibold text-muted-foreground uppercase">Kirim ({unitLabel})</label>
+                    <div>
+                      <label className="text-[9px] font-semibold uppercase text-muted-foreground">
+                        Kirim ({unitLabel})
+                      </label>
                       <Input
-                        type="text" inputMode="numeric"
-                        className="h-9 text-sm mt-0.5 text-center font-bold"
+                        type="text"
+                        inputMode="numeric"
+                        className="mt-0.5 h-9 rounded-xl text-center text-sm font-bold"
                         value={item.qtyKirim === 0 ? "" : item.qtyKirim}
-                        onChange={e => updateItem(i, "qtyKirim", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
+                        onChange={(event) => updateItem(index, "qtyKirim", event.target.value === "" ? 0 : parseInt(event.target.value, 10) || 0)}
                         placeholder="0"
                       />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <label className="text-[9px] font-semibold text-muted-foreground uppercase">Harga</label>
-                      <Select value={item.hargaType} onValueChange={v => updateItem(i, "hargaType", v as HargaType)}>
-                        <SelectTrigger className="h-9 text-xs mt-0.5"><SelectValue /></SelectTrigger>
+                    <div>
+                      <label className="text-[9px] font-semibold uppercase text-muted-foreground">Harga</label>
+                      <Select value={item.hargaType} onValueChange={(value) => updateItem(index, "hargaType", value as HargaType)}>
+                        <SelectTrigger className="mt-0.5 h-9 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="normal">Normal {matched.prices ? `(${formatRupiah(matched.prices.harga_normal)})` : ""}</SelectItem>
                           <SelectItem value="grosir">Grosir {matched.prices ? `(${formatRupiah(matched.prices.harga_grosir)})` : ""}</SelectItem>
-                          {matched.prices?.harga_grosir2 ? <SelectItem value="grosir2">Grosir 2 ({formatRupiah(matched.prices.harga_grosir2)})</SelectItem> : null}
+                          {matched.prices?.harga_grosir2 ? (
+                            <SelectItem value="grosir2">Grosir 2 ({formatRupiah(matched.prices.harga_grosir2)})</SelectItem>
+                          ) : null}
                           <SelectItem value="custom">Custom</SelectItem>
                         </SelectContent>
                       </Select>
@@ -610,70 +729,67 @@ const BarangKeluar = () => {
                   </div>
                 )}
 
-                {/* Custom harga input */}
                 {item.hargaType === "custom" && matched && (
                   <div className="flex items-center gap-2">
-                    <Label className="text-[10px] text-muted-foreground shrink-0">Harga custom:</Label>
+                    <Label className="shrink-0 text-[10px] text-muted-foreground">Harga custom:</Label>
                     <Input
-                      type="text" inputMode="numeric"
-                      className="h-8 text-xs text-right font-bold flex-1"
+                      type="text"
+                      inputMode="numeric"
+                      className="h-8 flex-1 text-right text-xs font-bold"
                       placeholder="Rp ..."
                       value={item.customHarga === undefined || item.customHarga === 0 ? "" : item.customHarga}
-                      onChange={e => updateItem(i, "customHarga", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
+                      onChange={(event) => updateItem(index, "customHarga", event.target.value === "" ? 0 : parseInt(event.target.value, 10) || 0)}
                     />
                   </div>
                 )}
 
-                {/* Total + stacks */}
                 {matched && item.qtyKirim > 0 && !overStock && (
-                  <div className="flex items-center justify-between text-xs">
-                    {currentStacks.length > 0 && (
-                      <TumpukanBadges stacks={deductFromStacks(currentStacks, item.qtyKirim)} kode={matched.kode} compact />
-                    )}
-                    <span className="text-sm font-bold text-primary tabular-nums ml-auto">
-                      {formatRupiah(total)}
-                    </span>
+                  <div className="rounded-2xl border border-primary/15 bg-primary/[0.045] p-3">
+                    <div className="flex items-center justify-between gap-3 text-xs">
+                      {currentStacks.length > 0 ? (
+                        <TumpukanBadges stacks={deductFromStacks(currentStacks, item.qtyKirim)} kode={matched.kode} compact />
+                      ) : (
+                        <span className="text-muted-foreground">Tanpa detail tumpukan</span>
+                      )}
+                      <span className="ml-auto text-sm font-bold text-primary tabular-nums">
+                        {formatRupiah(total)}
+                      </span>
+                    </div>
                   </div>
                 )}
-                {overStock && <p className="text-xs text-destructive font-bold">Stok tidak cukup</p>}
+
+                {overStock && <p className="text-xs font-bold text-destructive">Stok tidak cukup</p>}
               </div>
             );
           })}
 
           <datalist id="product-codes-out">
-            {products?.map(p => <option key={p.id} value={p.kode} label={`${p.kode} - ${p.nama}`} />)}
+            {products?.map((product) => (
+              <option key={product.id} value={product.kode} label={`${product.kode} - ${product.nama}`} />
+            ))}
           </datalist>
 
-          <Button variant="outline" size="sm" onClick={addLine} className="rounded-xl transition-all duration-150 active:scale-95 min-h-[44px]">
-            <Plus className="h-4 w-4 mr-1" /> Tambah Baris
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={addLine}
+            className="min-h-[44px] rounded-xl transition-all duration-150 active:scale-95"
+          >
+            <Plus className="mr-1 h-4 w-4" />
+            Tambah Baris
           </Button>
-
-          {/* Summary */}
-          {validCount > 0 && (
-            <div className="rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-warning/10 p-3.5 space-y-2 shadow-sm">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Ringkasan draft</span>
-                <span className="font-extrabold text-primary tabular-nums">{formatRupiah(totalRevenue)}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{validCount} item siap disimpan</span>
-                <span>{formatNumber(totalQty)} {items.some(i => getMatchedProduct(i)?.kategori === "18 Gram") ? "unit" : "pcs"}</span>
-              </div>
-            </div>
-          )}
 
           <Button
             onClick={handleSubmit}
             disabled={submitting || validCount === 0}
-            className="w-full rounded-xl h-12 text-base font-bold transition-all duration-150 active:scale-[0.98] shadow-md hover:shadow-lg bg-destructive hover:bg-destructive/90"
+            className="h-12 w-full rounded-2xl bg-destructive text-base font-bold shadow-md transition-all duration-150 active:scale-[0.98] hover:bg-destructive/90 hover:shadow-lg"
           >
-            <Send className="h-5 w-5 mr-2" />
+            <Send className="mr-2 h-5 w-5" />
             {submitting ? "Menyimpan..." : `Simpan Barang Keluar${validCount > 0 ? ` (${validCount} item)` : ""}`}
           </Button>
         </CardContent>
       </Card>
 
-      {/* ── Riwayat ── */}
       <BarangKeluarHistory
         history={history}
         isLoading={historyLoading}
