@@ -98,54 +98,38 @@ function CommandCenter({
 
   const summary = getInventorySummary(products);
 
-  const kritisProducts = products
-    .filter((product) => {
-      const jumlah = product.stock?.jumlah ?? 0;
-      return jumlah > 0 && jumlah <= 5;
-    })
-    .sort((a, b) => (a.stock?.jumlah ?? 0) - (b.stock?.jumlah ?? 0))
-    .slice(0, 2);
-
-  const kosongProducts = products
-    .filter((product) => (product.stock?.jumlah ?? 0) === 0)
-    .slice(0, 2);
-
   const cards = [
     {
       label: "Kosong",
       count: summary.kosong,
-      lightBg: "bg-destructive/8",
+      lightBg: "bg-destructive/10",
       lightText: "text-destructive",
       icon: AlertTriangle,
       status: "kosong",
-      preview: kosongProducts.map((product) => product.nama),
     },
     {
       label: "Kritis",
       count: summary.kritis,
-      lightBg: "bg-orange-500/8",
-      lightText: "text-orange-600",
+      lightBg: "bg-critical/10",
+      lightText: "text-critical",
       icon: ShieldAlert,
       status: "kritis",
-      preview: kritisProducts.map((product) => `${product.nama} (${product.stock?.jumlah ?? 0})`),
     },
     {
       label: "Warning",
       count: summary.warning,
-      lightBg: "bg-warning/8",
-      lightText: "text-amber-600",
+      lightBg: "bg-warning/10",
+      lightText: "text-warning",
       icon: TrendingUp,
       status: "warning",
-      preview: [],
     },
     {
       label: "Aman",
       count: summary.aman,
-      lightBg: "bg-success/8",
+      lightBg: "bg-success/10",
       lightText: "text-success",
       icon: CheckCircle2,
       status: "aman",
-      preview: [],
     },
   ];
 
