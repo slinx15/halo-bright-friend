@@ -202,36 +202,41 @@ const Stok = () => {
   if (isLoading) return <StokSkeleton />;
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] space-y-5 p-4 md:p-6 [&>*]:animate-fade-in [&>*]:[animation-fill-mode:both] [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms]">
-      <section className="rounded-[1.75rem] border border-border/70 bg-card/95 p-4 shadow-sm md:p-5">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="rounded-2xl bg-primary/10 p-3 shadow-sm ring-1 ring-primary/10">
-              <Package className="h-5 w-5 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-xl font-extrabold tracking-tight text-foreground md:text-2xl">Manajemen Stok</h1>
-              <p className="text-sm text-muted-foreground">
-                {formatNumber(totalItems)} produk aktif dengan {formatNumber(totalStok)} pcs tersimpan
-              </p>
-            </div>
+    <div className="mx-auto w-full max-w-[1400px] space-y-4 p-4 pb-32 md:space-y-5 md:p-6 md:pb-6 [&>*]:animate-fade-in [&>*]:[animation-fill-mode:both] [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms]">
+      {/* HEADER — ringkas, ikon di kiri, tombol aksi compact */}
+      <section className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="rounded-lg bg-primary/10 p-1.5">
+            <Package className="h-4 w-4 text-primary" />
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" className="h-10 rounded-xl" onClick={exportStokToExcel}>
-              <Download className="mr-1.5 h-4 w-4" />
-              Export
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-10 rounded-xl border-destructive/30 text-destructive hover:bg-destructive/10"
-              onClick={() => setShowResetDialog(true)}
-            >
-              <Trash2 className="mr-1.5 h-4 w-4" />
-              Reset Stok
-            </Button>
+          <div className="min-w-0">
+            <h1 className="text-lg font-extrabold leading-tight tracking-tight">Manajemen Stok</h1>
+            <p className="text-xs text-muted-foreground">
+              {formatNumber(totalItems)} produk · {formatNumber(totalStok)} pcs
+            </p>
           </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 rounded-xl"
+            onClick={exportStokToExcel}
+            aria-label="Export Excel"
+            title="Export Excel"
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 rounded-xl border-destructive/30 text-destructive hover:bg-destructive/10"
+            onClick={() => setShowResetDialog(true)}
+            aria-label="Reset Stok"
+            title="Reset Stok"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
       </section>
 
@@ -286,68 +291,74 @@ const Stok = () => {
         </DialogContent>
       </Dialog>
 
-      <section className="rounded-[1.35rem] border border-border/70 bg-card/95 p-2 shadow-sm">
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-          <div className="rounded-2xl border border-primary/15 bg-primary/10 px-3 py-3.5">
-            <div className="mb-1.5 flex items-center gap-2">
-              <BoxIcon className="h-4 w-4 text-primary" />
-              <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/80">Total</span>
-            </div>
-            <p className="text-2xl font-extrabold text-foreground tabular-nums">{formatNumber(totalStok)}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">{formatNumber(totalItems)} SKU</p>
+      {/* KPI CARDS — Vibrant status cards (horizontal, 3 kolom) */}
+      <section className="grid grid-cols-3 gap-2.5">
+        {/* Total */}
+        <div className="flex flex-col items-center justify-between rounded-2xl border border-border/60 bg-card p-3 shadow-sm transition-transform active:scale-[0.98]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <BoxIcon className="h-5 w-5" strokeWidth={2} />
           </div>
-          <div className="rounded-2xl border border-success/15 bg-success/10 px-3 py-3.5">
-            <div className="mb-1.5 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-success" />
-              <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-success/80">Nilai</span>
-            </div>
-            <p className="truncate text-xl font-extrabold text-success tabular-nums">{formatRupiah(nilaiStok)}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">Harga modal</p>
+          <div className="my-1.5 text-center">
+            <span className="text-2xl font-extrabold tabular-nums text-foreground leading-none">{formatNumber(totalStok)}</span>
           </div>
-          <div className="rounded-2xl border border-warning/15 bg-warning/10 px-3 py-3.5">
-            <div className="mb-1.5 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-warning" />
-              <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/70">Warning</span>
-            </div>
-            <p className="text-2xl font-extrabold text-foreground tabular-nums">{warning}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">Stok 6-15 pcs</p>
+          <div className="text-center">
+            <p className="text-[10px] font-bold uppercase tracking-tight text-foreground/90">Total</p>
+            <p className="text-[9px] text-muted-foreground">{formatNumber(totalItems)} SKU</p>
           </div>
-          <div className="rounded-2xl border border-destructive/15 bg-destructive/10 px-3 py-3.5">
-            <div className="mb-1.5 flex items-center gap-2">
-              <ShieldAlert className="h-4 w-4 text-destructive" />
-              <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-destructive/80">Risiko</span>
-            </div>
-            <p className="text-2xl font-extrabold text-destructive tabular-nums">{kritis + kosong}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">{kosong} kosong, {kritis} kritis</p>
+        </div>
+
+        {/* Risiko (gabung warning + kritis + kosong) */}
+        <div className="flex flex-col items-center justify-between rounded-2xl border border-border/60 bg-card p-3 shadow-sm transition-transform active:scale-[0.98]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+            <ShieldAlert className="h-5 w-5" strokeWidth={2} />
+          </div>
+          <div className="my-1.5 text-center">
+            <span className="text-2xl font-extrabold tabular-nums text-destructive leading-none">{kritis + kosong + warning}</span>
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] font-bold uppercase tracking-tight text-destructive">Risiko</p>
+            <p className="text-[9px] text-muted-foreground">{kosong} kosong · {kritis + warning} tipis</p>
+          </div>
+        </div>
+
+        {/* Nilai Stok — filled primary */}
+        <div className="flex flex-col items-center justify-between rounded-2xl bg-primary p-3 shadow-lg shadow-primary/20 transition-transform active:scale-[0.98]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-foreground/15 text-primary-foreground">
+            <TrendingUp className="h-5 w-5" strokeWidth={2} />
+          </div>
+          <div className="my-1.5 text-center">
+            <span className="truncate text-xl font-extrabold tabular-nums text-primary-foreground leading-none">{formatRupiah(nilaiStok)}</span>
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] font-bold uppercase tracking-tight text-primary-foreground">Nilai</p>
+            <p className="text-[9px] text-primary-foreground/75">Harga modal</p>
           </div>
         </div>
       </section>
 
-      <Card className="overflow-hidden rounded-[1.6rem] border-border/70 shadow-sm">
-        <CardHeader className="border-b border-border/60 bg-[linear-gradient(180deg,hsl(var(--primary)/0.10),transparent)] pb-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="min-w-0">
-              <CardTitle className="flex items-center gap-2 text-base font-bold">
+      <Card className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+        <CardHeader className="flex flex-col gap-2 border-b border-border/60 px-4 py-3 pb-3">
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <div className="rounded-lg bg-primary/10 p-1.5">
                 <Package className="h-4 w-4 text-primary" />
-                Daftar Stok
-                <Badge variant="secondary" className="rounded-full px-2.5 text-[10px] font-bold">
-                  {totalItems}
-                </Badge>
-              </CardTitle>
-              <p className="mt-1 text-xs font-medium text-muted-foreground">
-                Cari cepat, filter kategori, lalu cek stok dan harga dari satu layar.
-              </p>
-            </div>
-            <div className="relative w-full md:w-80">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              </div>
+              Daftar Stok
+              <Badge variant="secondary" className="rounded-full px-2 text-[10px] font-bold">
+                {totalItems}
+              </Badge>
+            </CardTitle>
+            <div className="relative w-40 md:w-80">
+              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
-                className="h-11 rounded-xl border-border/70 bg-card pl-9"
-                placeholder="Cari kode atau nama produk..."
+                className="h-9 rounded-xl border-border/70 bg-card pl-8 text-xs"
+                placeholder="Cari..."
                 value={search}
                 onChange={(e) => handleSearch(e.target.value)}
               />
             </div>
           </div>
+
 
           <div className="-mx-1 mt-3 overflow-x-auto px-1 pb-1">
             <div className="flex min-w-max gap-2">
