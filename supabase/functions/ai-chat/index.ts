@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
@@ -104,7 +103,7 @@ function analyzeProduct(product: ProductData, sales: SaleRecord[], firstSaleDate
   return { kode: product.kode, nama: product.nama, stok, velocity: finalVelocity, dos: Math.round(dos * 10) / 10, dosStatus, rekomendasi, targetStock, cost: rekomendasi * product._hargaModal, isBestSeller: finalVelocity >= RULES.BESTSELLER_VELOCITY, isStockOut: stok === 0, dataStatus, salesDays, totalQty };
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
