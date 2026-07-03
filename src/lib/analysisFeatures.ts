@@ -300,7 +300,7 @@ export function calcProfit(
 
     const totalQty = productSales.reduce((sum, sale) => sum + (sale.qty_kirim || 0), 0);
     const totalRevenue = productSales.reduce(
-      (sum, sale) => sum + (sale.total_harga || sale.qty_kirim * (sale.harga_satuan || 0)),
+      (sum, sale) => sum + (sale.qty_kirim * (sale.harga_satuan || 0)),
       0,
     );
     const modal = getHargaModal(product);
@@ -354,7 +354,7 @@ export function calcTokoAnalysis(
 
     const tokoRow = tokoData[toko];
     tokoRow.totalQty += sale.qty_kirim;
-    tokoRow.totalNilai += sale.total_harga || sale.qty_kirim * (sale.harga_satuan || 0);
+    tokoRow.totalNilai += sale.qty_kirim * (sale.harga_satuan || 0);
     tokoRow.transaksiCount += 1;
     tokoRow.dates.add(toWibDate(sale.created_at).toISOString().slice(0, 10));
 

@@ -541,6 +541,8 @@ export type Database = {
           product_id: string
           qty_kirim: number
           qty_pesan: number
+          stock_jumlah_before: number | null
+          stock_tumpukan_before: Json | null
           toko: string | null
           total_harga: number
           user_id: string
@@ -554,6 +556,8 @@ export type Database = {
           product_id: string
           qty_kirim?: number
           qty_pesan?: number
+          stock_jumlah_before?: number | null
+          stock_tumpukan_before?: Json | null
           toko?: string | null
           total_harga?: number
           user_id: string
@@ -567,6 +571,8 @@ export type Database = {
           product_id?: string
           qty_kirim?: number
           qty_pesan?: number
+          stock_jumlah_before?: number | null
+          stock_tumpukan_before?: Json | null
           toko?: string | null
           total_harga?: number
           user_id?: string
@@ -604,6 +610,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      build_default_tumpukan_detail: {
+        Args: { p_kode: string; p_qty: number }
+        Returns: Json
+      }
+      bulk_upsert_products: { Args: { p_rows: Json }; Returns: Json }
       deduct_int_jsonb_stacks: {
         Args: { _qty: number; _stacks: Json }
         Returns: Json
@@ -612,6 +623,7 @@ export type Database = {
         Args: { p_stock_out_id: string }
         Returns: Json
       }
+      has_inventory_access: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
