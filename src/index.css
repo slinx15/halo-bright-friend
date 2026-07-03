@@ -137,9 +137,6 @@
     font-size: inherit;
   }
 
-  html {
-    color-scheme: light dark;
-  }
 }
 
 @layer utilities {
