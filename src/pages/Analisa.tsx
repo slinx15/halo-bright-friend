@@ -916,9 +916,9 @@ const Analisa = () => {
         <TabsContent value="penjualan" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Tabs defaultValue="summary" className="w-full">
             <TabsList className="grid h-7 w-full grid-cols-3 rounded-lg border border-border/70 bg-muted/50 p-[2px] shadow-sm">
-              <TabsTrigger value="summary" className="rounded-lg text-xs data-[state=active]:shadow-sm"><Activity className="mr-1 h-3 w-3" />Ringkasan</TabsTrigger>
-              <TabsTrigger value="terlaris" className="rounded-lg text-xs data-[state=active]:shadow-sm"><Trophy className="mr-1 h-3 w-3" />Terlaris</TabsTrigger>
-              <TabsTrigger value="profit" className="text-xs rounded-lg data-[state=active]:shadow-sm"><DollarSign className="h-3 w-3 mr-1" />Profit</TabsTrigger>
+              <TabsTrigger value="summary" className="h-full rounded-md text-[11px] data-[state=active]:shadow-sm"><Activity className="mr-1 h-3 w-3" />Ringkasan</TabsTrigger>
+              <TabsTrigger value="terlaris" className="h-full rounded-md text-[11px] data-[state=active]:shadow-sm"><Trophy className="mr-1 h-3 w-3" />Terlaris</TabsTrigger>
+              <TabsTrigger value="profit" className="h-full rounded-md text-[11px] data-[state=active]:shadow-sm"><DollarSign className="h-3 w-3 mr-1" />Profit</TabsTrigger>
             </TabsList>
 
             <TabsContent value="summary" className="mt-3 space-y-4">
@@ -1124,8 +1124,8 @@ const Analisa = () => {
         <TabsContent value="toko" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Tabs defaultValue="top-toko" className="w-full">
             <TabsList className="w-full grid h-7 grid-cols-2 rounded-lg border border-border/70 bg-muted/50 p-[2px] shadow-sm">
-              <TabsTrigger value="top-toko" className="text-xs rounded-lg data-[state=active]:shadow-sm"><Store className="h-3 w-3 mr-1" />Top Toko</TabsTrigger>
-              <TabsTrigger value="pelanggan" className="text-xs rounded-lg data-[state=active]:shadow-sm"><Users className="h-3 w-3 mr-1" />Repeat</TabsTrigger>
+              <TabsTrigger value="top-toko" className="h-full rounded-md text-[11px] data-[state=active]:shadow-sm"><Store className="h-3 w-3 mr-1" />Top Toko</TabsTrigger>
+              <TabsTrigger value="pelanggan" className="h-full rounded-md text-[11px] data-[state=active]:shadow-sm"><Users className="h-3 w-3 mr-1" />Repeat</TabsTrigger>
             </TabsList>
 
             <TabsContent value="top-toko" className="space-y-4 mt-3">
@@ -1211,9 +1211,9 @@ const Analisa = () => {
         <TabsContent value="planning" className="mt-4 space-y-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Tabs defaultValue="estimate" className="w-full">
             <TabsList className="grid h-7 w-full grid-cols-3 rounded-lg border border-border/70 bg-muted/50 p-[2px] shadow-sm">
-              <TabsTrigger value="estimate" className="rounded-lg text-xs data-[state=active]:shadow-sm"><DollarSign className="mr-1 h-3 w-3" />Estimasi</TabsTrigger>
-              <TabsTrigger value="budget" className="rounded-lg text-xs data-[state=active]:shadow-sm"><Calculator className="mr-1 h-3 w-3" />Budget</TabsTrigger>
-              <TabsTrigger value="review" className="rounded-lg text-xs data-[state=active]:shadow-sm"><Sparkles className="mr-1 h-3 w-3" />Review AI</TabsTrigger>
+              <TabsTrigger value="estimate" className="h-full rounded-md text-[11px] data-[state=active]:shadow-sm"><DollarSign className="mr-1 h-3 w-3" />Estimasi</TabsTrigger>
+              <TabsTrigger value="budget" className="h-full rounded-md text-[11px] data-[state=active]:shadow-sm"><Calculator className="mr-1 h-3 w-3" />Budget</TabsTrigger>
+              <TabsTrigger value="review" className="h-full rounded-md text-[11px] data-[state=active]:shadow-sm"><Sparkles className="mr-1 h-3 w-3" />Review AI</TabsTrigger>
             </TabsList>
             <TabsContent value="estimate" className="mt-3">
               <RestockEstimateList
