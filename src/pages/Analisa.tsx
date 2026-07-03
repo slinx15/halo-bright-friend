@@ -1124,8 +1124,8 @@ const Analisa = () => {
         <TabsContent value="toko" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Tabs defaultValue="top-toko" className="w-full">
             <TabsList className="w-full grid h-7 grid-cols-2 overflow-hidden rounded-lg border border-border/70 bg-muted/50 p-0 shadow-sm">
-              <TabsTrigger value="top-toko" className="h-7 min-h-7 rounded-md px-1.5 py-0 text-[11px] leading-none data-[state=active]:shadow-sm"><Store className="h-3 w-3 mr-1" />Top Toko</TabsTrigger>
-              <TabsTrigger value="pelanggan" className="h-7 min-h-7 rounded-md px-1.5 py-0 text-[11px] leading-none data-[state=active]:shadow-sm"><Users className="h-3 w-3 mr-1" />Repeat</TabsTrigger>
+              <TabsTrigger value="top-toko" className="h-7 min-h-7 rounded-md px-1.5 py-0 text-[11px] leading-none data-[state=active]:shadow-sm"><Store className="mr-1 h-3 w-3" />Top Toko</TabsTrigger>
+              <TabsTrigger value="pelanggan" className="h-7 min-h-7 rounded-md px-1.5 py-0 text-[11px] leading-none data-[state=active]:shadow-sm"><Users className="mr-1 h-3 w-3" />Repeat</TabsTrigger>
             </TabsList>
 
             <TabsContent value="top-toko" className="space-y-4 mt-3">
