@@ -189,7 +189,7 @@ function MobileRankedCard({ rank, kode, isBestSeller, children, borderClass, ind
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-xs text-muted-foreground font-mono">{typeof rank === "number" ? `#${rank}` : rank}</span>
           <span className="font-bold text-sm">{kode}</span>
-          {isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
+          {isBestSeller && <Flame className="h-3 w-3 text-warning" />}
         </div>
       </div>
       {children}
@@ -496,16 +496,16 @@ const Analisa = () => {
           <Tabs value={restockView} onValueChange={(value) => setRestockView(value as RestockView)} className="w-full">
             <TabsList className="grid h-auto w-full grid-cols-3 rounded-2xl border border-border/75 bg-card/90 p-0.5 shadow-sm dark:bg-card/80">
               <TabsTrigger value="recommendations" className="min-h-10 rounded-xl border border-transparent bg-transparent px-2 text-[11px] font-semibold text-muted-foreground data-[state=active]:border-primary/15 data-[state=active]:bg-primary/[0.08] data-[state=active]:text-primary data-[state=active]:shadow-none md:text-xs">
-                <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
+                <ShoppingCart className="mr-1.5 h-3 w-3" />
                 <span className="hidden sm:inline">Daftar Restock</span>
                 <span className="sm:hidden">Restock</span>
               </TabsTrigger>
               <TabsTrigger value="predictions" className="min-h-10 rounded-xl border border-transparent bg-transparent px-2 text-[11px] font-semibold text-muted-foreground data-[state=active]:border-warning/15 data-[state=active]:bg-warning/[0.10] data-[state=active]:text-warning md:text-xs">
-                <Clock className="mr-1.5 h-3.5 w-3.5" />
+                <Clock className="mr-1.5 h-3 w-3" />
                 Prediksi Habis
               </TabsTrigger>
               <TabsTrigger value="low-stock" className="min-h-10 rounded-xl border border-transparent bg-transparent px-2 text-[11px] font-semibold text-muted-foreground data-[state=active]:border-success/15 data-[state=active]:bg-success/[0.10] data-[state=active]:text-success md:text-xs">
-                <ArrowDown className="mr-1.5 h-3.5 w-3.5" />
+                <ArrowDown className="mr-1.5 h-3 w-3" />
                 Stok Terendah
               </TabsTrigger>
             </TabsList>
@@ -626,7 +626,7 @@ const Analisa = () => {
                           <TableCell className="font-semibold tracking-tight">
                             <div className="flex items-center gap-1">
                               <span className="text-sm">{a.kode}</span>
-                              {a.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning" />}
+                              {a.isBestSeller && <Flame className="h-3 w-3 text-warning" />}
                             </div>
                             {a.nama && a.nama.trim().toLowerCase() !== a.kode.trim().toLowerCase() && !a.nama.trim().toLowerCase().startsWith(`${a.kode.trim().toLowerCase()} `) && (
                               <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">{a.nama}</div>
@@ -706,7 +706,7 @@ const Analisa = () => {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 min-w-0 flex-wrap">
                           <span className="font-bold text-sm truncate">{a.kode}</span>
-                          {a.isBestSeller && <Flame className="h-3.5 w-3.5 text-warning shrink-0" />}
+                          {a.isBestSeller && <Flame className="h-3 w-3 text-warning shrink-0" />}
                           <Badge variant="outline" className={`text-[9px] font-semibold shrink-0 ${badge.className}`}>
                             {badge.label}
                           </Badge>
@@ -915,10 +915,10 @@ const Analisa = () => {
         {/* ══════════ PENJUALAN (grouped: Penjualan + Profit) ══════════ */}
         <TabsContent value="penjualan" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Tabs defaultValue="summary" className="w-full">
-            <TabsList className="grid h-9 w-full grid-cols-3 rounded-2xl border border-border/70 bg-card/90 p-1 shadow-sm">
-              <TabsTrigger value="summary" className="rounded-lg text-xs data-[state=active]:shadow-sm"><Activity className="mr-1 h-3.5 w-3.5" />Ringkasan</TabsTrigger>
-              <TabsTrigger value="terlaris" className="rounded-lg text-xs data-[state=active]:shadow-sm"><Trophy className="mr-1 h-3.5 w-3.5" />Terlaris</TabsTrigger>
-              <TabsTrigger value="profit" className="text-xs rounded-lg data-[state=active]:shadow-sm"><DollarSign className="h-3.5 w-3.5 mr-1" />Profit</TabsTrigger>
+            <TabsList className="grid h-8 w-full grid-cols-3 rounded-2xl border border-border/70 bg-card/90 p-1 shadow-sm">
+              <TabsTrigger value="summary" className="rounded-lg text-xs data-[state=active]:shadow-sm"><Activity className="mr-1 h-3 w-3" />Ringkasan</TabsTrigger>
+              <TabsTrigger value="terlaris" className="rounded-lg text-xs data-[state=active]:shadow-sm"><Trophy className="mr-1 h-3 w-3" />Terlaris</TabsTrigger>
+              <TabsTrigger value="profit" className="text-xs rounded-lg data-[state=active]:shadow-sm"><DollarSign className="h-3 w-3 mr-1" />Profit</TabsTrigger>
             </TabsList>
 
             <TabsContent value="summary" className="mt-3 space-y-4">
@@ -1124,8 +1124,8 @@ const Analisa = () => {
         <TabsContent value="toko" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Tabs defaultValue="top-toko" className="w-full">
             <TabsList className="w-full grid h-9 grid-cols-2 rounded-2xl border border-border/70 bg-card/90 p-1 shadow-sm">
-              <TabsTrigger value="top-toko" className="text-xs rounded-lg data-[state=active]:shadow-sm"><Store className="h-3.5 w-3.5 mr-1" />Top Toko</TabsTrigger>
-              <TabsTrigger value="pelanggan" className="text-xs rounded-lg data-[state=active]:shadow-sm"><Users className="h-3.5 w-3.5 mr-1" />Repeat</TabsTrigger>
+              <TabsTrigger value="top-toko" className="text-xs rounded-lg data-[state=active]:shadow-sm"><Store className="h-3 w-3 mr-1" />Top Toko</TabsTrigger>
+              <TabsTrigger value="pelanggan" className="text-xs rounded-lg data-[state=active]:shadow-sm"><Users className="h-3 w-3 mr-1" />Repeat</TabsTrigger>
             </TabsList>
 
             <TabsContent value="top-toko" className="space-y-4 mt-3">
@@ -1210,10 +1210,10 @@ const Analisa = () => {
         {/* ══════════ PERENCANAAN ══════════ */}
         <TabsContent value="planning" className="mt-4 space-y-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Tabs defaultValue="estimate" className="w-full">
-            <TabsList className="grid h-9 w-full grid-cols-3 rounded-2xl border border-border/70 bg-card/90 p-1 shadow-sm">
-              <TabsTrigger value="estimate" className="rounded-lg text-xs data-[state=active]:shadow-sm"><DollarSign className="mr-1 h-3.5 w-3.5" />Estimasi</TabsTrigger>
-              <TabsTrigger value="budget" className="rounded-lg text-xs data-[state=active]:shadow-sm"><Calculator className="mr-1 h-3.5 w-3.5" />Budget</TabsTrigger>
-              <TabsTrigger value="review" className="rounded-lg text-xs data-[state=active]:shadow-sm"><Sparkles className="mr-1 h-3.5 w-3.5" />Review AI</TabsTrigger>
+            <TabsList className="grid h-8 w-full grid-cols-3 rounded-2xl border border-border/70 bg-card/90 p-1 shadow-sm">
+              <TabsTrigger value="estimate" className="rounded-lg text-xs data-[state=active]:shadow-sm"><DollarSign className="mr-1 h-3 w-3" />Estimasi</TabsTrigger>
+              <TabsTrigger value="budget" className="rounded-lg text-xs data-[state=active]:shadow-sm"><Calculator className="mr-1 h-3 w-3" />Budget</TabsTrigger>
+              <TabsTrigger value="review" className="rounded-lg text-xs data-[state=active]:shadow-sm"><Sparkles className="mr-1 h-3 w-3" />Review AI</TabsTrigger>
             </TabsList>
             <TabsContent value="estimate" className="mt-3">
               <RestockEstimateList
@@ -1241,10 +1241,10 @@ const Analisa = () => {
         <TabsContent value="insight" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Tabs defaultValue="ringkasan" className="w-full">
             <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-2xl border border-border/70 bg-card/90 p-1 shadow-sm sm:grid-cols-4">
-              <TabsTrigger value="ringkasan" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm py-2"><BarChart3 className="h-3.5 w-3.5 mr-1 shrink-0" />Ringkasan</TabsTrigger>
-              <TabsTrigger value="hari" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm py-2"><CalendarIcon className="h-3.5 w-3.5 mr-1 shrink-0" />Hari</TabsTrigger>
-              <TabsTrigger value="tren" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm py-2"><Palette className="h-3.5 w-3.5 mr-1 shrink-0" />Tren</TabsTrigger>
-              <TabsTrigger value="dead" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground py-2"><Skull className="h-3.5 w-3.5 mr-1 shrink-0" />Dead</TabsTrigger>
+              <TabsTrigger value="ringkasan" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm py-2"><BarChart3 className="h-3 w-3 mr-1 shrink-0" />Ringkasan</TabsTrigger>
+              <TabsTrigger value="hari" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm py-2"><CalendarIcon className="h-3 w-3 mr-1 shrink-0" />Hari</TabsTrigger>
+              <TabsTrigger value="tren" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm py-2"><Palette className="h-3 w-3 mr-1 shrink-0" />Tren</TabsTrigger>
+              <TabsTrigger value="dead" className="text-[10px] md:text-xs rounded-lg data-[state=active]:shadow-sm data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground py-2"><Skull className="h-3 w-3 mr-1 shrink-0" />Dead</TabsTrigger>
             </TabsList>
 
             <TabsContent value="ringkasan" className="space-y-4 mt-3">
