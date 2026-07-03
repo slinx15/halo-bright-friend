@@ -1071,7 +1071,7 @@ const Analisa = () => {
                     </div>
                     {isMobile ? (
                       <div className="space-y-2.5">
-                        {profitItems.slice(0, 20).map((p, i) => (
+                        {profitItems.slice(0, RULES.DISPLAY_TOP_ITEMS).map((p, i) => (
                           <MobileRankedCard key={p.productId} rank={i + 1} kode={p.kode} isBestSeller={p.isBestSeller} index={i}>
                             <div className="grid grid-cols-2 gap-2 text-[11px] mt-1.5">
                               <div><span className="text-muted-foreground">Total Untung</span><p className="font-bold text-success tabular-nums">{formatRp(p.totalProfit)}</p></div>
@@ -1096,7 +1096,7 @@ const Analisa = () => {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {profitItems.slice(0, 20).map((p, i) => {
+                            {profitItems.slice(0, RULES.DISPLAY_TOP_ITEMS).map((p, i) => {
                               const medal = `${i + 1}.`;
                               return (
                                 <TableRow key={p.productId}>
