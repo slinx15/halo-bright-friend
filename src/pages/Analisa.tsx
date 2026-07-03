@@ -918,143 +918,159 @@ const Analisa = () => {
             <TabsList className="grid h-7 w-full grid-cols-3 overflow-hidden rounded-lg border border-border/70 bg-muted/50 p-0 shadow-sm">
               <TabsTrigger value="summary" className="h-7 min-h-7 rounded-md px-1.5 py-0 text-[11px] leading-none data-[state=active]:shadow-sm"><Activity className="mr-1 h-3 w-3" />Ringkasan</TabsTrigger>
               <TabsTrigger value="terlaris" className="h-7 min-h-7 rounded-md px-1.5 py-0 text-[11px] leading-none data-[state=active]:shadow-sm"><Trophy className="mr-1 h-3 w-3" />Terlaris</TabsTrigger>
-              <TabsTrigger value="profit" className="h-7 min-h-7 rounded-md px-1.5 py-0 text-[11px] leading-none data-[state=active]:shadow-sm"><DollarSign className="h-3 w-3 mr-1" />Profit</TabsTrigger>
+              <TabsTrigger value="profit" className="h-7 min-h-7 rounded-md px-1.5 py-0 text-[11px] leading-none data-[state=active]:shadow-sm"><DollarSign className="mr-1 h-3 w-3" />Profit</TabsTrigger>
             </TabsList>
 
             <TabsContent value="summary" className="mt-3 space-y-4">
-              <SalesTrendCharts
-                stockOutData={stockOutData}
-                topSellers={topSellers}
-                trendItems={trendItems}
-                isMobile={isMobile}
-              />
+              {stockOutData.length === 0 ? (
+                <Card className="border-0 shadow-sm p-5 animate-fade-in">
+                  <p className="text-sm text-muted-foreground py-8 text-center">Belum ada data penjualan 30 hari terakhir.</p>
+                </Card>
+              ) : (
+                <>
+                  <SalesTrendCharts
+                    stockOutData={stockOutData}
+                    topSellers={topSellers}
+                    trendItems={trendItems}
+                    isMobile={isMobile}
+                  />
 
-              <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
-                <SectionHeader icon={Activity} title="Trend Penjualan 7 Hari" />
-                <div className="flex flex-wrap gap-3">
-                  {[
-                    { label: "Minggu ini", value: `${totalTW} pcs`, color: "" },
-                    { label: "Minggu lalu", value: `${totalLW} pcs`, color: "" },
-                    { label: "Perubahan", value: `${overallChange >= 0 ? "+" : ""}${overallChange.toFixed(1)}%`, color: overallChange >= 0 ? "text-success" : "text-destructive" },
-                  ].map(s => (
-                    <div key={s.label} className="px-3 py-2 rounded-lg bg-muted/40 text-xs">
-                      <span className="text-muted-foreground">{s.label}: </span>
-                      <span className={`font-semibold ${s.color}`}>{s.value}</span>
-                    </div>
-                  ))}
-                </div>
-                {isMobile ? (
-                  <div className="space-y-2">
-                    {trendItems.map((t, i) => {
-                      const trendLabel = t.changePct > 10 ? "Naik" : t.changePct < -10 ? "Turun" : "Stabil";
-                      return (
-                        <div key={t.productId} className="rounded-xl border border-border/60 p-3 space-y-1 animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-sm">{trendLabel} | {t.kode}{t.isBestSeller ? " Top" : ""}</span>
-                            <span className={`font-mono font-bold text-sm tabular-nums ${t.changePct > 0 ? "text-success" : t.changePct < 0 ? "text-destructive" : ""}`}>
-                              {t.changePct > 0 ? "+" : ""}{t.changePct.toFixed(0)}%
-                            </span>
+                  {trendItems.length > 0 && (
+                    <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
+                      <SectionHeader icon={Activity} title="Trend Penjualan 7 Hari" />
+                      <div className="flex flex-wrap gap-3">
+                        {[
+                          { label: "Minggu ini", value: `${totalTW} pcs`, color: "" },
+                          { label: "Minggu lalu", value: `${totalLW} pcs`, color: "" },
+                          { label: "Perubahan", value: `${overallChange >= 0 ? "+" : ""}${overallChange.toFixed(1)}%`, color: overallChange >= 0 ? "text-success" : "text-destructive" },
+                        ].map(s => (
+                          <div key={s.label} className="px-3 py-2 rounded-lg bg-muted/40 text-xs">
+                            <span className="text-muted-foreground">{s.label}: </span>
+                            <span className={`font-semibold ${s.color}`}>{s.value}</span>
                           </div>
-                          <div className="flex gap-4 text-[11px] text-muted-foreground">
-                            <span>Minggu ini: <strong className="text-foreground tabular-nums">{t.thisWeek}</strong></span>
-                            <span>Lalu: <strong className="text-foreground tabular-nums">{t.lastWeek}</strong></span>
-                          </div>
+                        ))}
+                      </div>
+                      {isMobile ? (
+                        <div className="space-y-2">
+                          {trendItems.map((t, i) => {
+                            const trendLabel = t.changePct > 10 ? "Naik" : t.changePct < -10 ? "Turun" : "Stabil";
+                            return (
+                              <div key={t.productId} className="rounded-xl border border-border/60 p-3 space-y-1 animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
+                                <div className="flex items-center justify-between">
+                                  <span className="font-bold text-sm">{trendLabel} | {t.kode}{t.isBestSeller ? " Top" : ""}</span>
+                                  <span className={`font-mono font-bold text-sm tabular-nums ${t.changePct > 0 ? "text-success" : t.changePct < 0 ? "text-destructive" : ""}`}>
+                                    {t.changePct > 0 ? "+" : ""}{t.changePct.toFixed(0)}%
+                                  </span>
+                                </div>
+                                <div className="flex gap-4 text-[11px] text-muted-foreground">
+                                  <span>Minggu ini: <strong className="text-foreground tabular-nums">{t.thisWeek}</strong></span>
+                                  <span>Lalu: <strong className="text-foreground tabular-nums">{t.lastWeek}</strong></span>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="rounded-lg border overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/20 hover:bg-muted/20">
-                          <TableHead className="w-10 text-xs">#</TableHead>
-                          <TableHead className="text-xs">Kode</TableHead>
-                          <TableHead className="text-right text-xs">Minggu Ini</TableHead>
-                          <TableHead className="text-right text-xs">Minggu Lalu</TableHead>
-                          <TableHead className="text-right text-xs">Perubahan</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {trendItems.map((t, i) => {
-                          const trendLabel = t.changePct > 10 ? "Naik" : t.changePct < -10 ? "Turun" : "Stabil";
-                          return (
-                            <TableRow key={t.productId}>
-                              <TableCell className="text-xs">{i + 1}</TableCell>
-                              <TableCell className="font-semibold text-sm">{trendLabel} | {t.kode}{t.isBestSeller ? " Top" : ""}</TableCell>
-                              <TableCell className="text-right font-mono text-sm">{t.thisWeek}</TableCell>
-                              <TableCell className="text-right font-mono text-sm">{t.lastWeek}</TableCell>
-                              <TableCell className={`text-right font-mono text-sm ${t.changePct > 0 ? "text-success" : t.changePct < 0 ? "text-destructive" : ""}`}>
-                                {t.changePct > 0 ? "+" : ""}{t.changePct.toFixed(0)}%
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </Card>
+                      ) : (
+                        <div className="rounded-lg border overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="bg-muted/20 hover:bg-muted/20">
+                                <TableHead className="w-10 text-xs">#</TableHead>
+                                <TableHead className="text-xs">Kode</TableHead>
+                                <TableHead className="text-right text-xs">Minggu Ini</TableHead>
+                                <TableHead className="text-right text-xs">Minggu Lalu</TableHead>
+                                <TableHead className="text-right text-xs">Perubahan</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {trendItems.map((t, i) => {
+                                const trendLabel = t.changePct > 10 ? "Naik" : t.changePct < -10 ? "Turun" : "Stabil";
+                                return (
+                                  <TableRow key={t.productId}>
+                                    <TableCell className="text-xs">{i + 1}</TableCell>
+                                    <TableCell className="font-semibold text-sm">{trendLabel} | {t.kode}{t.isBestSeller ? " Top" : ""}</TableCell>
+                                    <TableCell className="text-right font-mono text-sm">{t.thisWeek}</TableCell>
+                                    <TableCell className="text-right font-mono text-sm">{t.lastWeek}</TableCell>
+                                    <TableCell className={`text-right font-mono text-sm ${t.changePct > 0 ? "text-success" : t.changePct < 0 ? "text-destructive" : ""}`}>
+                                      {t.changePct > 0 ? "+" : ""}{t.changePct.toFixed(0)}%
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                    </Card>
+                  )}
+                </>
+              )}
             </TabsContent>
 
             <TabsContent value="terlaris" className="space-y-4 mt-3">
               <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
                 <SectionHeader icon={Trophy} title={`${RULES.DISPLAY_TOP_ITEMS} Barang Paling Laris`} subtitle="30 hari terakhir" />
-                {isMobile ? (
-                  <div className="space-y-2.5">
-                    {topSellers.map((t, i) => (
-                      <MobileRankedCard key={t.productId} rank={i + 1} kode={t.kode} isBestSeller={t.isBestSeller} index={i}>
-                        <div className="grid grid-cols-2 gap-2 text-[11px] mt-1.5">
-                          <div><span className="text-muted-foreground">Terjual</span><p className="font-bold tabular-nums">{t.totalQty} pcs</p></div>
-                          <div><span className="text-muted-foreground">Hari Data</span><p className="font-semibold tabular-nums">{t.days}{t.days < 7 ? " (baru)" : ""}</p></div>
-                          <div><span className="text-muted-foreground">Laku/{RULES.DISPLAY_CYCLE_DAYS} hari</span><p className="font-semibold tabular-nums">{(t.velocity * RULES.DISPLAY_CYCLE_DAYS).toFixed(0)}</p></div>
-                          <div><span className="text-muted-foreground">Sisa</span><p className={`font-bold tabular-nums ${t.daysLeft <= 2 ? "text-destructive" : t.daysLeft <= 4 ? "text-warning" : ""}`}>{urgencyIcon(t.daysLeft)} {formatDaysLeft(t.daysLeft)}</p></div>
-                        </div>
-                      </MobileRankedCard>
-                    ))}
-                  </div>
+                {topSellers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-8 text-center">Belum ada data barang terlaris 30 hari terakhir.</p>
                 ) : (
-                  <div className="rounded-lg border overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/20 hover:bg-muted/20">
-                          <TableHead className="w-10 text-xs">#</TableHead>
-                          <TableHead className="text-xs">Kode</TableHead>
-                          <TableHead className="text-right text-xs">Terjual</TableHead>
-                          <TableHead className="text-right text-xs">Hari Data</TableHead>
-                          <TableHead className="text-right text-xs">Laku/{RULES.DISPLAY_CYCLE_DAYS} hari</TableHead>
-                          <TableHead className="text-right text-xs">Stok</TableHead>
-                          <TableHead className="text-right text-xs">Sisa Hari</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {topSellers.map((t, i) => {
-                          const medal = `${i + 1}.`;
-                          return (
-                            <TableRow key={t.productId}>
-                              <TableCell className="font-medium">{medal}</TableCell>
-                              <TableCell className="font-semibold text-sm">
-                                {t.kode}{t.isBestSeller ? " Top" : ""}{t.days < 7 ? " (baru)" : ""}
-                              </TableCell>
-                              <TableCell className="text-right font-mono text-sm">{t.totalQty}</TableCell>
-                              <TableCell className="text-right font-mono text-sm">{t.days}</TableCell>
-                              <TableCell className="text-right font-mono text-sm">{(t.velocity * RULES.DISPLAY_CYCLE_DAYS).toFixed(0)}</TableCell>
-                              <TableCell className="text-right font-mono text-sm">{t.stok}</TableCell>
-                              <TableCell className="text-right text-sm">{urgencyIcon(t.daysLeft)} {formatDaysLeft(t.daysLeft)}</TableCell>
+                  <>
+                    {isMobile ? (
+                      <div className="space-y-2.5">
+                        {topSellers.map((t, i) => (
+                          <MobileRankedCard key={t.productId} rank={i + 1} kode={t.kode} isBestSeller={t.isBestSeller} index={i}>
+                            <div className="grid grid-cols-2 gap-2 text-[11px] mt-1.5">
+                              <div><span className="text-muted-foreground">Terjual</span><p className="font-bold tabular-nums">{t.totalQty} pcs</p></div>
+                              <div><span className="text-muted-foreground">Hari Data</span><p className="font-semibold tabular-nums">{t.days}{t.days < 7 ? " (baru)" : ""}</p></div>
+                              <div><span className="text-muted-foreground">Laku/{RULES.DISPLAY_CYCLE_DAYS} hari</span><p className="font-semibold tabular-nums">{(t.velocity * RULES.DISPLAY_CYCLE_DAYS).toFixed(0)}</p></div>
+                              <div><span className="text-muted-foreground">Sisa</span><p className={`font-bold tabular-nums ${t.daysLeft <= 2 ? "text-destructive" : t.daysLeft <= 4 ? "text-warning" : ""}`}>{urgencyIcon(t.daysLeft)} {formatDaysLeft(t.daysLeft)}</p></div>
+                            </div>
+                          </MobileRankedCard>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-muted/20 hover:bg-muted/20">
+                              <TableHead className="w-10 text-xs">#</TableHead>
+                              <TableHead className="text-xs">Kode</TableHead>
+                              <TableHead className="text-right text-xs">Terjual</TableHead>
+                              <TableHead className="text-right text-xs">Hari Data</TableHead>
+                              <TableHead className="text-right text-xs">Laku/{RULES.DISPLAY_CYCLE_DAYS} hari</TableHead>
+                              <TableHead className="text-right text-xs">Stok</TableHead>
+                              <TableHead className="text-right text-xs">Sisa Hari</TableHead>
                             </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
+                          </TableHeader>
+                          <TableBody>
+                            {topSellers.map((t, i) => {
+                              const medal = `${i + 1}.`;
+                              return (
+                                <TableRow key={t.productId}>
+                                  <TableCell className="font-medium">{medal}</TableCell>
+                                  <TableCell className="font-semibold text-sm">
+                                    {t.kode}{t.isBestSeller ? " Top" : ""}{t.days < 7 ? " (baru)" : ""}
+                                  </TableCell>
+                                  <TableCell className="text-right font-mono text-sm">{t.totalQty}</TableCell>
+                                  <TableCell className="text-right font-mono text-sm">{t.days}</TableCell>
+                                  <TableCell className="text-right font-mono text-sm">{(t.velocity * RULES.DISPLAY_CYCLE_DAYS).toFixed(0)}</TableCell>
+                                  <TableCell className="text-right font-mono text-sm">{t.stok}</TableCell>
+                                  <TableCell className="text-right text-sm">{urgencyIcon(t.daysLeft)} {formatDaysLeft(t.daysLeft)}</TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                    <p className="text-[11px] text-muted-foreground">Catatan: data kurang dari 7 hari masih bisa berubah lebih cepat.</p>
+                  </>
                 )}
-                <p className="text-[11px] text-muted-foreground">Catatan: data kurang dari 7 hari masih bisa berubah lebih cepat.</p>
               </Card>
             </TabsContent>
 
             <TabsContent value="profit" className="space-y-4 mt-3">
               <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
-                <SectionHeader icon={DollarSign} title="Barang Paling Untung" subtitle="30 hari terakhir" />
+                <SectionHeader icon={DollarSign} title="Barang Paling Untung" subtitle={`Top ${RULES.DISPLAY_TOP_ITEMS} · 30 hari terakhir`} />
                 {profitItems.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-8 text-center">Belum ada data profit. Pastikan data harga sudah diisi.</p>
                 ) : (
@@ -1071,7 +1087,7 @@ const Analisa = () => {
                     </div>
                     {isMobile ? (
                       <div className="space-y-2.5">
-                        {profitItems.slice(0, 20).map((p, i) => (
+                        {profitItems.slice(0, RULES.DISPLAY_TOP_ITEMS).map((p, i) => (
                           <MobileRankedCard key={p.productId} rank={i + 1} kode={p.kode} isBestSeller={p.isBestSeller} index={i}>
                             <div className="grid grid-cols-2 gap-2 text-[11px] mt-1.5">
                               <div><span className="text-muted-foreground">Total Untung</span><p className="font-bold text-success tabular-nums">{formatRp(p.totalProfit)}</p></div>
@@ -1096,7 +1112,7 @@ const Analisa = () => {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {profitItems.slice(0, 20).map((p, i) => {
+                            {profitItems.slice(0, RULES.DISPLAY_TOP_ITEMS).map((p, i) => {
                               const medal = `${i + 1}.`;
                               return (
                                 <TableRow key={p.productId}>
@@ -1124,8 +1140,8 @@ const Analisa = () => {
         <TabsContent value="toko" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Tabs defaultValue="top-toko" className="w-full">
             <TabsList className="w-full grid h-7 grid-cols-2 overflow-hidden rounded-lg border border-border/70 bg-muted/50 p-0 shadow-sm">
-              <TabsTrigger value="top-toko" className="h-7 min-h-7 rounded-md px-1.5 py-0 text-[11px] leading-none data-[state=active]:shadow-sm"><Store className="h-3 w-3 mr-1" />Top Toko</TabsTrigger>
-              <TabsTrigger value="pelanggan" className="h-7 min-h-7 rounded-md px-1.5 py-0 text-[11px] leading-none data-[state=active]:shadow-sm"><Users className="h-3 w-3 mr-1" />Repeat</TabsTrigger>
+              <TabsTrigger value="top-toko" className="h-7 min-h-7 rounded-md px-1.5 py-0 text-[11px] leading-none data-[state=active]:shadow-sm"><Store className="mr-1 h-3 w-3" />Top Toko</TabsTrigger>
+              <TabsTrigger value="pelanggan" className="h-7 min-h-7 rounded-md px-1.5 py-0 text-[11px] leading-none data-[state=active]:shadow-sm"><Users className="mr-1 h-3 w-3" />Repeat</TabsTrigger>
             </TabsList>
 
             <TabsContent value="top-toko" className="space-y-4 mt-3">
