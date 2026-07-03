@@ -1054,7 +1054,7 @@ const Analisa = () => {
 
             <TabsContent value="profit" className="space-y-4 mt-3">
               <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
-                <SectionHeader icon={DollarSign} title="Barang Paling Untung" subtitle="30 hari terakhir" />
+                <SectionHeader icon={DollarSign} title="Barang Paling Untung" subtitle={`Top ${RULES.DISPLAY_TOP_ITEMS} · 30 hari terakhir`} />
                 {profitItems.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-8 text-center">Belum ada data profit. Pastikan data harga sudah diisi.</p>
                 ) : (
