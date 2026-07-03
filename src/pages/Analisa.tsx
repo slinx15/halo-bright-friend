@@ -928,6 +928,73 @@ const Analisa = () => {
                 trendItems={trendItems}
                 isMobile={isMobile}
               />
+
+              <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
+                <SectionHeader icon={Activity} title="Trend Penjualan 7 Hari" />
+                <div className="flex flex-wrap gap-3">
+                  {[
+                    { label: "Minggu ini", value: `${totalTW} pcs`, color: "" },
+                    { label: "Minggu lalu", value: `${totalLW} pcs`, color: "" },
+                    { label: "Perubahan", value: `${overallChange >= 0 ? "+" : ""}${overallChange.toFixed(1)}%`, color: overallChange >= 0 ? "text-success" : "text-destructive" },
+                  ].map(s => (
+                    <div key={s.label} className="px-3 py-2 rounded-lg bg-muted/40 text-xs">
+                      <span className="text-muted-foreground">{s.label}: </span>
+                      <span className={`font-semibold ${s.color}`}>{s.value}</span>
+                    </div>
+                  ))}
+                </div>
+                {isMobile ? (
+                  <div className="space-y-2">
+                    {trendItems.map((t, i) => {
+                      const trendLabel = t.changePct > 10 ? "Naik" : t.changePct < -10 ? "Turun" : "Stabil";
+                      return (
+                        <div key={t.productId} className="rounded-xl border border-border/60 p-3 space-y-1 animate-fade-in" style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: "both" }}>
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-sm">{trendLabel} | {t.kode}{t.isBestSeller ? " Top" : ""}</span>
+                            <span className={`font-mono font-bold text-sm tabular-nums ${t.changePct > 0 ? "text-success" : t.changePct < 0 ? "text-destructive" : ""}`}>
+                              {t.changePct > 0 ? "+" : ""}{t.changePct.toFixed(0)}%
+                            </span>
+                          </div>
+                          <div className="flex gap-4 text-[11px] text-muted-foreground">
+                            <span>Minggu ini: <strong className="text-foreground tabular-nums">{t.thisWeek}</strong></span>
+                            <span>Lalu: <strong className="text-foreground tabular-nums">{t.lastWeek}</strong></span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/20 hover:bg-muted/20">
+                          <TableHead className="w-10 text-xs">#</TableHead>
+                          <TableHead className="text-xs">Kode</TableHead>
+                          <TableHead className="text-right text-xs">Minggu Ini</TableHead>
+                          <TableHead className="text-right text-xs">Minggu Lalu</TableHead>
+                          <TableHead className="text-right text-xs">Perubahan</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {trendItems.map((t, i) => {
+                          const trendLabel = t.changePct > 10 ? "Naik" : t.changePct < -10 ? "Turun" : "Stabil";
+                          return (
+                            <TableRow key={t.productId}>
+                              <TableCell className="text-xs">{i + 1}</TableCell>
+                              <TableCell className="font-semibold text-sm">{trendLabel} | {t.kode}{t.isBestSeller ? " Top" : ""}</TableCell>
+                              <TableCell className="text-right font-mono text-sm">{t.thisWeek}</TableCell>
+                              <TableCell className="text-right font-mono text-sm">{t.lastWeek}</TableCell>
+                              <TableCell className={`text-right font-mono text-sm ${t.changePct > 0 ? "text-success" : t.changePct < 0 ? "text-destructive" : ""}`}>
+                                {t.changePct > 0 ? "+" : ""}{t.changePct.toFixed(0)}%
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </Card>
             </TabsContent>
 
             <TabsContent value="terlaris" className="space-y-4 mt-3">
