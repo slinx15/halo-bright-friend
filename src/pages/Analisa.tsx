@@ -928,61 +928,6 @@ const Analisa = () => {
                 trendItems={trendItems}
                 isMobile={isMobile}
               />
-            </TabsContent>
-
-            <TabsContent value="terlaris" className="space-y-4 mt-3">
-              <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
-                <SectionHeader icon={Trophy} title={`${RULES.DISPLAY_TOP_ITEMS} Barang Paling Laris`} subtitle="30 hari terakhir" />
-                {isMobile ? (
-                  <div className="space-y-2.5">
-                    {topSellers.map((t, i) => (
-                      <MobileRankedCard key={t.productId} rank={i + 1} kode={t.kode} isBestSeller={t.isBestSeller} index={i}>
-                        <div className="grid grid-cols-2 gap-2 text-[11px] mt-1.5">
-                          <div><span className="text-muted-foreground">Terjual</span><p className="font-bold tabular-nums">{t.totalQty} pcs</p></div>
-                          <div><span className="text-muted-foreground">Hari Data</span><p className="font-semibold tabular-nums">{t.days}{t.days < 7 ? " (baru)" : ""}</p></div>
-                          <div><span className="text-muted-foreground">Laku/{RULES.DISPLAY_CYCLE_DAYS} hari</span><p className="font-semibold tabular-nums">{(t.velocity * RULES.DISPLAY_CYCLE_DAYS).toFixed(0)}</p></div>
-                          <div><span className="text-muted-foreground">Sisa</span><p className={`font-bold tabular-nums ${t.daysLeft <= 2 ? "text-destructive" : t.daysLeft <= 4 ? "text-warning" : ""}`}>{urgencyIcon(t.daysLeft)} {formatDaysLeft(t.daysLeft)}</p></div>
-                        </div>
-                      </MobileRankedCard>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="rounded-lg border overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/20 hover:bg-muted/20">
-                          <TableHead className="w-10 text-xs">#</TableHead>
-                          <TableHead className="text-xs">Kode</TableHead>
-                          <TableHead className="text-right text-xs">Terjual</TableHead>
-                          <TableHead className="text-right text-xs">Hari Data</TableHead>
-                          <TableHead className="text-right text-xs">Laku/{RULES.DISPLAY_CYCLE_DAYS} hari</TableHead>
-                          <TableHead className="text-right text-xs">Stok</TableHead>
-                          <TableHead className="text-right text-xs">Sisa Hari</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {topSellers.map((t, i) => {
-                          const medal = `${i + 1}.`;
-                          return (
-                            <TableRow key={t.productId}>
-                              <TableCell className="font-medium">{medal}</TableCell>
-                              <TableCell className="font-semibold text-sm">
-                                {t.kode}{t.isBestSeller ? " Top" : ""}{t.days < 7 ? " (baru)" : ""}
-                              </TableCell>
-                              <TableCell className="text-right font-mono text-sm">{t.totalQty}</TableCell>
-                              <TableCell className="text-right font-mono text-sm">{t.days}</TableCell>
-                              <TableCell className="text-right font-mono text-sm">{(t.velocity * RULES.DISPLAY_CYCLE_DAYS).toFixed(0)}</TableCell>
-                              <TableCell className="text-right font-mono text-sm">{t.stok}</TableCell>
-                              <TableCell className="text-right text-sm">{urgencyIcon(t.daysLeft)} {formatDaysLeft(t.daysLeft)}</TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-                <p className="text-[11px] text-muted-foreground">Catatan: data kurang dari 7 hari masih bisa berubah lebih cepat.</p>
-              </Card>
 
               <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
                 <SectionHeader icon={Activity} title="Trend Penjualan 7 Hari" />
@@ -1049,6 +994,61 @@ const Analisa = () => {
                     </Table>
                   </div>
                 )}
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="terlaris" className="space-y-4 mt-3">
+              <Card className="border-0 shadow-sm p-5 space-y-3 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
+                <SectionHeader icon={Trophy} title={`${RULES.DISPLAY_TOP_ITEMS} Barang Paling Laris`} subtitle="30 hari terakhir" />
+                {isMobile ? (
+                  <div className="space-y-2.5">
+                    {topSellers.map((t, i) => (
+                      <MobileRankedCard key={t.productId} rank={i + 1} kode={t.kode} isBestSeller={t.isBestSeller} index={i}>
+                        <div className="grid grid-cols-2 gap-2 text-[11px] mt-1.5">
+                          <div><span className="text-muted-foreground">Terjual</span><p className="font-bold tabular-nums">{t.totalQty} pcs</p></div>
+                          <div><span className="text-muted-foreground">Hari Data</span><p className="font-semibold tabular-nums">{t.days}{t.days < 7 ? " (baru)" : ""}</p></div>
+                          <div><span className="text-muted-foreground">Laku/{RULES.DISPLAY_CYCLE_DAYS} hari</span><p className="font-semibold tabular-nums">{(t.velocity * RULES.DISPLAY_CYCLE_DAYS).toFixed(0)}</p></div>
+                          <div><span className="text-muted-foreground">Sisa</span><p className={`font-bold tabular-nums ${t.daysLeft <= 2 ? "text-destructive" : t.daysLeft <= 4 ? "text-warning" : ""}`}>{urgencyIcon(t.daysLeft)} {formatDaysLeft(t.daysLeft)}</p></div>
+                        </div>
+                      </MobileRankedCard>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/20 hover:bg-muted/20">
+                          <TableHead className="w-10 text-xs">#</TableHead>
+                          <TableHead className="text-xs">Kode</TableHead>
+                          <TableHead className="text-right text-xs">Terjual</TableHead>
+                          <TableHead className="text-right text-xs">Hari Data</TableHead>
+                          <TableHead className="text-right text-xs">Laku/{RULES.DISPLAY_CYCLE_DAYS} hari</TableHead>
+                          <TableHead className="text-right text-xs">Stok</TableHead>
+                          <TableHead className="text-right text-xs">Sisa Hari</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {topSellers.map((t, i) => {
+                          const medal = `${i + 1}.`;
+                          return (
+                            <TableRow key={t.productId}>
+                              <TableCell className="font-medium">{medal}</TableCell>
+                              <TableCell className="font-semibold text-sm">
+                                {t.kode}{t.isBestSeller ? " Top" : ""}{t.days < 7 ? " (baru)" : ""}
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-sm">{t.totalQty}</TableCell>
+                              <TableCell className="text-right font-mono text-sm">{t.days}</TableCell>
+                              <TableCell className="text-right font-mono text-sm">{(t.velocity * RULES.DISPLAY_CYCLE_DAYS).toFixed(0)}</TableCell>
+                              <TableCell className="text-right font-mono text-sm">{t.stok}</TableCell>
+                              <TableCell className="text-right text-sm">{urgencyIcon(t.daysLeft)} {formatDaysLeft(t.daysLeft)}</TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+                <p className="text-[11px] text-muted-foreground">Catatan: data kurang dari 7 hari masih bisa berubah lebih cepat.</p>
               </Card>
             </TabsContent>
 
