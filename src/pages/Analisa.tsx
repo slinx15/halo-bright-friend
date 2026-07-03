@@ -918,7 +918,7 @@ const Analisa = () => {
             <TabsList className="grid h-7 w-full grid-cols-3 overflow-hidden rounded-lg border border-border/70 bg-muted/50 p-0 shadow-sm">
               <TabsTrigger value="summary" className="h-7 min-h-7 rounded-md px-1.5 py-0 text-[11px] leading-none data-[state=active]:shadow-sm"><Activity className="mr-1 h-3 w-3" />Ringkasan</TabsTrigger>
               <TabsTrigger value="terlaris" className="h-7 min-h-7 rounded-md px-1.5 py-0 text-[11px] leading-none data-[state=active]:shadow-sm"><Trophy className="mr-1 h-3 w-3" />Terlaris</TabsTrigger>
-              <TabsTrigger value="profit" className="h-7 min-h-7 rounded-md px-1.5 py-0 text-[11px] leading-none data-[state=active]:shadow-sm"><DollarSign className="h-3 w-3 mr-1" />Profit</TabsTrigger>
+              <TabsTrigger value="profit" className="h-7 min-h-7 rounded-md px-1.5 py-0 text-[11px] leading-none data-[state=active]:shadow-sm"><DollarSign className="mr-1 h-3 w-3" />Profit</TabsTrigger>
             </TabsList>
 
             <TabsContent value="summary" className="mt-3 space-y-4">
