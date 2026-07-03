@@ -109,14 +109,21 @@
     @apply border-border;
   }
 
+  html {
+    color-scheme: light dark;
+  }
+
   html, body, #root {
     @apply bg-background text-foreground;
     font-family: 'Figtree', 'Plus Jakarta Sans', system-ui, sans-serif;
     font-size: 15px;
-    overflow-x: hidden;
-    max-width: 100vw;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    overflow-x: hidden;
+    max-width: 100vw;
     touch-action: manipulation;
   }
 
