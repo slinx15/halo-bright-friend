@@ -4,10 +4,10 @@ import MobileNav from "./MobileNav";
 
 const AppLayout = () => {
   return (
-    <div className="flex min-h-screen bg-background w-full max-w-[100vw] overflow-x-hidden">
+    <div className="flex min-h-[100dvh] bg-background w-full max-w-[100vw] overflow-x-hidden">
       <AppSidebar />
-      <div className="flex-1 flex flex-col min-w-0">
-        <main className="flex-1 overflow-auto overflow-x-hidden overscroll-y-contain scroll-smooth pb-24 safe-bottom md:pb-0">
+      <div className="flex-1 flex flex-col min-w-0 md:h-screen md:overflow-hidden">
+        <main className="flex-1 min-w-0 md:overflow-y-auto md:overflow-x-hidden md:overscroll-y-contain scroll-smooth pb-24 safe-bottom md:pb-0">
           <Outlet />
         </main>
       </div>
