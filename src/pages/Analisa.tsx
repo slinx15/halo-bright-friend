@@ -494,7 +494,7 @@ const Analisa = () => {
         {/* ══════════ RESTOCK ══════════ */}
         <TabsContent value="restock" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Tabs value={restockView} onValueChange={(value) => setRestockView(value as RestockView)} className="w-full">
-            <TabsList className="grid h-auto w-full grid-cols-3 rounded-2xl border border-border/75 bg-card/90 p-1 shadow-sm dark:bg-card/80">
+            <TabsList className="grid h-auto w-full grid-cols-3 rounded-2xl border border-border/75 bg-card/90 p-0.5 shadow-sm dark:bg-card/80">
               <TabsTrigger value="recommendations" className="min-h-10 rounded-xl border border-transparent bg-transparent px-2 text-[11px] font-semibold text-muted-foreground data-[state=active]:border-primary/15 data-[state=active]:bg-primary/[0.08] data-[state=active]:text-primary data-[state=active]:shadow-none md:text-xs">
                 <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Daftar Restock</span>
@@ -915,7 +915,7 @@ const Analisa = () => {
         {/* ══════════ PENJUALAN (grouped: Penjualan + Profit) ══════════ */}
         <TabsContent value="penjualan" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Tabs defaultValue="summary" className="w-full">
-            <TabsList className="grid h-10 w-full grid-cols-3 rounded-2xl border border-border/70 bg-card/90 p-1 shadow-sm">
+            <TabsList className="grid h-9 w-full grid-cols-3 rounded-2xl border border-border/70 bg-card/90 p-1 shadow-sm">
               <TabsTrigger value="summary" className="rounded-lg text-xs data-[state=active]:shadow-sm"><Activity className="mr-1 h-3.5 w-3.5" />Ringkasan</TabsTrigger>
               <TabsTrigger value="terlaris" className="rounded-lg text-xs data-[state=active]:shadow-sm"><Trophy className="mr-1 h-3.5 w-3.5" />Terlaris</TabsTrigger>
               <TabsTrigger value="profit" className="text-xs rounded-lg data-[state=active]:shadow-sm"><DollarSign className="h-3.5 w-3.5 mr-1" />Profit</TabsTrigger>
@@ -1123,7 +1123,7 @@ const Analisa = () => {
         {/* ══════════ PELANGGAN ══════════ */}
         <TabsContent value="toko" className="space-y-4 mt-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Tabs defaultValue="top-toko" className="w-full">
-            <TabsList className="w-full grid h-11 grid-cols-2 rounded-2xl border border-border/70 bg-card/90 p-1 shadow-sm">
+            <TabsList className="w-full grid h-9 grid-cols-2 rounded-2xl border border-border/70 bg-card/90 p-1 shadow-sm">
               <TabsTrigger value="top-toko" className="text-xs rounded-lg data-[state=active]:shadow-sm"><Store className="h-3.5 w-3.5 mr-1" />Top Toko</TabsTrigger>
               <TabsTrigger value="pelanggan" className="text-xs rounded-lg data-[state=active]:shadow-sm"><Users className="h-3.5 w-3.5 mr-1" />Repeat</TabsTrigger>
             </TabsList>
@@ -1210,7 +1210,7 @@ const Analisa = () => {
         {/* ══════════ PERENCANAAN ══════════ */}
         <TabsContent value="planning" className="mt-4 space-y-4 animate-fade-in" style={{ animationFillMode: "both" }}>
           <Tabs defaultValue="estimate" className="w-full">
-            <TabsList className="grid h-11 w-full grid-cols-3 rounded-2xl border border-border/70 bg-card/90 p-1 shadow-sm">
+            <TabsList className="grid h-9 w-full grid-cols-3 rounded-2xl border border-border/70 bg-card/90 p-1 shadow-sm">
               <TabsTrigger value="estimate" className="rounded-lg text-xs data-[state=active]:shadow-sm"><DollarSign className="mr-1 h-3.5 w-3.5" />Estimasi</TabsTrigger>
               <TabsTrigger value="budget" className="rounded-lg text-xs data-[state=active]:shadow-sm"><Calculator className="mr-1 h-3.5 w-3.5" />Budget</TabsTrigger>
               <TabsTrigger value="review" className="rounded-lg text-xs data-[state=active]:shadow-sm"><Sparkles className="mr-1 h-3.5 w-3.5" />Review AI</TabsTrigger>
