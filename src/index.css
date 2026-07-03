@@ -216,11 +216,24 @@
     background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.3), transparent);
   }
 
-  /* Glass effect */
+  /* Glass effect — blur only where GPU can afford it (desktop hover devices) */
   .glass {
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    background: hsl(var(--background) / 0.75);
+    background: hsl(var(--background) / 0.92);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .glass {
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      background: hsl(var(--background) / 0.75);
+    }
+  }
+
+  /* Disable backdrop-blur utilities on touch devices — very costly on Android */
+  @media (hover: none) {
+    [class*="backdrop-blur"] {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
   }
 
   /* Native-feel active state */
