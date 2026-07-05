@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Navigate } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 const Auth = () => {
   const { user, loading, signIn } = useAuth();
   const { toast } = useToast();
+  const [params] = useSearchParams();
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -22,6 +23,10 @@ const Auth = () => {
     sessionStorage.removeItem("logging_out");
   }
 
+  // Same-origin relative path only.
+  const rawNext = params.get("next") ?? "";
+  const safeNext = /^\/(?!\/)/.test(rawNext) ? rawNext : "/";
+
   if (loading && !justLoggedOut) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -30,7 +35,7 @@ const Auth = () => {
     );
   }
 
-  if (user && !justLoggedOut) return <Navigate to="/" replace />;
+  if (user && !justLoggedOut) return <Navigate to={safeNext} replace />;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

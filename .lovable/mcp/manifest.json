@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://bewacnnfyhiiwxhhbeem.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "rrcollections-mcp",
+      "version": "0.1.0",
+      "title": "RRCollections Stok"
+    },
+    "tools": [
+      {
+        "name": "list_products",
+        "title": "List products",
+        "description": "List products in the RRCollections catalog, optionally filtered by category or code/name search.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "description": "Filter by code (kode) or name (nama), case-insensitive."
+            },
+            "kategori": {
+              "type": "string",
+              "description": "Category filter, e.g. '2 Ons', '3 Ons', '5 Ons', '18g'."
+            },
+            "only_active": {
+              "type": "boolean",
+              "description": "Only return active products (default true)."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Max rows to return (default 50)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_stock",
+        "title": "Get current stock",
+        "description": "Get current stock quantity and tumpukan for a product by kode (product code) and optional kategori.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "kode": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Product code (kode)."
+            },
+            "kategori": {
+              "type": "string",
+              "description": "Category, e.g. '2 Ons'. Recommended since kode is unique per kategori."
+            }
+          },
+          "required": [
+            "kode"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "recent_sales",
+        "title": "Recent sales",
+        "description": "List the most recent sales (barang keluar) transactions with product info.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Max rows to return (default 20)."
+            },
+            "toko": {
+              "type": "string",
+              "description": "Filter by toko (store) name."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "sales_summary",
+        "title": "Sales summary",
+        "description": "Summarize sales (barang keluar) over the last N days: total omzet, transactions, and top products.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "days": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365,
+              "description": "Lookback window in days (default 30)."
+            },
+            "top": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "Number of top products to return (default 10)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
