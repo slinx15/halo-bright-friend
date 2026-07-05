@@ -1,0 +1,491 @@
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { id as localeId } from "date-fns/locale";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/PageHeader";
+import { formatRupiah, formatNumber } from "@/lib/formatters";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useProducts } from "@/hooks/useProducts";
+import { cn } from "@/lib/utils";
+import {
+  DollarSign,
+  TrendingUp,
+  Wallet,
+  PiggyBank,
+  BarChart3,
+  ArrowUpRight,
+  ArrowDownRight,
+  Calendar,
+} from "lucide-react";
+import {
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
+
+const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+type PeriodKey = "7d" | "14d" | "30d";
+
+type DailyPoint = {
+  date: string;
+  label: string;
+  omzet: number;
+  modal: number;
+  profit: number;
+  qty: number;
+};
+
+type DashboardTooltipPayload = {
+  color?: string;
+  dataKey?: string | number;
+  value?: number;
+};
+
+const periods: { key: PeriodKey; label: string; days: number }[] = [
+  { key: "7d", label: "7 Hari", days: 7 },
+  { key: "14d", label: "14 Hari", days: 14 },
+  { key: "30d", label: "30 Hari", days: 30 },
+];
+
+const getWibDateKey = (value: Date | string | number) =>
+  new Date(new Date(value).getTime() + WIB_OFFSET_MS).toISOString().slice(0, 10);
+
+const getDisplayDate = (dateKey: string) => {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day, 12));
+};
+
+const getWibRange = (days: number) => {
+  const nowShiftedMs = Date.now() + WIB_OFFSET_MS;
+  const todayShiftedStartMs = Math.floor(nowShiftedMs / DAY_MS) * DAY_MS;
+  const startShiftedMs = todayShiftedStartMs - (days - 1) * DAY_MS;
+
+  return {
+    startISO: new Date(startShiftedMs - WIB_OFFSET_MS).toISOString(),
+    endISO: new Date(todayShiftedStartMs + DAY_MS - WIB_OFFSET_MS).toISOString(),
+    prevStartISO: new Date(startShiftedMs - days * DAY_MS - WIB_OFFSET_MS).toISOString(),
+    prevEndISO: new Date(startShiftedMs - WIB_OFFSET_MS).toISOString(),
+    dateKeys: Array.from({ length: days }, (_, index) =>
+      new Date(startShiftedMs + index * DAY_MS).toISOString().slice(0, 10)
+    ),
+  };
+};
+
+export default function DashboardKeuangan() {
+  const isMobile = useIsMobile();
+  const [period, setPeriod] = useState<PeriodKey>("30d");
+  const days = periods.find((p) => p.key === period)!.days;
+
+  const { startISO, endISO, prevStartISO, prevEndISO, dateKeys } = useMemo(
+    () => getWibRange(days),
+    [days]
+  );
+
+  const { data: allProducts, isLoading: isProductsLoading } = useProducts();
+
+  const modalByProductId = useMemo(() => {
+    const map: Record<string, number> = {};
+    allProducts?.forEach((product) => {
+      map[product.id] = product.prices?.harga_modal ?? 0;
+    });
+    return map;
+  }, [allProducts]);
+
+  const { data: salesData, isLoading: isSalesLoading } = useQuery({
+    queryKey: ["keuangan-sales", period, startISO, endISO],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("stock_out")
+        .select("created_at, qty_kirim, total_harga, product_id")
+        .gte("created_at", startISO)
+        .lt("created_at", endISO)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: prevSalesData } = useQuery({
+    queryKey: ["keuangan-prev-sales", period, prevStartISO, prevEndISO],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("stock_out")
+        .select("created_at, qty_kirim, total_harga, product_id")
+        .gte("created_at", prevStartISO)
+        .lt("created_at", prevEndISO);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const dailyData = useMemo<DailyPoint[]>(() => {
+    const map = new Map<
+      string,
+      { omzet: number; modal: number; profit: number; qty: number }
+    >();
+
+    dateKeys.forEach((dateKey) => {
+      map.set(dateKey, { omzet: 0, modal: 0, profit: 0, qty: 0 });
+    });
+
+    salesData?.forEach((sale) => {
+      const key = getWibDateKey(sale.created_at);
+      const entry = map.get(key);
+      if (!entry) return;
+
+      const omzet = sale.total_harga;
+      const modal = (modalByProductId[sale.product_id] ?? 0) * sale.qty_kirim;
+
+      entry.omzet += omzet;
+      entry.modal += modal;
+      entry.profit += omzet - modal;
+      entry.qty += sale.qty_kirim;
+    });
+
+    return dateKeys.map((dateKey) => ({
+      date: dateKey,
+      label: format(getDisplayDate(dateKey), "dd MMM", { locale: localeId }),
+      ...(map.get(dateKey) ?? { omzet: 0, modal: 0, profit: 0, qty: 0 }),
+    }));
+  }, [dateKeys, modalByProductId, salesData]);
+
+  const totals = useMemo(() => {
+    const total = { omzet: 0, modal: 0, profit: 0, qty: 0 };
+    dailyData.forEach((day) => {
+      total.omzet += day.omzet;
+      total.modal += day.modal;
+      total.profit += day.profit;
+      total.qty += day.qty;
+    });
+    return total;
+  }, [dailyData]);
+
+  const prevTotals = useMemo(() => {
+    const total = { omzet: 0, modal: 0, profit: 0 };
+    prevSalesData?.forEach((sale) => {
+      total.omzet += sale.total_harga;
+      total.modal += (modalByProductId[sale.product_id] ?? 0) * sale.qty_kirim;
+    });
+    total.profit = total.omzet - total.modal;
+    return total;
+  }, [modalByProductId, prevSalesData]);
+
+  const margin = totals.omzet > 0 ? (totals.profit / totals.omzet) * 100 : 0;
+
+  const pctChange = (curr: number, prev: number) => {
+    if (prev === 0) return curr > 0 ? 100 : 0;
+    return ((curr - prev) / prev) * 100;
+  };
+
+  const omzetChange = pctChange(totals.omzet, prevTotals.omzet);
+  const profitChange = pctChange(totals.profit, prevTotals.profit);
+
+  const bestDay = useMemo(() => {
+    if (dailyData.length === 0) return null;
+    return dailyData.reduce((best, day) => (day.profit > best.profit ? day : best), dailyData[0]);
+  }, [dailyData]);
+
+  const avgDaily = totals.omzet / Math.max(days, 1);
+
+  const formatCompact = (value: number) => {
+    if (Math.abs(value) >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}jt`;
+    if (Math.abs(value) >= 1_000) return `${(value / 1_000).toFixed(0)}rb`;
+    return String(value);
+  };
+
+  const customTooltip = ({
+    active,
+    payload,
+    label,
+  }: {
+    active?: boolean;
+    payload?: DashboardTooltipPayload[];
+    label?: string | number;
+  }) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div className="bg-popover/95 backdrop-blur-md border border-border rounded-xl p-3 shadow-lg text-xs space-y-1">
+        <p className="font-bold text-foreground">{label}</p>
+        {payload.map((item) => (
+          <div key={String(item.dataKey)} className="flex items-center gap-2">
+            <div
+              className="w-2.5 h-2.5 rounded-full"
+              style={{ backgroundColor: item.color }}
+            />
+            <span className="text-muted-foreground capitalize">{item.dataKey}:</span>
+            <span className="font-bold text-foreground">{formatRupiah(item.value ?? 0)}</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  if (isSalesLoading || isProductsLoading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-full w-full max-w-[1400px] mx-auto space-y-5 p-4 pb-[calc(9rem+env(safe-area-inset-bottom))] md:p-6 md:pb-6">
+      <PageHeader
+        icon={Wallet}
+        iconColor="text-primary"
+        iconBg="bg-primary/10"
+        title="Dashboard Keuangan"
+        subtitle="Ringkasan omzet, modal & profit"
+      />
+
+      <div className="flex items-center gap-2 rounded-2xl border border-border/70 bg-card px-2 py-2 shadow-sm">
+        <Calendar className="h-4 w-4 text-muted-foreground" />
+        {periods.map((periodOption) => (
+          <button
+            key={periodOption.key}
+            onClick={() => setPeriod(periodOption.key)}
+            className={cn(
+              "rounded-xl px-3.5 py-2 text-xs font-bold transition-all duration-200",
+              period === periodOption.key
+                ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
+                : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+          >
+            {periodOption.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+        <div className="card-premium bg-primary/5 p-3.5">
+          <div className="flex items-center gap-2 mb-1.5">
+            <DollarSign className="h-4 w-4 text-primary" />
+            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+              Omzet
+            </span>
+          </div>
+          <p className="text-lg font-extrabold tabular-nums text-foreground truncate">
+            {formatRupiah(totals.omzet)}
+          </p>
+          <div className="flex items-center gap-1 mt-1">
+            {omzetChange >= 0 ? (
+              <ArrowUpRight className="h-3 w-3 text-success" />
+            ) : (
+              <ArrowDownRight className="h-3 w-3 text-destructive" />
+            )}
+            <span
+              className={cn(
+                "text-[10px] font-bold",
+                omzetChange >= 0 ? "text-success" : "text-destructive"
+              )}
+            >
+              {omzetChange >= 0 ? "+" : ""}
+              {omzetChange.toFixed(1)}%
+            </span>
+            <span className="text-[10px] text-muted-foreground">vs sebelumnya</span>
+          </div>
+        </div>
+
+        <div className="card-premium bg-warning/5 p-3.5">
+          <div className="flex items-center gap-2 mb-1.5">
+            <PiggyBank className="h-4 w-4 text-warning" />
+            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+              Modal Keluar
+            </span>
+          </div>
+          <p className="text-lg font-extrabold tabular-nums text-foreground truncate">
+            {formatRupiah(totals.modal)}
+          </p>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            {formatNumber(totals.qty)} pcs terjual
+          </p>
+        </div>
+
+        <div className="card-premium bg-success/5 p-3.5">
+          <div className="flex items-center gap-2 mb-1.5">
+            <TrendingUp className="h-4 w-4 text-success" />
+            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+              Profit
+            </span>
+          </div>
+          <p
+            className={cn(
+              "text-lg font-extrabold tabular-nums truncate",
+              totals.profit >= 0 ? "text-success" : "text-destructive"
+            )}
+          >
+            {formatRupiah(totals.profit)}
+          </p>
+          <div className="flex items-center gap-1 mt-1">
+            {profitChange >= 0 ? (
+              <ArrowUpRight className="h-3 w-3 text-success" />
+            ) : (
+              <ArrowDownRight className="h-3 w-3 text-destructive" />
+            )}
+            <span
+              className={cn(
+                "text-[10px] font-bold",
+                profitChange >= 0 ? "text-success" : "text-destructive"
+              )}
+            >
+              {profitChange >= 0 ? "+" : ""}
+              {profitChange.toFixed(1)}%
+            </span>
+          </div>
+        </div>
+
+        <div className="card-premium bg-accent/30 p-3.5">
+          <div className="flex items-center gap-2 mb-1.5">
+            <BarChart3 className="h-4 w-4 text-primary" />
+            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+              Margin
+            </span>
+          </div>
+          <p className="text-lg font-extrabold tabular-nums text-foreground">
+            {margin.toFixed(1)}%
+          </p>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            Rata-rata {formatRupiah(avgDaily)}/hari
+          </p>
+        </div>
+      </div>
+
+      <Card className="rounded-2xl shadow-md border-0 overflow-hidden">
+        <CardHeader className="pb-2 bg-gradient-to-r from-primary/5 to-transparent">
+          <CardTitle className="text-base font-bold flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-primary" />
+            Tren Keuangan
+            <Badge variant="secondary" className="text-[10px] rounded-full px-2.5">
+              {periods.find((item) => item.key === period)?.label}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-2">
+          <div className="h-[280px] md:h-[340px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={dailyData} margin={{ top: 5, right: 5, left: -15, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="gradOmzet" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="gradProfit" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 10 }}
+                  interval={isMobile ? Math.floor(days / 5) : Math.floor(days / 10)}
+                />
+                <YAxis tick={{ fontSize: 10 }} tickFormatter={formatCompact} />
+                <Tooltip content={customTooltip} />
+                <Legend
+                  wrapperStyle={{ fontSize: 11, fontWeight: 600 }}
+                  iconType="circle"
+                  iconSize={8}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="omzet"
+                  name="Omzet"
+                  stroke="hsl(var(--primary))"
+                  fill="url(#gradOmzet)"
+                  strokeWidth={2}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="profit"
+                  name="Profit"
+                  stroke="hsl(var(--success))"
+                  fill="url(#gradProfit)"
+                  strokeWidth={2}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-2xl shadow-md border-0 overflow-hidden">
+        <CardHeader className="pb-2 bg-gradient-to-r from-warning/5 to-transparent">
+          <CardTitle className="text-base font-bold flex items-center gap-2">
+            <PiggyBank className="h-4 w-4 text-warning" />
+            Modal vs Profit Harian
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-2">
+          <div className="h-[240px] md:h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={dailyData} margin={{ top: 5, right: 5, left: -15, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 10 }}
+                  interval={isMobile ? Math.floor(days / 5) : Math.floor(days / 10)}
+                />
+                <YAxis tick={{ fontSize: 10 }} tickFormatter={formatCompact} />
+                <Tooltip content={customTooltip} />
+                <Legend
+                  wrapperStyle={{ fontSize: 11, fontWeight: 600 }}
+                  iconType="circle"
+                  iconSize={8}
+                />
+                <Bar
+                  dataKey="modal"
+                  name="Modal"
+                  fill="hsl(var(--warning))"
+                  radius={[4, 4, 0, 0]}
+                  opacity={0.7}
+                />
+                <Bar
+                  dataKey="profit"
+                  name="Profit"
+                  fill="hsl(var(--success))"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
+      {bestDay && bestDay.profit > 0 && (
+        <Card className="rounded-2xl shadow-md border-0 bg-gradient-to-r from-success/10 to-primary/5 p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-success/20">
+              <TrendingUp className="h-5 w-5 text-success" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground font-medium">
+                Hari Terbaik ({periods.find((item) => item.key === period)?.label} terakhir)
+              </p>
+              <p className="font-extrabold text-foreground">
+                {format(getDisplayDate(bestDay.date), "EEEE, dd MMMM yyyy", {
+                  locale: localeId,
+                })}
+              </p>
+              <p className="text-sm font-bold text-success">
+                Profit {formatRupiah(bestDay.profit)} dari omzet {formatRupiah(bestDay.omzet)}
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}

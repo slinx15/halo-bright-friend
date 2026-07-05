@@ -1,0 +1,32 @@
+import { createRoot } from "react-dom/client";
+import "@fontsource/outfit/400.css";
+import "@fontsource/outfit/600.css";
+import "@fontsource/outfit/700.css";
+import "@fontsource/outfit/800.css";
+import "@fontsource/figtree/400.css";
+import "@fontsource/figtree/500.css";
+import "@fontsource/figtree/600.css";
+import "@fontsource/figtree/700.css";
+import App from "./App.tsx";
+import "./index.css";
+
+// Guard: unregister service workers in iframe/preview to avoid caching issues
+const isInIframe = (() => {
+  try {
+    return window.self !== window.top;
+  } catch (e) {
+    return true;
+  }
+})();
+
+const isPreviewHost =
+  window.location.hostname.includes("id-preview--") ||
+  window.location.hostname.includes("lovableproject.com");
+
+if (isPreviewHost || isInIframe) {
+  navigator.serviceWorker?.getRegistrations().then((registrations) => {
+    registrations.forEach((r) => r.unregister());
+  });
+}
+
+createRoot(document.getElementById("root")!).render(<App />);
