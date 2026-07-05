@@ -70,7 +70,6 @@ const Stok = () => {
       setStatusFilter(paramStatus);
       setVisibleCount(PAGE_SIZE);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
 

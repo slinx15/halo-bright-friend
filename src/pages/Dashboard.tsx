@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowUpRight,
   ArrowRight,
@@ -16,6 +16,7 @@ import {
   ShoppingCart,
   Sun,
   Sunset,
+  Landmark,
   TrendingUp,
 } from "lucide-react";
 import { Bar, BarChart, Cell, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -26,12 +27,14 @@ import { AiInsightsCard } from "@/components/AiInsightsCard";
 
 import { DashboardSkeleton } from "@/components/LoadingSkeletons";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProducts, type ProductWithDetails } from "@/hooks/useProducts";
 import { requestNotificationPermission, useStockNotifications } from "@/hooks/useStockNotifications";
 import { getAuthHeaders } from "@/lib/authHeaders";
 import { formatNumber, formatRupiah } from "@/lib/formatters";
 import { SUPABASE_URL } from "@/lib/supabaseEnv";
+import { getDebtSummary, getDebtLimit, getDebtItems } from "@/lib/hutangStore";
 
 type InventorySummary = {
   totalItems: number;
@@ -327,6 +330,58 @@ function QuickActions() {
   );
 }
 
+function HutangCard() {
+  const [limit, setLimit] = useState(getDebtLimit());
+  const [summary, setSummary] = useState(() => getDebtSummary(getDebtItems()));
+
+  useEffect(() => {
+    const refresh = () => {
+      setLimit(getDebtLimit());
+      setSummary(getDebtSummary(getDebtItems()));
+    };
+    refresh();
+    const onStorage = () => refresh();
+    window.addEventListener("storage", onStorage);
+    const interval = setInterval(refresh, 2000);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      clearInterval(interval);
+    };
+  }, []);
+
+  return (
+    <Card className="card-premium overflow-hidden rounded-2xl">
+      <CardHeader className="flex flex-row items-center justify-between px-4 py-3 pb-2">
+        <div className="flex items-center gap-2">
+          <div className="rounded-lg bg-warning/10 p-1.5">
+            <Landmark className="h-4 w-4 text-warning" />
+          </div>
+          <CardTitle className="text-sm font-semibold">Hutang Ivory</CardTitle>
+        </div>
+        <Badge variant="secondary" className="rounded-full px-2 text-[10px] font-bold">
+          Limit {formatRupiah(limit)}
+        </Badge>
+      </CardHeader>
+      <CardContent className="space-y-3 px-4 pb-4 pt-1">
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="rounded-xl bg-warning/5 p-3">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Hutang Aktif</p>
+            <p className="mt-1 text-lg font-extrabold tabular-nums text-foreground">{formatRupiah(summary.openDebt)}</p>
+          </div>
+          <div className="rounded-xl bg-success/5 p-3">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Sisa Limit</p>
+            <p className="mt-1 text-lg font-extrabold tabular-nums text-success">{formatRupiah(summary.remainingLimit)}</p>
+          </div>
+        </div>
+        <Button variant="ghost" size="sm" className="w-full justify-between rounded-lg text-xs font-semibold hover:bg-muted" onClick={() => (window.location.href = "/hutang")}>
+          Buka halaman hutang
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 const Dashboard = () => {
   const { data: allProducts, isLoading } = useProducts();
@@ -611,7 +666,10 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         <div className="md:col-span-1">
-          <QuickActions />
+          <div className="space-y-3">
+            <QuickActions />
+            <HutangCard />
+          </div>
         </div>
       </div>
 
@@ -631,4 +689,3 @@ const Dashboard = () => {
 
 
 export default Dashboard;
-

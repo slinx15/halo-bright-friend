@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const MAX_IMAGE_BASE64_CHARS = 8_000_000;
-const ALLOWED_MODES = new Set(["masuk", "keluar", "opname", "review"]);
+const ALLOWED_MODES = new Set(["masuk", "keluar", "opname", "review", "hutang"]);
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -119,6 +119,26 @@ Ekstrak setiap item: kode produk dan jumlah/qty yang mau dipesan.
 KONVERSI BAL: Untuk produk HITAM (kode mengandung "HITAM", "HTM", "BLK", "BLACK") dan PUTIH (kode mengandung "PUTIH", "PTH", "WHT", "WHITE"), 1 bal = 50. Jadi jika tertulis "2 bal" untuk hitam/putih, qty = 100. Untuk produk lain, gunakan angka langsung.${codesHint}
 Kembalikan HANYA JSON array tanpa markdown. Contoh:
 [{"kode":"R533","qty":50},{"kode":"BLK","qty":100}]
+Jika tidak bisa membaca, kembalikan [].`,
+
+      hutang: `Baca foto bon/tagihan supplier Ivory.
+Target utama adalah tagihan hutang yang biasanya berbentuk tabel Excel atau daftar bon.
+Ekstrak setiap baris/tagihan yang terlihat sebagai objek JSON dengan field:
+- invoice_number: nomor faktur atau nomor bon
+- amount: total nominal tagihan dalam rupiah
+- invoice_date: tanggal bon jika terlihat, format YYYY-MM-DD
+- note: catatan singkat bila ada teks tambahan penting
+
+ATURAN:
+1. Jika ada beberapa baris tagihan pada foto, keluarkan semuanya.
+2. Jika nomor faktur tidak ada, gunakan nomor/baris paling dekat yang terlihat, atau kosongkan invoice_number.
+3. Jika nominal tidak jelas, jangan mengarang; lewati baris itu.
+4. Blok kuning menandakan bon sudah lunas. Jika foto menunjukkan highlight kuning pada baris, tambahkan note: "lunas".
+5. Jangan masukkan total ringkasan di bagian atas sebagai item, kecuali foto memang hanya berisi satu bon tunggal.
+
+Kembalikan HANYA JSON array tanpa markdown.
+Contoh:
+[{"invoice_number":"090626002","amount":6435000,"invoice_date":"2026-06-09","note":"lunas"}]
 Jika tidak bisa membaca, kembalikan [].`,
     };
 

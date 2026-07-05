@@ -24,7 +24,7 @@ import LogAktivitas from "@/pages/LogAktivitas";
 import DashboardKeuangan from "@/pages/DashboardKeuangan";
 import AuditStok from "@/pages/AuditStok";
 import RekonsiliasiStok from "@/pages/RekonsiliasiStok";
-import OAuthConsent from "@/pages/OAuthConsent";
+import Hutang from "@/pages/Hutang";
 
 const Analisa = lazy(() => import("@/pages/Analisa"));
 
@@ -53,7 +53,6 @@ const App = () => (
           <AuthProvider>
             <Routes>
               <Route path="/auth" element={<Auth />} />
-              <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
               <Route
                 element={
                   <ProtectedRoute>
@@ -77,6 +76,7 @@ const App = () => (
                 <Route path="/audit-stok" element={<AuditStok />} />
                 <Route path="/rekonsiliasi-stok" element={<RekonsiliasiStok />} />
                 <Route path="/keuangan" element={<DashboardKeuangan />} />
+                <Route path="/hutang" element={<Hutang />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
