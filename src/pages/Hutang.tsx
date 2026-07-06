@@ -11,13 +11,11 @@ import {
   getDebtItems,
   getDebtLimit,
   getDebtSummary,
-  getSupplierSnapshots,
   markDebtsPaid,
   normalizeInvoiceNumber,
   saveDebtItems,
   setDebtLimit,
   type DebtItem,
-  type SupplierSnapshot,
 } from "@/lib/hutangStore";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, Banknote, CheckCircle2, Plus, ShieldAlert, Wallet } from "lucide-react";
@@ -35,7 +33,6 @@ const initialForm = {
 export default function Hutang() {
   const { toast } = useToast();
   const [items, setItems] = useState<DebtItem[]>([]);
-  const [snapshots, setSnapshots] = useState<SupplierSnapshot[]>([]);
   const [limit, setLimitState] = useState(getDebtLimit());
   const [form, setForm] = useState(initialForm);
   const [selected, setSelected] = useState<string[]>([]);
@@ -43,7 +40,6 @@ export default function Hutang() {
 
   const refresh = () => {
     setItems(getDebtItems());
-    setSnapshots(getSupplierSnapshots());
     setLimitState(getDebtLimit());
   };
 
@@ -57,7 +53,6 @@ export default function Hutang() {
   const summary = useMemo(() => getDebtSummary(items), [items]);
   const openItems = useMemo(() => items.filter((item) => item.status === "open").sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [items]);
   const paidItems = useMemo(() => items.filter((item) => item.status === "paid").sort((a, b) => b.paidAt!.localeCompare(a.paidAt!)), [items]);
-  const latestSnapshot = snapshots[0] || null;
   const limitLeft = Math.max(0, limit - summary.openDebt);
 
   const addManualDebt = () => {
@@ -130,7 +125,6 @@ export default function Hutang() {
     toast({ title: "Pembayaran tersimpan", description: `${formatRupiah(total)} dilunasi` });
   };
 
-
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-4 p-4 pb-[calc(9rem+env(safe-area-inset-bottom))] md:space-y-5 md:p-6 md:pb-6">
       <PageHeader
@@ -163,42 +157,7 @@ export default function Hutang() {
         }
       />
 
-      <Card className="card-premium overflow-hidden rounded-2xl">
-        <CardHeader className="flex flex-row items-center justify-between gap-2 px-4 py-3 pb-2">
-          <CardTitle className="text-sm font-semibold">Bon Supplier</CardTitle>
-          <Badge variant="secondary" className="rounded-full px-2 text-[10px] font-bold">
-            {snapshots.length} riwayat
-          </Badge>
-        </CardHeader>
-        <CardContent className="space-y-3 px-4 pb-4 pt-1">
-          {latestSnapshot ? (
-            <>
-              <div className="rounded-xl border border-border/60 bg-muted/25 p-3">
-                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span className="font-semibold text-foreground">{latestSnapshot.label}</span>
-                  <span>•</span>
-                  <span>{new Date(latestSnapshot.createdAt).toLocaleString("id-ID")}</span>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-                {latestSnapshot.items.map((item) => (
-                  <div key={`${item.invoiceNumber}-${item.invoiceDate}`} className="rounded-xl border border-border/70 bg-card p-3 shadow-sm">
-                    <p className="font-mono text-xs font-bold">{item.invoiceNumber}</p>
-                    <p className="mt-1 text-sm font-extrabold tabular-nums">{formatRupiah(item.amount)}</p>
-                    <p className="text-[11px] text-muted-foreground">{item.invoiceDate}</p>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="rounded-xl border border-dashed border-border/70 py-8 text-center text-sm text-muted-foreground">
-              Belum ada snapshot supplier
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <section className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
+      <section className="grid grid-cols-2 gap-2 md:grid-cols-4">
         <div className="card-premium bg-primary/5 p-3">
           <div className="mb-1.5 flex items-center gap-2">
             <Wallet className="h-4 w-4 text-primary" />
@@ -230,6 +189,46 @@ export default function Hutang() {
       </section>
 
       <Card className="card-premium overflow-hidden rounded-2xl">
+        <CardHeader className="flex flex-row items-center justify-between gap-2 px-4 py-2.5 pb-2">
+          <CardTitle className="text-sm font-semibold">Bon Aktif</CardTitle>
+          <Badge variant="secondary" className="rounded-full px-2 text-[10px] font-bold">
+            Tap untuk pilih
+          </Badge>
+        </CardHeader>
+        <CardContent className="space-y-2 px-4 pb-4 pt-1">
+          {openItems.length === 0 && (
+            <div className="rounded-xl border border-dashed border-border/70 py-8 text-center text-sm text-muted-foreground">
+              Belum ada bon aktif
+            </div>
+          )}
+          {openItems.map((item) => {
+            const isSelected = selected.includes(item.id);
+            return (
+              <button
+                key={item.id}
+                onClick={() => toggleSelect(item.id)}
+                className={cn("w-full rounded-2xl border p-3 text-left transition-all", isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border/70 bg-card")}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-mono text-sm font-bold">{item.invoiceNumber}</p>
+                    <p className="text-xs text-muted-foreground">{item.invoiceDate}</p>
+                    <p className={cn("mt-1 text-[11px]", item.note.toLowerCase().includes("lunas") ? "font-semibold text-warning" : "text-muted-foreground")}>
+                      {item.note ? item.note : "Tanpa catatan"}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-base font-extrabold tabular-nums">{formatRupiah(item.amount)}</p>
+                    <p className="text-[11px] text-muted-foreground">{isSelected ? "dipilih" : "ketuk untuk pilih"}</p>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </CardContent>
+      </Card>
+
+      <Card className="card-premium overflow-hidden rounded-2xl">
         <CardHeader className="flex flex-row items-center justify-between gap-2 px-4 py-3 pb-2">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold">
             <Plus className="h-4 w-4 text-primary" />
@@ -241,34 +240,12 @@ export default function Hutang() {
         </CardHeader>
         <CardContent className="space-y-3 px-4 pb-4 pt-1">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <Input
-              value={form.invoiceNumber}
-              onChange={(e) => setForm((prev) => ({ ...prev, invoiceNumber: e.target.value }))}
-              placeholder="No faktur / bon"
-              className="h-11 rounded-xl font-mono"
-            />
-            <Input
-              type="date"
-              value={form.invoiceDate}
-              onChange={(e) => setForm((prev) => ({ ...prev, invoiceDate: e.target.value }))}
-              className="h-11 rounded-xl"
-            />
+            <Input value={form.invoiceNumber} onChange={(e) => setForm((prev) => ({ ...prev, invoiceNumber: e.target.value }))} placeholder="No faktur / bon" className="h-11 rounded-xl font-mono" />
+            <Input type="date" value={form.invoiceDate} onChange={(e) => setForm((prev) => ({ ...prev, invoiceDate: e.target.value }))} className="h-11 rounded-xl" />
           </div>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_220px]">
-            <Textarea
-              value={form.note}
-              onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
-              placeholder="Catatan, misalnya: lunas / koreksi / tambahan"
-              className="min-h-[88px] rounded-xl"
-            />
-            <Input
-              type="text"
-              inputMode="numeric"
-              value={form.amount}
-              onChange={(e) => setForm((prev) => ({ ...prev, amount: e.target.value }))}
-              placeholder="Nominal"
-              className="h-11 rounded-xl text-right font-semibold tabular-nums"
-            />
+            <Textarea value={form.note} onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))} placeholder="Catatan, misalnya: lunas / koreksi / tambahan" className="min-h-[88px] rounded-xl" />
+            <Input type="text" inputMode="numeric" value={form.amount} onChange={(e) => setForm((prev) => ({ ...prev, amount: e.target.value }))} placeholder="Nominal" className="h-11 rounded-xl text-right font-semibold tabular-nums" />
           </div>
           <Button onClick={addManualDebt} className="h-11 w-full rounded-xl font-bold">
             Simpan Bon
@@ -287,69 +264,24 @@ export default function Hutang() {
           </Badge>
         </CardHeader>
         <CardContent className="space-y-3 px-4 pb-4 pt-1">
-          <Textarea
-            value={paymentNote}
-            onChange={(e) => setPaymentNote(e.target.value)}
-            placeholder="Catatan pembayaran"
-            className="min-h-[72px] rounded-xl"
-          />
+          <Textarea value={paymentNote} onChange={(e) => setPaymentNote(e.target.value)} placeholder="Catatan pembayaran" className="min-h-[72px] rounded-xl" />
           <Button onClick={paySelected} disabled={selected.length === 0} className="h-11 w-full rounded-xl font-bold">
             Tandai Lunas ({selected.length})
+          </Button>
+          <Button
+            variant="ghost"
+            className="h-10 w-full rounded-xl text-xs font-semibold"
+            onClick={() => {
+              const el = document.getElementById("riwayat-lunas");
+              el?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+          >
+            Lihat Riwayat
           </Button>
         </CardContent>
       </Card>
 
-      <Card className="card-premium overflow-hidden rounded-2xl">
-        <CardHeader className="flex flex-row items-center justify-between gap-2 px-4 py-3 pb-2">
-          <CardTitle className="text-sm font-semibold">Bon Aktif</CardTitle>
-          <Badge variant="secondary" className="rounded-full px-2 text-[10px] font-bold">
-            Tap untuk pilih
-          </Badge>
-        </CardHeader>
-        <CardContent className="space-y-2 px-4 pb-4 pt-1">
-          {openItems.length === 0 && (
-            <div className="rounded-xl border border-dashed border-border/70 py-8 text-center text-sm text-muted-foreground">
-              Belum ada bon aktif
-            </div>
-          )}
-          {openItems.map((item) => {
-            const isSelected = selected.includes(item.id);
-            return (
-              <button
-                key={item.id}
-                onClick={() => toggleSelect(item.id)}
-                className={cn(
-                  "w-full rounded-2xl border p-3 text-left transition-all",
-                  isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border/70 bg-card",
-                )}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-mono text-sm font-bold">{item.invoiceNumber}</p>
-                    <p className="text-xs text-muted-foreground">{item.invoiceDate}</p>
-                    <p
-                      className={cn(
-                        "mt-1 text-[11px]",
-                        item.note.toLowerCase().includes("lunas") ? "font-semibold text-warning" : "text-muted-foreground",
-                      )}
-                    >
-                      {item.note ? item.note : item.sourceType === "snapshot" ? "Snapshot supplier" : "Tanpa catatan"}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-base font-extrabold tabular-nums">{formatRupiah(item.amount)}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {item.sourceType === "snapshot" ? "dari foto supplier" : isSelected ? "dipilih" : "ketuk untuk pilih"}
-                    </p>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </CardContent>
-      </Card>
-
-      <Card className="card-premium overflow-hidden rounded-2xl">
+      <Card className="card-premium overflow-hidden rounded-2xl" id="riwayat-lunas">
         <CardHeader className="px-4 py-3 pb-2">
           <CardTitle className="text-sm font-semibold">Riwayat Lunas</CardTitle>
         </CardHeader>
