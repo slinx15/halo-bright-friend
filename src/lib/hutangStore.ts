@@ -8,6 +8,7 @@ export interface DebtItem {
   status: DebtStatus;
   note: string;
   supplier: "Ivory";
+  sourceType: "manual" | "ocr" | "snapshot";
   invoiceDate: string;
   paidAt: string | null;
   sourceImage?: string | null;
@@ -33,9 +34,18 @@ export interface DebtSummary {
   paidCount: number;
 }
 
+export interface SupplierSnapshot {
+  id: string;
+  label: string;
+  sourceImage: string | null;
+  items: Array<Pick<DebtItem, "invoiceNumber" | "amount" | "invoiceDate" | "note" | "sourceType">>;
+  createdAt: string;
+}
+
 const DEBT_KEY = "rrc_ivory_debts_v1";
 const PAYMENT_KEY = "rrc_ivory_debt_payments_v1";
 const LIMIT_KEY = "rrc_ivory_limit_v1";
+const SNAPSHOT_KEY = "rrc_ivory_snapshots_v1";
 
 const DEFAULT_LIMIT = 40_000_000;
 
@@ -69,12 +79,20 @@ export function getDebtPayments(): DebtPayment[] {
   return safeParse<DebtPayment[]>(localStorage.getItem(PAYMENT_KEY), []);
 }
 
+export function getSupplierSnapshots(): SupplierSnapshot[] {
+  return safeParse<SupplierSnapshot[]>(localStorage.getItem(SNAPSHOT_KEY), []);
+}
+
 export function saveDebtItems(items: DebtItem[]) {
   localStorage.setItem(DEBT_KEY, JSON.stringify(items));
 }
 
 export function saveDebtPayments(items: DebtPayment[]) {
   localStorage.setItem(PAYMENT_KEY, JSON.stringify(items));
+}
+
+export function saveSupplierSnapshots(items: SupplierSnapshot[]) {
+  localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(items));
 }
 
 export function getDebtSummary(items: DebtItem[] = getDebtItems()): DebtSummary {
@@ -111,6 +129,7 @@ export function createDebtItem(input: {
   invoiceDate: string;
   note?: string;
   sourceImage?: string | null;
+  sourceType?: DebtItem["sourceType"];
 }): DebtItem {
   const now = new Date().toISOString();
   return {
@@ -121,6 +140,7 @@ export function createDebtItem(input: {
     status: "open",
     note: input.note?.trim() || "",
     supplier: "Ivory",
+    sourceType: input.sourceType || "manual",
     invoiceDate: input.invoiceDate,
     paidAt: null,
     sourceImage: input.sourceImage || null,
@@ -174,5 +194,45 @@ export function markDebtsPaid(debtIds: string[], note = "") {
   saveDebtPayments(payments);
 
   return { items: updated, paidAmount };
+}
+
+export function createSupplierSnapshot(input: {
+  label: string;
+  sourceImage?: string | null;
+  items: Array<Pick<DebtItem, "invoiceNumber" | "amount" | "invoiceDate" | "note" | "sourceType">>;
+}) {
+  const now = new Date().toISOString();
+  return {
+    id: uuid(),
+    label: input.label.trim() || "Snapshot Supplier",
+    sourceImage: input.sourceImage || null,
+    items: input.items.map((item) => ({
+      invoiceNumber: normalizeInvoiceNumber(item.invoiceNumber),
+      amount: Math.max(0, Math.floor(item.amount)),
+      invoiceDate: item.invoiceDate,
+      note: item.note?.trim() || "",
+      sourceType: item.sourceType || "snapshot",
+    })),
+    createdAt: now,
+  } satisfies SupplierSnapshot;
+}
+
+export function saveSupplierSnapshot(snapshot: SupplierSnapshot) {
+  const current = getSupplierSnapshots();
+  saveSupplierSnapshots([snapshot, ...current]);
+  return snapshot;
+}
+
+export function ensureDefaultIvoryDebtData(defaultSnapshot: SupplierSnapshot, defaultItems: DebtItem[]) {
+  const currentItems = getDebtItems();
+  const currentSnapshots = getSupplierSnapshots();
+
+  if (currentItems.length === 0) {
+    saveDebtItems(defaultItems);
+  }
+
+  if (currentSnapshots.length === 0) {
+    saveSupplierSnapshots([defaultSnapshot]);
+  }
 }
 
