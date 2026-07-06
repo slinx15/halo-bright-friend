@@ -172,20 +172,23 @@ export default function Hutang() {
           <CardTitle className="text-sm font-semibold">Tambah Bon Baru</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-2 px-4 pb-4 pt-1 sm:grid-cols-2">
-          <div className="rounded-2xl border border-border/70 bg-card p-3">
-            <p className="text-sm font-semibold">Upload Faktur / Tagihan</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Pakai ini kalau bon baru datang dari foto tagihan atau faktur terbaru dari supplier.
-            </p>
-            <p className="mt-3 text-xs font-medium text-primary">Ini pilihan utama untuk nambah bon baru</p>
-          </div>
-          <div className="rounded-2xl border border-border/70 bg-card p-3">
-            <p className="text-sm font-semibold">Input Bon Manual</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Pakai ini kalau mau tambah bon sendiri tanpa upload foto.
-            </p>
-            <p className="mt-3 text-xs font-medium text-primary">Dipakai kalau perlu koreksi atau input cepat</p>
-          </div>
+          <Button
+            className="h-12 rounded-2xl font-bold"
+            onClick={() => {
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          >
+            Tambah dari Faktur
+          </Button>
+          <Button
+            variant="secondary"
+            className="h-12 rounded-2xl font-bold"
+            onClick={() => {
+              document.getElementById("input-bon-manual")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+          >
+            Input Manual
+          </Button>
         </CardContent>
       </Card>
 
