@@ -3,6 +3,14 @@ import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatNumber, formatRupiah } from "@/lib/formatters";
@@ -37,6 +45,7 @@ export default function Hutang() {
   const [form, setForm] = useState(initialForm);
   const [selected, setSelected] = useState<string[]>([]);
   const [paymentNote, setPaymentNote] = useState("");
+  const [paymentOpen, setPaymentOpen] = useState(false);
 
   const refresh = () => {
     setItems(getDebtItems());
@@ -123,6 +132,7 @@ export default function Hutang() {
     setPaymentNote("");
     refresh();
     toast({ title: "Pembayaran tersimpan", description: `${formatRupiah(total)} dilunasi` });
+    setPaymentOpen(false);
   };
 
   return (
@@ -260,14 +270,67 @@ export default function Hutang() {
             Pembayaran Bon
           </CardTitle>
           <Badge variant="secondary" className="rounded-full px-2 text-[10px] font-bold">
-            Pilih bon yang sudah dibayar
+            Buka daftar bon aktif
           </Badge>
         </CardHeader>
         <CardContent className="space-y-3 px-4 pb-4 pt-1">
-          <Textarea value={paymentNote} onChange={(e) => setPaymentNote(e.target.value)} placeholder="Catatan pembayaran" className="min-h-[72px] rounded-xl" />
-          <Button onClick={paySelected} disabled={selected.length === 0} className="h-11 w-full rounded-xl font-bold">
-            Tandai Lunas ({selected.length})
-          </Button>
+          <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
+            <DialogTrigger asChild>
+              <Button className="h-11 w-full rounded-xl font-bold">
+                Buka Bon Aktif ({openItems.length})
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-h-[85vh] overflow-hidden rounded-3xl p-0 sm:max-w-2xl">
+              <div className="flex max-h-[85vh] flex-col">
+                <DialogHeader className="border-b border-border/60 px-4 py-4">
+                  <DialogTitle className="flex items-center gap-2 text-base">
+                    <Banknote className="h-4 w-4 text-primary" />
+                    Pembayaran Bon
+                  </DialogTitle>
+                  <DialogDescription>
+                    Pilih bon aktif yang sudah dibayar, lalu tandai lunas.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3 overflow-y-auto px-4 py-4">
+                  <Textarea value={paymentNote} onChange={(e) => setPaymentNote(e.target.value)} placeholder="Catatan pembayaran" className="min-h-[72px] rounded-xl" />
+                  <div className="space-y-2">
+                    {openItems.length === 0 && (
+                      <div className="rounded-xl border border-dashed border-border/70 py-8 text-center text-sm text-muted-foreground">
+                        Belum ada bon aktif
+                      </div>
+                    )}
+                    {openItems.map((item) => {
+                      const isSelected = selected.includes(item.id);
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => toggleSelect(item.id)}
+                          className={cn("w-full rounded-2xl border p-3 text-left transition-all", isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border/70 bg-card")}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="font-mono text-sm font-bold">{item.invoiceNumber}</p>
+                              <p className="text-xs text-muted-foreground">{item.invoiceDate}</p>
+                              <p className="mt-1 text-[11px] text-muted-foreground">{item.note ? item.note : "Tanpa catatan"}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-base font-extrabold tabular-nums">{formatRupiah(item.amount)}</p>
+                              <p className="text-[11px] text-muted-foreground">{isSelected ? "dipilih" : "ketuk untuk pilih"}</p>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="border-t border-border/60 px-4 py-4">
+                  <Button onClick={paySelected} disabled={selected.length === 0} className="h-11 w-full rounded-xl font-bold">
+                    Tandai Lunas ({selected.length})
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
           <Button
             variant="ghost"
             className="h-10 w-full rounded-xl text-xs font-semibold"
