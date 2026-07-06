@@ -173,18 +173,18 @@ export default function Hutang() {
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-2 px-4 pb-4 pt-1 sm:grid-cols-2">
           <div className="rounded-2xl border border-border/70 bg-card p-3">
-            <p className="text-sm font-semibold">Upload Faktur</p>
+            <p className="text-sm font-semibold">Upload Faktur / Tagihan</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Pakai ini kalau bon baru datang dari foto atau file faktur supplier.
+              Pakai ini kalau bon baru datang dari foto tagihan atau faktur terbaru dari supplier.
             </p>
-            <p className="mt-3 text-xs font-medium text-primary">Gunakan tombol Scan Bon / Upload Faktur di atas</p>
+            <p className="mt-3 text-xs font-medium text-primary">Ini pilihan utama untuk nambah bon baru</p>
           </div>
           <div className="rounded-2xl border border-border/70 bg-card p-3">
             <p className="text-sm font-semibold">Input Bon Manual</p>
             <p className="mt-1 text-xs text-muted-foreground">
               Pakai ini kalau mau tambah bon sendiri tanpa upload foto.
             </p>
-            <p className="mt-3 text-xs font-medium text-primary">Scroll ke bagian Input Bon Manual di bawah</p>
+            <p className="mt-3 text-xs font-medium text-primary">Dipakai kalau perlu koreksi atau input cepat</p>
           </div>
         </CardContent>
       </Card>
