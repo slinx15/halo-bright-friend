@@ -300,31 +300,6 @@ export default function Hutang() {
         </CardContent>
       </Card>
 
-      <Card className="card-premium overflow-hidden rounded-2xl" id="pembayaran-bon">
-        <CardHeader className="flex flex-row items-center justify-between gap-2 px-4 py-3 pb-2">
-          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-            <Plus className="h-4 w-4 text-primary" />
-            Input Bon Manual
-          </CardTitle>
-          <Badge variant="secondary" className="rounded-full px-2 text-[10px] font-bold">
-            Untuk koreksi cepat
-          </Badge>
-        </CardHeader>
-        <CardContent className="space-y-3 px-4 pb-4 pt-1">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <Input value={form.invoiceNumber} onChange={(e) => setForm((prev) => ({ ...prev, invoiceNumber: e.target.value }))} placeholder="No faktur / bon" className="h-11 rounded-xl font-mono" />
-            <Input type="date" value={form.invoiceDate} onChange={(e) => setForm((prev) => ({ ...prev, invoiceDate: e.target.value }))} className="h-11 rounded-xl" />
-          </div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_220px]">
-            <Textarea value={form.note} onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))} placeholder="Catatan, misalnya: lunas / koreksi / tambahan" className="min-h-[88px] rounded-xl" />
-            <Input type="text" inputMode="numeric" value={form.amount} onChange={(e) => setForm((prev) => ({ ...prev, amount: e.target.value }))} placeholder="Nominal" className="h-11 rounded-xl text-right font-semibold tabular-nums" />
-          </div>
-          <Button onClick={addManualDebt} className="h-11 w-full rounded-xl font-bold">
-            Simpan Bon
-          </Button>
-        </CardContent>
-      </Card>
-
       <Card className="card-premium overflow-hidden rounded-2xl">
         <CardHeader className="flex flex-row items-center justify-between gap-2 px-4 py-3 pb-2">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold">
