@@ -47,6 +47,7 @@ export default function Hutang() {
   const [paymentNote, setPaymentNote] = useState("");
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [fakturOpenSignal, setFakturOpenSignal] = useState(0);
+  const [manualOpen, setManualOpen] = useState(false);
 
   const refresh = () => {
     setItems(getDebtItems());
@@ -185,13 +186,48 @@ export default function Hutang() {
             variant="secondary"
             className="h-12 rounded-2xl font-bold"
             onClick={() => {
-              document.getElementById("input-bon-manual")?.scrollIntoView({ behavior: "smooth", block: "start" });
+              setManualOpen(true);
             }}
           >
             Input Manual
           </Button>
         </CardContent>
       </Card>
+
+      <Dialog open={manualOpen} onOpenChange={setManualOpen}>
+        <DialogContent className="max-h-[90svh] w-[calc(100vw-1.5rem)] overflow-hidden rounded-3xl p-0 sm:max-w-lg">
+          <div className="flex max-h-[90svh] flex-col">
+            <DialogHeader className="border-b border-border/60 px-4 py-4">
+              <DialogTitle className="flex items-center gap-2 text-base">
+                <Plus className="h-4 w-4 text-primary" />
+                Input Bon Manual
+              </DialogTitle>
+              <DialogDescription>Isi bon baru langsung tanpa upload foto.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 overflow-y-auto px-4 py-4">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <Input value={form.invoiceNumber} onChange={(e) => setForm((prev) => ({ ...prev, invoiceNumber: e.target.value }))} placeholder="No faktur / bon" className="h-11 rounded-xl font-mono" />
+                <Input type="date" value={form.invoiceDate} onChange={(e) => setForm((prev) => ({ ...prev, invoiceDate: e.target.value }))} className="h-11 rounded-xl" />
+              </div>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_220px]">
+                <Textarea value={form.note} onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))} placeholder="Catatan" className="min-h-[88px] rounded-xl" />
+                <Input type="text" inputMode="numeric" value={form.amount} onChange={(e) => setForm((prev) => ({ ...prev, amount: e.target.value }))} placeholder="Nominal" className="h-11 rounded-xl text-right font-semibold tabular-nums" />
+              </div>
+            </div>
+            <div className="border-t border-border/60 px-4 py-4">
+              <Button
+                onClick={() => {
+                  addManualDebt();
+                  setManualOpen(false);
+                }}
+                className="h-11 w-full rounded-xl font-bold"
+              >
+                Simpan Bon
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <section className="grid grid-cols-2 gap-2 md:grid-cols-4">
         <div className="card-premium bg-primary/5 p-3">
@@ -224,7 +260,7 @@ export default function Hutang() {
         </div>
       </section>
 
-      <Card className="card-premium overflow-hidden rounded-2xl" id="input-bon-manual">
+      <Card className="card-premium overflow-hidden rounded-2xl">
         <CardHeader className="flex flex-row items-center justify-between gap-2 px-4 py-2.5 pb-2">
           <CardTitle className="text-sm font-semibold">Bon Aktif</CardTitle>
           <Badge variant="secondary" className="rounded-full px-2 text-[10px] font-bold">
