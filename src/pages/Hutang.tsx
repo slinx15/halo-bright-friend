@@ -46,6 +46,7 @@ export default function Hutang() {
   const [selected, setSelected] = useState<string[]>([]);
   const [paymentNote, setPaymentNote] = useState("");
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [fakturOpenSignal, setFakturOpenSignal] = useState(0);
 
   const refresh = () => {
     setItems(getDebtItems());
@@ -161,7 +162,7 @@ export default function Hutang() {
             </div>
             <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:flex-wrap">
               <HutangOcrUpload onResult={addFromOcr} />
-              <FakturUpload onResult={addFromFaktur} />
+              <FakturUpload onResult={addFromFaktur} openSignal={fakturOpenSignal} />
             </div>
           </div>
         }
@@ -175,7 +176,7 @@ export default function Hutang() {
           <Button
             className="h-12 rounded-2xl font-bold"
             onClick={() => {
-              window.scrollTo({ top: 0, behavior: "smooth" });
+              setFakturOpenSignal((value) => value + 1);
             }}
           >
             Tambah dari Faktur

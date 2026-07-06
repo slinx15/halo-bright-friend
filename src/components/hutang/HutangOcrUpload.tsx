@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Camera, Check, Loader2, Pencil, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -20,6 +20,7 @@ export interface DebtDraft {
 
 interface HutangOcrUploadProps {
   onResult: (items: DebtDraft[], sourceImage: string) => void;
+  openSignal?: number;
 }
 
 type OcrDebtRow = {
@@ -29,7 +30,7 @@ type OcrDebtRow = {
   note?: string;
 };
 
-export function HutangOcrUpload({ onResult }: HutangOcrUploadProps) {
+export function HutangOcrUpload({ onResult, openSignal }: HutangOcrUploadProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
@@ -37,6 +38,10 @@ export function HutangOcrUpload({ onResult }: HutangOcrUploadProps) {
   const [draftRows, setDraftRows] = useState<DebtDraft[]>([]);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (openSignal) fileRef.current?.click();
+  }, [openSignal]);
 
   const fileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {

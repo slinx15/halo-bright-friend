@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Camera, Check, Loader2, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -19,6 +19,7 @@ export interface FakturDraft {
 
 interface FakturUploadProps {
   onResult: (items: FakturDraft[], sourceImages: string[]) => void;
+  openSignal?: number;
 }
 
 type OcrDebtRow = {
@@ -28,13 +29,17 @@ type OcrDebtRow = {
   note?: string;
 };
 
-export function FakturUpload({ onResult }: FakturUploadProps) {
+export function FakturUpload({ onResult, openSignal }: FakturUploadProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
   const [draftRows, setDraftRows] = useState<FakturDraft[]>([]);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (openSignal) fileRef.current?.click();
+  }, [openSignal]);
 
   const fileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
