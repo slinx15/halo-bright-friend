@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Camera, Check, Loader2, Pencil, Trash2, X } from "lucide-react";
+import { Camera, Check, Loader2, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -9,17 +9,16 @@ import { getAuthHeaders } from "@/lib/authHeaders";
 import { getErrorMessage, isAbortError } from "@/lib/errors";
 import { SUPABASE_URL } from "@/lib/supabaseEnv";
 import { formatRupiah } from "@/lib/formatters";
-import { cn } from "@/lib/utils";
 
-export interface DebtDraft {
+export interface FakturDraft {
   invoiceNumber: string;
   amount: number;
   invoiceDate: string;
   note: string;
 }
 
-interface HutangOcrUploadProps {
-  onResult: (items: DebtDraft[], sourceImage: string) => void;
+interface FakturUploadProps {
+  onResult: (items: FakturDraft[], sourceImages: string[]) => void;
 }
 
 type OcrDebtRow = {
@@ -29,13 +28,12 @@ type OcrDebtRow = {
   note?: string;
 };
 
-export function HutangOcrUpload({ onResult }: HutangOcrUploadProps) {
+export function FakturUpload({ onResult }: FakturUploadProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [draftRows, setDraftRows] = useState<DebtDraft[]>([]);
-  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [draftRows, setDraftRows] = useState<FakturDraft[]>([]);
   const { toast } = useToast();
 
   const fileToBase64 = (file: File): Promise<string> =>
@@ -73,67 +71,67 @@ export function HutangOcrUpload({ onResult }: HutangOcrUploadProps) {
       }))
       .filter((row) => row.amount > 0 || row.invoiceNumber);
 
-  const updateRow = (idx: number, field: keyof DebtDraft, value: string | number) => {
+  const updateRow = (idx: number, field: keyof FakturDraft, value: string | number) => {
     setDraftRows((prev) => {
       const next = [...prev];
-      next[idx] = { ...next[idx], [field]: field === "amount" ? Number(value) || 0 : String(value) } as DebtDraft;
+      next[idx] = { ...next[idx], [field]: field === "amount" ? Number(value) || 0 : String(value) } as FakturDraft;
       return next;
     });
   };
 
-  const removeRow = (idx: number) => {
-    setDraftRows((prev) => prev.filter((_, index) => index !== idx));
-  };
+  const removeRow = (idx: number) => setDraftRows((prev) => prev.filter((_, index) => index !== idx));
 
-  const handleFile = async (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      toast({ title: "Error", description: "File harus berupa gambar", variant: "destructive" });
+  const handleFiles = async (files: FileList) => {
+    const list = Array.from(files);
+    if (list.length === 0) return;
+    if (list.some((file) => !file.type.startsWith("image/"))) {
+      toast({ title: "Error", description: "Semua file harus berupa gambar", variant: "destructive" });
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      toast({ title: "Error", description: "Ukuran file maks 10MB", variant: "destructive" });
+    if (list.some((file) => file.size > 10 * 1024 * 1024)) {
+      toast({ title: "Error", description: "Ukuran file maks 10MB per gambar", variant: "destructive" });
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => setPreview(reader.result as string);
-    reader.readAsDataURL(file);
-
+    setPreviewImages(list.map((file) => URL.createObjectURL(file)));
     setLoading(true);
     try {
-      const base64 = await fileToBase64(file);
+      const headers = await getAuthHeaders();
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000);
-      const headers = await getAuthHeaders();
 
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/ocr-nota`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          image_base64: base64,
-          mode: "hutang",
-        }),
-        signal: controller.signal,
-      });
+      const allRows: FakturDraft[] = [];
+      for (const file of list) {
+        const base64 = await fileToBase64(file);
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/ocr-nota`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            image_base64: base64,
+            mode: "hutang",
+          }),
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || `HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        const items = parseRows((data?.items ?? data ?? []) as OcrDebtRow[]);
+        allRows.push(...items);
+      }
       clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || `HTTP ${response.status}`);
+      if (allRows.length === 0) {
+        toast({ title: "OCR", description: "Tidak ada faktur yang terbaca. Silakan isi manual.", variant: "destructive" });
       }
-
-      const data = await response.json();
-      const items = parseRows((data?.items ?? data ?? []) as OcrDebtRow[]);
-      if (items.length === 0) {
-        toast({ title: "OCR", description: "Tidak ada tagihan yang terbaca. Silakan isi manual.", variant: "destructive" });
-      }
-      setDraftRows(items);
+      setDraftRows(allRows);
       setShowConfirm(true);
     } catch (err: unknown) {
       if (isAbortError(err)) {
         toast({ title: "Timeout", description: "Proses terlalu lama. Coba foto yang lebih jelas.", variant: "destructive" });
       } else {
-        toast({ title: "Error", description: getErrorMessage(err, "Gagal memproses bon"), variant: "destructive" });
+        toast({ title: "Error", description: getErrorMessage(err, "Gagal memproses faktur"), variant: "destructive" });
       }
     } finally {
       setLoading(false);
@@ -143,14 +141,14 @@ export function HutangOcrUpload({ onResult }: HutangOcrUploadProps) {
   const handleConfirm = () => {
     const valid = draftRows.filter((item) => item.amount > 0 || item.invoiceNumber.trim());
     if (valid.length === 0) {
-      toast({ title: "Error", description: "Tidak ada data bon valid", variant: "destructive" });
+      toast({ title: "Error", description: "Tidak ada data faktur valid", variant: "destructive" });
       return;
     }
-    onResult(valid, preview || "");
+    onResult(valid, previewImages);
     setShowConfirm(false);
     setDraftRows([]);
-    setPreview(null);
-    toast({ title: "OCR bon tersimpan", description: `${valid.length} baris tagihan siap dicek` });
+    setPreviewImages([]);
+    toast({ title: "OCR faktur tersimpan", description: `${valid.length} baris faktur siap dicek` });
   };
 
   return (
@@ -159,10 +157,11 @@ export function HutangOcrUpload({ onResult }: HutangOcrUploadProps) {
         ref={fileRef}
         type="file"
         accept="image/*"
+        multiple
         className="hidden"
         onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleFile(file);
+          const files = e.target.files;
+          if (files) handleFiles(files);
           e.target.value = "";
         }}
       />
@@ -174,7 +173,7 @@ export function HutangOcrUpload({ onResult }: HutangOcrUploadProps) {
         className="min-h-[44px] w-full rounded-xl border-border/70 bg-card shadow-sm sm:w-auto sm:min-w-[140px]"
       >
         {loading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Camera className="mr-1 h-4 w-4" />}
-        {loading ? "Memproses..." : "Scan Bon"}
+        {loading ? "Memproses..." : "Upload Faktur"}
       </Button>
 
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
@@ -182,7 +181,7 @@ export function HutangOcrUpload({ onResult }: HutangOcrUploadProps) {
           <DialogHeader className="px-6 pt-6 pb-3">
             <DialogTitle className="flex items-center gap-2">
               <Camera className="h-4 w-4 text-primary" />
-              Hasil Baca Bon
+              Hasil Baca Faktur
             </DialogTitle>
           </DialogHeader>
 
@@ -192,36 +191,26 @@ export function HutangOcrUpload({ onResult }: HutangOcrUploadProps) {
             </Badge>
           </div>
 
-          {preview && (
-            <div className="px-6">
-              <img src={preview} alt="Preview bon" className="max-h-40 w-full rounded-xl border object-contain bg-muted" />
-            </div>
-          )}
+          <div className="mx-6 grid max-h-24 grid-cols-3 gap-2 overflow-hidden">
+            {previewImages.slice(0, 3).map((src, index) => (
+              <img key={`${src}-${index}`} src={src} alt={`Preview ${index + 1}`} className="h-24 w-full rounded-xl border object-cover bg-muted" />
+            ))}
+          </div>
 
           <div className="mx-6 my-4 flex-1 min-h-0 overflow-y-auto rounded-xl border p-2">
             <div className="space-y-2">
               {draftRows.map((row, idx) => (
-                <div
-                  key={`${row.invoiceNumber}-${idx}`}
-                  className={cn("space-y-2 rounded-xl border p-3", row.note.toLowerCase().includes("lunas") ? "border-warning/30 bg-warning/5" : "bg-card")}
-                >
+                <div key={`${row.invoiceNumber}-${idx}`} className="space-y-2 rounded-xl border p-3 bg-card">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <Input
-                        value={row.invoiceNumber}
-                        onChange={(e) => updateRow(idx, "invoiceNumber", e.target.value)}
-                        placeholder="No faktur"
-                        className="h-9 rounded-lg font-mono text-sm"
-                      />
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingIdx(editingIdx === idx ? null : idx)}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeRow(idx)}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
+                    <Input
+                      value={row.invoiceNumber}
+                      onChange={(e) => updateRow(idx, "invoiceNumber", e.target.value)}
+                      placeholder="No faktur"
+                      className="h-9 rounded-lg font-mono text-sm"
+                    />
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeRow(idx)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <Input
@@ -242,7 +231,7 @@ export function HutangOcrUpload({ onResult }: HutangOcrUploadProps) {
                   <Input
                     value={row.note}
                     onChange={(e) => updateRow(idx, "note", e.target.value)}
-                    placeholder="Catatan / lunas"
+                    placeholder="Catatan"
                     className="h-9 rounded-lg text-sm"
                   />
                   <p className="text-xs text-muted-foreground">{formatRupiah(row.amount || 0)}</p>
@@ -258,7 +247,7 @@ export function HutangOcrUpload({ onResult }: HutangOcrUploadProps) {
             </Button>
             <Button onClick={handleConfirm} className="w-full sm:w-auto">
               <Check className="mr-1 h-4 w-4" />
-              Simpan Bon
+              Simpan Faktur
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -266,4 +255,3 @@ export function HutangOcrUpload({ onResult }: HutangOcrUploadProps) {
     </>
   );
 }
-

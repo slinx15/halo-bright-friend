@@ -8,8 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatNumber, formatRupiah } from "@/lib/formatters";
 import {
   createDebtItem,
-  createSupplierSnapshot,
-  ensureDefaultIvoryDebtData,
   getDebtItems,
   getDebtLimit,
   getDebtSummary,
@@ -17,7 +15,6 @@ import {
   markDebtsPaid,
   normalizeInvoiceNumber,
   saveDebtItems,
-  saveSupplierSnapshot,
   setDebtLimit,
   type DebtItem,
   type SupplierSnapshot,
@@ -25,18 +22,8 @@ import {
 import { cn } from "@/lib/utils";
 import { AlertTriangle, Banknote, CheckCircle2, Plus, ShieldAlert, Wallet } from "lucide-react";
 import { HutangOcrUpload, type DebtDraft } from "@/components/hutang/HutangOcrUpload";
+import { FakturUpload, type FakturDraft } from "@/components/hutang/FakturUpload";
 import { useToast } from "@/hooks/use-toast";
-
-const SAMPLE_SNAPSHOT = [
-  { invoiceNumber: "090626002", amount: 6435000, invoiceDate: "2026-06-09", note: "" },
-  { invoiceNumber: "190626003", amount: 3690750, invoiceDate: "2026-06-19", note: "" },
-  { invoiceNumber: "230626002", amount: 3653000, invoiceDate: "2026-06-23", note: "" },
-  { invoiceNumber: "230626003", amount: 3784000, invoiceDate: "2026-06-23", note: "" },
-  { invoiceNumber: "260626003", amount: 2035000, invoiceDate: "2026-06-26", note: "" },
-  { invoiceNumber: "260626004", amount: 6667250, invoiceDate: "2026-06-26", note: "" },
-  { invoiceNumber: "300626003", amount: 6275324, invoiceDate: "2026-06-30", note: "" },
-  { invoiceNumber: "300626004", amount: 6718800, invoiceDate: "2026-06-30", note: "" },
-];
 
 const initialForm = {
   invoiceNumber: "",
@@ -65,27 +52,6 @@ export default function Hutang() {
     const onStorage = () => refresh();
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, []);
-
-  useEffect(() => {
-    const snapshot = createSupplierSnapshot({
-      label: "Snapshot supplier contoh - 30 Juni 2026",
-      items: SAMPLE_SNAPSHOT.map((item) => ({
-        ...item,
-        sourceType: "snapshot" as const,
-      })),
-    });
-    const snapshotItems = snapshot.items.map((item) =>
-      createDebtItem({
-        invoiceNumber: item.invoiceNumber,
-        amount: item.amount,
-        invoiceDate: item.invoiceDate,
-        note: item.note,
-        sourceType: "snapshot",
-      }),
-    );
-    ensureDefaultIvoryDebtData(snapshot, snapshotItems);
-    refresh();
   }, []);
 
   const summary = useMemo(() => getDebtSummary(items), [items]);
@@ -128,6 +94,22 @@ export default function Hutang() {
     refresh();
   };
 
+  const addFromFaktur = (drafts: FakturDraft[], sourceImages: string[]) => {
+    const current = getDebtItems();
+    const created = drafts.map((draft) =>
+      createDebtItem({
+        invoiceNumber: draft.invoiceNumber || `FAKTUR-${Date.now()}`,
+        amount: draft.amount,
+        invoiceDate: draft.invoiceDate || new Date().toISOString().slice(0, 10),
+        note: draft.note,
+        sourceImage: sourceImages[0] || null,
+        sourceType: "ocr",
+      }),
+    );
+    saveDebtItems([...created, ...current]);
+    refresh();
+  };
+
   const toggleSelect = (id: string) => {
     setSelected((prev) => (prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]));
   };
@@ -148,28 +130,6 @@ export default function Hutang() {
     toast({ title: "Pembayaran tersimpan", description: `${formatRupiah(total)} dilunasi` });
   };
 
-  const addSampleSnapshot = () => {
-    const snapshot = createSupplierSnapshot({
-      label: "Snapshot supplier contoh - 30 Juni 2026",
-      items: SAMPLE_SNAPSHOT.map((item) => ({
-        ...item,
-        sourceType: "snapshot" as const,
-      })),
-    });
-    saveSupplierSnapshot(snapshot);
-    const snapshotItems = snapshot.items.map((item) =>
-      createDebtItem({
-        invoiceNumber: item.invoiceNumber,
-        amount: item.amount,
-        invoiceDate: item.invoiceDate,
-        note: item.note,
-        sourceType: "snapshot",
-      }),
-    );
-    saveDebtItems([...snapshotItems, ...getDebtItems()]);
-    refresh();
-    toast({ title: "Snapshot disimpan", description: "Contoh bon supplier sudah masuk" });
-  };
 
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-4 p-4 pb-[calc(9rem+env(safe-area-inset-bottom))] md:space-y-5 md:p-6 md:pb-6">
@@ -178,7 +138,7 @@ export default function Hutang() {
         iconColor="text-primary"
         iconBg="bg-primary/10"
         title="Hutang Ivory"
-        subtitle="Kelola bon supplier, status lunas, dan riwayat pembayaran"
+        subtitle="Kelola bon supplier, lunas, dan riwayat"
         actions={
           <div className="flex w-full flex-col gap-2 sm:flex-row">
             <div className="flex items-center gap-2 rounded-2xl border border-border/60 bg-card px-3 py-2 shadow-sm">
@@ -195,17 +155,17 @@ export default function Hutang() {
                 className="h-9 w-32 rounded-xl text-sm font-semibold"
               />
             </div>
-            <HutangOcrUpload onResult={addFromOcr} />
-            <Button variant="secondary" size="sm" onClick={addSampleSnapshot} className="min-h-[44px] rounded-xl">
-              Pakai Bon Contoh
-            </Button>
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:flex-wrap">
+              <HutangOcrUpload onResult={addFromOcr} />
+              <FakturUpload onResult={addFromFaktur} />
+            </div>
           </div>
         }
       />
 
       <Card className="card-premium overflow-hidden rounded-2xl">
         <CardHeader className="flex flex-row items-center justify-between gap-2 px-4 py-3 pb-2">
-          <CardTitle className="text-sm font-semibold">Foto Bon Supplier Terbaru</CardTitle>
+          <CardTitle className="text-sm font-semibold">Bon Supplier</CardTitle>
           <Badge variant="secondary" className="rounded-full px-2 text-[10px] font-bold">
             {snapshots.length} riwayat
           </Badge>
@@ -340,8 +300,11 @@ export default function Hutang() {
       </Card>
 
       <Card className="card-premium overflow-hidden rounded-2xl">
-        <CardHeader className="px-4 py-3 pb-2">
+        <CardHeader className="flex flex-row items-center justify-between gap-2 px-4 py-3 pb-2">
           <CardTitle className="text-sm font-semibold">Bon Aktif</CardTitle>
+          <Badge variant="secondary" className="rounded-full px-2 text-[10px] font-bold">
+            Tap untuk pilih
+          </Badge>
         </CardHeader>
         <CardContent className="space-y-2 px-4 pb-4 pt-1">
           {openItems.length === 0 && (
@@ -366,7 +329,7 @@ export default function Hutang() {
                     <p className="text-xs text-muted-foreground">{item.invoiceDate}</p>
                     <p
                       className={cn(
-                        "mt-1 text-xs",
+                        "mt-1 text-[11px]",
                         item.note.toLowerCase().includes("lunas") ? "font-semibold text-warning" : "text-muted-foreground",
                       )}
                     >
@@ -375,7 +338,7 @@ export default function Hutang() {
                   </div>
                   <div className="text-right">
                     <p className="text-base font-extrabold tabular-nums">{formatRupiah(item.amount)}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[11px] text-muted-foreground">
                       {item.sourceType === "snapshot" ? "dari foto supplier" : isSelected ? "dipilih" : "ketuk untuk pilih"}
                     </p>
                   </div>
