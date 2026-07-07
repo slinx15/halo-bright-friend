@@ -42,6 +42,12 @@ export interface SupplierSnapshot {
   createdAt: string;
 }
 
+export interface DebtSnapshotDiff {
+  added: Array<{ invoiceNumber: string; amount: number }>;
+  removed: Array<{ invoiceNumber: string; amount: number }>;
+  changed: Array<{ invoiceNumber: string; before: number; after: number }>;
+}
+
 const DEBT_KEY = "rrc_ivory_debts_v1";
 const PAYMENT_KEY = "rrc_ivory_debt_payments_v1";
 const LIMIT_KEY = "rrc_ivory_limit_v1";
@@ -221,6 +227,35 @@ export function saveSupplierSnapshot(snapshot: SupplierSnapshot) {
   const current = getSupplierSnapshots();
   saveSupplierSnapshots([snapshot, ...current]);
   return snapshot;
+}
+
+export function compareSupplierSnapshot(
+  previousItems: Array<Pick<DebtItem, "invoiceNumber" | "amount">>,
+  nextItems: Array<Pick<DebtItem, "invoiceNumber" | "amount">>,
+) {
+  const previousMap = new Map(previousItems.map((item) => [normalizeInvoiceNumber(item.invoiceNumber), item.amount]));
+  const nextMap = new Map(nextItems.map((item) => [normalizeInvoiceNumber(item.invoiceNumber), item.amount]));
+
+  const added: DebtSnapshotDiff["added"] = [];
+  const removed: DebtSnapshotDiff["removed"] = [];
+  const changed: DebtSnapshotDiff["changed"] = [];
+
+  for (const [invoiceNumber, amount] of nextMap.entries()) {
+    const previousAmount = previousMap.get(invoiceNumber);
+    if (previousAmount == null) {
+      added.push({ invoiceNumber, amount });
+    } else if (previousAmount !== amount) {
+      changed.push({ invoiceNumber, before: previousAmount, after: amount });
+    }
+  }
+
+  for (const [invoiceNumber, amount] of previousMap.entries()) {
+    if (!nextMap.has(invoiceNumber)) {
+      removed.push({ invoiceNumber, amount });
+    }
+  }
+
+  return { added, removed, changed } satisfies DebtSnapshotDiff;
 }
 
 export function ensureDefaultIvoryDebtData(defaultSnapshot: SupplierSnapshot, defaultItems: DebtItem[]) {

@@ -16,13 +16,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatNumber, formatRupiah } from "@/lib/formatters";
 import {
   createDebtItem,
+  compareSupplierSnapshot,
   getDebtItems,
   getDebtLimit,
   getDebtSummary,
   markDebtsPaid,
   normalizeInvoiceNumber,
   saveDebtItems,
+  saveSupplierSnapshot,
   setDebtLimit,
+  createSupplierSnapshot,
   type DebtItem,
 } from "@/lib/hutangStore";
 import { cn } from "@/lib/utils";
@@ -113,8 +116,33 @@ export default function Hutang() {
         sourceType: "ocr",
       }),
     );
+    const diff = compareSupplierSnapshot(
+      current.map((item) => ({ invoiceNumber: item.invoiceNumber, amount: item.amount })),
+      created.map((item) => ({ invoiceNumber: item.invoiceNumber, amount: item.amount })),
+    );
+    const snapshot = createSupplierSnapshot({
+      label: `Update ${new Date().toLocaleDateString("id-ID")}`,
+      sourceImage: sourceImages[0] || null,
+      items: created.map((item) => ({
+        invoiceNumber: item.invoiceNumber,
+        amount: item.amount,
+        invoiceDate: item.invoiceDate,
+        note: item.note,
+        sourceType: item.sourceType,
+      })),
+    });
+    saveSupplierSnapshot(snapshot);
     saveDebtItems([...created, ...current]);
     refresh();
+    const diffParts = [
+      diff.added.length ? `${diff.added.length} bon baru` : null,
+      diff.removed.length ? `${diff.removed.length} bon hilang` : null,
+      diff.changed.length ? `${diff.changed.length} bon berubah` : null,
+    ].filter(Boolean);
+    toast({
+      title: "Update faktur diterima",
+      description: diffParts.length > 0 ? diffParts.join(", ") : "Data cocok semua",
+    });
   };
 
   const toggleSelect = (id: string) => {
