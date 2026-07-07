@@ -31,14 +31,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Textarea } from "@/components/ui/textarea";
 
 import { useProducts } from "@/hooks/useProducts";
-import { useStockInHistory } from "@/hooks/useStockInHistory";
+import { type StockInHistoryEntry, useStockInHistory } from "@/hooks/useStockInHistory";
 import { useToast } from "@/hooks/use-toast";
 import { logActivity } from "@/lib/activityLogger";
 import { getErrorMessage } from "@/lib/errors";
 import { formatNumber, formatRupiah } from "@/lib/formatters";
 import { createDebtItem, getDebtItems, saveDebtItems } from "@/lib/hutangStore";
 import { findProductMatch } from "@/lib/productMatcher";
-import { registerStockIn } from "@/lib/stockMutations";
+import { deleteStockInTransaction, registerStockIn } from "@/lib/stockMutations";
 import { addStacks, splitIntoStacks } from "@/lib/tumpukanUtils";
 import { cn } from "@/lib/utils";
 
@@ -99,6 +99,7 @@ const BarangMasuk = () => {
   const [catatan, setCatatan] = useState("");
   const [tanggal, setTanggal] = useState<Date | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const updateItem = <K extends keyof LineItem>(index: number, field: K, value: LineItem[K]) => {
     setItems((prev) => {
@@ -284,6 +285,31 @@ const BarangMasuk = () => {
     queryClient.invalidateQueries({ queryKey: ["stock_in_history"] });
     queryClient.invalidateQueries({ queryKey: ["products"] });
     setSubmitting(false);
+  };
+
+  const handleDeleteTransaction = async (item: StockInHistoryEntry) => {
+    setDeletingId(item.id);
+    try {
+      await deleteStockInTransaction(item.id);
+      toast({
+        title: "Berhasil",
+        description: `Barang masuk ${item.products?.kode} dibatalkan, stok dikurangi -${item.qty}`,
+      });
+      logActivity("stock_in", `Batal barang masuk ${item.products?.kode} x${item.qty}`, {
+        kode: item.products?.kode,
+        qty: item.qty,
+      });
+      queryClient.invalidateQueries({ queryKey: ["stock_in_history"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: getErrorMessage(error, "Gagal membatalkan barang masuk"),
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const validCount = items.filter((item) => item.productId && item.qty > 0).length;
@@ -606,7 +632,12 @@ const BarangMasuk = () => {
       </Card>
 
 
-      <BarangMasukHistory history={history} isLoading={historyLoading} />
+      <BarangMasukHistory
+        deletingId={deletingId}
+        history={history}
+        isLoading={historyLoading}
+        onDeleteTransaction={handleDeleteTransaction}
+      />
     </div>
   );
 };

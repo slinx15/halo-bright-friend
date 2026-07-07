@@ -7,8 +7,20 @@ import {
   Clock,
   Package,
   Search,
+  Trash2,
 } from "lucide-react";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -26,11 +38,18 @@ import { formatNumber, formatRupiah } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 
 interface BarangMasukHistoryProps {
+  deletingId?: string | null;
   history: StockInHistoryEntry[];
   isLoading: boolean;
+  onDeleteTransaction?: (item: StockInHistoryEntry) => void | Promise<void>;
 }
 
-export function BarangMasukHistory({ history, isLoading }: BarangMasukHistoryProps) {
+export function BarangMasukHistory({
+  deletingId,
+  history,
+  isLoading,
+  onDeleteTransaction,
+}: BarangMasukHistoryProps) {
   const [historySearch, setHistorySearch] = useState("");
   const [historyDateFilter, setHistoryDateFilter] = useState<Date | undefined>(undefined);
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
@@ -189,10 +208,11 @@ export function BarangMasukHistory({ history, isLoading }: BarangMasukHistoryPro
 
                       {isOpen && (
                         <div className="border-t border-border/50 bg-card/60 px-3 pb-3 pt-2.5">
-                          <div className="mb-2 hidden grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground sm:grid">
+                          <div className="mb-2 hidden grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-3 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground sm:grid">
                             <span>Produk</span>
                             <span>Modal</span>
                             <span>Qty</span>
+                            <span>Aksi</span>
                           </div>
 
                           <div className="space-y-2">
@@ -202,7 +222,7 @@ export function BarangMasukHistory({ history, isLoading }: BarangMasukHistoryPro
                               return (
                                 <div
                                   key={entry.id}
-                                  className="grid items-center gap-3 rounded-2xl border border-border/60 bg-card px-3 py-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]"
+                                  className="grid items-center gap-3 rounded-2xl border border-border/60 bg-card px-3 py-3 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]"
                                 >
                                   <div className="min-w-0">
                                     <div className="flex items-center gap-2">
@@ -228,6 +248,41 @@ export function BarangMasukHistory({ history, isLoading }: BarangMasukHistoryPro
                                       +{formatNumber(entry.qty)}
                                     </Badge>
                                   </div>
+
+                                  {onDeleteTransaction && (
+                                    <div className="flex items-center justify-between gap-2 sm:justify-end">
+                                      <span className="text-[11px] text-muted-foreground sm:hidden">Aksi</span>
+                                      <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                            disabled={deletingId === entry.id}
+                                          >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                          </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>Batalkan Barang Masuk?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              {entry.products?.kode} - {formatNumber(entry.qty)} pcs. Stok produk ini akan dikurangi kembali.
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                                            <AlertDialogAction
+                                              className="bg-destructive hover:bg-destructive/90"
+                                              onClick={() => onDeleteTransaction(entry)}
+                                            >
+                                              Batalkan
+                                            </AlertDialogAction>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}

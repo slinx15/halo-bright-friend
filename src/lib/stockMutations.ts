@@ -94,6 +94,12 @@ export function deleteStockOutTransaction(stockOutId: string) {
   });
 }
 
+export function deleteStockInTransaction(stockInId: string) {
+  return callStockRpc<StockMutationResult>("delete_stock_in_transaction", {
+    p_stock_in_id: stockInId,
+  });
+}
+
 export function registerStockOpname(params: RegisterStockOpnameParams) {
   return callStockRpc<StockMutationResult>("register_stock_opname", {
     p_product_id: params.productId,
