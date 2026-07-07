@@ -36,6 +36,7 @@ import { useToast } from "@/hooks/use-toast";
 import { logActivity } from "@/lib/activityLogger";
 import { getErrorMessage } from "@/lib/errors";
 import { formatNumber } from "@/lib/formatters";
+import { createDebtItem, getDebtItems, saveDebtItems } from "@/lib/hutangStore";
 import { findProductMatch } from "@/lib/productMatcher";
 import { registerStockIn } from "@/lib/stockMutations";
 import { addStacks, splitIntoStacks } from "@/lib/tumpukanUtils";
@@ -61,6 +62,18 @@ interface BarangMasukOcrItem {
 
 function createEmptyLineItem(): LineItem {
   return { kode: "", qty: 1 };
+}
+
+function getFormDate(tanggal?: Date) {
+  const source = tanggal ?? new Date();
+  return new Date(source.getFullYear(), source.getMonth(), source.getDate(), 12, 0, 0);
+}
+
+function createBarangMasukBonNumber(tanggal?: Date) {
+  const date = getFormDate(tanggal);
+  const ymd = format(date, "yyyyMMdd");
+  const time = format(new Date(), "HHmmss");
+  return `BM-${ymd}-${time}`;
 }
 
 const BarangMasuk = () => {
@@ -173,6 +186,29 @@ const BarangMasuk = () => {
       const summary = successfulItems
         .map((item) => `${item.productKode || item.kode} x${item.qty}`)
         .join(", ");
+
+      const totalModal = successfulItems.reduce((sum, item) => {
+        const product = products?.find((entry) => entry.id === item.productId);
+        return sum + (product?.prices?.harga_modal ?? 0) * item.qty;
+      }, 0);
+
+      if (totalModal > 0) {
+        const invoiceDate = format(getFormDate(tanggal), "yyyy-MM-dd");
+        const bon = createDebtItem({
+          invoiceNumber: createBarangMasukBonNumber(tanggal),
+          amount: totalModal,
+          invoiceDate,
+          note: `Dari barang masuk: ${summary}`,
+          sourceType: "manual",
+        });
+        saveDebtItems([bon, ...getDebtItems()]);
+      } else {
+        toast({
+          title: "Bon hutang belum dibuat",
+          description: "Harga modal item belum terbaca",
+          variant: "destructive",
+        });
+      }
 
       logActivity(
         "stock_in",
