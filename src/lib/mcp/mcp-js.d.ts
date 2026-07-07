@@ -4,16 +4,9 @@ declare module "@lovable.dev/mcp-js" {
     [key: string]: unknown;
   }
 
-  export interface ToolDefinition<TInput = unknown, TOutput = unknown> {
-    name: string;
-    description?: string;
-    inputSchema?: unknown;
-    handler: (input: TInput, ctx: ToolContext) => Promise<TOutput> | TOutput;
-  }
+  export type ToolDefinition = Record<string, unknown>;
 
-  export function defineTool<TInput = unknown, TOutput = unknown>(
-    def: ToolDefinition<TInput, TOutput>,
-  ): ToolDefinition<TInput, TOutput>;
+  export function defineTool(def: Record<string, unknown>): ToolDefinition;
 
   export interface McpDefinition {
     name: string;
