@@ -146,13 +146,6 @@ export default function Hutang() {
         iconBg="bg-primary/10"
         title="Hutang Ivory"
         subtitle="Kelola bon supplier, lunas, dan riwayat"
-        actions={
-          <div className="flex w-full flex-col gap-2 sm:flex-row">
-            <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-row sm:flex-wrap">
-              <FakturUpload onResult={addFromFaktur} openSignal={fakturOpenSignal} />
-            </div>
-          </div>
-        }
       />
 
       <section className="grid grid-cols-2 gap-2 md:grid-cols-4">
