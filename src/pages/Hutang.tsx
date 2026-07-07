@@ -210,7 +210,7 @@ export default function Hutang() {
             <Wallet className="h-4 w-4 text-primary" />
             <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Total Hutang</span>
           </div>
-          <p className="text-lg font-extrabold tabular-nums">{formatRupiah(summary.totalDebt)}</p>
+          <p className="text-lg font-extrabold tabular-nums">{formatRupiah(summary.openDebt)}</p>
         </div>
         <div className="card-premium bg-success/5 p-3">
           <div className="mb-1.5 flex items-center gap-2">
