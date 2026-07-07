@@ -219,6 +219,10 @@ export default function Hutang() {
         </CardContent>
       </Card>
 
+      <div className="hidden">
+        <FakturUpload onResult={addFromFaktur} openSignal={fakturOpenSignal} />
+      </div>
+
       <Card className="card-premium overflow-hidden rounded-2xl">
         <CardHeader className="px-4 py-3 pb-2">
           <CardTitle className="text-sm font-semibold">Tambah Bon Baru</CardTitle>
