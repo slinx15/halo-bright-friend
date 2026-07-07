@@ -148,20 +148,6 @@ export default function Hutang() {
         subtitle="Kelola bon supplier, lunas, dan riwayat"
         actions={
           <div className="flex w-full flex-col gap-2 sm:flex-row">
-            <div className="flex items-center gap-2 rounded-2xl border border-border/60 bg-card px-3 py-2 shadow-sm">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Limit</span>
-              <Input
-                type="number"
-                value={limit}
-                onChange={(e) => {
-                  const next = Number(e.target.value || 0);
-                  setLimitState(next);
-                  setDebtLimit(next);
-                  refresh();
-                }}
-                className="h-9 w-32 rounded-xl text-sm font-semibold"
-              />
-            </div>
             <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-row sm:flex-wrap">
               <FakturUpload onResult={addFromFaktur} openSignal={fakturOpenSignal} />
             </div>
