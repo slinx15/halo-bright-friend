@@ -26,13 +26,3 @@ declare module "@lovable.dev/mcp-js" {
     [key: string]: unknown;
   };
 }
-  }
-
-  export function defineMcp(def: McpDefinition): McpDefinition;
-
-  export const auth: {
-    oauth: {
-      issuer(config: { issuer: string; acceptedAudiences?: string | string[] }): unknown;
-    };
-  };
-}
