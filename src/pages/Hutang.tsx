@@ -41,6 +41,8 @@ const initialForm = {
   note: "",
 };
 
+const isPaidHint = (note: string) => /kuning|lunas|paid/i.test(note);
+
 export default function Hutang() {
   const { toast } = useToast();
   const [items, setItems] = useState<DebtItem[]>([]);
@@ -119,6 +121,10 @@ export default function Hutang() {
       }),
     );
     saveDebtItems([...created, ...current]);
+    const paidIds = created.filter((item) => isPaidHint(item.note)).map((item) => item.id);
+    if (paidIds.length > 0) {
+      markDebtsPaid(paidIds, "Otomatis terdeteksi lunas");
+    }
     refresh();
   };
 
@@ -151,6 +157,10 @@ export default function Hutang() {
     });
     saveSupplierSnapshot(snapshot);
     saveDebtItems([...created, ...current]);
+    const paidIds = created.filter((item) => isPaidHint(item.note)).map((item) => item.id);
+    if (paidIds.length > 0) {
+      markDebtsPaid(paidIds, "Otomatis terdeteksi lunas");
+    }
     refresh();
     const diffParts = [
       diff.added.length ? `${diff.added.length} bon baru` : null,
