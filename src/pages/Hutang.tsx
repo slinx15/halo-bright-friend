@@ -155,6 +155,77 @@ export default function Hutang() {
         }
       />
 
+      <section className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        <div className="card-premium bg-primary/5 p-3">
+          <div className="mb-1.5 flex items-center gap-2">
+            <Wallet className="h-4 w-4 text-primary" />
+            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Total Hutang</span>
+          </div>
+          <p className="text-lg font-extrabold tabular-nums">{formatRupiah(summary.totalDebt)}</p>
+        </div>
+        <div className="card-premium bg-success/5 p-3">
+          <div className="mb-1.5 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-success" />
+            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Lunas</span>
+          </div>
+          <p className="text-lg font-extrabold tabular-nums">{formatRupiah(summary.totalPaid)}</p>
+        </div>
+        <div className="card-premium bg-warning/5 p-3">
+          <div className="mb-1.5 flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4 text-warning" />
+            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Sisa Limit</span>
+          </div>
+          <p className="text-lg font-extrabold tabular-nums">{formatRupiah(limitLeft)}</p>
+        </div>
+        <div className="card-premium bg-destructive/5 p-3">
+          <div className="mb-1.5 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Bon Aktif</span>
+          </div>
+          <p className="text-lg font-extrabold tabular-nums">{formatNumber(summary.activeCount)}</p>
+        </div>
+      </section>
+
+      <Card className="card-premium overflow-hidden rounded-2xl">
+        <CardHeader className="flex flex-row items-center justify-between gap-2 px-4 py-2.5 pb-2">
+          <CardTitle className="text-sm font-semibold">Bon Aktif</CardTitle>
+          <Badge variant="secondary" className="rounded-full px-2 text-[10px] font-bold">
+            Tap untuk pilih
+          </Badge>
+        </CardHeader>
+        <CardContent className="space-y-2 px-4 pb-4 pt-1">
+          {openItems.length === 0 && (
+            <div className="rounded-xl border border-dashed border-border/70 py-8 text-center text-sm text-muted-foreground">
+              Belum ada bon aktif
+            </div>
+          )}
+          {openItems.map((item) => {
+            const isSelected = selected.includes(item.id);
+            return (
+              <button
+                key={item.id}
+                onClick={() => toggleSelect(item.id)}
+                className={cn("w-full rounded-2xl border p-3 text-left transition-all", isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border/70 bg-card")}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-mono text-sm font-bold">{item.invoiceNumber}</p>
+                    <p className="text-xs text-muted-foreground">{item.invoiceDate}</p>
+                    <p className={cn("mt-1 text-[11px]", item.note.toLowerCase().includes("lunas") ? "font-semibold text-warning" : "text-muted-foreground")}>
+                      {item.note ? item.note : "Tanpa catatan"}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-base font-extrabold tabular-nums">{formatRupiah(item.amount)}</p>
+                    <p className="text-[11px] text-muted-foreground">{isSelected ? "dipilih" : "ketuk untuk pilih"}</p>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </CardContent>
+      </Card>
+
       <Card className="card-premium overflow-hidden rounded-2xl">
         <CardHeader className="px-4 py-3 pb-2">
           <CardTitle className="text-sm font-semibold">Tambah Bon Baru</CardTitle>
@@ -234,77 +305,6 @@ export default function Hutang() {
           </div>
         </DialogContent>
       </Dialog>
-
-      <section className="grid grid-cols-2 gap-2 md:grid-cols-4">
-        <div className="card-premium bg-primary/5 p-3">
-          <div className="mb-1.5 flex items-center gap-2">
-            <Wallet className="h-4 w-4 text-primary" />
-            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Total Hutang</span>
-          </div>
-          <p className="text-lg font-extrabold tabular-nums">{formatRupiah(summary.totalDebt)}</p>
-        </div>
-        <div className="card-premium bg-success/5 p-3">
-          <div className="mb-1.5 flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-success" />
-            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Lunas</span>
-          </div>
-          <p className="text-lg font-extrabold tabular-nums">{formatRupiah(summary.totalPaid)}</p>
-        </div>
-        <div className="card-premium bg-warning/5 p-3">
-          <div className="mb-1.5 flex items-center gap-2">
-            <ShieldAlert className="h-4 w-4 text-warning" />
-            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Sisa Limit</span>
-          </div>
-          <p className="text-lg font-extrabold tabular-nums">{formatRupiah(limitLeft)}</p>
-        </div>
-        <div className="card-premium bg-destructive/5 p-3">
-          <div className="mb-1.5 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-destructive" />
-            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Bon Aktif</span>
-          </div>
-          <p className="text-lg font-extrabold tabular-nums">{formatNumber(summary.activeCount)}</p>
-        </div>
-      </section>
-
-      <Card className="card-premium overflow-hidden rounded-2xl">
-        <CardHeader className="flex flex-row items-center justify-between gap-2 px-4 py-2.5 pb-2">
-          <CardTitle className="text-sm font-semibold">Bon Aktif</CardTitle>
-          <Badge variant="secondary" className="rounded-full px-2 text-[10px] font-bold">
-            Tap untuk pilih
-          </Badge>
-        </CardHeader>
-        <CardContent className="space-y-2 px-4 pb-4 pt-1">
-          {openItems.length === 0 && (
-            <div className="rounded-xl border border-dashed border-border/70 py-8 text-center text-sm text-muted-foreground">
-              Belum ada bon aktif
-            </div>
-          )}
-          {openItems.map((item) => {
-            const isSelected = selected.includes(item.id);
-            return (
-              <button
-                key={item.id}
-                onClick={() => toggleSelect(item.id)}
-                className={cn("w-full rounded-2xl border p-3 text-left transition-all", isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border/70 bg-card")}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-mono text-sm font-bold">{item.invoiceNumber}</p>
-                    <p className="text-xs text-muted-foreground">{item.invoiceDate}</p>
-                    <p className={cn("mt-1 text-[11px]", item.note.toLowerCase().includes("lunas") ? "font-semibold text-warning" : "text-muted-foreground")}>
-                      {item.note ? item.note : "Tanpa catatan"}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-base font-extrabold tabular-nums">{formatRupiah(item.amount)}</p>
-                    <p className="text-[11px] text-muted-foreground">{isSelected ? "dipilih" : "ketuk untuk pilih"}</p>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </CardContent>
-      </Card>
 
       <Card className="card-premium overflow-hidden rounded-2xl">
         <CardHeader className="flex flex-row items-center justify-between gap-2 px-4 py-3 pb-2">
