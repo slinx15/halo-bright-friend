@@ -76,6 +76,20 @@ function createBarangMasukBonNumber(tanggal?: Date) {
   return `BM-${ymd}-${time}`;
 }
 
+const PENDING_STOCK_IN_BON_KEY = "rrc_ivory_pending_stock_in_bon_id";
+
+function getPendingStockInBonId() {
+  return localStorage.getItem(PENDING_STOCK_IN_BON_KEY);
+}
+
+function setPendingStockInBonId(id: string) {
+  localStorage.setItem(PENDING_STOCK_IN_BON_KEY, id);
+}
+
+function clearPendingStockInBonId() {
+  localStorage.removeItem(PENDING_STOCK_IN_BON_KEY);
+}
+
 const BarangMasuk = () => {
   const { data: products } = useProducts();
   const { data: history = [], isLoading: historyLoading } = useStockInHistory();
@@ -192,16 +206,47 @@ const BarangMasuk = () => {
         return sum + (product?.prices?.harga_modal ?? 0) * item.qty;
       }, 0);
 
+      const successfulSet = new Set(successfulItems);
+      const remainingItems = items.filter((item) => !successfulSet.has(item));
+      const hasPendingItems = remainingItems.some((item) => item.kode.trim() || item.productId);
+
       if (totalModal > 0) {
         const invoiceDate = format(getFormDate(tanggal), "yyyy-MM-dd");
-        const bon = createDebtItem({
-          invoiceNumber: createBarangMasukBonNumber(tanggal),
-          amount: totalModal,
-          invoiceDate,
-          note: `Dari barang masuk: ${summary}`,
-          sourceType: "manual",
-        });
-        saveDebtItems([bon, ...getDebtItems()]);
+        const currentDebts = getDebtItems();
+        const pendingBonId = getPendingStockInBonId();
+        const pendingBon = pendingBonId
+          ? currentDebts.find((item) => item.id === pendingBonId && item.status === "open")
+          : undefined;
+
+        if (pendingBon) {
+          const updatedDebts = currentDebts.map((item) =>
+            item.id === pendingBon.id
+              ? {
+                  ...item,
+                  amount: item.amount + totalModal,
+                  note: `${item.note}; tambahan: ${summary}`,
+                  updatedAt: new Date().toISOString(),
+                }
+              : item,
+          );
+          saveDebtItems(updatedDebts);
+        } else {
+          const bon = createDebtItem({
+            invoiceNumber: createBarangMasukBonNumber(tanggal),
+            amount: totalModal,
+            invoiceDate,
+            note: `Dari barang masuk: ${summary}`,
+            sourceType: "manual",
+          });
+          saveDebtItems([bon, ...currentDebts]);
+          if (hasPendingItems) {
+            setPendingStockInBonId(bon.id);
+          }
+        }
+
+        if (!hasPendingItems) {
+          clearPendingStockInBonId();
+        }
       } else {
         toast({
           title: "Bon hutang belum dibuat",
