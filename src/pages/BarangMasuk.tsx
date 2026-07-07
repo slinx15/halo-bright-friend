@@ -35,7 +35,7 @@ import { useStockInHistory } from "@/hooks/useStockInHistory";
 import { useToast } from "@/hooks/use-toast";
 import { logActivity } from "@/lib/activityLogger";
 import { getErrorMessage } from "@/lib/errors";
-import { formatNumber } from "@/lib/formatters";
+import { formatNumber, formatRupiah } from "@/lib/formatters";
 import { createDebtItem, getDebtItems, saveDebtItems } from "@/lib/hutangStore";
 import { findProductMatch } from "@/lib/productMatcher";
 import { registerStockIn } from "@/lib/stockMutations";
@@ -245,6 +245,12 @@ const BarangMasuk = () => {
   const totalQty = items
     .filter((item) => item.productId && item.qty > 0)
     .reduce((sum, item) => sum + item.qty, 0);
+  const estimatedBonTotal = items
+    .filter((item) => item.productId && item.qty > 0)
+    .reduce((sum, item) => {
+      const product = products?.find((entry) => entry.id === item.productId);
+      return sum + (product?.prices?.harga_modal ?? 0) * item.qty;
+    }, 0);
   const selectedDateLabel = tanggal
     ? format(tanggal, "dd MMM yyyy", { locale: localeId })
     : "Hari ini";
@@ -452,6 +458,18 @@ const BarangMasuk = () => {
             ))}
           </datalist>
 
+          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Estimasi Bon</p>
+                <p className="mt-0.5 text-lg font-extrabold tabular-nums text-foreground">{formatRupiah(estimatedBonTotal)}</p>
+              </div>
+              <Badge variant="secondary" className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
+                Hutang Ivory
+              </Badge>
+            </div>
+          </div>
+
           {/* Tombol Tambah Baris full-width, ghost style */}
           <Button
             variant="outline"
@@ -537,7 +555,7 @@ const BarangMasuk = () => {
             )}
           >
             <Send className="mr-2 h-5 w-5" />
-            {submitting ? "Menyimpan..." : validCount > 0 ? `Simpan ${validCount} Item` : "Belum ada item valid"}
+            {submitting ? "Menyimpan..." : validCount > 0 ? `Simpan ${validCount} Item + Bon` : "Belum ada item valid"}
           </Button>
         </CardContent>
       </Card>
