@@ -27,7 +27,7 @@ import {
 } from "@/lib/hutangStore";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, Banknote, CheckCircle2, Plus, ShieldAlert, Wallet } from "lucide-react";
-import { HutangOcrUpload, type DebtDraft } from "@/components/hutang/HutangOcrUpload";
+import { type DebtDraft } from "@/components/hutang/HutangOcrUpload";
 import { FakturUpload, type FakturDraft } from "@/components/hutang/FakturUpload";
 import { useToast } from "@/hooks/use-toast";
 
@@ -162,8 +162,7 @@ export default function Hutang() {
                 className="h-9 w-32 rounded-xl text-sm font-semibold"
               />
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:flex-wrap">
-              <HutangOcrUpload onResult={addFromOcr} />
+            <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-row sm:flex-wrap">
               <FakturUpload onResult={addFromFaktur} openSignal={fakturOpenSignal} />
             </div>
           </div>
