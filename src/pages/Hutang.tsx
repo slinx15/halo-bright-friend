@@ -58,6 +58,24 @@ export default function Hutang() {
     setLimitState(getDebtLimit());
   };
 
+  const resetHutangData = () => {
+    const keys = [
+      "rrc_ivory_debts_v1",
+      "rrc_ivory_debt_payments_v1",
+      "rrc_ivory_limit_v1",
+      "rrc_ivory_snapshots_v1",
+    ];
+    keys.forEach((key) => localStorage.removeItem(key));
+    setForm(initialForm);
+    setSelected([]);
+    setPaymentNote("");
+    setEntryOpen(false);
+    setManualOpen(false);
+    setFakturOpenSignal(0);
+    refresh();
+    toast({ title: "Data hutang direset", description: "Semua data hutang Ivory sudah dihapus" });
+  };
+
   useEffect(() => {
     refresh();
     const onStorage = () => refresh();
@@ -206,6 +224,10 @@ export default function Hutang() {
           <p className="text-lg font-extrabold tabular-nums">{formatNumber(summary.activeCount)}</p>
         </div>
       </section>
+
+      <Button variant="destructive" className="h-11 w-full rounded-2xl font-bold" onClick={resetHutangData}>
+        Reset Hutang Ivory
+      </Button>
 
       <Card className="card-premium overflow-hidden rounded-2xl">
         <CardHeader className="flex flex-row items-center justify-between gap-2 px-4 py-2.5 pb-2">
