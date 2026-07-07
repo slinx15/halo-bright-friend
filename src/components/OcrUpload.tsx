@@ -48,6 +48,7 @@ type OcrFieldValue = string | number | undefined;
 export function OcrUpload({ mode, onResult }: OcrUploadProps) {
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  const [previewCount, setPreviewCount] = useState(0);
   const [showConfirm, setShowConfirm] = useState(false);
   const [ocrItems, setOcrItems] = useState<OcrItem[]>([]);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
@@ -162,62 +163,72 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
     });
   };
 
-  const handleFile = async (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      toast({ title: "Error", description: "File harus berupa gambar", variant: "destructive" });
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      toast({ title: "Error", description: "Ukuran file maks 10MB", variant: "destructive" });
-      return;
-    }
-
+  const readPreview = (file: File) => {
     const reader = new FileReader();
     reader.onload = () => setPreview(reader.result as string);
     reader.readAsDataURL(file);
+  };
 
+  const processFile = async (file: File) => {
+    const base64 = await fileToBase64(file);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/ocr-nota`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        image_base64: base64,
+        mode,
+        master_codes: products?.map((p) => p.kode) || [],
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data?.error) {
+      throw new Error(data.error);
+    }
+
+    return (data?.items || []) as OcrItem[];
+  };
+
+  const handleFiles = async (files: FileList) => {
+    const list = Array.from(files);
+    if (list.length === 0) return;
+    if (list.some((file) => !file.type.startsWith("image/"))) {
+      toast({ title: "Error", description: "Semua file harus berupa gambar", variant: "destructive" });
+      return;
+    }
+    if (list.some((file) => file.size > 10 * 1024 * 1024)) {
+      toast({ title: "Error", description: "Ukuran file maks 10MB per gambar", variant: "destructive" });
+      return;
+    }
+
+    readPreview(list[0]);
+    setPreviewCount(list.length);
     setLoading(true);
     try {
-      const base64 = await fileToBase64(file);
-      // Use fetch with timeout instead of supabase.functions.invoke
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
-
-      const headers = await getAuthHeaders();
-      const response = await fetch(
-        `${SUPABASE_URL}/functions/v1/ocr-nota`,
-        {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            image_base64: base64,
-            mode,
-            master_codes: products?.map((p) => p.kode) || [],
-          }),
-          signal: controller.signal,
-        }
-      );
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || `HTTP ${response.status}`);
+      const allItems: OcrItem[] = [];
+      for (const file of list) {
+        const items = await processFile(file);
+        allItems.push(...items);
       }
 
-      const data = await response.json();
-
-      if (data?.error) {
-        toast({ title: "Error OCR", description: data.error, variant: "destructive" });
-        return;
-      }
-
-      const items = data?.items || [];
-      if (items.length === 0) {
+      if (allItems.length === 0) {
         toast({ title: "OCR", description: "Tidak bisa membaca data dari foto. Coba foto yang lebih jelas.", variant: "destructive" });
         return;
       }
 
-      const validated = validateItems(items);
+      const validated = validateItems(allItems);
       setOcrItems(validated);
       setShowConfirm(true);
     } catch (err: unknown) {
@@ -267,12 +278,14 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
     setShowConfirm(false);
     setOcrItems([]);
     setPreview(null);
+    setPreviewCount(0);
   };
 
   const handleCancel = () => {
     setShowConfirm(false);
     setOcrItems([]);
     setPreview(null);
+    setPreviewCount(0);
   };
 
   const updateOcrItem = (idx: number, field: OcrEditableField, value: OcrFieldValue) => {
@@ -313,10 +326,11 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
         ref={fileRef}
         type="file"
         accept="image/*"
+        multiple={mode === "masuk"}
         className="hidden"
         onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleFile(file);
+          const files = e.target.files;
+          if (files) handleFiles(files);
           e.target.value = "";
         }}
       />
@@ -351,6 +365,11 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
             <Badge variant="secondary" className="bg-success/10 text-success">
               <Check className="h-3 w-3 mr-1" /> {validCount} valid
             </Badge>
+            {previewCount > 1 && (
+              <Badge variant="secondary" className="bg-primary/10 text-primary">
+                {previewCount} foto
+              </Badge>
+            )}
             {invalidCount > 0 && (
               <Badge variant="secondary" className="bg-destructive/10 text-destructive">
                 <AlertTriangle className="h-3 w-3 mr-1" /> {invalidCount} tidak ditemukan
