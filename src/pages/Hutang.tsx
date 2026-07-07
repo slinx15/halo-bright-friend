@@ -47,6 +47,7 @@ export default function Hutang() {
   const [paymentNote, setPaymentNote] = useState("");
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [fakturOpenSignal, setFakturOpenSignal] = useState(0);
+  const [entryOpen, setEntryOpen] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
 
   const refresh = () => {
@@ -173,26 +174,47 @@ export default function Hutang() {
         <CardHeader className="px-4 py-3 pb-2">
           <CardTitle className="text-sm font-semibold">Tambah Bon Baru</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-2 px-4 pb-4 pt-1 sm:grid-cols-2">
-          <Button
-            className="h-12 rounded-2xl font-bold"
-            onClick={() => {
-              setFakturOpenSignal((value) => value + 1);
-            }}
-          >
+        <CardContent className="px-4 pb-4 pt-1">
+          <Button className="h-12 w-full rounded-2xl font-bold" onClick={() => setEntryOpen(true)}>
             Tambah Bon Baru
-          </Button>
-          <Button
-            variant="secondary"
-            className="h-12 rounded-2xl font-bold"
-            onClick={() => {
-              setManualOpen(true);
-            }}
-          >
-            Input Manual
           </Button>
         </CardContent>
       </Card>
+
+      <Dialog open={entryOpen} onOpenChange={setEntryOpen}>
+        <DialogContent className="max-h-[90svh] w-[calc(100vw-1.5rem)] overflow-hidden rounded-3xl p-0 sm:max-w-lg">
+          <div className="flex max-h-[90svh] flex-col">
+            <DialogHeader className="border-b border-border/60 px-4 py-4">
+              <DialogTitle className="flex items-center gap-2 text-base">
+                <Plus className="h-4 w-4 text-primary" />
+                Tambah Bon Baru
+              </DialogTitle>
+              <DialogDescription>Pilih cara tambah bon baru.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 overflow-y-auto px-4 py-4">
+              <Button
+                className="h-12 w-full rounded-2xl font-bold"
+                onClick={() => {
+                  setEntryOpen(false);
+                  setFakturOpenSignal((value) => value + 1);
+                }}
+              >
+                Dari Faktur
+              </Button>
+              <Button
+                variant="secondary"
+                className="h-12 w-full rounded-2xl font-bold"
+                onClick={() => {
+                  setEntryOpen(false);
+                  setManualOpen(true);
+                }}
+              >
+                Manual
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={manualOpen} onOpenChange={setManualOpen}>
         <DialogContent className="max-h-[90svh] w-[calc(100vw-1.5rem)] overflow-hidden rounded-3xl p-0 sm:max-w-lg">
@@ -200,9 +222,8 @@ export default function Hutang() {
             <DialogHeader className="border-b border-border/60 px-4 py-4">
               <DialogTitle className="flex items-center gap-2 text-base">
                 <Plus className="h-4 w-4 text-primary" />
-                Input Bon Manual
+                Input Manual
               </DialogTitle>
-              <DialogDescription>Isi bon baru langsung tanpa upload foto.</DialogDescription>
             </DialogHeader>
             <div className="space-y-3 overflow-y-auto px-4 py-4">
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
