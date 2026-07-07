@@ -619,6 +619,10 @@ export type Database = {
         Args: { _qty: number; _stacks: Json }
         Returns: Json
       }
+      delete_stock_in_transaction: {
+        Args: { p_stock_in_id: string }
+        Returns: Json
+      }
       delete_stock_out_transaction: {
         Args: { p_stock_out_id: string }
         Returns: Json
