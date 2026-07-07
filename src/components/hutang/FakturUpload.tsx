@@ -178,7 +178,7 @@ export function FakturUpload({ onResult, openSignal }: FakturUploadProps) {
         className="min-h-[44px] w-full rounded-xl border-border/70 bg-card shadow-sm sm:w-auto sm:min-w-[140px]"
       >
         {loading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Camera className="mr-1 h-4 w-4" />}
-        {loading ? "Memproses..." : "Tambah dari Faktur"}
+        {loading ? "Memproses..." : "Tambah Bon Baru"}
       </Button>
 
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>

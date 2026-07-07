@@ -180,7 +180,7 @@ export default function Hutang() {
               setFakturOpenSignal((value) => value + 1);
             }}
           >
-            Tambah dari Faktur
+            Tambah Bon Baru
           </Button>
           <Button
             variant="secondary"
