@@ -128,17 +128,18 @@ Ekstrak setiap baris/tagihan yang terlihat sebagai objek JSON dengan field:
 - amount: total nominal tagihan dalam rupiah
 - invoice_date: tanggal bon jika terlihat, format YYYY-MM-DD
 - note: catatan singkat bila ada teks tambahan penting
+- status: "paid" untuk baris yang di-highlight kuning / sudah lunas, atau "open" jika belum
 
 ATURAN:
 1. Jika ada beberapa baris tagihan pada foto, keluarkan semuanya.
 2. Jika nomor faktur tidak ada, gunakan nomor/baris paling dekat yang terlihat, atau kosongkan invoice_number.
 3. Jika nominal tidak jelas, jangan mengarang; lewati baris itu.
-4. Blok kuning menandakan bon sudah lunas. Jika foto menunjukkan highlight kuning pada baris, tambahkan note: "lunas".
+4. Blok kuning menandakan bon sudah lunas. Jika foto menunjukkan highlight kuning pada baris, set status = "paid" dan note = "lunas".
 5. Jangan masukkan total ringkasan di bagian atas sebagai item, kecuali foto memang hanya berisi satu bon tunggal.
 
 Kembalikan HANYA JSON array tanpa markdown.
 Contoh:
-[{"invoice_number":"090626002","amount":6435000,"invoice_date":"2026-06-09","note":"lunas"}]
+[{"invoice_number":"090626002","amount":6435000,"invoice_date":"2026-06-09","note":"lunas","status":"paid"}]
 Jika tidak bisa membaca, kembalikan [].`,
     };
 

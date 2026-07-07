@@ -28,6 +28,7 @@ type OcrDebtRow = {
   amount?: number;
   invoice_date?: string;
   note?: string;
+  status?: "open" | "paid";
 };
 
 export function HutangOcrUpload({ onResult, openSignal }: HutangOcrUploadProps) {
@@ -74,7 +75,7 @@ export function HutangOcrUpload({ onResult, openSignal }: HutangOcrUploadProps) 
         invoiceNumber: String(row.invoice_number || "").trim(),
         amount: Number(row.amount || 0),
         invoiceDate: row.invoice_date || new Date().toISOString().slice(0, 10),
-        note: row.note || "",
+        note: row.note || (row.status === "paid" ? "lunas" : ""),
       }))
       .filter((row) => row.amount > 0 || row.invoiceNumber);
 
