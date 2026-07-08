@@ -344,6 +344,7 @@ function HutangCard() {
       setLimit(getDebtLimit());
       setSummary(getDebtSummary(getDebtItems()));
     };
+    void syncDebtsFromCloud().then(refresh);
     refresh();
     const onStorage = () => refresh();
     window.addEventListener("storage", onStorage);
