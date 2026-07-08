@@ -54,6 +54,7 @@ const DEBT_KEY = "rrc_ivory_debts_v1";
 const PAYMENT_KEY = "rrc_ivory_debt_payments_v1";
 const LIMIT_KEY = "rrc_ivory_limit_v1";
 const SNAPSHOT_KEY = "rrc_ivory_snapshots_v1";
+const BACKUP_KEY = "rrc_ivory_backup_v1";
 
 const DEFAULT_LIMIT = 40_000_000;
 
@@ -116,6 +117,23 @@ export function saveSupplierSnapshots(items: SupplierSnapshot[]) {
 
 function hasLocalDebtData() {
   return getDebtItems().length > 0 || getDebtPayments().length > 0 || getSupplierSnapshots().length > 0;
+}
+
+function backupLocalDebtData(reason: string) {
+  try {
+    const previous = safeParse<Array<Record<string, unknown>>>(localStorage.getItem(BACKUP_KEY), []);
+    const entry = {
+      reason,
+      savedAt: new Date().toISOString(),
+      debts: getDebtItems(),
+      payments: getDebtPayments(),
+      snapshots: getSupplierSnapshots(),
+      limit: getDebtLimit(),
+    };
+    localStorage.setItem(BACKUP_KEY, JSON.stringify([entry, ...previous].slice(0, 10)));
+  } catch (err) {
+    console.error("[hutang] backupLocalDebtData failed", err);
+  }
 }
 
 export function getDebtSummary(items: DebtItem[] = getDebtItems()): DebtSummary {
@@ -482,6 +500,7 @@ export async function syncDebtsFromCloud(): Promise<void> {
       // Safety guard: a newly-created/empty backend must never wipe browser data.
       // If this browser still has Hutang Ivory data, lift it to the backend first.
       if (cloudIsEmpty && hasLocalDebtData()) {
+        backupLocalDebtData("cloud-empty-before-upload");
         await Promise.all([
           pushDebtsToCloud(localDebts),
           pushPaymentsToCloud(localPayments),
@@ -508,6 +527,9 @@ export async function syncDebtsFromCloud(): Promise<void> {
         createdAt: row.created_at,
       }));
 
+      if (hasLocalDebtData()) {
+        backupLocalDebtData("before-cloud-sync");
+      }
       localStorage.setItem(DEBT_KEY, JSON.stringify(debts));
       localStorage.setItem(PAYMENT_KEY, JSON.stringify(payments));
       localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshots));
