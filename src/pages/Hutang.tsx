@@ -80,6 +80,7 @@ export default function Hutang() {
   };
 
   useEffect(() => {
+    void syncDebtsFromCloud().then(() => refresh());
     refresh();
     const onStorage = () => refresh();
     window.addEventListener("storage", onStorage);
