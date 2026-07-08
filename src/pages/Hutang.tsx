@@ -26,6 +26,7 @@ import {
   saveSupplierSnapshot,
   setDebtLimit,
   createSupplierSnapshot,
+  syncDebtsFromCloud,
   type DebtItem,
 } from "@/lib/hutangStore";
 import { cn } from "@/lib/utils";
