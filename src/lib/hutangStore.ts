@@ -54,6 +54,7 @@ const DEBT_KEY = "rrc_ivory_debts_v1";
 const PAYMENT_KEY = "rrc_ivory_debt_payments_v1";
 const LIMIT_KEY = "rrc_ivory_limit_v1";
 const SNAPSHOT_KEY = "rrc_ivory_snapshots_v1";
+const BACKUP_KEY = "rrc_ivory_backup_v1";
 
 const DEFAULT_LIMIT = 40_000_000;
 
@@ -112,6 +113,27 @@ export function saveDebtPayments(items: DebtPayment[]) {
 export function saveSupplierSnapshots(items: SupplierSnapshot[]) {
   localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(items));
   void pushSnapshotsToCloud(items);
+}
+
+function hasLocalDebtData() {
+  return getDebtItems().length > 0 || getDebtPayments().length > 0 || getSupplierSnapshots().length > 0;
+}
+
+function backupLocalDebtData(reason: string) {
+  try {
+    const previous = safeParse<Array<Record<string, unknown>>>(localStorage.getItem(BACKUP_KEY), []);
+    const entry = {
+      reason,
+      savedAt: new Date().toISOString(),
+      debts: getDebtItems(),
+      payments: getDebtPayments(),
+      snapshots: getSupplierSnapshots(),
+      limit: getDebtLimit(),
+    };
+    localStorage.setItem(BACKUP_KEY, JSON.stringify([entry, ...previous].slice(0, 10)));
+  } catch (err) {
+    console.error("[hutang] backupLocalDebtData failed", err);
+  }
 }
 
 export function getDebtSummary(items: DebtItem[] = getDebtItems()): DebtSummary {
@@ -456,6 +478,9 @@ export async function syncDebtsFromCloud(): Promise<void> {
   if (syncPromise) return syncPromise;
   syncPromise = (async () => {
     try {
+      const localDebts = getDebtItems();
+      const localPayments = getDebtPayments();
+      const localSnapshots = getSupplierSnapshots();
       const [debtsRes, paymentsRes, snapshotsRes, settingsRes] = await Promise.all([
         cloud.from("ivory_debts").select("*").order("created_at", { ascending: false }),
         cloud.from("ivory_debt_payments").select("*").order("paid_at", { ascending: false }),
@@ -466,6 +491,24 @@ export async function syncDebtsFromCloud(): Promise<void> {
       if (debtsRes.error) throw debtsRes.error;
       if (paymentsRes.error) throw paymentsRes.error;
       if (snapshotsRes.error) throw snapshotsRes.error;
+
+      const cloudIsEmpty =
+        (debtsRes.data || []).length === 0 &&
+        (paymentsRes.data || []).length === 0 &&
+        (snapshotsRes.data || []).length === 0;
+
+      // Safety guard: a newly-created/empty backend must never wipe browser data.
+      // If this browser still has Hutang Ivory data, lift it to the backend first.
+      if (cloudIsEmpty && hasLocalDebtData()) {
+        backupLocalDebtData("cloud-empty-before-upload");
+        await Promise.all([
+          pushDebtsToCloud(localDebts),
+          pushPaymentsToCloud(localPayments),
+          pushSnapshotsToCloud(localSnapshots),
+          pushLimitToCloud(getDebtLimit()),
+        ]);
+        return;
+      }
 
       const debts: DebtItem[] = (debtsRes.data || []).map((row: DebtRow) => rowToDebt(row));
       const payments: DebtPayment[] = (paymentsRes.data || []).map((row: PaymentRow) => ({
@@ -484,6 +527,9 @@ export async function syncDebtsFromCloud(): Promise<void> {
         createdAt: row.created_at,
       }));
 
+      if (hasLocalDebtData()) {
+        backupLocalDebtData("before-cloud-sync");
+      }
       localStorage.setItem(DEBT_KEY, JSON.stringify(debts));
       localStorage.setItem(PAYMENT_KEY, JSON.stringify(payments));
       localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshots));
