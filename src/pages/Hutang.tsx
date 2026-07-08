@@ -26,6 +26,7 @@ import {
   saveSupplierSnapshot,
   setDebtLimit,
   createSupplierSnapshot,
+  syncDebtsFromCloud,
   type DebtItem,
 } from "@/lib/hutangStore";
 import { cn } from "@/lib/utils";
@@ -61,13 +62,11 @@ export default function Hutang() {
   };
 
   const resetHutangData = () => {
-    const keys = [
-      "rrc_ivory_debts_v1",
-      "rrc_ivory_debt_payments_v1",
-      "rrc_ivory_limit_v1",
-      "rrc_ivory_snapshots_v1",
-    ];
-    keys.forEach((key) => localStorage.removeItem(key));
+    // Clears both local cache AND cloud (write-through empties Supabase tables).
+    saveDebtItems([]);
+    localStorage.removeItem("rrc_ivory_debt_payments_v1");
+    localStorage.removeItem("rrc_ivory_snapshots_v1");
+    localStorage.removeItem("rrc_ivory_limit_v1");
     setForm(initialForm);
     setSelected([]);
     setPaymentNote("");
@@ -79,6 +78,7 @@ export default function Hutang() {
   };
 
   useEffect(() => {
+    void syncDebtsFromCloud().then(() => refresh());
     refresh();
     const onStorage = () => refresh();
     window.addEventListener("storage", onStorage);

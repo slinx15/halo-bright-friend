@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 export type DebtStatus = "open" | "paid";
 
 export interface DebtItem {
@@ -55,6 +57,10 @@ const SNAPSHOT_KEY = "rrc_ivory_snapshots_v1";
 
 const DEFAULT_LIMIT = 40_000_000;
 
+// Cloud table access — types.ts hasn't regenerated yet, so cast the client.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const cloud = supabase as any;
+
 function uuid() {
   return globalThis.crypto?.randomUUID?.() ?? `debt_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
@@ -68,13 +74,17 @@ function safeParse<T>(raw: string | null, fallback: T): T {
   }
 }
 
+// ---------- Local (sync) accessors ----------
+
 export function getDebtLimit() {
   const stored = Number(localStorage.getItem(LIMIT_KEY));
   return Number.isFinite(stored) && stored > 0 ? stored : DEFAULT_LIMIT;
 }
 
 export function setDebtLimit(limit: number) {
-  localStorage.setItem(LIMIT_KEY, String(Math.max(0, Math.floor(limit))));
+  const value = Math.max(0, Math.floor(limit));
+  localStorage.setItem(LIMIT_KEY, String(value));
+  void pushLimitToCloud(value);
 }
 
 export function getDebtItems(): DebtItem[] {
@@ -91,14 +101,17 @@ export function getSupplierSnapshots(): SupplierSnapshot[] {
 
 export function saveDebtItems(items: DebtItem[]) {
   localStorage.setItem(DEBT_KEY, JSON.stringify(items));
+  void pushDebtsToCloud(items);
 }
 
 export function saveDebtPayments(items: DebtPayment[]) {
   localStorage.setItem(PAYMENT_KEY, JSON.stringify(items));
+  void pushPaymentsToCloud(items);
 }
 
 export function saveSupplierSnapshots(items: SupplierSnapshot[]) {
   localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(items));
+  void pushSnapshotsToCloud(items);
 }
 
 export function getDebtSummary(items: DebtItem[] = getDebtItems()): DebtSummary {
@@ -189,14 +202,15 @@ export function markDebtsPaid(debtIds: string[], note = "") {
   saveDebtItems(updated);
 
   const payments = getDebtPayments();
-  payments.unshift({
+  const newPayment: DebtPayment = {
     id: uuid(),
     debtIds: debtIds.filter((id) => updated.some((item) => item.id === id)),
     amount: paidAmount,
     note,
     paidAt: now,
     createdAt: now,
-  });
+  };
+  payments.unshift(newPayment);
   saveDebtPayments(payments);
 
   return { items: updated, paidAmount };
@@ -271,3 +285,216 @@ export function ensureDefaultIvoryDebtData(defaultSnapshot: SupplierSnapshot, de
   }
 }
 
+// ---------- Cloud sync ----------
+
+type DebtRow = {
+  id: string;
+  invoice_number: string;
+  amount: number;
+  paid_amount: number;
+  status: string;
+  note: string | null;
+  source_type: string;
+  invoice_date: string;
+  paid_at: string | null;
+  source_image: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type PaymentRow = {
+  id: string;
+  debt_ids: string[] | null;
+  amount: number;
+  note: string | null;
+  paid_at: string;
+  created_at: string;
+};
+
+type SnapshotRow = {
+  id: string;
+  label: string | null;
+  source_image: string | null;
+  items: SupplierSnapshot["items"] | null;
+  created_at: string;
+};
+
+function rowToDebt(row: DebtRow): DebtItem {
+  return {
+    id: row.id,
+    invoiceNumber: row.invoice_number,
+    amount: row.amount,
+    paidAmount: row.paid_amount,
+    status: (row.status === "paid" ? "paid" : "open") as DebtStatus,
+    note: row.note || "",
+    supplier: "Ivory",
+    sourceType: (row.source_type as DebtItem["sourceType"]) || "manual",
+    invoiceDate: row.invoice_date,
+    paidAt: row.paid_at,
+    sourceImage: row.source_image,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function debtToRow(item: DebtItem) {
+  return {
+    id: item.id,
+    invoice_number: item.invoiceNumber,
+    amount: item.amount,
+    paid_amount: item.paidAmount,
+    status: item.status,
+    note: item.note || "",
+    source_type: item.sourceType,
+    invoice_date: item.invoiceDate,
+    paid_at: item.paidAt,
+    source_image: item.sourceImage || null,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+async function pushDebtsToCloud(items: DebtItem[]) {
+  try {
+    const { data: existing, error: fetchErr } = await cloud.from("ivory_debts").select("id");
+    if (fetchErr) throw fetchErr;
+    const existingIds = new Set((existing || []).map((row: { id: string }) => row.id));
+    const nextIds = new Set(items.map((item) => item.id));
+    const toDelete = [...existingIds].filter((id) => !nextIds.has(id as string));
+
+    if (items.length > 0) {
+      const { error: upsertErr } = await cloud.from("ivory_debts").upsert(items.map(debtToRow));
+      if (upsertErr) throw upsertErr;
+    }
+    if (toDelete.length > 0) {
+      const { error: delErr } = await cloud.from("ivory_debts").delete().in("id", toDelete);
+      if (delErr) throw delErr;
+    }
+  } catch (err) {
+    console.error("[hutang] pushDebtsToCloud failed", err);
+  }
+}
+
+async function pushPaymentsToCloud(items: DebtPayment[]) {
+  try {
+    const { data: existing, error: fetchErr } = await cloud.from("ivory_debt_payments").select("id");
+    if (fetchErr) throw fetchErr;
+    const existingIds = new Set((existing || []).map((row: { id: string }) => row.id));
+    const nextIds = new Set(items.map((item) => item.id));
+    const toInsert = items.filter((item) => !existingIds.has(item.id));
+    const toDelete = [...existingIds].filter((id) => !nextIds.has(id as string));
+
+    if (toInsert.length > 0) {
+      const { error: insertErr } = await cloud.from("ivory_debt_payments").insert(
+        toInsert.map((item) => ({
+          id: item.id,
+          debt_ids: item.debtIds,
+          amount: item.amount,
+          note: item.note || "",
+          paid_at: item.paidAt,
+          created_at: item.createdAt,
+        })),
+      );
+      if (insertErr) throw insertErr;
+    }
+    if (toDelete.length > 0) {
+      const { error: delErr } = await cloud.from("ivory_debt_payments").delete().in("id", toDelete);
+      if (delErr) throw delErr;
+    }
+  } catch (err) {
+    console.error("[hutang] pushPaymentsToCloud failed", err);
+  }
+}
+
+async function pushSnapshotsToCloud(items: SupplierSnapshot[]) {
+  try {
+    const { data: existing, error: fetchErr } = await cloud.from("ivory_debt_snapshots").select("id");
+    if (fetchErr) throw fetchErr;
+    const existingIds = new Set((existing || []).map((row: { id: string }) => row.id));
+    const nextIds = new Set(items.map((item) => item.id));
+    const toInsert = items.filter((item) => !existingIds.has(item.id));
+    const toDelete = [...existingIds].filter((id) => !nextIds.has(id as string));
+
+    if (toInsert.length > 0) {
+      const { error: insertErr } = await cloud.from("ivory_debt_snapshots").insert(
+        toInsert.map((item) => ({
+          id: item.id,
+          label: item.label,
+          source_image: item.sourceImage,
+          items: item.items,
+          created_at: item.createdAt,
+        })),
+      );
+      if (insertErr) throw insertErr;
+    }
+    if (toDelete.length > 0) {
+      const { error: delErr } = await cloud.from("ivory_debt_snapshots").delete().in("id", toDelete);
+      if (delErr) throw delErr;
+    }
+  } catch (err) {
+    console.error("[hutang] pushSnapshotsToCloud failed", err);
+  }
+}
+
+async function pushLimitToCloud(limit: number) {
+  try {
+    const { error } = await cloud
+      .from("ivory_debt_settings")
+      .upsert({ id: 1, debt_limit: limit, updated_at: new Date().toISOString() });
+    if (error) throw error;
+  } catch (err) {
+    console.error("[hutang] pushLimitToCloud failed", err);
+  }
+}
+
+let syncPromise: Promise<void> | null = null;
+
+/**
+ * Pulls the authoritative hutang state from the backend into localStorage.
+ * Call on Hutang / Dashboard mount so the browser cache reflects cross-device data.
+ */
+export async function syncDebtsFromCloud(): Promise<void> {
+  if (syncPromise) return syncPromise;
+  syncPromise = (async () => {
+    try {
+      const [debtsRes, paymentsRes, snapshotsRes, settingsRes] = await Promise.all([
+        cloud.from("ivory_debts").select("*").order("created_at", { ascending: false }),
+        cloud.from("ivory_debt_payments").select("*").order("paid_at", { ascending: false }),
+        cloud.from("ivory_debt_snapshots").select("*").order("created_at", { ascending: false }),
+        cloud.from("ivory_debt_settings").select("*").eq("id", 1).maybeSingle(),
+      ]);
+
+      if (debtsRes.error) throw debtsRes.error;
+      if (paymentsRes.error) throw paymentsRes.error;
+      if (snapshotsRes.error) throw snapshotsRes.error;
+
+      const debts: DebtItem[] = (debtsRes.data || []).map((row: DebtRow) => rowToDebt(row));
+      const payments: DebtPayment[] = (paymentsRes.data || []).map((row: PaymentRow) => ({
+        id: row.id,
+        debtIds: row.debt_ids || [],
+        amount: row.amount,
+        note: row.note || "",
+        paidAt: row.paid_at,
+        createdAt: row.created_at,
+      }));
+      const snapshots: SupplierSnapshot[] = (snapshotsRes.data || []).map((row: SnapshotRow) => ({
+        id: row.id,
+        label: row.label || "",
+        sourceImage: row.source_image,
+        items: row.items || [],
+        createdAt: row.created_at,
+      }));
+
+      localStorage.setItem(DEBT_KEY, JSON.stringify(debts));
+      localStorage.setItem(PAYMENT_KEY, JSON.stringify(payments));
+      localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshots));
+      if (settingsRes.data?.debt_limit) {
+        localStorage.setItem(LIMIT_KEY, String(settingsRes.data.debt_limit));
+      }
+    } catch (err) {
+      console.error("[hutang] syncDebtsFromCloud failed", err);
+    } finally {
+      syncPromise = null;
+    }
+  })();
+  return syncPromise;
+}
