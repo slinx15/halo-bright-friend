@@ -38,6 +38,7 @@ import {
   getDebtSummary,
   getDebtLimit,
   getDebtItems,
+  syncDebtsFromCloud,
 } from "@/lib/hutangStore";
 
 type InventorySummary = {
