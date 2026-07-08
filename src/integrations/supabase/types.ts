@@ -138,6 +138,129 @@ export type Database = {
           },
         ]
       }
+      ivory_debt_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          debt_ids: Json
+          id: string
+          note: string
+          paid_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          debt_ids?: Json
+          id?: string
+          note?: string
+          paid_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          debt_ids?: Json
+          id?: string
+          note?: string
+          paid_at?: string
+        }
+        Relationships: []
+      }
+      ivory_debt_settings: {
+        Row: {
+          debt_limit: number
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          debt_limit?: number
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          debt_limit?: number
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ivory_debt_snapshots: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          items: Json
+          label: string
+          source_image: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          items?: Json
+          label?: string
+          source_image?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          items?: Json
+          label?: string
+          source_image?: string | null
+        }
+        Relationships: []
+      }
+      ivory_debts: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          invoice_date: string
+          invoice_number: string
+          note: string
+          paid_amount: number
+          paid_at: string | null
+          source_image: string | null
+          source_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_date?: string
+          invoice_number: string
+          note?: string
+          paid_amount?: number
+          paid_at?: string | null
+          source_image?: string | null
+          source_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_date?: string
+          invoice_number?: string
+          note?: string
+          paid_amount?: number
+          paid_at?: string | null
+          source_image?: string | null
+          source_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pending_restock: {
         Row: {
           created_at: string
