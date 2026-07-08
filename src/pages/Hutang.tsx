@@ -22,10 +22,9 @@ import {
   getDebtSummary,
   markDebtsPaid,
   normalizeInvoiceNumber,
+  resetIvoryDebtData,
   saveDebtItems,
-  saveDebtPayments,
   saveSupplierSnapshot,
-  saveSupplierSnapshots,
   setDebtLimit,
   createSupplierSnapshot,
   syncDebtsFromCloud,
@@ -57,26 +56,35 @@ export default function Hutang() {
   const [fakturOpenSignal, setFakturOpenSignal] = useState(0);
   const [entryOpen, setEntryOpen] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   const refresh = () => {
     setItems(getDebtItems());
     setLimitState(getDebtLimit());
   };
 
-  const resetHutangData = () => {
-    // Clears both local cache AND cloud (write-through empties Supabase tables).
-    saveDebtItems([]);
-    saveDebtPayments([]);
-    saveSupplierSnapshots([]);
-    localStorage.removeItem("rrc_ivory_limit_v1");
-    setForm(initialForm);
-    setSelected([]);
-    setPaymentNote("");
-    setEntryOpen(false);
-    setManualOpen(false);
-    setFakturOpenSignal(0);
-    refresh();
-    toast({ title: "Data hutang direset", description: "Semua data hutang Ivory sudah dihapus" });
+  const resetHutangData = async () => {
+    setResetting(true);
+    try {
+      await resetIvoryDebtData();
+      setForm(initialForm);
+      setSelected([]);
+      setPaymentNote("");
+      setEntryOpen(false);
+      setManualOpen(false);
+      setFakturOpenSignal(0);
+      refresh();
+      toast({ title: "Data hutang direset", description: "Cloud dan cache lokal Hutang Ivory sudah kosong" });
+    } catch (error) {
+      console.error("[hutang] reset failed", error);
+      toast({
+        title: "Reset gagal",
+        description: "Cloud belum berhasil dikosongkan. Coba ulangi setelah koneksi stabil.",
+        variant: "destructive",
+      });
+    } finally {
+      setResetting(false);
+    }
   };
 
   useEffect(() => {
@@ -237,8 +245,13 @@ export default function Hutang() {
         </div>
       </section>
 
-      <Button variant="destructive" className="h-11 w-full rounded-2xl font-bold" onClick={resetHutangData}>
-        Reset Hutang Ivory
+      <Button
+        variant="destructive"
+        className="h-11 w-full rounded-2xl font-bold"
+        onClick={resetHutangData}
+        disabled={resetting}
+      >
+        {resetting ? "Mereset Hutang..." : "Reset Hutang Ivory"}
       </Button>
 
       <Card className="card-premium overflow-hidden rounded-2xl">

@@ -115,6 +115,20 @@ export function saveSupplierSnapshots(items: SupplierSnapshot[]) {
   void pushSnapshotsToCloud(items);
 }
 
+function saveLocalHutangState(input: {
+  debts: DebtItem[];
+  payments: DebtPayment[];
+  snapshots: SupplierSnapshot[];
+  limit?: number;
+}) {
+  localStorage.setItem(DEBT_KEY, JSON.stringify(input.debts));
+  localStorage.setItem(PAYMENT_KEY, JSON.stringify(input.payments));
+  localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(input.snapshots));
+  if (typeof input.limit === "number") {
+    localStorage.setItem(LIMIT_KEY, String(input.limit));
+  }
+}
+
 function hasLocalDebtData() {
   return getDebtItems().length > 0 || getDebtPayments().length > 0 || getSupplierSnapshots().length > 0;
 }
@@ -468,6 +482,33 @@ async function pushLimitToCloud(limit: number) {
   }
 }
 
+export async function resetIvoryDebtData() {
+  if (hasLocalDebtData()) {
+    backupLocalDebtData("before-full-reset");
+  }
+
+  const [debtsRes, paymentsRes, snapshotsRes, settingsRes] = await Promise.all([
+    cloud.from("ivory_debts").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
+    cloud.from("ivory_debt_payments").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
+    cloud.from("ivory_debt_snapshots").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
+    cloud
+      .from("ivory_debt_settings")
+      .upsert({ id: 1, debt_limit: DEFAULT_LIMIT, updated_at: new Date().toISOString() }),
+  ]);
+
+  if (debtsRes.error) throw debtsRes.error;
+  if (paymentsRes.error) throw paymentsRes.error;
+  if (snapshotsRes.error) throw snapshotsRes.error;
+  if (settingsRes.error) throw settingsRes.error;
+
+  saveLocalHutangState({
+    debts: [],
+    payments: [],
+    snapshots: [],
+    limit: DEFAULT_LIMIT,
+  });
+}
+
 let syncPromise: Promise<void> | null = null;
 
 /**
@@ -509,12 +550,12 @@ export async function syncDebtsFromCloud(): Promise<void> {
       if (hasLocalDebtData()) {
         backupLocalDebtData("before-cloud-sync");
       }
-      localStorage.setItem(DEBT_KEY, JSON.stringify(debts));
-      localStorage.setItem(PAYMENT_KEY, JSON.stringify(payments));
-      localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshots));
-      if (settingsRes.data?.debt_limit) {
-        localStorage.setItem(LIMIT_KEY, String(settingsRes.data.debt_limit));
-      }
+      saveLocalHutangState({
+        debts,
+        payments,
+        snapshots,
+        limit: settingsRes.data?.debt_limit || undefined,
+      });
     } catch (err) {
       console.error("[hutang] syncDebtsFromCloud failed", err);
     } finally {
