@@ -23,7 +23,9 @@ import {
   markDebtsPaid,
   normalizeInvoiceNumber,
   saveDebtItems,
+  saveDebtPayments,
   saveSupplierSnapshot,
+  saveSupplierSnapshots,
   setDebtLimit,
   createSupplierSnapshot,
   syncDebtsFromCloud,
@@ -64,8 +66,8 @@ export default function Hutang() {
   const resetHutangData = () => {
     // Clears both local cache AND cloud (write-through empties Supabase tables).
     saveDebtItems([]);
-    localStorage.removeItem("rrc_ivory_debt_payments_v1");
-    localStorage.removeItem("rrc_ivory_snapshots_v1");
+    saveDebtPayments([]);
+    saveSupplierSnapshots([]);
     localStorage.removeItem("rrc_ivory_limit_v1");
     setForm(initialForm);
     setSelected([]);

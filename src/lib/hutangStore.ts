@@ -478,9 +478,6 @@ export async function syncDebtsFromCloud(): Promise<void> {
   if (syncPromise) return syncPromise;
   syncPromise = (async () => {
     try {
-      const localDebts = getDebtItems();
-      const localPayments = getDebtPayments();
-      const localSnapshots = getSupplierSnapshots();
       const [debtsRes, paymentsRes, snapshotsRes, settingsRes] = await Promise.all([
         cloud.from("ivory_debts").select("*").order("created_at", { ascending: false }),
         cloud.from("ivory_debt_payments").select("*").order("paid_at", { ascending: false }),
@@ -491,24 +488,6 @@ export async function syncDebtsFromCloud(): Promise<void> {
       if (debtsRes.error) throw debtsRes.error;
       if (paymentsRes.error) throw paymentsRes.error;
       if (snapshotsRes.error) throw snapshotsRes.error;
-
-      const cloudIsEmpty =
-        (debtsRes.data || []).length === 0 &&
-        (paymentsRes.data || []).length === 0 &&
-        (snapshotsRes.data || []).length === 0;
-
-      // Safety guard: a newly-created/empty backend must never wipe browser data.
-      // If this browser still has Hutang Ivory data, lift it to the backend first.
-      if (cloudIsEmpty && hasLocalDebtData()) {
-        backupLocalDebtData("cloud-empty-before-upload");
-        await Promise.all([
-          pushDebtsToCloud(localDebts),
-          pushPaymentsToCloud(localPayments),
-          pushSnapshotsToCloud(localSnapshots),
-          pushLimitToCloud(getDebtLimit()),
-        ]);
-        return;
-      }
 
       const debts: DebtItem[] = (debtsRes.data || []).map((row: DebtRow) => rowToDebt(row));
       const payments: DebtPayment[] = (paymentsRes.data || []).map((row: PaymentRow) => ({
