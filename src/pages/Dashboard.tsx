@@ -35,9 +35,6 @@ import { getAuthHeaders } from "@/lib/authHeaders";
 import { formatNumber, formatRupiah } from "@/lib/formatters";
 import { SUPABASE_URL } from "@/lib/supabaseEnv";
 import {
-  createDebtItem,
-  createSupplierSnapshot,
-  ensureDefaultIvoryDebtData,
   getDebtSummary,
   getDebtLimit,
   getDebtItems,
@@ -342,30 +339,6 @@ function HutangCard() {
   const [summary, setSummary] = useState(() => getDebtSummary(getDebtItems()));
 
   useEffect(() => {
-    const defaultSnapshot = createSupplierSnapshot({
-      label: "Snapshot supplier contoh - 30 Juni 2026",
-      items: [
-        { invoiceNumber: "090626002", amount: 6435000, invoiceDate: "2026-06-09", note: "", sourceType: "snapshot" },
-        { invoiceNumber: "190626003", amount: 3690750, invoiceDate: "2026-06-19", note: "", sourceType: "snapshot" },
-        { invoiceNumber: "230626002", amount: 3653000, invoiceDate: "2026-06-23", note: "", sourceType: "snapshot" },
-        { invoiceNumber: "230626003", amount: 3784000, invoiceDate: "2026-06-23", note: "", sourceType: "snapshot" },
-        { invoiceNumber: "260626003", amount: 2035000, invoiceDate: "2026-06-26", note: "", sourceType: "snapshot" },
-        { invoiceNumber: "260626004", amount: 6667250, invoiceDate: "2026-06-26", note: "", sourceType: "snapshot" },
-        { invoiceNumber: "300626003", amount: 6275324, invoiceDate: "2026-06-30", note: "", sourceType: "snapshot" },
-        { invoiceNumber: "300626004", amount: 6718800, invoiceDate: "2026-06-30", note: "", sourceType: "snapshot" },
-      ],
-    });
-    const defaultItems = defaultSnapshot.items.map((item) =>
-      createDebtItem({
-        invoiceNumber: item.invoiceNumber,
-        amount: item.amount,
-        invoiceDate: item.invoiceDate,
-        note: item.note,
-        sourceType: "snapshot",
-      }),
-    );
-    ensureDefaultIvoryDebtData(defaultSnapshot, defaultItems);
-
     const refresh = () => {
       setLimit(getDebtLimit());
       setSummary(getDebtSummary(getDebtItems()));
