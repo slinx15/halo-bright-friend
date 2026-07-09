@@ -286,9 +286,12 @@ export default function Hutang() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-mono text-sm font-bold">{item.invoiceNumber}</p>
+                    <p className="truncate font-mono text-sm font-bold" title={item.invoiceNumber}>{item.invoiceNumber}</p>
                     <p className="text-xs text-muted-foreground">{item.invoiceDate}</p>
-                    <p className={cn("mt-1 text-[11px]", item.note.toLowerCase().includes("lunas") ? "font-semibold text-warning" : "text-muted-foreground")}>
+                    <p
+                      title={item.note ? item.note : "Tanpa catatan"}
+                      className={cn("mt-1 truncate text-[11px]", item.note.toLowerCase().includes("lunas") ? "font-semibold text-warning" : "text-muted-foreground")}
+                    >
                       {item.note ? item.note : "Tanpa catatan"}
                     </p>
                   </div>
@@ -433,9 +436,9 @@ export default function Hutang() {
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
-                              <p className="font-mono text-sm font-bold">{item.invoiceNumber}</p>
+                              <p className="truncate font-mono text-sm font-bold" title={item.invoiceNumber}>{item.invoiceNumber}</p>
                               <p className="text-xs text-muted-foreground">{item.invoiceDate}</p>
-                              <p className="mt-1 text-[11px] text-muted-foreground">{item.note ? item.note : "Tanpa catatan"}</p>
+                              <p className="mt-1 truncate text-[11px] text-muted-foreground" title={item.note ? item.note : "Tanpa catatan"}>{item.note ? item.note : "Tanpa catatan"}</p>
                             </div>
                             <div className="text-right">
                               <p className="text-base font-extrabold tabular-nums">{formatRupiah(item.amount)}</p>
@@ -482,7 +485,7 @@ export default function Hutang() {
             <div key={item.id} className="rounded-2xl border border-warning/30 bg-warning/5 p-3 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="font-mono text-sm font-bold">{item.invoiceNumber}</p>
+                  <p className="truncate font-mono text-sm font-bold" title={item.invoiceNumber}>{item.invoiceNumber}</p>
                   <p className="text-xs text-muted-foreground">Lunas: {item.paidAt ? new Date(item.paidAt).toLocaleString("id-ID") : "-"}</p>
                 </div>
                 <Badge className="rounded-full bg-warning text-warning-foreground">Kuning / Lunas</Badge>
