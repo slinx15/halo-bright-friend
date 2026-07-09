@@ -676,7 +676,6 @@ const Dashboard = () => {
         <div className="md:col-span-1">
           <div className="space-y-3">
             <QuickActions />
-            <HutangCard />
           </div>
         </div>
       </div>
