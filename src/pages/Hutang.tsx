@@ -263,67 +263,6 @@ export default function Hutang() {
         </div>
       </section>
 
-      <Card className="card-premium overflow-hidden rounded-2xl border-destructive/30 bg-destructive/5">
-        <CardHeader className="px-4 py-3 pb-2">
-          <CardTitle className="flex items-center gap-2 text-sm font-semibold text-destructive">
-            <AlertTriangle className="h-4 w-4" />
-            Zona Berbahaya
-          </CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Reset akan menghapus data cloud dan cache lokal Hutang Ivory. Gunakan hanya jika benar-benar perlu.
-          </p>
-        </CardHeader>
-        <CardContent className="px-4 pb-4 pt-1">
-          <AlertDialog
-            open={resetConfirmOpen}
-            onOpenChange={(open) => {
-              setResetConfirmOpen(open);
-              if (!open) setResetConfirmValue("");
-            }}
-          >
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="h-11 w-full rounded-2xl font-bold" disabled={resetting}>
-                Reset Hutang Ivory
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent className="rounded-3xl">
-              <AlertDialogHeader>
-                <AlertDialogTitle>Reset data Hutang Ivory?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Tindakan ini akan menghapus semua data Hutang Ivory dari cloud dan cache lokal. Aksi ini tidak bisa dibatalkan.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <div className="space-y-3">
-                <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-3 text-sm text-muted-foreground">
-                  Ketik <span className="font-mono font-bold text-foreground">{resetVerificationPhrase}</span> untuk mengaktifkan tombol reset.
-                </div>
-                <Input
-                  value={resetConfirmValue}
-                  onChange={(e) => setResetConfirmValue(e.target.value)}
-                  placeholder={resetVerificationPhrase}
-                  className="h-11 rounded-xl font-mono"
-                  autoComplete="off"
-                  autoCapitalize="characters"
-                />
-              </div>
-              <AlertDialogFooter className="gap-2">
-                <AlertDialogCancel className="rounded-xl">Batal</AlertDialogCancel>
-                <AlertDialogAction asChild>
-                  <Button
-                    variant="destructive"
-                    className="rounded-xl"
-                    disabled={!canConfirmReset || resetting}
-                    onClick={resetHutangData}
-                  >
-                    {resetting ? "Mereset Hutang..." : "Ya, Reset Sekarang"}
-                  </Button>
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </CardContent>
-      </Card>
-
       <Card className="card-premium overflow-hidden rounded-2xl">
         <CardHeader className="flex flex-row items-center justify-between gap-2 px-4 py-2.5 pb-2">
           <CardTitle className="text-sm font-semibold">Bon Aktif</CardTitle>
@@ -551,6 +490,67 @@ export default function Hutang() {
               <p className="mt-2 text-sm font-semibold tabular-nums">{formatRupiah(item.amount)}</p>
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      <Card className="card-premium overflow-hidden rounded-2xl border-destructive/30 bg-destructive/5">
+        <CardHeader className="px-4 py-3 pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm font-semibold text-destructive">
+            <AlertTriangle className="h-4 w-4" />
+            Zona Berbahaya
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Reset akan menghapus data cloud dan cache lokal Hutang Ivory. Gunakan hanya jika benar-benar perlu.
+          </p>
+        </CardHeader>
+        <CardContent className="px-4 pb-4 pt-1">
+          <AlertDialog
+            open={resetConfirmOpen}
+            onOpenChange={(open) => {
+              setResetConfirmOpen(open);
+              if (!open) setResetConfirmValue("");
+            }}
+          >
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" className="h-11 w-full rounded-2xl font-bold" disabled={resetting}>
+                Reset Hutang Ivory
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="rounded-3xl">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Reset data Hutang Ivory?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tindakan ini akan menghapus semua data Hutang Ivory dari cloud dan cache lokal. Aksi ini tidak bisa dibatalkan.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="space-y-3">
+                <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-3 text-sm text-muted-foreground">
+                  Ketik <span className="font-mono font-bold text-foreground">{resetVerificationPhrase}</span> untuk mengaktifkan tombol reset.
+                </div>
+                <Input
+                  value={resetConfirmValue}
+                  onChange={(e) => setResetConfirmValue(e.target.value)}
+                  placeholder={resetVerificationPhrase}
+                  className="h-11 rounded-xl font-mono"
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                />
+              </div>
+              <AlertDialogFooter className="gap-2">
+                <AlertDialogCancel className="rounded-xl">Batal</AlertDialogCancel>
+                <AlertDialogAction asChild>
+                  <Button
+                    variant="destructive"
+                    className="rounded-xl"
+                    disabled={!canConfirmReset || resetting}
+                    onClick={resetHutangData}
+                  >
+                    {resetting ? "Mereset Hutang..." : "Ya, Reset Sekarang"}
+                  </Button>
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </CardContent>
       </Card>
     </div>
