@@ -13,6 +13,11 @@ import {
   Plus,
   Send,
   Trash2,
+  Check,
+  AlertTriangle,
+  ArrowRight,
+  ArrowLeft,
+  FileText,
 } from "lucide-react";
 
 
@@ -60,6 +65,25 @@ interface BarangMasukOcrItem {
   catatan?: string;
 }
 
+interface OrderedItem {
+  kode: string;
+  qty: number;
+  kategori: string;
+  productName?: string;
+  productId?: string;
+  productKode?: string;
+}
+
+interface ComparisonRow {
+  kode: string;
+  kategori: string;
+  productName?: string;
+  productId?: string;
+  qtyOrdered: number;
+  qtyArrived: number;
+  status: "match" | "missing" | "partial" | "extra";
+}
+
 function createEmptyLineItem(): LineItem {
   return { kode: "", qty: 1 };
 }
@@ -90,6 +114,62 @@ function clearPendingStockInBonId() {
   localStorage.removeItem(PENDING_STOCK_IN_BON_KEY);
 }
 
+const getComparison = (ordered: OrderedItem[], arrived: LineItem[]): ComparisonRow[] => {
+  const map = new Map<string, ComparisonRow>();
+
+  // Add all ordered items
+  for (const ord of ordered) {
+    const key = `${ord.kode.toUpperCase()}_${(ord.kategori || "").toUpperCase()}`;
+    map.set(key, {
+      kode: ord.kode,
+      kategori: ord.kategori,
+      productName: ord.productName,
+      productId: ord.productId,
+      qtyOrdered: ord.qty,
+      qtyArrived: 0,
+      status: "missing",
+    });
+  }
+
+  // Merge arrived items
+  for (const arr of arrived) {
+    const key = `${arr.kode.toUpperCase()}_${(arr.productKategori || "").toUpperCase()}`;
+    const existing = map.get(key);
+    if (existing) {
+      existing.qtyArrived += arr.qty;
+      existing.productId = existing.productId || arr.productId;
+      existing.productName = existing.productName || arr.productName;
+    } else {
+      map.set(key, {
+        kode: arr.kode,
+        kategori: arr.productKategori || "",
+        productName: arr.productName,
+        productId: arr.productId,
+        qtyOrdered: 0,
+        qtyArrived: arr.qty,
+        status: "extra",
+      });
+    }
+  }
+
+  // Update statuses
+  const result: ComparisonRow[] = [];
+  for (const row of map.values()) {
+    if (row.qtyOrdered === 0 && row.qtyArrived > 0) {
+      row.status = "extra";
+    } else if (row.qtyOrdered > 0 && row.qtyArrived === 0) {
+      row.status = "missing";
+    } else if (row.qtyOrdered > row.qtyArrived) {
+      row.status = "partial";
+    } else {
+      row.status = "match";
+    }
+    result.push(row);
+  }
+
+  return result;
+};
+
 const BarangMasuk = () => {
   const { data: products } = useProducts();
   const { data: history = [], isLoading: historyLoading } = useStockInHistory();
@@ -100,6 +180,63 @@ const BarangMasuk = () => {
   const [tanggal, setTanggal] = useState<Date | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const [isMatchingMode, setIsMatchingMode] = useState(false);
+  const [matchingStep, setMatchingStep] = useState<1 | 2>(1);
+  const [orderedText, setOrderedText] = useState("");
+  const [orderedItems, setOrderedItems] = useState<OrderedItem[]>([]);
+  const [arrivedItems, setArrivedItems] = useState<LineItem[]>([]);
+
+  const parseOrderedText = (text: string): OrderedItem[] => {
+    const lines = text.split("\n");
+    let currentCategory = "";
+    const parsed: OrderedItem[] = [];
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      const catMatch = trimmed.match(/(\d+\s*(?:Ons|Gram))/i);
+      if (catMatch) {
+        const rawCat = catMatch[1];
+        const number = rawCat.match(/\d+/)?.[0] || "";
+        const unit = rawCat.toLowerCase().includes("ons") ? "Ons" : "Gram";
+        currentCategory = `${number} ${unit}`;
+        continue;
+      }
+
+      if (trimmed.includes("-")) {
+        const parts = trimmed.split("-");
+        const rawCode = parts[0].trim().toUpperCase();
+        const qtyPart = parts.slice(1).join("-").trim();
+        const numMatch = qtyPart.match(/\d+/);
+
+        if (rawCode && numMatch) {
+          const qty = parseInt(numMatch[0], 10);
+          const found = products ? findProductMatch(products, {
+            kode: rawCode,
+            kategori: currentCategory || undefined,
+          }) : null;
+
+          parsed.push({
+            kode: found ? found.kode : rawCode,
+            qty,
+            kategori: currentCategory || found?.kategori || "",
+            productName: found?.nama,
+            productId: found?.id,
+            productKode: found?.kode,
+          });
+        }
+      }
+    }
+    return parsed;
+  };
+
+  const handleTextChange = (text: string) => {
+    setOrderedText(text);
+    const parsed = parseOrderedText(text);
+    setOrderedItems(parsed);
+  };
 
   const updateItem = <K extends keyof LineItem>(index: number, field: K, value: LineItem[K]) => {
     setItems((prev) => {
@@ -139,12 +276,22 @@ const BarangMasuk = () => {
       };
     });
 
-    setItems(newItems.length > 0 ? newItems : [createEmptyLineItem()]);
+    if (isMatchingMode) {
+      setArrivedItems(newItems);
+      setMatchingStep(2);
+      toast({
+        title: "Nota Terbaca",
+        description: `Berhasil membaca ${newItems.length} item dari foto nota.`,
+      });
+    } else {
+      setItems(newItems.length > 0 ? newItems : [createEmptyLineItem()]);
+    }
     if (ocrItems[0]?.catatan) setCatatan(ocrItems[0].catatan);
   };
 
   const handleSubmit = async () => {
-    const validItems = items.filter((item) => item.productId && item.qty > 0);
+    const activeItems = isMatchingMode ? arrivedItems : items;
+    const validItems = activeItems.filter((item) => item.productId && item.qty > 0);
     if (validItems.length === 0) {
       toast({ title: "Error", description: "Tidak ada item valid", variant: "destructive" });
       return;
@@ -208,7 +355,7 @@ const BarangMasuk = () => {
       }, 0);
 
       const successfulSet = new Set(successfulItems);
-      const remainingItems = items.filter((item) => !successfulSet.has(item));
+      const remainingItems = activeItems.filter((item) => !successfulSet.has(item));
       const hasPendingItems = remainingItems.some((item) => item.kode.trim() || item.productId);
 
       if (totalModal > 0) {
@@ -270,13 +417,25 @@ const BarangMasuk = () => {
 
     if (successCount > 0) {
       const successfulSet = new Set(successfulItems);
-      const remainingItems = items.filter((item) => !successfulSet.has(item));
+      const remainingItems = activeItems.filter((item) => !successfulSet.has(item));
       const hasPendingItems = remainingItems.some((item) => item.kode.trim() || item.productId);
 
       if (hasPendingItems) {
-        setItems(remainingItems);
+        if (isMatchingMode) {
+          setArrivedItems(remainingItems);
+        } else {
+          setItems(remainingItems);
+        }
       } else {
-        setItems([createEmptyLineItem()]);
+        if (isMatchingMode) {
+          setArrivedItems([]);
+          setOrderedItems([]);
+          setOrderedText("");
+          setMatchingStep(1);
+          setIsMatchingMode(false);
+        } else {
+          setItems([createEmptyLineItem()]);
+        }
         setCatatan("");
         setTanggal(undefined);
       }
@@ -312,11 +471,12 @@ const BarangMasuk = () => {
     }
   };
 
-  const validCount = items.filter((item) => item.productId && item.qty > 0).length;
-  const totalQty = items
+  const activeItems = isMatchingMode ? arrivedItems : items;
+  const validCount = activeItems.filter((item) => item.productId && item.qty > 0).length;
+  const totalQty = activeItems
     .filter((item) => item.productId && item.qty > 0)
     .reduce((sum, item) => sum + item.qty, 0);
-  const estimatedBonTotal = items
+  const estimatedBonTotal = activeItems
     .filter((item) => item.productId && item.qty > 0)
     .reduce((sum, item) => {
       const product = products?.find((entry) => entry.id === item.productId);
@@ -339,9 +499,44 @@ const BarangMasuk = () => {
             <p className="text-xs text-muted-foreground">Catat stok masuk dengan cepat</p>
           </div>
         </div>
-        <div className="shrink-0">
-          <OcrUpload mode="masuk" onResult={(ocrItems) => handleOcrResult(ocrItems as BarangMasukOcrItem[])} />
-        </div>
+        {!isMatchingMode && (
+          <div className="shrink-0">
+            <OcrUpload mode="masuk" onResult={(ocrItems) => handleOcrResult(ocrItems as BarangMasukOcrItem[])} />
+          </div>
+        )}
+      </section>
+
+      {/* MODE SELECTOR */}
+      <section className="grid grid-cols-2 gap-2 rounded-2xl bg-card border p-1 shadow-sm">
+        <button
+          onClick={() => {
+            setIsMatchingMode(false);
+          }}
+          className={cn(
+            "flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all md:text-sm",
+            !isMatchingMode
+              ? "bg-primary text-primary-foreground shadow-md"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          )}
+        >
+          <Plus className="h-4 w-4" />
+          Input Langsung
+        </button>
+        <button
+          onClick={() => {
+            setIsMatchingMode(true);
+            setMatchingStep(1);
+          }}
+          className={cn(
+            "flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all md:text-sm",
+            isMatchingMode
+              ? "bg-primary text-primary-foreground shadow-md"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          )}
+        >
+          <FileText className="h-4 w-4" />
+          Cocokkan Pesanan
+        </button>
       </section>
 
       {/* KPI CARDS — Vibrant status cards (horizontal, 3 kolom) */}
@@ -352,7 +547,7 @@ const BarangMasuk = () => {
             <FileEdit className="h-5 w-5" strokeWidth={2} />
           </div>
           <div className="my-1.5 text-center">
-            <span className="text-2xl font-extrabold tabular-nums text-foreground leading-none">{items.length}</span>
+            <span className="text-2xl font-extrabold tabular-nums text-foreground leading-none">{activeItems.length}</span>
           </div>
           <div className="text-center">
             <p className="text-[10px] font-bold uppercase tracking-tight text-foreground/90">Draft</p>
@@ -392,242 +587,523 @@ const BarangMasuk = () => {
 
       {/* INPUT FORM */}
       <Card className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-        <CardHeader className="flex flex-row items-center gap-2 px-4 py-3 pb-2">
-          <div className="rounded-lg bg-success/10 p-1.5">
-            <PackagePlus className="h-4 w-4 text-success" />
+        <CardHeader className="flex flex-row items-center justify-between px-4 py-3 pb-2">
+          <div className="flex items-center gap-2">
+            <div className="rounded-lg bg-success/10 p-1.5">
+              <PackagePlus className="h-4 w-4 text-success" />
+            </div>
+            <CardTitle className="text-sm font-semibold">
+              {isMatchingMode
+                ? `Pencocokan Pesanan — Langkah ${matchingStep} dari 2`
+                : "Input Barang Masuk"}
+            </CardTitle>
           </div>
-          <CardTitle className="text-sm font-semibold">Input Barang Masuk</CardTitle>
+          {isMatchingMode && matchingStep === 2 && (
+            <OcrUpload mode="masuk" onResult={(ocrItems) => handleOcrResult(ocrItems as BarangMasukOcrItem[])} />
+          )}
         </CardHeader>
 
         <CardContent className="space-y-3 px-4 pb-4 pt-1">
-          {items.map((item, index) => {
-            const matchedProduct = products?.find((product) => product.id === item.productId);
-            const currentStacks = (matchedProduct?.stock?.tumpukan_detail as number[]) ?? [];
-            const previewNewStacks =
-              item.productId && item.qty > 0
-                ? splitIntoStacks(item.qty, item.productKode || item.kode, item.productKategori || undefined)
-                : [];
-            const previewMerged =
-              item.productId && item.qty > 0 ? addStacks(currentStacks, previewNewStacks) : currentStacks;
-
-            return (
-              <div
-                key={index}
-                className={cn(
-                  "space-y-2.5 rounded-2xl border p-3 transition-all duration-200",
-                  item.productId
-                    ? "border-success/25 bg-success/[0.045]"
-                    : item.kode && !item.productId
-                      ? "border-destructive/25 bg-destructive/[0.04]"
-                      : "border-border/60 bg-background/55 hover:border-border",
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="min-w-0 flex-1">
-                    <Input
-                      placeholder="Ketik kode produk..."
-                      value={item.kode}
-                      onChange={(event) => updateItem(index, "kode", event.target.value.toUpperCase())}
-                      list="product-codes"
-                      className="h-11 rounded-xl border-border/70 bg-card font-mono"
-                    />
-                  </div>
-                  {/* Qty dengan tombol +/- untuk elderly UX */}
-                  <div className="flex shrink-0 items-center gap-0.5 rounded-xl border border-border/70 bg-card p-0.5">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => updateItem(index, "qty", Math.max(0, item.qty - 1))}
-                      className="h-9 w-9 rounded-lg"
-                      aria-label="Kurangi"
-                    >
-                      <Minus className="h-3.5 w-3.5" />
-                    </Button>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      value={item.qty === 0 ? "" : item.qty}
-                      onChange={(event) =>
-                        updateItem(
-                          index,
-                          "qty",
-                          event.target.value === "" ? 0 : parseInt(event.target.value, 10) || 0,
-                        )
-                      }
-                      placeholder="0"
-                      className="h-9 w-10 rounded-lg border-0 bg-transparent p-0 text-center text-base font-bold focus-visible:ring-0"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => updateItem(index, "qty", item.qty + 1)}
-                      className="h-9 w-9 rounded-lg"
-                      aria-label="Tambah"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                  {items.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeLine(index)}
-                      className="h-11 w-11 shrink-0 rounded-xl text-destructive hover:bg-destructive/10"
-                      aria-label="Hapus baris"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
+          {isMatchingMode ? (
+            // MATCHING FLOW
+            matchingStep === 1 ? (
+              // STEP 1: INPUT ORDERED TEXT
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="ordered-text" className="text-xs font-bold text-muted-foreground uppercase">
+                    Langkah 1: Tempel / Ketik Daftar Pesanan Anda (Teks)
+                  </Label>
+                  <Textarea
+                    id="ordered-text"
+                    placeholder="Contoh:&#10;Benang Obras 2 Ons&#10;WHT - 100&#10;055 - 50&#10;Benang Obras 8 Ons&#10;WHT - 2 bal"
+                    value={orderedText}
+                    onChange={(e) => handleTextChange(e.target.value)}
+                    rows={10}
+                    className="rounded-xl border-border/70 bg-card font-mono text-sm leading-relaxed"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Tuliskan kategori (misal: <em>Benang Obras 2 Ons</em>) diikuti daftar benang menggunakan format <code>KODE - JUMLAH</code>.
+                  </p>
                 </div>
 
-                {item.productName && (
-                  <p className="flex items-center gap-1 text-xs font-medium text-success">
-                    <CheckCircle2 className="h-3 w-3 shrink-0" />
-                    {item.productName}
-                    {matchedProduct?.kategori && matchedProduct.kategori !== "2 Ons" && (
-                      <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[9px]">
-                        {matchedProduct.kategori}
-                      </Badge>
-                    )}
-                  </p>
-                )}
-
-                {item.kode && !item.productId && (
-                  <p className="text-xs font-medium text-destructive">Produk tidak ditemukan</p>
-                )}
-
-                {item.productId && item.qty > 0 && (
-                  <div className="space-y-1.5 rounded-xl border border-success/15 bg-success/[0.05] p-2.5">
-                    <div className="flex items-center gap-2 text-[11px]">
-                      <span className="font-semibold text-success">Masuk</span>
-                      <TumpukanBadges stacks={previewNewStacks} kode={item.productKode || item.kode} compact />
-                    </div>
-                    {currentStacks.length > 0 && (
-                      <div className="flex items-center gap-2 text-[11px]">
-                        <span className="font-medium text-muted-foreground">Sekarang</span>
-                        <TumpukanBadges stacks={currentStacks} kode={item.productKode || item.kode} compact />
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2 text-[11px]">
-                      <span className="font-semibold text-foreground">Setelah</span>
-                      <TumpukanBadges stacks={previewMerged} kode={item.productKode || item.kode} compact />
-                      <Badge variant="secondary" className="rounded-full bg-primary px-1.5 text-[9px] text-primary-foreground">
-                        = {previewMerged.reduce((sum, value) => sum + value, 0)}
-                      </Badge>
+                {orderedItems.length > 0 && (
+                  <div className="space-y-2 rounded-xl border bg-muted/30 p-3">
+                    <p className="text-xs font-bold text-foreground">
+                      Terbaca {orderedItems.length} Item Pesanan:
+                    </p>
+                    <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
+                      {orderedItems.map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-xs border-b border-border/40 pb-1">
+                          <span className="font-mono font-semibold">
+                            {item.kode} {item.kategori && `(${item.kategori})`}
+                          </span>
+                          <span className="font-bold text-primary">
+                            {item.qty} Pcs
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
+
+                <Button
+                  onClick={() => setMatchingStep(2)}
+                  disabled={orderedItems.length === 0}
+                  className="w-full h-11 rounded-xl font-bold flex items-center justify-center gap-1.5"
+                >
+                  Langkah Selanjutnya: Upload Foto Nota
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
               </div>
-            );
-          })}
+            ) : (
+              // STEP 2: UPLOAD PHOTO AND COMPARE
+              <div className="space-y-4">
+                {arrivedItems.length === 0 ? (
+                  // If photo not uploaded yet
+                  <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 text-center space-y-4">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                      <Camera className="h-6 w-6 animate-pulse" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-bold">Langkah 2: Ambil Foto / Upload Nota Barang Datang</p>
+                      <p className="text-xs text-muted-foreground max-w-xs">
+                        Gunakan tombol di kanan atas kartu atau klik di bawah ini untuk memproses nota barang yang datang.
+                      </p>
+                    </div>
+                    <OcrUpload mode="masuk" onResult={(ocrItems) => handleOcrResult(ocrItems as BarangMasukOcrItem[])} />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setMatchingStep(1)}
+                      className="text-xs font-semibold text-muted-foreground hover:text-foreground"
+                    >
+                      <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Kembali ke input teks
+                    </Button>
+                  </div>
+                ) : (
+                  // Comparison View
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                        Hasil Pencocokan (Pesanan vs Datang)
+                      </h3>
 
-          <datalist id="product-codes">
-            {products?.map((product) => (
-              <option key={product.id} value={product.nama} label={`${product.kode} - ${product.nama}`} />
-            ))}
-          </datalist>
+                      <div className="overflow-hidden rounded-xl border border-border/80 bg-card divide-y">
+                        {getComparison(orderedItems, arrivedItems).map((row, idx) => {
+                          const isMatch = row.status === "match";
+                          const isMissing = row.status === "missing";
+                          const isPartial = row.status === "partial";
+                          const isExtra = row.status === "extra";
 
-          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Estimasi Bon</p>
-                <p className="mt-0.5 text-lg font-extrabold tabular-nums text-foreground">{formatRupiah(estimatedBonTotal)}</p>
-              </div>
-              <Badge variant="secondary" className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
-                Hutang Ivory
-              </Badge>
-            </div>
-          </div>
+                          return (
+                            <div
+                              key={idx}
+                              className={cn(
+                                "flex flex-col gap-2 p-3 text-sm",
+                                isMatch && "bg-success/[0.02]",
+                                isMissing && "bg-destructive/[0.03]",
+                                isPartial && "bg-warning/[0.03]",
+                                isExtra && "bg-primary/[0.02]"
+                              )}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-mono font-bold text-foreground">
+                                      {row.kode}
+                                    </span>
+                                    {row.kategori && (
+                                      <Badge variant="outline" className="text-[9px] px-1 py-0 font-medium">
+                                        {row.kategori}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {row.productName && (
+                                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                                      {row.productName}
+                                    </p>
+                                  )}
+                                </div>
 
-          {/* Tombol Tambah Baris full-width, ghost style */}
-          <Button
-            variant="outline"
-            onClick={addLine}
-            className="h-11 w-full rounded-xl border-dashed text-sm font-semibold transition-all duration-150 active:scale-[0.98]"
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            Tambah Baris
-          </Button>
+                                <div className="flex items-center gap-1">
+                                  {isMatch && (
+                                    <Badge className="bg-success/10 text-success border-success/20 hover:bg-success/10 text-[10px] font-bold flex items-center gap-0.5 border">
+                                      <Check className="h-3 w-3" /> Cocok
+                                    </Badge>
+                                  )}
+                                  {isPartial && (
+                                    <Badge className="bg-warning/10 text-warning border-warning/20 hover:bg-warning/10 text-[10px] font-bold flex items-center gap-0.5 border">
+                                      <AlertTriangle className="h-3 w-3" /> Kurang {row.qtyOrdered - row.qtyArrived} Pcs
+                                    </Badge>
+                                  )}
+                                  {isMissing && (
+                                    <Badge className="bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/10 text-[10px] font-bold flex items-center gap-0.5 border">
+                                      <X className="h-3 w-3" /> Kosong
+                                    </Badge>
+                                  )}
+                                  {isExtra && (
+                                    <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/10 text-[10px] font-bold flex items-center gap-0.5 border">
+                                      <Plus className="h-3 w-3" /> Tambahan
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
 
-          {/* Opsi lanjutan (Tanggal & Catatan) — collapsed by default */}
-          <Collapsible>
-            <CollapsibleTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-9 w-full justify-between rounded-lg text-xs font-semibold text-muted-foreground hover:bg-muted"
-              >
-                <span>Opsi lanjutan {tanggal ? `· ${selectedDateLabel}` : ""} {catatan ? "· ada catatan" : ""}</span>
-                <ChevronDown className="h-3.5 w-3.5 transition-transform data-[state=open]:rotate-180" />
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pt-2 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <div>
-                  <Label className="text-xs font-semibold text-muted-foreground">Tanggal</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
+                              <div className="flex items-center gap-4 text-xs font-semibold text-muted-foreground border-t border-border/40 pt-1.5">
+                                <div>
+                                  Pesan: <span className="text-foreground font-bold">{row.qtyOrdered}</span> Pcs
+                                </div>
+                                <div>
+                                  Datang: <span className={cn(
+                                    "font-bold",
+                                    row.qtyArrived === 0 ? "text-destructive" : row.qtyArrived < row.qtyOrdered ? "text-warning" : "text-success"
+                                  )}>{row.qtyArrived}</span> Pcs
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Estimasi Bon Barang Datang</p>
+                          <p className="mt-0.5 text-lg font-extrabold tabular-nums text-foreground">{formatRupiah(estimatedBonTotal)}</p>
+                        </div>
+                        <Badge variant="secondary" className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
+                          Hutang Ivory
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Opsi lanjutan (Tanggal & Catatan) — collapsed by default */}
+                    <Collapsible>
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-9 w-full justify-between rounded-lg text-xs font-semibold text-muted-foreground hover:bg-muted"
+                        >
+                          <span>Opsi lanjutan {tanggal ? `· ${selectedDateLabel}` : ""} {catatan ? "· ada catatan" : ""}</span>
+                          <ChevronDown className="h-3.5 w-3.5 transition-transform data-[state=open]:rotate-180" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="pt-2 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                          <div>
+                            <Label className="text-xs font-semibold text-muted-foreground">Tanggal</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "mt-1 h-11 w-full justify-start rounded-xl border-border/70 bg-card text-left font-normal",
+                                    !tanggal && "text-muted-foreground",
+                                  )}
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {selectedDateLabel}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={tanggal}
+                                  onSelect={setTanggal}
+                                  initialFocus
+                                  className="pointer-events-auto p-3"
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            {tanggal && (
+                              <button
+                                onClick={() => setTanggal(undefined)}
+                                className="mt-0.5 text-[10px] text-primary hover:underline"
+                              >
+                                Reset ke hari ini
+                              </button>
+                            )}
+                          </div>
+
+                          <div>
+                            <Label className="text-xs font-semibold text-muted-foreground">Catatan</Label>
+                            <Textarea
+                              value={catatan}
+                              onChange={(event) => setCatatan(event.target.value)}
+                              placeholder="Catatan..."
+                              rows={2}
+                              className="mt-1 rounded-xl border-border/70 bg-card"
+                            />
+                          </div>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+
+                    <div className="flex gap-2">
                       <Button
                         variant="outline"
+                        onClick={() => {
+                          setArrivedItems([]);
+                          setMatchingStep(1);
+                        }}
+                        className="flex-1 h-12 rounded-2xl text-sm font-bold"
+                      >
+                        <ArrowLeft className="mr-1 h-4 w-4" /> Edit Pesanan
+                      </Button>
+                      
+                      <Button
+                        onClick={handleSubmit}
+                        disabled={submitting || validCount === 0}
                         className={cn(
-                          "mt-1 h-11 w-full justify-start rounded-xl border-border/70 bg-card text-left font-normal",
-                          !tanggal && "text-muted-foreground",
+                          "flex-[2] h-12 rounded-2xl text-base font-bold shadow-md transition-all duration-150 active:scale-[0.98]",
+                          validCount === 0 || submitting
+                            ? "bg-muted text-muted-foreground shadow-none hover:bg-muted"
+                            : "bg-gradient-to-r from-success via-emerald-500 to-primary text-primary-foreground hover:shadow-lg"
                         )}
                       >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {selectedDateLabel}
+                        <Send className="mr-2 h-5 w-5" />
+                        {submitting ? "Menyimpan..." : `Simpan ${validCount} Barang Datang`}
                       </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={tanggal}
-                        onSelect={setTanggal}
-                        initialFocus
-                        className="pointer-events-auto p-3"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  {tanggal && (
-                    <button
-                      onClick={() => setTanggal(undefined)}
-                      className="mt-0.5 text-[10px] text-primary hover:underline"
-                    >
-                      Reset ke hari ini
-                    </button>
-                  )}
-                </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          ) : (
+            // NORMAL DIRECT FORM
+            <>
+              {items.map((item, index) => {
+                const matchedProduct = products?.find((product) => product.id === item.productId);
+                const currentStacks = (matchedProduct?.stock?.tumpukan_detail as number[]) ?? [];
+                const previewNewStacks =
+                  item.productId && item.qty > 0
+                    ? splitIntoStacks(item.qty, item.productKode || item.kode, item.productKategori || undefined)
+                    : [];
+                const previewMerged =
+                  item.productId && item.qty > 0 ? addStacks(currentStacks, previewNewStacks) : currentStacks;
 
-                <div>
-                  <Label className="text-xs font-semibold text-muted-foreground">Catatan</Label>
-                  <Textarea
-                    value={catatan}
-                    onChange={(event) => setCatatan(event.target.value)}
-                    placeholder="Catatan..."
-                    rows={2}
-                    className="mt-1 rounded-xl border-border/70 bg-card"
-                  />
+                return (
+                  <div
+                    key={index}
+                    className={cn(
+                      "space-y-2.5 rounded-2xl border p-3 transition-all duration-200",
+                      item.productId
+                        ? "border-success/25 bg-success/[0.045]"
+                        : item.kode && !item.productId
+                          ? "border-destructive/25 bg-destructive/[0.04]"
+                          : "border-border/60 bg-background/55 hover:border-border",
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="min-w-0 flex-1">
+                        <Input
+                          placeholder="Ketik kode produk..."
+                          value={item.kode}
+                          onChange={(event) => updateItem(index, "kode", event.target.value.toUpperCase())}
+                          list="product-codes"
+                          className="h-11 rounded-xl border-border/70 bg-card font-mono"
+                        />
+                      </div>
+                      {/* Qty dengan tombol +/- untuk elderly UX */}
+                      <div className="flex shrink-0 items-center gap-0.5 rounded-xl border border-border/70 bg-card p-0.5">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => updateItem(index, "qty", Math.max(0, item.qty - 1))}
+                          className="h-9 w-9 rounded-lg"
+                          aria-label="Kurangi"
+                        >
+                          <Minus className="h-3.5 w-3.5" />
+                        </Button>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          value={item.qty === 0 ? "" : item.qty}
+                          onChange={(event) =>
+                            updateItem(
+                              index,
+                              "qty",
+                              event.target.value === "" ? 0 : parseInt(event.target.value, 10) || 0,
+                            )
+                          }
+                          placeholder="0"
+                          className="h-9 w-10 rounded-lg border-0 bg-transparent p-0 text-center text-base font-bold focus-visible:ring-0"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => updateItem(index, "qty", item.qty + 1)}
+                          className="h-9 w-9 rounded-lg"
+                          aria-label="Tambah"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      {items.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeLine(index)}
+                          className="h-11 w-11 shrink-0 rounded-xl text-destructive hover:bg-destructive/10"
+                          aria-label="Hapus baris"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+
+                    {item.productName && (
+                      <p className="flex items-center gap-1 text-xs font-medium text-success">
+                        <CheckCircle2 className="h-3 w-3 shrink-0" />
+                        {item.productName}
+                        {matchedProduct?.kategori && matchedProduct.kategori !== "2 Ons" && (
+                          <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[9px]">
+                            {matchedProduct.kategori}
+                          </Badge>
+                        )}
+                      </p>
+                    )}
+
+                    {item.kode && !item.productId && (
+                      <p className="text-xs font-medium text-destructive">Produk tidak ditemukan</p>
+                    )}
+
+                    {item.productId && item.qty > 0 && (
+                      <div className="space-y-1.5 rounded-xl border border-success/15 bg-success/[0.05] p-2.5">
+                        <div className="flex items-center gap-2 text-[11px]">
+                          <span className="font-semibold text-success">Masuk</span>
+                          <TumpukanBadges stacks={previewNewStacks} kode={item.productKode || item.kode} compact />
+                        </div>
+                        {currentStacks.length > 0 && (
+                          <div className="flex items-center gap-2 text-[11px]">
+                            <span className="font-medium text-muted-foreground">Sekarang</span>
+                            <TumpukanBadges stacks={currentStacks} kode={item.productKode || item.kode} compact />
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 text-[11px]">
+                          <span className="font-semibold text-foreground">Setelah</span>
+                          <TumpukanBadges stacks={previewMerged} kode={item.productKode || item.kode} compact />
+                          <Badge variant="secondary" className="rounded-full bg-primary px-1.5 text-[9px] text-primary-foreground">
+                            = {previewMerged.reduce((sum, value) => sum + value, 0)}
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              <datalist id="product-codes">
+                {products?.map((product) => (
+                  <option key={product.id} value={product.nama} label={`${product.kode} - ${product.nama}`} />
+                ))}
+              </datalist>
+
+              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Estimasi Bon</p>
+                    <p className="mt-0.5 text-lg font-extrabold tabular-nums text-foreground">{formatRupiah(estimatedBonTotal)}</p>
+                  </div>
+                  <Badge variant="secondary" className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
+                    Hutang Ivory
+                  </Badge>
                 </div>
               </div>
-            </CollapsibleContent>
-          </Collapsible>
 
-          {/* Tombol Simpan — disabled state jelas abu-abu */}
-          <Button
-            onClick={handleSubmit}
-            disabled={submitting || validCount === 0}
-            className={cn(
-              "h-12 w-full rounded-2xl text-base font-bold shadow-md transition-all duration-150 active:scale-[0.98]",
-              validCount === 0 || submitting
-                ? "bg-muted text-muted-foreground shadow-none hover:bg-muted"
-                : "bg-gradient-to-r from-success via-emerald-500 to-primary text-primary-foreground hover:shadow-lg",
-            )}
-          >
-            <Send className="mr-2 h-5 w-5" />
-            {submitting ? "Menyimpan..." : validCount > 0 ? `Simpan ${validCount} Item + Bon` : "Belum ada item valid"}
-          </Button>
+              {/* Tombol Tambah Baris full-width, ghost style */}
+              <Button
+                variant="outline"
+                onClick={addLine}
+                className="h-11 w-full rounded-xl border-dashed text-sm font-semibold transition-all duration-150 active:scale-[0.98]"
+              >
+                <Plus className="mr-1.5 h-4 w-4" />
+                Tambah Baris
+              </Button>
+
+              {/* Opsi lanjutan (Tanggal & Catatan) — collapsed by default */}
+              <Collapsible>
+                <CollapsibleTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 w-full justify-between rounded-lg text-xs font-semibold text-muted-foreground hover:bg-muted"
+                  >
+                    <span>Opsi lanjutan {tanggal ? `· ${selectedDateLabel}` : ""} {catatan ? "· ada catatan" : ""}</span>
+                    <ChevronDown className="h-3.5 w-3.5 transition-transform data-[state=open]:rotate-180" />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-2 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <div>
+                      <Label className="text-xs font-semibold text-muted-foreground">Tanggal</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "mt-1 h-11 w-full justify-start rounded-xl border-border/70 bg-card text-left font-normal",
+                              !tanggal && "text-muted-foreground",
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {selectedDateLabel}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={tanggal}
+                            onSelect={setTanggal}
+                            initialFocus
+                            className="pointer-events-auto p-3"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      {tanggal && (
+                        <button
+                          onClick={() => setTanggal(undefined)}
+                          className="mt-0.5 text-[10px] text-primary hover:underline"
+                        >
+                          Reset ke hari ini
+                        </button>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label className="text-xs font-semibold text-muted-foreground">Catatan</Label>
+                      <Textarea
+                        value={catatan}
+                        onChange={(event) => setCatatan(event.target.value)}
+                        placeholder="Catatan..."
+                        rows={2}
+                        className="mt-1 rounded-xl border-border/70 bg-card"
+                      />
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
+              {/* Tombol Simpan — disabled state jelas abu-abu */}
+              <Button
+                onClick={handleSubmit}
+                disabled={submitting || validCount === 0}
+                className={cn(
+                  "h-12 w-full rounded-2xl text-base font-bold shadow-md transition-all duration-150 active:scale-[0.98]",
+                  validCount === 0 || submitting
+                    ? "bg-muted text-muted-foreground shadow-none hover:bg-muted"
+                    : "bg-gradient-to-r from-success via-emerald-500 to-primary text-primary-foreground hover:shadow-lg",
+                )}
+              >
+                <Send className="mr-2 h-5 w-5" />
+                {submitting ? "Menyimpan..." : validCount > 0 ? `Simpan ${validCount} Item + Bon` : "Belum ada item valid"}
+              </Button>
+            </>
+          )}
         </CardContent>
       </Card>
 
