@@ -585,7 +585,9 @@ const Dashboard = () => {
         </Card>
       </div>
 
-
+      <div className="animate-fade-in" style={{ animationDelay: "175ms", animationFillMode: "both" }}>
+        <HutangCard />
+      </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <Card className="card-premium md:col-span-2">
