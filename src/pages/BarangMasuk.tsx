@@ -62,7 +62,6 @@ interface BonDraft {
   id: string;
   items: LineItem[];
   catatan: string;
-  pesananText: string;
 }
 
 interface BarangMasukOcrItem {
@@ -83,7 +82,6 @@ function createEmptyBon(): BonDraft {
     id: `bon-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     items: [createEmptyLineItem()],
     catatan: "",
-    pesananText: "",
   };
 }
 
@@ -106,6 +104,7 @@ const BarangMasuk = () => {
   const { toast } = useToast();
 
   const [bons, setBons] = useState<BonDraft[]>([createEmptyBon()]);
+  const [pesananHariIni, setPesananHariIni] = useState("");
   const [tanggal, setTanggal] = useState<Date | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -118,8 +117,7 @@ const BarangMasuk = () => {
   const updateBonCatatan = (bonId: string, catatan: string) =>
     setBons((prev) => prev.map((b) => (b.id === bonId ? { ...b, catatan } : b)));
 
-  const updateBonPesanan = (bonId: string, pesananText: string) =>
-    setBons((prev) => prev.map((b) => (b.id === bonId ? { ...b, pesananText } : b)));
+
 
   // ---------------- Item-level operations ----------------
   const updateItem = <K extends keyof LineItem>(
@@ -494,6 +492,215 @@ const BarangMasuk = () => {
         </div>
       </section>
 
+      {/* PESANAN HARI INI (global) */}
+      {(() => {
+        const pesananLines = parseOrderText(pesananHariIni, products);
+        const validPesanan = pesananLines.filter((l) => !l.unmatched && l.qty > 0);
+        const unmatchedPesanan = pesananLines.filter((l) => l.unmatched);
+
+        // Aggregate arrived across ALL bons
+        const arrivedMap = new Map<string, {
+          productId?: string;
+          kode: string;
+          qty: number;
+          productKode?: string;
+          productKategori?: string | null;
+          productName?: string;
+        }>();
+        for (const bon of bons) {
+          for (const it of bon.items) {
+            if (!it.productId || it.qty <= 0) continue;
+            const key = (it.productId || it.kode).toUpperCase();
+            const existing = arrivedMap.get(key);
+            if (existing) {
+              existing.qty += it.qty;
+            } else {
+              arrivedMap.set(key, {
+                productId: it.productId,
+                kode: it.kode,
+                qty: it.qty,
+                productKode: it.productKode,
+                productKategori: it.productKategori,
+                productName: it.productName,
+              });
+            }
+          }
+        }
+        const arrived = Array.from(arrivedMap.values());
+        const cmp = validPesanan.length > 0
+          ? compareOrderVsArrived(validPesanan, arrived)
+          : null;
+        const missingSummary = cmp ? buildMissingSummary(cmp) : "";
+
+        const problemCount = cmp ? cmp.kosong.length + cmp.kurang.length : 0;
+
+        const handleCopyMissing = async () => {
+          if (!missingSummary) return;
+          await navigator.clipboard.writeText(missingSummary);
+          toast({ title: "Disalin", description: "Daftar kosong/kurang siap dikirim ke supplier." });
+        };
+
+        return (
+          <Card className="overflow-hidden rounded-2xl border-2 border-warning/30 bg-warning/[0.03] shadow-sm">
+            <Collapsible defaultOpen>
+              <CollapsibleTrigger asChild>
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-2 border-b border-warning/20 bg-warning/[0.06] px-4 py-3 text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-warning text-warning-foreground">
+                      <ClipboardList className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold">Pesanan Hari Ini</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {validPesanan.length > 0
+                          ? `${validPesanan.length} item dipesan · dicocokkan dgn semua bon`
+                          : "Ketik semua pesanan pagi ini di sini"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {cmp && problemCount > 0 && (
+                      <Badge className="h-5 rounded-full bg-destructive px-2 text-[10px]">
+                        {problemCount} masalah
+                      </Badge>
+                    )}
+                    {cmp && problemCount === 0 && (
+                      <Badge className="h-5 rounded-full bg-success px-2 text-[10px]">
+                        semua cocok
+                      </Badge>
+                    )}
+                    <ChevronDown className="h-4 w-4 transition-transform data-[state=open]:rotate-180" />
+                  </div>
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-3 p-3">
+                <div>
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">
+                    Daftar pesanan (1 baris = 1 item)
+                  </Label>
+                  <Textarea
+                    value={pesananHariIni}
+                    onChange={(e) => setPesananHariIni(e.target.value)}
+                    placeholder={"BLCK 2 Ons 10\nWHT 5 Ons 5\n350 3\n..."}
+                    rows={6}
+                    className="mt-1 rounded-lg border-border/70 bg-card font-mono text-xs"
+                  />
+                  {unmatchedPesanan.length > 0 && (
+                    <p className="mt-1 text-[10px] text-destructive">
+                      {unmatchedPesanan.length} baris tidak dikenali:{" "}
+                      {unmatchedPesanan.slice(0, 3).map((l) => `"${l.raw}"`).join(", ")}
+                    </p>
+                  )}
+                </div>
+
+                {cmp && (
+                  <div className="space-y-1.5 rounded-lg border border-border/60 bg-background/70 p-2">
+                    {cmp.kosong.length > 0 && (
+                      <div>
+                        <p className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase text-destructive">
+                          <XCircle className="h-3 w-3" /> Belum dikirim ({cmp.kosong.length})
+                        </p>
+                        <ul className="space-y-0.5">
+                          {cmp.kosong.map((it) => (
+                            <li
+                              key={it.key}
+                              className="rounded-md bg-destructive/10 px-2 py-1 text-[11px]"
+                            >
+                              <span className="font-mono font-bold">{it.kode}</span>
+                              {it.productKategori && it.productKategori !== "2 Ons" && (
+                                <span className="ml-1 text-[9px] text-muted-foreground">
+                                  ({it.productKategori})
+                                </span>
+                              )}
+                              <span className="float-right font-bold text-destructive">
+                                {it.qtyPesan} pcs
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {cmp.kurang.length > 0 && (
+                      <div>
+                        <p className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase text-warning">
+                          <AlertTriangle className="h-3 w-3" /> Kurang ({cmp.kurang.length})
+                        </p>
+                        <ul className="space-y-0.5">
+                          {cmp.kurang.map((it) => (
+                            <li
+                              key={it.key}
+                              className="rounded-md bg-warning/10 px-2 py-1 text-[11px]"
+                            >
+                              <span className="font-mono font-bold">{it.kode}</span>
+                              <span className="float-right font-semibold text-warning">
+                                {it.qtyDatang}/{it.qtyPesan} · kurang {it.qtyPesan - it.qtyDatang}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {cmp.lengkap.length > 0 && (
+                      <div>
+                        <p className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase text-success">
+                          <CheckCircle2 className="h-3 w-3" /> Lengkap ({cmp.lengkap.length})
+                        </p>
+                        <ul className="flex flex-wrap gap-1">
+                          {cmp.lengkap.map((it) => (
+                            <li
+                              key={it.key}
+                              className="rounded-full bg-success/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-success"
+                            >
+                              {it.kode} · {it.qtyDatang}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {cmp.ekstra.length > 0 && (
+                      <div>
+                        <p className="mb-1 text-[10px] font-bold uppercase text-muted-foreground">
+                          Ekstra ({cmp.ekstra.length}) — tidak ada di pesanan
+                        </p>
+                        <ul className="flex flex-wrap gap-1">
+                          {cmp.ekstra.map((it) => (
+                            <li
+                              key={it.key}
+                              className="rounded-full bg-muted px-2 py-0.5 font-mono text-[10px]"
+                            >
+                              {it.kode} · +{it.qtyDatang}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {missingSummary && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCopyMissing}
+                        className="mt-1 h-9 w-full rounded-lg text-[11px] font-semibold"
+                      >
+                        <Copy className="mr-1 h-3 w-3" />
+                        Salin daftar kosong/kurang untuk WA supplier
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
+        );
+      })()}
+
       {/* BON LIST */}
       {bons.map((bon, bonIdx) => {
         const bonValid = bon.items.filter((it) => it.productId && it.qty > 0);
@@ -691,200 +898,7 @@ const BarangMasuk = () => {
                 Tambah Baris Manual
               </Button>
 
-              {/* PESANAN vs DATANG */}
-              {(() => {
-                const pesananLines = parseOrderText(bon.pesananText, products);
-                const validPesanan = pesananLines.filter((l) => !l.unmatched && l.qty > 0);
-                const unmatchedPesanan = pesananLines.filter((l) => l.unmatched);
-                const arrived = bon.items
-                  .filter((it) => it.productId && it.qty > 0)
-                  .map((it) => ({
-                    productId: it.productId,
-                    kode: it.kode,
-                    qty: it.qty,
-                    productKode: it.productKode,
-                    productKategori: it.productKategori,
-                    productName: it.productName,
-                  }));
-                const cmp =
-                  validPesanan.length > 0
-                    ? compareOrderVsArrived(validPesanan, arrived)
-                    : null;
-                const missingSummary = cmp ? buildMissingSummary(cmp) : "";
 
-                const handleCopyMissing = async () => {
-                  if (!missingSummary) return;
-                  await navigator.clipboard.writeText(missingSummary);
-                  toast({ title: "Disalin", description: "Daftar kosong/kurang siap dikirim ke supplier." });
-                };
-                const handleAppendCatatan = () => {
-                  if (!missingSummary) return;
-                  const next = bon.catatan
-                    ? `${bon.catatan}\n\n${missingSummary}`
-                    : missingSummary;
-                  updateBonCatatan(bon.id, next);
-                  toast({ title: "Ditambahkan ke catatan bon" });
-                };
-
-                return (
-                  <Collapsible>
-                    <CollapsibleTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-9 w-full justify-between rounded-lg bg-warning/[0.06] text-[11px] font-semibold text-foreground hover:bg-warning/[0.12]"
-                      >
-                        <span className="flex items-center gap-1.5">
-                          <ClipboardList className="h-3.5 w-3.5 text-warning" />
-                          Cocokan Pesanan
-                          {cmp && (cmp.kosong.length + cmp.kurang.length) > 0 && (
-                            <Badge className="ml-1 h-4 rounded-full bg-destructive px-1.5 text-[9px]">
-                              {cmp.kosong.length + cmp.kurang.length} masalah
-                            </Badge>
-                          )}
-                          {cmp && cmp.kosong.length + cmp.kurang.length === 0 && (
-                            <Badge className="ml-1 h-4 rounded-full bg-success px-1.5 text-[9px]">
-                              cocok
-                            </Badge>
-                          )}
-                        </span>
-                        <ChevronDown className="h-3 w-3 transition-transform data-[state=open]:rotate-180" />
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-2 pt-2">
-                      <div>
-                        <Label className="text-[10px] font-bold uppercase text-muted-foreground">
-                          Pesanan saya (1 baris = 1 item, mis. "BLCK 2 Ons 10")
-                        </Label>
-                        <Textarea
-                          value={bon.pesananText}
-                          onChange={(e) => updateBonPesanan(bon.id, e.target.value)}
-                          placeholder={"BLCK 2 Ons 10\nWHT 5 Ons 5\n350 3"}
-                          rows={4}
-                          className="mt-1 rounded-lg border-border/70 bg-card font-mono text-xs"
-                        />
-                        {unmatchedPesanan.length > 0 && (
-                          <p className="mt-1 text-[10px] text-destructive">
-                            {unmatchedPesanan.length} baris tidak dikenali:{" "}
-                            {unmatchedPesanan.slice(0, 3).map((l) => `"${l.raw}"`).join(", ")}
-                          </p>
-                        )}
-                      </div>
-
-                      {cmp && (
-                        <div className="space-y-1.5 rounded-lg border border-border/60 bg-background/50 p-2">
-                          {cmp.kosong.length > 0 && (
-                            <div>
-                              <p className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase text-destructive">
-                                <XCircle className="h-3 w-3" /> Belum dikirim ({cmp.kosong.length})
-                              </p>
-                              <ul className="space-y-0.5">
-                                {cmp.kosong.map((it) => (
-                                  <li
-                                    key={it.key}
-                                    className="rounded-md bg-destructive/10 px-2 py-1 text-[11px]"
-                                  >
-                                    <span className="font-mono font-bold">{it.kode}</span>
-                                    {it.productKategori && it.productKategori !== "2 Ons" && (
-                                      <span className="ml-1 text-[9px] text-muted-foreground">
-                                        ({it.productKategori})
-                                      </span>
-                                    )}
-                                    <span className="float-right font-bold text-destructive">
-                                      {it.qtyPesan} pcs
-                                    </span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-
-                          {cmp.kurang.length > 0 && (
-                            <div>
-                              <p className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase text-warning">
-                                <AlertTriangle className="h-3 w-3" /> Kurang ({cmp.kurang.length})
-                              </p>
-                              <ul className="space-y-0.5">
-                                {cmp.kurang.map((it) => (
-                                  <li
-                                    key={it.key}
-                                    className="rounded-md bg-warning/10 px-2 py-1 text-[11px]"
-                                  >
-                                    <span className="font-mono font-bold">{it.kode}</span>
-                                    <span className="float-right font-semibold text-warning">
-                                      {it.qtyDatang}/{it.qtyPesan} · kurang {it.qtyPesan - it.qtyDatang}
-                                    </span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-
-                          {cmp.lengkap.length > 0 && (
-                            <div>
-                              <p className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase text-success">
-                                <CheckCircle2 className="h-3 w-3" /> Lengkap ({cmp.lengkap.length})
-                              </p>
-                              <ul className="flex flex-wrap gap-1">
-                                {cmp.lengkap.map((it) => (
-                                  <li
-                                    key={it.key}
-                                    className="rounded-full bg-success/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-success"
-                                  >
-                                    {it.kode} · {it.qtyDatang}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-
-                          {cmp.ekstra.length > 0 && (
-                            <div>
-                              <p className="mb-1 text-[10px] font-bold uppercase text-muted-foreground">
-                                Ekstra ({cmp.ekstra.length}) — tidak ada di pesanan
-                              </p>
-                              <ul className="flex flex-wrap gap-1">
-                                {cmp.ekstra.map((it) => (
-                                  <li
-                                    key={it.key}
-                                    className="rounded-full bg-muted px-2 py-0.5 font-mono text-[10px]"
-                                  >
-                                    {it.kode} · +{it.qtyDatang}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-
-                          {missingSummary && (
-                            <div className="flex gap-2 pt-1">
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={handleCopyMissing}
-                                className="h-8 flex-1 rounded-lg text-[11px] font-semibold"
-                              >
-                                <Copy className="mr-1 h-3 w-3" />
-                                Salin daftar
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={handleAppendCatatan}
-                                className="h-8 flex-1 rounded-lg text-[11px] font-semibold"
-                              >
-                                Salin ke catatan
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </CollapsibleContent>
-                  </Collapsible>
-                );
-              })()}
 
 
               <Collapsible>
