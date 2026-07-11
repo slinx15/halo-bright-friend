@@ -49,11 +49,13 @@ function parseInput(text: string, products: ProductWithDetails[], aliases: Produ
     "18G": "18 Gram", "18GRAM": "18 Gram", "18GR": "18 Gram",
     "3OZ": "3 Ons", "3ONS": "3 Ons", "3 OZ": "3 Ons",
     "5OZ": "5 Ons", "5ONS": "5 Ons", "5 OZ": "5 Ons",
+    "8OZ": "8 Ons", "8ONS": "8 Ons", "8 OZ": "8 Ons",
   };
 
   // Header detection regex: matches lines like "2 on", "3 ons", "5 on", "18 gram", "B obras 2 on"
   const HEADER_PATTERNS: { regex: RegExp; kategori: string }[] = [
     { regex: /\b18\s*g(?:r(?:am)?)?/i, kategori: "18 Gram" },
+    { regex: /\b8\s*o(?:n(?:s)?|z)/i, kategori: "8 Ons" },
     { regex: /\b5\s*o(?:n(?:s)?|z)/i, kategori: "5 Ons" },
     { regex: /\b3\s*o(?:n(?:s)?|z)/i, kategori: "3 Ons" },
     { regex: /\b2\s*o(?:n(?:s)?|z)/i, kategori: "2 Ons" },
