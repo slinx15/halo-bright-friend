@@ -139,9 +139,6 @@ export function parseOrderText(
         kategori: kategoriHint,
       });
 
-      // eslint-disable-next-line no-console
-      console.log("[orderMatcher]", raw, "kode:", kodeOnly || parsed.kode, "cat:", kategoriHint, "found:", found?.id, found?.kode, found?.kategori);
-
       return {
         raw,
         kode: (found?.kode || kodeOnly || parsed.kode).toUpperCase(),
