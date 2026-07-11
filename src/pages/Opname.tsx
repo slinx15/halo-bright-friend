@@ -247,15 +247,15 @@ const Opname = () => {
       <div className="grid grid-cols-3 gap-2.5">
         <div className="card-premium bg-warning/5 p-3 text-center">
           <p className="text-2xl font-extrabold tabular-nums text-foreground">{totalOpname}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Total Log</p>
+          <p className="text-xs text-muted-foreground font-medium">Total Log</p>
         </div>
         <div className="card-premium bg-success/5 p-3 text-center">
           <p className="text-2xl font-extrabold tabular-nums text-success">{sesuaiCount}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Sesuai ✓</p>
+          <p className="text-xs text-muted-foreground font-medium">Sesuai ✓</p>
         </div>
         <div className="card-premium bg-destructive/5 p-3 text-center">
           <p className="text-2xl font-extrabold tabular-nums text-destructive">{selisihCount}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Selisih ✕</p>
+          <p className="text-xs text-muted-foreground font-medium">Selisih ✕</p>
         </div>
       </div>
 

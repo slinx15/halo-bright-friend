@@ -396,7 +396,7 @@ const BarangKeluar = () => {
             <span className="text-2xl font-extrabold tabular-nums text-foreground leading-none">{todaySummary.count}</span>
           </div>
           <div className="text-center">
-            <p className="text-[10px] font-bold uppercase tracking-tight text-foreground/90">Transaksi</p>
+            <p className="text-xs font-semibold text-foreground/90">Transaksi</p>
             <p className="text-[9px] text-muted-foreground">Hari ini</p>
           </div>
         </div>
@@ -410,7 +410,7 @@ const BarangKeluar = () => {
             <span className="text-2xl font-extrabold tabular-nums text-foreground leading-none">{formatNumber(todaySummary.qty)}</span>
           </div>
           <div className="text-center">
-            <p className="text-[10px] font-bold uppercase tracking-tight text-foreground/90">Qty</p>
+            <p className="text-xs font-semibold text-foreground/90">Qty</p>
             <p className="text-[9px] text-muted-foreground">Keluar</p>
           </div>
         </div>
@@ -424,7 +424,7 @@ const BarangKeluar = () => {
             <span className="truncate text-xl font-extrabold tabular-nums text-primary-foreground leading-none">{formatRupiah(todaySummary.revenue)}</span>
           </div>
           <div className="text-center">
-            <p className="text-[10px] font-bold uppercase tracking-tight text-primary-foreground">Omzet</p>
+            <p className="text-xs font-semibold text-primary-foreground">Omzet</p>
             <p className="text-[9px] text-primary-foreground/75">Hari ini</p>
           </div>
         </div>
@@ -833,7 +833,7 @@ const BarangKeluar = () => {
           {/* Ringkasan Total — tampil jika ada item valid */}
           {validCount > 0 && (
             <div className="rounded-2xl border border-primary/20 bg-primary/[0.04] p-3.5 space-y-2">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Ringkasan Order</p>
+              <p className="text-xs font-semibold text-muted-foreground">Ringkasan Order</p>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex flex-col items-center gap-0.5 flex-1 rounded-xl bg-background/70 border border-border/50 py-2.5 px-3">
                   <span className="text-xl font-extrabold tabular-nums text-foreground leading-none">{formatNumber(totalQty)}</span>
