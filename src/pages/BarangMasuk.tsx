@@ -579,7 +579,7 @@ const BarangMasuk = () => {
               <CollapsibleContent className="space-y-3 p-3">
                 <div>
                   <Label className="text-[10px] font-bold uppercase text-muted-foreground">
-                    Daftar pesanan (1 baris = 1 item)
+                    Tempel pesanan dari supplier (boleh pakai judul kategori)
                   </Label>
                   <Textarea
                     value={pesananHariIni}
