@@ -208,7 +208,7 @@ export function BarangMasukHistory({
 
                       {isOpen && (
                         <div className="border-t border-border/50 bg-card/60 px-3 pb-3 pt-2.5">
-                          <div className="mb-2 hidden grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-3 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground sm:grid">
+                          <div className="mb-2 hidden grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-3 px-2 text-xs font-semibold text-muted-foreground sm:grid">
                             <span>Produk</span>
                             <span>Modal</span>
                             <span>Qty</span>

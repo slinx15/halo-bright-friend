@@ -260,7 +260,7 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
         {/* Row 2: Pesan + Kirim */}
         <div className="flex items-end gap-2">
           <div className="flex-1 min-w-0">
-            <label className="text-[9px] font-semibold text-muted-foreground uppercase">Pesan</label>
+            <label className="text-xs font-semibold text-muted-foreground">Pesan</label>
             <Input
               type="text" inputMode="numeric"
               className="h-9 text-sm mt-0.5 touch-manipulation"
@@ -270,7 +270,7 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
             />
           </div>
           <div className="flex-1 min-w-0">
-            <label className="text-[9px] font-semibold text-muted-foreground uppercase">Kirim ({unitLabel})</label>
+            <label className="text-xs font-semibold text-muted-foreground">Kirim ({unitLabel})</label>
             <Input
               type="text" inputMode="numeric"
               className="h-9 text-sm mt-0.5 touch-manipulation"
@@ -284,7 +284,7 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
         {/* Row 3: Harga + Total */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex-1">
-            <label className="text-[9px] font-semibold text-muted-foreground uppercase">Harga</label>
+            <label className="text-xs font-semibold text-muted-foreground">Harga</label>
             <Select value={item.hargaType} onValueChange={(v) => updateItem(idx, "hargaType", v)}>
               <SelectTrigger className="h-9 text-xs mt-0.5">
                 <SelectValue />
@@ -572,7 +572,7 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
             </Dialog>
           ) : (
             <div className="bg-muted/50 rounded-xl p-3 space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Set Harga Sekaligus — {kategori}</p>
+              <p className="text-sm font-semibold text-muted-foreground">Set Harga Sekaligus — {kategori}</p>
               {renderHargaSekaligus(false)}
             </div>
           )
