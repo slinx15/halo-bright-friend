@@ -272,7 +272,7 @@ export default function DashboardKeuangan() {
         <div className="card-premium bg-primary/5 p-3.5">
           <div className="flex items-center gap-2 mb-1.5">
             <DollarSign className="h-4 w-4 text-primary" />
-            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+            <span className="text-xs text-muted-foreground font-medium">
               Omzet
             </span>
           </div>
@@ -301,7 +301,7 @@ export default function DashboardKeuangan() {
         <div className="card-premium bg-warning/5 p-3.5">
           <div className="flex items-center gap-2 mb-1.5">
             <PiggyBank className="h-4 w-4 text-warning" />
-            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+            <span className="text-xs text-muted-foreground font-medium">
               Modal Keluar
             </span>
           </div>
@@ -316,7 +316,7 @@ export default function DashboardKeuangan() {
         <div className="card-premium bg-success/5 p-3.5">
           <div className="flex items-center gap-2 mb-1.5">
             <TrendingUp className="h-4 w-4 text-success" />
-            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+            <span className="text-xs text-muted-foreground font-medium">
               Profit
             </span>
           </div>
@@ -349,7 +349,7 @@ export default function DashboardKeuangan() {
         <div className="card-premium bg-accent/30 p-3.5">
           <div className="flex items-center gap-2 mb-1.5">
             <BarChart3 className="h-4 w-4 text-primary" />
-            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+            <span className="text-xs text-muted-foreground font-medium">
               Margin
             </span>
           </div>
