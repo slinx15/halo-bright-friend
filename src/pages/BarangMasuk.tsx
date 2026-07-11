@@ -62,7 +62,6 @@ interface BonDraft {
   id: string;
   items: LineItem[];
   catatan: string;
-  pesananText: string;
 }
 
 interface BarangMasukOcrItem {
@@ -83,7 +82,6 @@ function createEmptyBon(): BonDraft {
     id: `bon-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     items: [createEmptyLineItem()],
     catatan: "",
-    pesananText: "",
   };
 }
 
