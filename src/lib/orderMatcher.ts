@@ -50,9 +50,22 @@ function normalizeCategory(value: string): string | undefined {
 }
 
 function isCategoryHeader(raw: string): string | null {
-  const match = raw.match(CATEGORY_HEADER_RE);
+  const upper = raw.toUpperCase().replace(/\s+/g, " ");
+  const match = upper.match(CATEGORY_HEADER_RE);
   if (!match) return null;
-  return normalizeCategory(match[1] || match[2] || "");
+
+  const category = normalizeCategory(match[1] || match[2] || "");
+  if (!category) return null;
+
+  // Strip the matched category and filler words (Benang/Obras). If nothing meaningful remains, it's a header.
+  const remaining = upper
+    .replace(match[0], "")
+    .replace(/\b(BENANG|OBRAS)\b/g, "")
+    .replace(/[-:=]/g, " ")
+    .trim();
+  if (remaining.length === 0) return category;
+
+  return null;
 }
 
 /**
