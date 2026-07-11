@@ -118,6 +118,9 @@ const BarangMasuk = () => {
   const updateBonCatatan = (bonId: string, catatan: string) =>
     setBons((prev) => prev.map((b) => (b.id === bonId ? { ...b, catatan } : b)));
 
+  const updateBonPesanan = (bonId: string, pesananText: string) =>
+    setBons((prev) => prev.map((b) => (b.id === bonId ? { ...b, pesananText } : b)));
+
   // ---------------- Item-level operations ----------------
   const updateItem = <K extends keyof LineItem>(
     bonId: string,
