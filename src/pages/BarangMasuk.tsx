@@ -489,7 +489,7 @@ const BarangMasuk = () => {
     : "Hari ini";
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] space-y-4 p-4 pb-32 md:space-y-5 md:p-6 md:pb-6 [&>*]:animate-fade-in [&>*]:[animation-fill-mode:both] [&>*:nth-child(1)]:![animation-delay:0ms] [&>*:nth-child(2)]:![animation-delay:50ms] [&>*:nth-child(3)]:![animation-delay:100ms] [&>*:nth-child(4)]:![animation-delay:150ms] [&>*:nth-child(5)]:![animation-delay:200ms]">
+    <div className="mx-auto w-full max-w-[1400px] space-y-4 p-4 pb-32 md:space-y-5 md:p-6 md:pb-6 [&>*]:animate-fade-in [&>*]:[animation-fill-mode:both] [&>*:nth-child(1)]:![animation-delay:0ms] [...]">
       {/* HEADER — ringkas, ikon di kiri, tombol Scan Nota compact */}
       <section className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
@@ -605,7 +605,7 @@ const BarangMasuk = () => {
           )}
         </CardHeader>
 
-        <CardContent className="space-y-3 px-4 pb-4 pt-1">
+        <CardContent className="space-y-3 px-4 pb-4 pt-1 min-h-[400px]">
           {isMatchingMode ? (
             // MATCHING FLOW
             matchingStep === 1 ? (
@@ -649,7 +649,17 @@ const BarangMasuk = () => {
                 )}
 
                 <Button
-                  onClick={() => setMatchingStep(2)}
+                  onClick={() => {
+                    if (orderedItems.length > 0) {
+                      setMatchingStep(2);
+                    } else {
+                      toast({
+                        title: "Peringatan",
+                        description: "Silakan input daftar pesanan terlebih dahulu",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
                   disabled={orderedItems.length === 0}
                   className="w-full h-11 rounded-xl font-bold flex items-center justify-center gap-1.5"
                 >
@@ -659,10 +669,10 @@ const BarangMasuk = () => {
               </div>
             ) : (
               // STEP 2: UPLOAD PHOTO AND COMPARE
-              <div className="space-y-4">
+              <div className="space-y-4 w-full min-h-full">
                 {arrivedItems.length === 0 ? (
                   // If photo not uploaded yet
-                  <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 text-center space-y-4">
+                  <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 text-center space-y-4 min-h-[300px]">
                     <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                       <Camera className="h-6 w-6 animate-pulse" />
                     </div>
@@ -676,7 +686,10 @@ const BarangMasuk = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setMatchingStep(1)}
+                      onClick={() => {
+                        setMatchingStep(1);
+                        setArrivedItems([]);
+                      }}
                       className="text-xs font-semibold text-muted-foreground hover:text-foreground"
                     >
                       <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Kembali ke input teks
@@ -684,13 +697,13 @@ const BarangMasuk = () => {
                   </div>
                 ) : (
                   // Comparison View
-                  <div className="space-y-4">
+                  <div className="space-y-4 w-full">
                     <div className="space-y-2">
                       <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
                         Hasil Pencocokan (Pesanan vs Datang)
                       </h3>
 
-                      <div className="overflow-hidden rounded-xl border border-border/80 bg-card divide-y">
+                      <div className="overflow-hidden rounded-xl border border-border/80 bg-card divide-y max-h-[400px] overflow-y-auto">
                         {getComparison(orderedItems, arrivedItems).map((row, idx) => {
                           const isMatch = row.status === "match";
                           const isMissing = row.status === "missing";
