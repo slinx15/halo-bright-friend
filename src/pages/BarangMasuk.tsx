@@ -952,7 +952,7 @@ const BarangMasuk = () => {
       <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            <p className="text-sm font-semibold text-foreground">
               Total Estimasi ({bons.length} Bon)
             </p>
             <p className="mt-0.5 text-lg font-extrabold tabular-nums text-foreground">
