@@ -51,16 +51,21 @@ function mapProductWithDetails(product: ProductRowWithRelations): ProductWithDet
   };
 }
 
-export function useProducts() {
+export function useProducts(includeInactive = false) {
   return useQuery({
-    queryKey: ["products"],
+    queryKey: ["products", includeInactive ? "all" : "active"],
     queryFn: async () => {
+      const filter = includeInactive ? "" : "is_active=eq.true&";
       const data = await fetchFromSupabase<ProductRowWithRelations[]>(
-        "products?is_active=eq.true&order=kode.asc,kategori.asc&select=*,stock(*),prices(*)"
+        `products?${filter}order=kode.asc,kategori.asc&select=*,stock(*),prices(*)`
       );
       return (data ?? []).map(mapProductWithDetails);
     },
   });
+}
+
+export function useAllProducts() {
+  return useProducts(true);
 }
 
 export function useProductByKode(kode: string) {

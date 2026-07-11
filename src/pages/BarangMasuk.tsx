@@ -32,7 +32,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 
-import { useProducts } from "@/hooks/useProducts";
+import { useAllProducts, useProducts } from "@/hooks/useProducts";
 import { type StockInHistoryEntry, useStockInHistory } from "@/hooks/useStockInHistory";
 import { useToast } from "@/hooks/use-toast";
 import { logActivity } from "@/lib/activityLogger";
@@ -99,6 +99,7 @@ function createBarangMasukBonNumber(tanggal: Date | undefined, index: number) {
 
 const BarangMasuk = () => {
   const { data: products } = useProducts();
+  const { data: allProducts } = useAllProducts();
   const { data: history = [], isLoading: historyLoading } = useStockInHistory();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -494,9 +495,9 @@ const BarangMasuk = () => {
 
       {/* PESANAN HARI INI (global) */}
       {(() => {
-        const pesananLines = parseOrderText(pesananHariIni, products);
+        const pesananLines = parseOrderText(pesananHariIni, allProducts);
         const validPesanan = pesananLines.filter((l) => !l.unmatched && l.qty > 0);
-        const unmatchedPesanan = pesananLines.filter((l) => l.unmatched);
+        const unmatchedPesanan = pesananLines.filter((l) => l.unmatched && !l.categoryHeader);
 
         // Aggregate arrived across ALL bons
         const arrivedMap = new Map<string, {
@@ -579,12 +580,12 @@ const BarangMasuk = () => {
               <CollapsibleContent className="space-y-3 p-3">
                 <div>
                   <Label className="text-[10px] font-bold uppercase text-muted-foreground">
-                    Daftar pesanan (1 baris = 1 item)
+                    Tempel pesanan dari supplier (boleh pakai judul kategori)
                   </Label>
                   <Textarea
                     value={pesananHariIni}
                     onChange={(e) => setPesananHariIni(e.target.value)}
-                    placeholder={"BLCK 2 Ons 10\nWHT 5 Ons 5\n350 3\n..."}
+                    placeholder={"Benang Obras 2 Ons\nWHT - 100\n055 - 50\nBenang Obras 3 Ons\nBLCK - 50\n..."}
                     rows={6}
                     className="mt-1 rounded-lg border-border/70 bg-card font-mono text-xs"
                   />

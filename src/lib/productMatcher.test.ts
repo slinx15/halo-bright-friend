@@ -20,4 +20,31 @@ describe("findProductMatch", () => {
   it("uses a category suffix typed with the code", () => {
     expect(findProductMatch(products, { kode: "R400 18 Gram" })?.id).toBe("r400-18");
   });
+
+  it("matches WHT 8 Ons when category is explicit", () => {
+    const whtProducts: ProductWithDetails[] = [
+      { id: "wht-2", kode: "WHT 2 Ons", nama: "WHT 2 Ons", kategori: "2 Ons", is_active: true },
+      { id: "wht-8", kode: "WHT 8 Ons", nama: "WHT 8 Ons", kategori: "8 Ons", is_active: true },
+    ];
+    expect(findProductMatch(whtProducts, { kode: "WHT", kategori: "8 Ons" })?.id).toBe("wht-8");
+    expect(findProductMatch(whtProducts, { kode: "WHT", kategori: "2 Ons" })?.id).toBe("wht-2");
+  });
+
+  it("matches WHT 8 Ons when 2 Ons product has no category suffix in kode", () => {
+    const whtProducts: ProductWithDetails[] = [
+      { id: "wht-2", kode: "WHT", nama: "WHT 2 Ons", kategori: "2 Ons", is_active: true },
+      { id: "wht-8", kode: "WHT 8 Ons", nama: "WHT 8 Ons", kategori: "8 Ons", is_active: true },
+    ];
+    expect(findProductMatch(whtProducts, { kode: "WHT", kategori: "8 Ons" })?.id).toBe("wht-8");
+    expect(findProductMatch(whtProducts, { kode: "WHT", kategori: "2 Ons" })?.id).toBe("wht-2");
+    expect(findProductMatch(whtProducts, { kode: "WHT" })?.id).toBe("wht-2");
+  });
+
+  it("does not fall back to default category when explicit category is missing", () => {
+    const products: ProductWithDetails[] = [
+      { id: "r143-2", kode: "R143", nama: "R143 2 Ons", kategori: "2 Ons", is_active: true },
+      { id: "r143-3", kode: "R143", nama: "R143 3 Ons", kategori: "3 Ons", is_active: false },
+    ];
+    expect(findProductMatch(products, { kode: "R143", kategori: "18 Gram" })).toBeNull();
+  });
 });

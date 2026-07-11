@@ -46,12 +46,17 @@ function categoryEquals(left: string | null | undefined, right: string | null | 
   return normalizeText(left).toLowerCase() === normalizeText(right).toLowerCase();
 }
 
-function pickByCategory(products: ProductWithDetails[], kategori?: string | null) {
+function pickByCategory(
+  products: ProductWithDetails[],
+  kategori?: string | null,
+  { allowFallback = true }: { allowFallback?: boolean } = {},
+) {
   if (!products.length) return null;
   if (kategori) {
     const categoryMatch = products.find((p) => categoryEquals(p.kategori, kategori));
     if (categoryMatch) return categoryMatch;
   }
+  if (!allowFallback) return null;
   const defaultMatch = products.find((p) => categoryEquals(p.kategori, DEFAULT_CATEGORY));
   if (defaultMatch) return defaultMatch;
   const activeMatch = products.find((p) => p.is_active);
@@ -78,21 +83,22 @@ export function findProductMatch(
   const baseKode = stripCategorySuffix(rawKode);
   const strippedBaseKode = stripLeadingZeros(baseKode);
   const candidates = unique([rawKode, strippedKode, baseKode, strippedBaseKode]);
-  const wantedCategory = input.kategori || suffixCategory || input.preferCategory || DEFAULT_CATEGORY;
+  const explicitCategory = input.kategori || suffixCategory || input.preferCategory || null;
+  const wantedCategory = explicitCategory || DEFAULT_CATEGORY;
 
   const fullMatches = all.filter((p) => {
     const productKode = normalizeKode(p.kode);
     const productName = normalizeKode(p.nama);
     return candidates.includes(productKode) || candidates.includes(stripLeadingZeros(productKode)) || candidates.includes(productName);
   });
-  const fullMatch = pickByCategory(fullMatches, input.kategori || wantedCategory);
+  const fullMatch = pickByCategory(fullMatches, input.kategori || wantedCategory, { allowFallback: !explicitCategory });
   if (fullMatch) return fullMatch;
 
   const baseMatches = all.filter((p) => {
     const productBase = stripCategorySuffix(p.kode);
     return candidates.includes(productBase) || candidates.includes(stripLeadingZeros(productBase));
   });
-  return pickByCategory(baseMatches, input.kategori || wantedCategory);
+  return pickByCategory(baseMatches, input.kategori || wantedCategory, { allowFallback: !explicitCategory });
 }
 
 export function isAmbiguousProductCode(products: ProductWithDetails[] | undefined, kode: string) {
