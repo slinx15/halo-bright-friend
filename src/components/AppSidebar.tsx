@@ -77,7 +77,7 @@ const AppSidebar = () => {
         </div>
         <div>
           <h1 className="font-extrabold text-lg text-sidebar-primary-foreground tracking-tight">RRCollections</h1>
-          <p className="text-[10px] text-sidebar-foreground/40 font-semibold uppercase tracking-widest">Command Center</p>
+          <p className="text-xs text-sidebar-foreground/50 font-medium">Manajemen Stok</p>
         </div>
       </div>
 
@@ -90,7 +90,7 @@ const AppSidebar = () => {
           return (
             <div key={group.key} className="rounded-2xl border border-sidebar-border/60 bg-sidebar-accent/10 p-2">
               {group.label && (
-                <p className="px-2 pb-2 text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/35">
+                <p className="px-2 pb-2 text-xs font-semibold text-sidebar-foreground/50">
                   {group.label}
                 </p>
               )}
@@ -123,8 +123,8 @@ const AppSidebar = () => {
       {/* User info */}
       <div className="px-4 py-4 border-t border-sidebar-border/80">
         <div className="mb-3 rounded-2xl border border-sidebar-border/60 bg-sidebar-accent/30 px-3 py-2.5">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/35">Akses Cepat</p>
-          <p className="mt-1 text-xs text-sidebar-foreground/55">Gunakan Analisa untuk keputusan restock, lalu lanjut ke Review sebelum kirim pesanan.</p>
+          <p className="text-xs font-semibold text-sidebar-foreground/50">Akses Cepat</p>
+          <p className="mt-1 text-sm text-sidebar-foreground/70">Gunakan Analisa untuk keputusan restock, lalu lanjut ke Review sebelum kirim pesanan.</p>
         </div>
         <div className="flex items-center gap-3 mb-3">
           <div className="h-9 w-9 rounded-2xl bg-sidebar-primary/10 flex items-center justify-center ring-1 ring-sidebar-primary/20">

@@ -210,7 +210,7 @@ const Nota = () => {
             <CardContent className="p-3 sm:p-5 space-y-3">
               {/* Header */}
               <div className="text-center border-b-2 border-foreground pb-2">
-                <h2 className="text-sm sm:text-base font-black tracking-wider uppercase">
+                <h2 className="text-sm sm:text-base font-bold">
                   RR COLLECTIONS
                 </h2>
                 <p className="text-[11px] sm:text-xs text-muted-foreground">
@@ -346,15 +346,15 @@ const Nota = () => {
       <div className="grid gap-2.5 md:grid-cols-3">
         <div className="card-premium bg-primary/5 p-3 text-center">
           <p className="text-2xl font-extrabold text-primary tabular-nums">{summary.totalNota}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Nota Tersaring</p>
+          <p className="text-xs text-muted-foreground font-medium">Nota Tersaring</p>
         </div>
         <div className="card-premium bg-success/5 p-3 text-center">
           <p className="text-2xl font-extrabold text-success tabular-nums">{formatNumber(summary.totalQty)}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Qty Total</p>
+          <p className="text-xs text-muted-foreground font-medium">Qty Total</p>
         </div>
         <div className="card-premium bg-warning/5 p-3 text-center">
           <p className="text-lg font-extrabold text-foreground tabular-nums truncate">{formatRupiah(summary.totalHarga)}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Omzet Total</p>
+          <p className="text-xs text-muted-foreground font-medium">Omzet Total</p>
         </div>
       </div>
 

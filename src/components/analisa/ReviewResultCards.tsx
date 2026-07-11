@@ -564,7 +564,7 @@ export function ReviewResultCards({ result, alreadySent }: { result: ReviewResul
                 <div className="space-y-4 rounded-2xl border bg-background p-4 shadow-sm">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Total Final</p>
+                      <p className="text-sm font-semibold text-muted-foreground">Total Final</p>
                       <div className="mt-1 text-3xl font-black leading-tight text-foreground tabular-nums">
                         {formatRupiah(totalAman)}
                       </div>

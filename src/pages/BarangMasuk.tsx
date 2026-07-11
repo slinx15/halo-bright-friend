@@ -415,8 +415,8 @@ const BarangMasuk = () => {
             </span>
           </div>
           <div className="text-center">
-            <p className="text-[10px] font-bold uppercase tracking-tight text-foreground/90">Bon</p>
-            <p className="text-[9px] text-muted-foreground">Sesi ini</p>
+            <p className="text-xs font-semibold text-foreground/90">Bon</p>
+            <p className="text-[10px] text-muted-foreground">Sesi ini</p>
           </div>
         </div>
 
@@ -430,8 +430,8 @@ const BarangMasuk = () => {
             </span>
           </div>
           <div className="text-center">
-            <p className="text-[10px] font-bold uppercase tracking-tight text-success">Valid</p>
-            <p className="text-[9px] text-muted-foreground">Item</p>
+            <p className="text-xs font-semibold text-success">Valid</p>
+            <p className="text-[10px] text-muted-foreground">Item</p>
           </div>
         </div>
 
@@ -445,15 +445,15 @@ const BarangMasuk = () => {
             </span>
           </div>
           <div className="text-center">
-            <p className="text-[10px] font-bold uppercase tracking-tight text-primary-foreground">Total</p>
-            <p className="text-[9px] text-primary-foreground/75">Pcs</p>
+            <p className="text-xs font-semibold text-primary-foreground">Total</p>
+            <p className="text-[10px] text-primary-foreground/75">Pcs</p>
           </div>
         </div>
       </section>
 
       {/* SESSION DATE */}
       <section className="rounded-2xl border border-border/60 bg-card p-3 shadow-sm">
-        <Label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+        <Label className="text-sm font-semibold text-foreground">
           Tanggal Sesi (semua bon)
         </Label>
         <div className="mt-1.5 flex items-center gap-2">
@@ -579,7 +579,7 @@ const BarangMasuk = () => {
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-3 p-3">
                 <div>
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">
+                  <Label className="text-sm font-semibold text-foreground">
                     Tempel pesanan dari supplier (boleh pakai judul kategori)
                   </Label>
                   <Textarea
@@ -601,8 +601,8 @@ const BarangMasuk = () => {
                   <div className="space-y-1.5 rounded-lg border border-border/60 bg-background/70 p-2">
                     {cmp.kosong.length > 0 && (
                       <div>
-                        <p className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase text-destructive">
-                          <XCircle className="h-3 w-3" /> Belum dikirim ({cmp.kosong.length})
+                        <p className="mb-1 flex items-center gap-1 text-xs font-semibold text-destructive">
+                          <XCircle className="h-3.5 w-3.5" /> Belum dikirim ({cmp.kosong.length})
                         </p>
                         <ul className="space-y-0.5">
                           {cmp.kosong.map((it) => (
@@ -627,8 +627,8 @@ const BarangMasuk = () => {
 
                     {cmp.kurang.length > 0 && (
                       <div>
-                        <p className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase text-warning">
-                          <AlertTriangle className="h-3 w-3" /> Kurang ({cmp.kurang.length})
+                        <p className="mb-1 flex items-center gap-1 text-xs font-semibold text-warning">
+                          <AlertTriangle className="h-3.5 w-3.5" /> Kurang ({cmp.kurang.length})
                         </p>
                         <ul className="space-y-0.5">
                           {cmp.kurang.map((it) => (
@@ -648,8 +648,8 @@ const BarangMasuk = () => {
 
                     {cmp.lengkap.length > 0 && (
                       <div>
-                        <p className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase text-success">
-                          <CheckCircle2 className="h-3 w-3" /> Lengkap ({cmp.lengkap.length})
+                        <p className="mb-1 flex items-center gap-1 text-xs font-semibold text-success">
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Lengkap ({cmp.lengkap.length})
                         </p>
                         <ul className="flex flex-wrap gap-1">
                           {cmp.lengkap.map((it) => (
@@ -666,7 +666,7 @@ const BarangMasuk = () => {
 
                     {cmp.ekstra.length > 0 && (
                       <div>
-                        <p className="mb-1 text-[10px] font-bold uppercase text-muted-foreground">
+                        <p className="mb-1 text-xs font-semibold text-muted-foreground">
                           Ekstra ({cmp.ekstra.length}) — tidak ada di pesanan
                         </p>
                         <ul className="flex flex-wrap gap-1">
@@ -952,7 +952,7 @@ const BarangMasuk = () => {
       <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            <p className="text-sm font-semibold text-foreground">
               Total Estimasi ({bons.length} Bon)
             </p>
             <p className="mt-0.5 text-lg font-extrabold tabular-nums text-foreground">

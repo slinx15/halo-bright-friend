@@ -254,7 +254,7 @@ const AuditStok = () => {
         <Card className="p-3.5 bg-primary/5">
           <div className="flex items-center gap-2 mb-1.5">
             <Database className="h-4 w-4 text-primary" />
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Total Log</span>
+            <span className="text-xs text-muted-foreground font-semibold">Total Log</span>
           </div>
           <p className="text-2xl font-extrabold tabular-nums">{formatNumber(total)}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">Sesuai filter aktif</p>
@@ -262,7 +262,7 @@ const AuditStok = () => {
         <Card className="p-3.5 bg-success/5">
           <div className="flex items-center gap-2 mb-1.5">
             <Package className="h-4 w-4 text-success" />
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Stok Naik</span>
+            <span className="text-xs text-muted-foreground font-semibold">Stok Naik</span>
           </div>
           <p className="text-2xl font-extrabold tabular-nums text-success">{formatNumber(pageStats.naik)}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">Di halaman ini</p>
@@ -270,7 +270,7 @@ const AuditStok = () => {
         <Card className="p-3.5 bg-destructive/5">
           <div className="flex items-center gap-2 mb-1.5">
             <AlertTriangle className="h-4 w-4 text-destructive" />
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Stok Turun</span>
+            <span className="text-xs text-muted-foreground font-semibold">Stok Turun</span>
           </div>
           <p className="text-2xl font-extrabold tabular-nums text-destructive">{formatNumber(pageStats.turun)}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">Di halaman ini</p>
@@ -278,7 +278,7 @@ const AuditStok = () => {
         <Card className="p-3.5 bg-muted/40">
           <div className="flex items-center gap-2 mb-1.5">
             <Clock3 className="h-4 w-4 text-muted-foreground" />
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Per Halaman</span>
+            <span className="text-xs text-muted-foreground font-semibold">Per Halaman</span>
           </div>
           <p className="text-2xl font-extrabold tabular-nums">{formatNumber(filteredLogs.length)}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">Dari {formatNumber(PAGE_SIZE)} data</p>
@@ -451,12 +451,12 @@ const AuditStok = () => {
 
                   <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-xl bg-muted/35 px-3 py-2">
                     <div>
-                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Lama</p>
+                      <p className="text-xs text-muted-foreground font-semibold">Lama</p>
                       <p className="text-lg font-extrabold tabular-nums">{quantityText(row.old_jumlah)}</p>
                     </div>
                     <ArrowRight className="h-4 w-4 text-muted-foreground" />
                     <div className="text-right">
-                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Baru</p>
+                      <p className="text-xs text-muted-foreground font-semibold">Baru</p>
                       <p className="text-lg font-extrabold tabular-nums">{quantityText(row.new_jumlah)}</p>
                     </div>
                   </div>
@@ -478,11 +478,11 @@ const AuditStok = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-muted-foreground">
                     <div className="rounded-lg bg-muted/30 px-2.5 py-2 min-w-0">
-                      <p className="font-bold uppercase tracking-wider text-[10px] mb-0.5">Tumpukan Lama</p>
+                      <p className="font-semibold text-xs text-muted-foreground mb-0.5">Tumpukan Lama</p>
                       <p className="truncate">{formatStack(row.old_tumpukan_detail)}</p>
                     </div>
                     <div className="rounded-lg bg-muted/30 px-2.5 py-2 min-w-0">
-                      <p className="font-bold uppercase tracking-wider text-[10px] mb-0.5">Tumpukan Baru</p>
+                      <p className="font-semibold text-xs text-muted-foreground mb-0.5">Tumpukan Baru</p>
                       <p className="truncate">{formatStack(row.new_tumpukan_detail)}</p>
                     </div>
                   </div>

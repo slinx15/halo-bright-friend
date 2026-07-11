@@ -173,27 +173,27 @@ export default function ManajemenUser() {
               className="space-y-4 mt-2"
             >
               <div className="space-y-2">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nama</Label>
+                <Label className="text-sm font-semibold text-foreground">Nama</Label>
                 <Input
                   placeholder="Nama lengkap"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="h-10 rounded-xl"
+                  className="h-11 rounded-xl"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email *</Label>
+                <Label className="text-sm font-semibold text-foreground">Email *</Label>
                 <Input
                   type="email"
                   placeholder="nama@email.com"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   required
-                  className="h-10 rounded-xl"
+                  className="h-11 rounded-xl"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Password *</Label>
+                <Label className="text-sm font-semibold text-foreground">Password *</Label>
                 <Input
                   type="text"
                   placeholder="Min. 6 karakter"
@@ -201,11 +201,11 @@ export default function ManajemenUser() {
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="h-10 rounded-xl"
+                  className="h-11 rounded-xl"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Role</Label>
+                <Label className="text-sm font-semibold text-foreground">Role</Label>
                 <Select value={newRole} onValueChange={setNewRole}>
                   <SelectTrigger className="h-10 rounded-xl">
                     <SelectValue />

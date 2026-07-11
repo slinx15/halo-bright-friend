@@ -169,7 +169,7 @@ function CommandCenter({
                 <card.icon className={`h-4 w-4 ${card.lightText}`} strokeWidth={2.2} />
               </div>
               <span className={`text-xl font-black tabular-nums ${card.lightText}`}>{card.count}</span>
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <span className="text-xs font-semibold text-muted-foreground">
                 {card.label}
               </span>
             </button>
@@ -264,7 +264,7 @@ function HeroKpi({
       <div className="card-premium flex flex-col justify-between p-4 transition-transform duration-200 hover:-translate-y-0.5">
         <div className="mb-1 flex items-center gap-1.5">
           <ShoppingCart className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Terjual</span>
+          <span className="text-xs font-medium text-muted-foreground">Terjual</span>
         </div>
         <div>
           <p className="text-2xl font-extrabold tracking-tight tabular-nums">{formatNumber(pcs)}</p>
@@ -371,11 +371,11 @@ function HutangCard() {
       <CardContent className="space-y-3 px-4 pb-4 pt-1">
         <div className="grid grid-cols-2 gap-2.5">
           <div className="rounded-xl bg-warning/5 p-3">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Hutang Aktif</p>
+            <p className="text-xs font-medium text-muted-foreground">Hutang Aktif</p>
             <p className="mt-1 text-lg font-extrabold tabular-nums text-foreground">{formatRupiah(summary.openDebt)}</p>
           </div>
           <div className="rounded-xl bg-success/5 p-3">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Sisa Limit</p>
+            <p className="text-xs font-medium text-muted-foreground">Sisa Limit</p>
             <p className="mt-1 text-lg font-extrabold tabular-nums text-success">{formatRupiah(summary.remainingLimit)}</p>
           </div>
         </div>
@@ -574,11 +574,11 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-3 px-4 pb-4 pt-1">
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Jumlah</p>
+              <p className="text-xs font-medium text-muted-foreground">Jumlah</p>
               <p className="mt-0.5 text-2xl font-extrabold tracking-tight tabular-nums">{formatNumber(stockInPcsHariIni)} <span className="text-xs font-medium text-muted-foreground">pcs</span></p>
             </div>
             <div className="text-right">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Modal</p>
+              <p className="text-xs font-medium text-muted-foreground">Modal</p>
               <p className="mt-0.5 text-2xl font-extrabold tracking-tight tabular-nums text-primary">{formatRupiah(stockInCostHariIni)}</p>
             </div>
           </CardContent>
@@ -683,7 +683,7 @@ const Dashboard = () => {
       <div className="animate-fade-in space-y-2" style={{ animationDelay: "300ms", animationFillMode: "both" }}>
         <div className="flex items-center gap-2 px-1">
           <div className="h-px flex-1 bg-border" />
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Insight AI</span>
+          <span className="text-xs font-semibold text-muted-foreground">Insight AI</span>
           <div className="h-px flex-1 bg-border" />
         </div>
         <AiInsightsCard />

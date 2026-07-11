@@ -148,7 +148,7 @@ const LogAktivitas = () => {
         <div className="space-y-4">
           {Object.entries(grouped).map(([dateKey, items]) => (
             <div key={dateKey}>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
+              <p className="text-sm font-semibold text-muted-foreground mb-2 px-1">
                 {formatDateWIB(items[0].created_at)}
               </p>
               <Card className="divide-y divide-border/50 overflow-hidden">

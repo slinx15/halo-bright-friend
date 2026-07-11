@@ -222,15 +222,15 @@ const ManajemenProduk = () => {
       <div className="grid grid-cols-3 gap-2.5">
         <div className="card-premium bg-primary/5 p-3 text-center">
           <p className="text-2xl font-extrabold tabular-nums text-foreground">{formatNumber(totalProducts)}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Produk</p>
+          <p className="text-xs text-muted-foreground font-medium">Produk</p>
         </div>
         <div className="card-premium bg-primary/5 p-3 text-center">
           <p className="text-2xl font-extrabold tabular-nums text-foreground">{categories.size}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Kategori</p>
+          <p className="text-xs text-muted-foreground font-medium">Kategori</p>
         </div>
         <div className="card-premium bg-success/5 p-3 text-center">
           <p className="text-lg font-extrabold tabular-nums text-success truncate">{formatRupiah(totalNilai)}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Nilai Stok</p>
+          <p className="text-xs text-muted-foreground font-medium">Nilai Stok</p>
         </div>
       </div>
 
