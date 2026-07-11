@@ -311,8 +311,8 @@ export default function BudgetPlanner({ result, alreadySent, onSelectedItemsChan
 
         {/* Periode Selector */}
         <div className="space-y-2">
-          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-            <CalendarRange className="h-3 w-3" />
+          <label className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
+            <CalendarRange className="h-3.5 w-3.5" />
             Periode Restock
           </label>
           <div className="flex gap-1.5">
@@ -355,7 +355,7 @@ export default function BudgetPlanner({ result, alreadySent, onSelectedItemsChan
 
         {/* Budget Input */}
         <div className="space-y-2">
-          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
+          <label className="text-sm font-semibold text-muted-foreground">
             Budget Hari Ini
           </label>
           <div className="relative">
@@ -498,7 +498,7 @@ export default function BudgetPlanner({ result, alreadySent, onSelectedItemsChan
         {/* Pending-only items (collapsed) */}
         {pendingOnlyItems.length > 0 && (
           <div className="space-y-1">
-            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest px-1">Sudah Dipesan</p>
+            <p className="text-sm font-semibold text-muted-foreground px-1">Sudah Dipesan</p>
             {pendingOnlyItems.map(item => (
               <div key={item.id} className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-muted/30 opacity-60">
                 <Check className="h-4 w-4 text-emerald-500 shrink-0" />
