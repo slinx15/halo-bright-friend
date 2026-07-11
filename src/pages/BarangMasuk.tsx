@@ -495,7 +495,7 @@ const BarangMasuk = () => {
 
       {/* PESANAN HARI INI (global) */}
       {(() => {
-        const pesananLines = parseOrderText(pesananHariIni, products);
+        const pesananLines = parseOrderText(pesananHariIni, allProducts);
         const validPesanan = pesananLines.filter((l) => !l.unmatched && l.qty > 0);
         const unmatchedPesanan = pesananLines.filter((l) => l.unmatched && !l.categoryHeader);
 
