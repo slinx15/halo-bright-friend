@@ -46,12 +46,17 @@ function categoryEquals(left: string | null | undefined, right: string | null | 
   return normalizeText(left).toLowerCase() === normalizeText(right).toLowerCase();
 }
 
-function pickByCategory(products: ProductWithDetails[], kategori?: string | null) {
+function pickByCategory(
+  products: ProductWithDetails[],
+  kategori?: string | null,
+  { allowFallback = true }: { allowFallback?: boolean } = {},
+) {
   if (!products.length) return null;
   if (kategori) {
     const categoryMatch = products.find((p) => categoryEquals(p.kategori, kategori));
     if (categoryMatch) return categoryMatch;
   }
+  if (!allowFallback) return null;
   const defaultMatch = products.find((p) => categoryEquals(p.kategori, DEFAULT_CATEGORY));
   if (defaultMatch) return defaultMatch;
   const activeMatch = products.find((p) => p.is_active);
