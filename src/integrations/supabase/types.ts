@@ -733,10 +733,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      build_default_tumpukan_detail: {
-        Args: { p_kode: string; p_qty: number }
-        Returns: Json
-      }
+      build_default_tumpukan_detail:
+        | { Args: { p_kode: string; p_qty: number }; Returns: Json }
+        | {
+            Args: { p_kategori?: string; p_kode: string; p_qty: number }
+            Returns: Json
+          }
       bulk_upsert_products: { Args: { p_rows: Json }; Returns: Json }
       deduct_int_jsonb_stacks: {
         Args: { _qty: number; _stacks: Json }

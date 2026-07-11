@@ -119,10 +119,10 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
 
             const aliasBaseKode = aliasTarget.kode
               .toUpperCase()
-              .replace(/\s+(2 ONS|3 ONS|5 ONS|18 GRAM)$/, "");
+              .replace(/\s+(2 ONS|3 ONS|5 ONS|8 ONS|18 GRAM)$/, "");
 
             found = allProducts.find(
-              (p) => p.kategori === kategori && p.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|18 GRAM)$/, "") === aliasBaseKode
+              (p) => p.kategori === kategori && p.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|8 ONS|18 GRAM)$/, "") === aliasBaseKode
             );
             if (found) return found;
           }
@@ -481,6 +481,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
                               <SelectItem value="2 Ons">2 Ons</SelectItem>
                               <SelectItem value="3 Ons">3 Ons</SelectItem>
                               <SelectItem value="5 Ons">5 Ons</SelectItem>
+                              <SelectItem value="8 Ons">8 Ons</SelectItem>
                               <SelectItem value="18 Gram">18 Gram</SelectItem>
                             </SelectContent>
                           </Select>
@@ -527,6 +528,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
                             <SelectItem value="2 Ons">2 Ons</SelectItem>
                             <SelectItem value="3 Ons">3 Ons</SelectItem>
                             <SelectItem value="5 Ons">5 Ons</SelectItem>
+                              <SelectItem value="8 Ons">8 Ons</SelectItem>
                             <SelectItem value="18 Gram">18 Gram</SelectItem>
                           </SelectContent>
                         </Select>

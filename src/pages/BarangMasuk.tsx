@@ -18,6 +18,8 @@ import {
   ArrowRight,
   ArrowLeft,
   FileText,
+  Camera,
+  X,
 } from "lucide-react";
 
 

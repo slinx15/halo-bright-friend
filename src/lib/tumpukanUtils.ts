@@ -2,10 +2,12 @@
 // Standard products: max stack 25
 // BLCK & WHT (2 Ons): max stack 50
 // 5 Ons products: max stack 32
+// 8 Ons products: max stack 15 (pre-order)
 
 const SPECIAL_CODES = ["BLCK", "WHT"];
 
 export function getMaxStack(kode: string, kategori?: string): number {
+  if (kategori === "8 Ons") return 15;
   if (kategori === "5 Ons") return 32;
   return SPECIAL_CODES.includes(kode.toUpperCase()) ? 50 : 25;
 }
