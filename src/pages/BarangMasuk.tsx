@@ -104,6 +104,7 @@ const BarangMasuk = () => {
   const { toast } = useToast();
 
   const [bons, setBons] = useState<BonDraft[]>([createEmptyBon()]);
+  const [pesananHariIni, setPesananHariIni] = useState("");
   const [tanggal, setTanggal] = useState<Date | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
