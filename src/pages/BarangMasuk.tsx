@@ -99,6 +99,7 @@ function createBarangMasukBonNumber(tanggal: Date | undefined, index: number) {
 
 const BarangMasuk = () => {
   const { data: products } = useProducts();
+  const { data: allProducts } = useAllProducts();
   const { data: history = [], isLoading: historyLoading } = useStockInHistory();
   const queryClient = useQueryClient();
   const { toast } = useToast();
