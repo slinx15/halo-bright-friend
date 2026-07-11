@@ -83,7 +83,6 @@ export function findProductMatch(
   const baseKode = stripCategorySuffix(rawKode);
   const strippedBaseKode = stripLeadingZeros(baseKode);
   const candidates = unique([rawKode, strippedKode, baseKode, strippedBaseKode]);
-  const suffixCategory = getCategorySuffix(rawKode);
   const explicitCategory = input.kategori || suffixCategory || input.preferCategory || null;
   const wantedCategory = explicitCategory || DEFAULT_CATEGORY;
 
