@@ -7,22 +7,13 @@ import {
   CalendarIcon,
   CheckCircle2,
   ChevronDown,
-  FileEdit,
+  FileText,
   Minus,
   PackagePlus,
   Plus,
   Send,
   Trash2,
-  Check,
-  AlertTriangle,
-  ArrowRight,
-  ArrowLeft,
-  FileText,
-  Camera,
-  X,
 } from "lucide-react";
-
-
 
 import { OcrUpload } from "@/components/OcrUpload";
 import { TumpukanBadges } from "@/components/TumpukanBadges";
@@ -58,6 +49,12 @@ interface LineItem {
   productKategori?: string | null;
 }
 
+interface BonDraft {
+  id: string;
+  items: LineItem[];
+  catatan: string;
+}
+
 interface BarangMasukOcrItem {
   kode: string;
   qty?: number;
@@ -67,27 +64,16 @@ interface BarangMasukOcrItem {
   catatan?: string;
 }
 
-interface OrderedItem {
-  kode: string;
-  qty: number;
-  kategori: string;
-  productName?: string;
-  productId?: string;
-  productKode?: string;
-}
-
-interface ComparisonRow {
-  kode: string;
-  kategori: string;
-  productName?: string;
-  productId?: string;
-  qtyOrdered: number;
-  qtyArrived: number;
-  status: "match" | "missing" | "partial" | "extra";
-}
-
 function createEmptyLineItem(): LineItem {
   return { kode: "", qty: 1 };
+}
+
+function createEmptyBon(): BonDraft {
+  return {
+    id: `bon-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    items: [createEmptyLineItem()],
+    catatan: "",
+  };
 }
 
 function getFormDate(tanggal?: Date) {
@@ -95,179 +81,76 @@ function getFormDate(tanggal?: Date) {
   return new Date(source.getFullYear(), source.getMonth(), source.getDate(), 12, 0, 0);
 }
 
-function createBarangMasukBonNumber(tanggal?: Date) {
+function createBarangMasukBonNumber(tanggal: Date | undefined, index: number) {
   const date = getFormDate(tanggal);
   const ymd = format(date, "yyyyMMdd");
   const time = format(new Date(), "HHmmss");
-  return `BM-${ymd}-${time}`;
+  return `BM-${ymd}-${time}-${index + 1}`;
 }
-
-const PENDING_STOCK_IN_BON_KEY = "rrc_ivory_pending_stock_in_bon_id";
-
-function getPendingStockInBonId() {
-  return localStorage.getItem(PENDING_STOCK_IN_BON_KEY);
-}
-
-function setPendingStockInBonId(id: string) {
-  localStorage.setItem(PENDING_STOCK_IN_BON_KEY, id);
-}
-
-function clearPendingStockInBonId() {
-  localStorage.removeItem(PENDING_STOCK_IN_BON_KEY);
-}
-
-const getComparison = (ordered: OrderedItem[], arrived: LineItem[]): ComparisonRow[] => {
-  const map = new Map<string, ComparisonRow>();
-
-  // Add all ordered items
-  for (const ord of ordered) {
-    const key = `${ord.kode.toUpperCase()}_${(ord.kategori || "").toUpperCase()}`;
-    map.set(key, {
-      kode: ord.kode,
-      kategori: ord.kategori,
-      productName: ord.productName,
-      productId: ord.productId,
-      qtyOrdered: ord.qty,
-      qtyArrived: 0,
-      status: "missing",
-    });
-  }
-
-  // Merge arrived items
-  for (const arr of arrived) {
-    const key = `${arr.kode.toUpperCase()}_${(arr.productKategori || "").toUpperCase()}`;
-    const existing = map.get(key);
-    if (existing) {
-      existing.qtyArrived += arr.qty;
-      existing.productId = existing.productId || arr.productId;
-      existing.productName = existing.productName || arr.productName;
-    } else {
-      map.set(key, {
-        kode: arr.kode,
-        kategori: arr.productKategori || "",
-        productName: arr.productName,
-        productId: arr.productId,
-        qtyOrdered: 0,
-        qtyArrived: arr.qty,
-        status: "extra",
-      });
-    }
-  }
-
-  // Update statuses
-  const result: ComparisonRow[] = [];
-  for (const row of map.values()) {
-    if (row.qtyOrdered === 0 && row.qtyArrived > 0) {
-      row.status = "extra";
-    } else if (row.qtyOrdered > 0 && row.qtyArrived === 0) {
-      row.status = "missing";
-    } else if (row.qtyOrdered > row.qtyArrived) {
-      row.status = "partial";
-    } else {
-      row.status = "match";
-    }
-    result.push(row);
-  }
-
-  return result;
-};
 
 const BarangMasuk = () => {
   const { data: products } = useProducts();
   const { data: history = [], isLoading: historyLoading } = useStockInHistory();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [items, setItems] = useState<LineItem[]>([createEmptyLineItem()]);
-  const [catatan, setCatatan] = useState("");
+
+  const [bons, setBons] = useState<BonDraft[]>([createEmptyBon()]);
   const [tanggal, setTanggal] = useState<Date | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const [isMatchingMode, setIsMatchingMode] = useState(false);
-  const [matchingStep, setMatchingStep] = useState<1 | 2>(1);
-  const [orderedText, setOrderedText] = useState("");
-  const [orderedItems, setOrderedItems] = useState<OrderedItem[]>([]);
-  const [arrivedItems, setArrivedItems] = useState<LineItem[]>([]);
+  // ---------------- Bon-level operations ----------------
+  const addBon = () => setBons((prev) => [...prev, createEmptyBon()]);
+  const removeBon = (bonId: string) =>
+    setBons((prev) => (prev.length <= 1 ? prev : prev.filter((b) => b.id !== bonId)));
 
-  const parseOrderedText = (text: string): OrderedItem[] => {
-    const lines = text.split("\n");
-    let currentCategory = "";
-    const parsed: OrderedItem[] = [];
+  const updateBonCatatan = (bonId: string, catatan: string) =>
+    setBons((prev) => prev.map((b) => (b.id === bonId ? { ...b, catatan } : b)));
 
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) continue;
-
-      const catMatch = trimmed.match(/(\d+\s*(?:Ons|Gram))/i);
-      if (catMatch) {
-        const rawCat = catMatch[1];
-        const number = rawCat.match(/\d+/)?.[0] || "";
-        const unit = rawCat.toLowerCase().includes("ons") ? "Ons" : "Gram";
-        currentCategory = `${number} ${unit}`;
-        continue;
-      }
-
-      if (trimmed.includes("-")) {
-        const parts = trimmed.split("-");
-        const rawCode = parts[0].trim().toUpperCase();
-        const qtyPart = parts.slice(1).join("-").trim();
-        const numMatch = qtyPart.match(/\d+/);
-
-        if (rawCode && numMatch) {
-          const qty = parseInt(numMatch[0], 10);
-          const found = products ? findProductMatch(products, {
-            kode: rawCode,
-            kategori: currentCategory || undefined,
-          }) : null;
-
-          parsed.push({
-            kode: found ? found.kode : rawCode,
-            qty,
-            kategori: currentCategory || found?.kategori || "",
-            productName: found?.nama,
-            productId: found?.id,
-            productKode: found?.kode,
-          });
+  // ---------------- Item-level operations ----------------
+  const updateItem = <K extends keyof LineItem>(
+    bonId: string,
+    index: number,
+    field: K,
+    value: LineItem[K],
+  ) => {
+    setBons((prev) =>
+      prev.map((bon) => {
+        if (bon.id !== bonId) return bon;
+        const updated = [...bon.items];
+        updated[index] = { ...updated[index], [field]: value };
+        if (field === "kode" && products) {
+          const found = findProductMatch(products, { kode: String(value) });
+          updated[index].productName = found?.nama;
+          updated[index].productId = found?.id;
+          updated[index].productKode = found?.kode;
+          updated[index].productKategori = found?.kategori;
         }
-      }
-    }
-    return parsed;
+        return { ...bon, items: updated };
+      }),
+    );
   };
 
-  const handleTextChange = (text: string) => {
-    setOrderedText(text);
-    const parsed = parseOrderedText(text);
-    setOrderedItems(parsed);
-  };
+  const addLine = (bonId: string) =>
+    setBons((prev) =>
+      prev.map((b) => (b.id === bonId ? { ...b, items: [...b.items, createEmptyLineItem()] } : b)),
+    );
 
-  const updateItem = <K extends keyof LineItem>(index: number, field: K, value: LineItem[K]) => {
-    setItems((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
+  const removeLine = (bonId: string, index: number) =>
+    setBons((prev) =>
+      prev.map((b) =>
+        b.id === bonId ? { ...b, items: b.items.filter((_, i) => i !== index) } : b,
+      ),
+    );
 
-      if (field === "kode" && products) {
-        const found = findProductMatch(products, { kode: String(value) });
-        updated[index].productName = found?.nama;
-        updated[index].productId = found?.id;
-        updated[index].productKode = found?.kode;
-        updated[index].productKategori = found?.kategori;
-      }
-
-      return updated;
-    });
-  };
-
-  const addLine = () => setItems((prev) => [...prev, createEmptyLineItem()]);
-  const removeLine = (index: number) => setItems((prev) => prev.filter((_, idx) => idx !== index));
-
-  const handleOcrResult = (ocrItems: BarangMasukOcrItem[]) => {
-    const newItems: LineItem[] = ocrItems.map((item) => {
+  // ---------------- OCR handler (merges into a specific bon) ----------------
+  const handleOcrResult = (bonId: string, ocrItems: BarangMasukOcrItem[]) => {
+    const mapped: LineItem[] = ocrItems.map((item) => {
       const found = findProductMatch(products, {
         productId: item.productId,
         kode: item.kode,
         kategori: item.kategori,
       });
-
       return {
         kode: (found?.kode || item.kode || "").toUpperCase(),
         qty: item.qty || 1,
@@ -278,169 +161,170 @@ const BarangMasuk = () => {
       };
     });
 
-    if (isMatchingMode) {
-      setArrivedItems(newItems);
-      setMatchingStep(2);
-      toast({
-        title: "Nota Terbaca",
-        description: `Berhasil membaca ${newItems.length} item dari foto nota.`,
-      });
-    } else {
-      setItems(newItems.length > 0 ? newItems : [createEmptyLineItem()]);
-    }
-    if (ocrItems[0]?.catatan) setCatatan(ocrItems[0].catatan);
+    setBons((prev) =>
+      prev.map((bon) => {
+        if (bon.id !== bonId) return bon;
+
+        // Remove empty placeholder rows first
+        const base = bon.items.filter((it) => it.kode.trim() || it.productId);
+        const merged: LineItem[] = [...base];
+
+        for (const incoming of mapped) {
+          const key = (incoming.productId || incoming.kode).toUpperCase();
+          const existingIdx = merged.findIndex(
+            (m) => (m.productId || m.kode).toUpperCase() === key,
+          );
+          if (existingIdx >= 0) {
+            merged[existingIdx] = {
+              ...merged[existingIdx],
+              qty: merged[existingIdx].qty + incoming.qty,
+            };
+          } else {
+            merged.push(incoming);
+          }
+        }
+
+        const nextCatatan =
+          bon.catatan || (ocrItems[0]?.catatan ? ocrItems[0].catatan : "");
+        return {
+          ...bon,
+          items: merged.length > 0 ? merged : [createEmptyLineItem()],
+          catatan: nextCatatan,
+        };
+      }),
+    );
+
+    toast({
+      title: "Halaman ditambahkan",
+      description: `${mapped.length} item terbaca & digabung ke bon.`,
+    });
   };
 
+  // ---------------- Save all bons ----------------
   const handleSubmit = async () => {
-    const activeItems = isMatchingMode ? arrivedItems : items;
-    const validItems = activeItems.filter((item) => item.productId && item.qty > 0);
-    if (validItems.length === 0) {
-      toast({ title: "Error", description: "Tidak ada item valid", variant: "destructive" });
+    // Collect bons with at least one valid item
+    const bonsToSave = bons
+      .map((bon) => ({
+        bon,
+        validItems: bon.items.filter((it) => it.productId && it.qty > 0),
+      }))
+      .filter((b) => b.validItems.length > 0);
+
+    if (bonsToSave.length === 0) {
+      toast({
+        title: "Belum ada item",
+        description: "Isi minimal 1 item dengan kode valid dan qty > 0.",
+        variant: "destructive",
+      });
       return;
     }
 
     setSubmitting(true);
-    let successCount = 0;
-    const errors: string[] = [];
-    const successfulItems: LineItem[] = [];
 
-    for (const item of validItems) {
-      try {
-        const kode = item.productKode || item.kode;
-        const newStacks = splitIntoStacks(item.qty, kode, item.productKategori || undefined);
-        const createdAt = tanggal
-          ? new Date(
-              tanggal.getFullYear(),
-              tanggal.getMonth(),
-              tanggal.getDate(),
-              12,
-              0,
-              0,
-            ).toISOString()
-          : undefined;
+    const createdAt = tanggal
+      ? new Date(
+          tanggal.getFullYear(),
+          tanggal.getMonth(),
+          tanggal.getDate(),
+          12,
+          0,
+          0,
+        ).toISOString()
+      : undefined;
+    const invoiceDate = format(getFormDate(tanggal), "yyyy-MM-dd");
 
-        await registerStockIn({
-          productId: item.productId!,
-          qty: item.qty,
-          tumpukanDetail: newStacks,
-          catatan,
-          createdAt,
-        });
+    let bonSuccess = 0;
+    let bonFailed = 0;
+    const allErrors: string[] = [];
+    const remainingBons: BonDraft[] = [];
 
-        successCount++;
-        successfulItems.push(item);
-      } catch (error) {
-        errors.push(`${item.kode}: ${getErrorMessage(error, "Gagal menyimpan barang masuk")}`);
-      }
-    }
+    for (let bonIndex = 0; bonIndex < bonsToSave.length; bonIndex++) {
+      const { bon, validItems } = bonsToSave[bonIndex];
+      const successful: LineItem[] = [];
+      const failed: LineItem[] = [];
 
-    if (errors.length > 0) {
-      const errorPreview = errors.slice(0, 3).join("; ");
-      const extraErrorCount = errors.length - Math.min(errors.length, 3);
-      toast({
-        title: `${successCount} berhasil, ${errors.length} gagal`,
-        description: `${errorPreview}${extraErrorCount > 0 ? `; +${extraErrorCount} error lagi` : ""}. Item yang gagal tetap ada di form.`,
-        variant: "destructive",
-      });
-    } else {
-      toast({ title: "Berhasil", description: `${validItems.length} item masuk tercatat` });
-    }
-
-    if (successfulItems.length > 0) {
-      const summary = successfulItems
-        .map((item) => `${item.productKode || item.kode} x${item.qty}`)
-        .join(", ");
-
-      const totalModal = successfulItems.reduce((sum, item) => {
-        const product = products?.find((entry) => entry.id === item.productId);
-        return sum + (product?.prices?.harga_modal ?? 0) * item.qty;
-      }, 0);
-
-      const successfulSet = new Set(successfulItems);
-      const remainingItems = activeItems.filter((item) => !successfulSet.has(item));
-      const hasPendingItems = remainingItems.some((item) => item.kode.trim() || item.productId);
-
-      if (totalModal > 0) {
-        const invoiceDate = format(getFormDate(tanggal), "yyyy-MM-dd");
-        const currentDebts = getDebtItems();
-        const pendingBonId = getPendingStockInBonId();
-        const pendingBon = pendingBonId
-          ? currentDebts.find((item) => item.id === pendingBonId && item.status === "open")
-          : undefined;
-
-        if (pendingBon) {
-          const updatedDebts = currentDebts.map((item) =>
-            item.id === pendingBon.id
-              ? {
-                  ...item,
-                  amount: item.amount + totalModal,
-                  note: `${item.note}; tambahan: ${summary}`,
-                  updatedAt: new Date().toISOString(),
-                }
-              : item,
+      for (const item of validItems) {
+        try {
+          const kode = item.productKode || item.kode;
+          const newStacks = splitIntoStacks(
+            item.qty,
+            kode,
+            item.productKategori || undefined,
           );
-          saveDebtItems(updatedDebts);
-        } else {
-          const bon = createDebtItem({
-            invoiceNumber: createBarangMasukBonNumber(tanggal),
+          await registerStockIn({
+            productId: item.productId!,
+            qty: item.qty,
+            tumpukanDetail: newStacks,
+            catatan: bon.catatan,
+            createdAt,
+          });
+          successful.push(item);
+        } catch (error) {
+          failed.push(item);
+          allErrors.push(
+            `${item.kode}: ${getErrorMessage(error, "Gagal simpan")}`,
+          );
+        }
+      }
+
+      // Create debt entry for successful items of this bon
+      if (successful.length > 0) {
+        const totalModal = successful.reduce((sum, it) => {
+          const product = products?.find((p) => p.id === it.productId);
+          return sum + (product?.prices?.harga_modal ?? 0) * it.qty;
+        }, 0);
+        const summary = successful
+          .map((it) => `${it.productKode || it.kode} x${it.qty}`)
+          .join(", ");
+
+        if (totalModal > 0) {
+          const debt = createDebtItem({
+            invoiceNumber: createBarangMasukBonNumber(tanggal, bonIndex),
             amount: totalModal,
             invoiceDate,
-            note: `Dari barang masuk: ${summary}`,
+            note: `Bon #${bonIndex + 1}: ${summary}${bon.catatan ? ` — ${bon.catatan}` : ""}`,
             sourceType: "manual",
           });
-          saveDebtItems([bon, ...currentDebts]);
-          if (hasPendingItems) {
-            setPendingStockInBonId(bon.id);
-          }
+          const current = getDebtItems();
+          saveDebtItems([debt, ...current]);
         }
 
-        if (!hasPendingItems) {
-          clearPendingStockInBonId();
-        }
-      } else {
-        toast({
-          title: "Bon hutang belum dibuat",
-          description: "Harga modal item belum terbaca",
-          variant: "destructive",
+        logActivity("stock_in", `Barang masuk bon #${bonIndex + 1}: ${summary}`, {
+          items: successful.map((it) => ({
+            kode: it.productKode || it.kode,
+            qty: it.qty,
+          })),
         });
       }
 
-      logActivity(
-        "stock_in",
-        `${errors.length > 0 ? "Barang masuk parsial" : "Barang masuk"}: ${summary}`,
-        {
-          items: successfulItems.map((item) => ({
-            kode: item.productKode || item.kode,
-            qty: item.qty,
-          })),
-        },
-      );
+      if (failed.length > 0) {
+        bonFailed++;
+        remainingBons.push({ ...bon, items: failed });
+      } else if (successful.length > 0) {
+        bonSuccess++;
+      }
     }
 
-    if (successCount > 0) {
-      const successfulSet = new Set(successfulItems);
-      const remainingItems = activeItems.filter((item) => !successfulSet.has(item));
-      const hasPendingItems = remainingItems.some((item) => item.kode.trim() || item.productId);
+    // Also keep bons that had zero valid items (untouched drafts) so user doesn't lose work
+    const untouchedDrafts = bons.filter(
+      (b) => !bonsToSave.some((s) => s.bon.id === b.id),
+    );
+    const finalRemaining = [...remainingBons, ...untouchedDrafts];
 
-      if (hasPendingItems) {
-        if (isMatchingMode) {
-          setArrivedItems(remainingItems);
-        } else {
-          setItems(remainingItems);
-        }
-      } else {
-        if (isMatchingMode) {
-          setArrivedItems([]);
-          setOrderedItems([]);
-          setOrderedText("");
-          setMatchingStep(1);
-          setIsMatchingMode(false);
-        } else {
-          setItems([createEmptyLineItem()]);
-        }
-        setCatatan("");
-        setTanggal(undefined);
-      }
+    if (bonFailed > 0) {
+      toast({
+        title: `${bonSuccess} bon berhasil, ${bonFailed} bermasalah`,
+        description: allErrors.slice(0, 3).join("; "),
+        variant: "destructive",
+      });
+      setBons(finalRemaining.length > 0 ? finalRemaining : [createEmptyBon()]);
+    } else {
+      toast({
+        title: "Berhasil",
+        description: `${bonSuccess} bon tercatat & bon hutang dibuat.`,
+      });
+      setBons([createEmptyBon()]);
+      setTanggal(undefined);
     }
 
     queryClient.invalidateQueries({ queryKey: ["stock_in_history"] });
@@ -473,24 +357,25 @@ const BarangMasuk = () => {
     }
   };
 
-  const activeItems = isMatchingMode ? arrivedItems : items;
-  const validCount = activeItems.filter((item) => item.productId && item.qty > 0).length;
-  const totalQty = activeItems
-    .filter((item) => item.productId && item.qty > 0)
-    .reduce((sum, item) => sum + item.qty, 0);
-  const estimatedBonTotal = activeItems
-    .filter((item) => item.productId && item.qty > 0)
-    .reduce((sum, item) => {
-      const product = products?.find((entry) => entry.id === item.productId);
-      return sum + (product?.prices?.harga_modal ?? 0) * item.qty;
+  // ---------------- Aggregates ----------------
+  const allItems = bons.flatMap((b) => b.items);
+  const validCount = allItems.filter((it) => it.productId && it.qty > 0).length;
+  const totalQty = allItems
+    .filter((it) => it.productId && it.qty > 0)
+    .reduce((sum, it) => sum + it.qty, 0);
+  const estimatedTotal = allItems
+    .filter((it) => it.productId && it.qty > 0)
+    .reduce((sum, it) => {
+      const product = products?.find((p) => p.id === it.productId);
+      return sum + (product?.prices?.harga_modal ?? 0) * it.qty;
     }, 0);
   const selectedDateLabel = tanggal
     ? format(tanggal, "dd MMM yyyy", { locale: localeId })
     : "Hari ini";
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] space-y-4 p-4 pb-32 md:space-y-5 md:p-6 md:pb-6 [&>*]:animate-fade-in [&>*]:[animation-fill-mode:both] [&>*:nth-child(1)]:![animation-delay:0ms] [...]">
-      {/* HEADER — ringkas, ikon di kiri, tombol Scan Nota compact */}
+    <div className="mx-auto w-full max-w-[1400px] space-y-4 p-4 pb-32 md:space-y-5 md:p-6 md:pb-6">
+      {/* HEADER */}
       <section className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <div className="rounded-lg bg-success/10 p-1.5">
@@ -498,72 +383,38 @@ const BarangMasuk = () => {
           </div>
           <div className="min-w-0">
             <h1 className="text-lg font-extrabold leading-tight tracking-tight">Barang Masuk</h1>
-            <p className="text-xs text-muted-foreground">Catat stok masuk dengan cepat</p>
+            <p className="text-xs text-muted-foreground">
+              {bons.length} bon · {validCount} item siap
+            </p>
           </div>
         </div>
-        {!isMatchingMode && (
-          <div className="shrink-0">
-            <OcrUpload mode="masuk" onResult={(ocrItems) => handleOcrResult(ocrItems as BarangMasukOcrItem[])} />
-          </div>
-        )}
       </section>
 
-      {/* MODE SELECTOR */}
-      <section className="grid grid-cols-2 gap-2 rounded-2xl bg-card border p-1 shadow-sm">
-        <button
-          onClick={() => {
-            setIsMatchingMode(false);
-          }}
-          className={cn(
-            "flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all md:text-sm",
-            !isMatchingMode
-              ? "bg-primary text-primary-foreground shadow-md"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-          )}
-        >
-          <Plus className="h-4 w-4" />
-          Input Langsung
-        </button>
-        <button
-          onClick={() => {
-            setIsMatchingMode(true);
-            setMatchingStep(1);
-          }}
-          className={cn(
-            "flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all md:text-sm",
-            isMatchingMode
-              ? "bg-primary text-primary-foreground shadow-md"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-          )}
-        >
-          <FileText className="h-4 w-4" />
-          Cocokkan Pesanan
-        </button>
-      </section>
-
-      {/* KPI CARDS — Vibrant status cards (horizontal, 3 kolom) */}
+      {/* KPI CARDS */}
       <section className="grid grid-cols-3 gap-2.5">
-        {/* Draft */}
-        <div className="flex flex-col items-center justify-between rounded-2xl border border-border/60 bg-card p-3 shadow-sm transition-transform active:scale-[0.98]">
+        <div className="flex flex-col items-center justify-between rounded-2xl border border-border/60 bg-card p-3 shadow-sm">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/10 text-warning">
-            <FileEdit className="h-5 w-5" strokeWidth={2} />
+            <FileText className="h-5 w-5" strokeWidth={2} />
           </div>
           <div className="my-1.5 text-center">
-            <span className="text-2xl font-extrabold tabular-nums text-foreground leading-none">{activeItems.length}</span>
+            <span className="text-2xl font-extrabold tabular-nums text-foreground leading-none">
+              {bons.length}
+            </span>
           </div>
           <div className="text-center">
-            <p className="text-[10px] font-bold uppercase tracking-tight text-foreground/90">Draft</p>
-            <p className="text-[9px] text-muted-foreground">Menunggu</p>
+            <p className="text-[10px] font-bold uppercase tracking-tight text-foreground/90">Bon</p>
+            <p className="text-[9px] text-muted-foreground">Sesi ini</p>
           </div>
         </div>
 
-        {/* Siap Simpan */}
-        <div className="flex flex-col items-center justify-between rounded-2xl border border-border/60 bg-card p-3 shadow-sm transition-transform active:scale-[0.98]">
+        <div className="flex flex-col items-center justify-between rounded-2xl border border-border/60 bg-card p-3 shadow-sm">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10 text-success">
             <CheckCircle2 className="h-5 w-5" strokeWidth={2} />
           </div>
           <div className="my-1.5 text-center">
-            <span className="text-2xl font-extrabold tabular-nums text-foreground leading-none">{validCount}</span>
+            <span className="text-2xl font-extrabold tabular-nums text-foreground leading-none">
+              {validCount}
+            </span>
           </div>
           <div className="text-center">
             <p className="text-[10px] font-bold uppercase tracking-tight text-success">Valid</p>
@@ -571,13 +422,14 @@ const BarangMasuk = () => {
           </div>
         </div>
 
-        {/* Total Pcs — filled primary */}
-        <div className="flex flex-col items-center justify-between rounded-2xl bg-primary p-3 shadow-lg shadow-primary/20 transition-transform active:scale-[0.98]">
+        <div className="flex flex-col items-center justify-between rounded-2xl bg-primary p-3 shadow-lg shadow-primary/20">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-foreground/15 text-primary-foreground">
             <Boxes className="h-5 w-5" strokeWidth={2} />
           </div>
           <div className="my-1.5 text-center">
-            <span className="text-2xl font-extrabold tabular-nums text-primary-foreground leading-none">{formatNumber(totalQty)}</span>
+            <span className="text-2xl font-extrabold tabular-nums text-primary-foreground leading-none">
+              {formatNumber(totalQty)}
+            </span>
           </div>
           <div className="text-center">
             <p className="text-[10px] font-bold uppercase tracking-tight text-primary-foreground">Total</p>
@@ -586,349 +438,143 @@ const BarangMasuk = () => {
         </div>
       </section>
 
-
-      {/* INPUT FORM */}
-      <Card className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between px-4 py-3 pb-2">
-          <div className="flex items-center gap-2">
-            <div className="rounded-lg bg-success/10 p-1.5">
-              <PackagePlus className="h-4 w-4 text-success" />
-            </div>
-            <CardTitle className="text-sm font-semibold">
-              {isMatchingMode
-                ? `Pencocokan Pesanan — Langkah ${matchingStep} dari 2`
-                : "Input Barang Masuk"}
-            </CardTitle>
-          </div>
-          {isMatchingMode && matchingStep === 2 && (
-            <OcrUpload mode="masuk" onResult={(ocrItems) => handleOcrResult(ocrItems as BarangMasukOcrItem[])} />
+      {/* SESSION DATE */}
+      <section className="rounded-2xl border border-border/60 bg-card p-3 shadow-sm">
+        <Label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+          Tanggal Sesi (semua bon)
+        </Label>
+        <div className="mt-1.5 flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "h-11 flex-1 justify-start rounded-xl border-border/70 bg-background text-left font-semibold",
+                  !tanggal && "text-muted-foreground",
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {selectedDateLabel}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={tanggal}
+                onSelect={setTanggal}
+                initialFocus
+                className="pointer-events-auto p-3"
+              />
+            </PopoverContent>
+          </Popover>
+          {tanggal && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setTanggal(undefined)}
+              className="h-11 rounded-xl text-xs font-semibold text-muted-foreground"
+            >
+              Reset
+            </Button>
           )}
-        </CardHeader>
+        </div>
+      </section>
 
-        <CardContent className="space-y-3 px-4 pb-4 pt-1 min-h-[400px]">
-          {isMatchingMode ? (
-            // MATCHING FLOW
-            matchingStep === 1 ? (
-              // STEP 1: INPUT ORDERED TEXT
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="ordered-text" className="text-xs font-bold text-muted-foreground uppercase">
-                    Langkah 1: Tempel / Ketik Daftar Pesanan Anda (Teks)
-                  </Label>
-                  <Textarea
-                    id="ordered-text"
-                    placeholder="Contoh:&#10;Benang Obras 2 Ons&#10;WHT - 100&#10;055 - 50&#10;Benang Obras 8 Ons&#10;WHT - 2 bal"
-                    value={orderedText}
-                    onChange={(e) => handleTextChange(e.target.value)}
-                    rows={10}
-                    className="rounded-xl border-border/70 bg-card font-mono text-sm leading-relaxed"
-                  />
-                  <p className="text-[11px] text-muted-foreground">
-                    Tuliskan kategori (misal: <em>Benang Obras 2 Ons</em>) diikuti daftar benang menggunakan format <code>KODE - JUMLAH</code>.
+      {/* BON LIST */}
+      {bons.map((bon, bonIdx) => {
+        const bonValid = bon.items.filter((it) => it.productId && it.qty > 0);
+        const bonTotalQty = bonValid.reduce((s, it) => s + it.qty, 0);
+        const bonTotalModal = bonValid.reduce((s, it) => {
+          const product = products?.find((p) => p.id === it.productId);
+          return s + (product?.prices?.harga_modal ?? 0) * it.qty;
+        }, 0);
+
+        return (
+          <Card
+            key={bon.id}
+            className="overflow-hidden rounded-2xl border-2 border-primary/15 bg-card shadow-sm"
+          >
+            <CardHeader className="flex flex-row items-center justify-between gap-2 border-b bg-primary/5 px-4 py-2.5">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+                  <span className="text-xs font-extrabold">{bonIdx + 1}</span>
+                </div>
+                <div>
+                  <CardTitle className="text-sm font-bold">Bon #{bonIdx + 1}</CardTitle>
+                  <p className="text-[10px] text-muted-foreground">
+                    {bonValid.length} item · {bonTotalQty} pcs · {formatRupiah(bonTotalModal)}
                   </p>
                 </div>
-
-                {orderedItems.length > 0 && (
-                  <div className="space-y-2 rounded-xl border bg-muted/30 p-3">
-                    <p className="text-xs font-bold text-foreground">
-                      Terbaca {orderedItems.length} Item Pesanan:
-                    </p>
-                    <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
-                      {orderedItems.map((item, idx) => (
-                        <div key={idx} className="flex items-center justify-between text-xs border-b border-border/40 pb-1">
-                          <span className="font-mono font-semibold">
-                            {item.kode} {item.kategori && `(${item.kategori})`}
-                          </span>
-                          <span className="font-bold text-primary">
-                            {item.qty} Pcs
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <Button
-                  onClick={() => {
-                    if (orderedItems.length > 0) {
-                      setMatchingStep(2);
-                    } else {
-                      toast({
-                        title: "Peringatan",
-                        description: "Silakan input daftar pesanan terlebih dahulu",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                  disabled={orderedItems.length === 0}
-                  className="w-full h-11 rounded-xl font-bold flex items-center justify-center gap-1.5"
-                >
-                  Langkah Selanjutnya: Upload Foto Nota
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
               </div>
-            ) : (
-              // STEP 2: UPLOAD PHOTO AND COMPARE
-              <div className="space-y-4 w-full min-h-full">
-                {arrivedItems.length === 0 ? (
-                  // If photo not uploaded yet
-                  <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 text-center space-y-4 min-h-[300px]">
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                      <Camera className="h-6 w-6 animate-pulse" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-bold">Langkah 2: Ambil Foto / Upload Nota Barang Datang</p>
-                      <p className="text-xs text-muted-foreground max-w-xs">
-                        Gunakan tombol di kanan atas kartu atau klik di bawah ini untuk memproses nota barang yang datang.
-                      </p>
-                    </div>
-                    <OcrUpload mode="masuk" onResult={(ocrItems) => handleOcrResult(ocrItems as BarangMasukOcrItem[])} />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setMatchingStep(1);
-                        setArrivedItems([]);
-                      }}
-                      className="text-xs font-semibold text-muted-foreground hover:text-foreground"
-                    >
-                      <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Kembali ke input teks
-                    </Button>
-                  </div>
-                ) : (
-                  // Comparison View
-                  <div className="space-y-4 w-full">
-                    <div className="space-y-2">
-                      <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
-                        Hasil Pencocokan (Pesanan vs Datang)
-                      </h3>
-
-                      <div className="overflow-hidden rounded-xl border border-border/80 bg-card divide-y max-h-[400px] overflow-y-auto">
-                        {getComparison(orderedItems, arrivedItems).map((row, idx) => {
-                          const isMatch = row.status === "match";
-                          const isMissing = row.status === "missing";
-                          const isPartial = row.status === "partial";
-                          const isExtra = row.status === "extra";
-
-                          return (
-                            <div
-                              key={idx}
-                              className={cn(
-                                "flex flex-col gap-2 p-3 text-sm",
-                                isMatch && "bg-success/[0.02]",
-                                isMissing && "bg-destructive/[0.03]",
-                                isPartial && "bg-warning/[0.03]",
-                                isExtra && "bg-primary/[0.02]"
-                              )}
-                            >
-                              <div className="flex items-center justify-between gap-2">
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="font-mono font-bold text-foreground">
-                                      {row.kode}
-                                    </span>
-                                    {row.kategori && (
-                                      <Badge variant="outline" className="text-[9px] px-1 py-0 font-medium">
-                                        {row.kategori}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  {row.productName && (
-                                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                                      {row.productName}
-                                    </p>
-                                  )}
-                                </div>
-
-                                <div className="flex items-center gap-1">
-                                  {isMatch && (
-                                    <Badge className="bg-success/10 text-success border-success/20 hover:bg-success/10 text-[10px] font-bold flex items-center gap-0.5 border">
-                                      <Check className="h-3 w-3" /> Cocok
-                                    </Badge>
-                                  )}
-                                  {isPartial && (
-                                    <Badge className="bg-warning/10 text-warning border-warning/20 hover:bg-warning/10 text-[10px] font-bold flex items-center gap-0.5 border">
-                                      <AlertTriangle className="h-3 w-3" /> Kurang {row.qtyOrdered - row.qtyArrived} Pcs
-                                    </Badge>
-                                  )}
-                                  {isMissing && (
-                                    <Badge className="bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/10 text-[10px] font-bold flex items-center gap-0.5 border">
-                                      <X className="h-3 w-3" /> Kosong
-                                    </Badge>
-                                  )}
-                                  {isExtra && (
-                                    <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/10 text-[10px] font-bold flex items-center gap-0.5 border">
-                                      <Plus className="h-3 w-3" /> Tambahan
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-4 text-xs font-semibold text-muted-foreground border-t border-border/40 pt-1.5">
-                                <div>
-                                  Pesan: <span className="text-foreground font-bold">{row.qtyOrdered}</span> Pcs
-                                </div>
-                                <div>
-                                  Datang: <span className={cn(
-                                    "font-bold",
-                                    row.qtyArrived === 0 ? "text-destructive" : row.qtyArrived < row.qtyOrdered ? "text-warning" : "text-success"
-                                  )}>{row.qtyArrived}</span> Pcs
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Estimasi Bon Barang Datang</p>
-                          <p className="mt-0.5 text-lg font-extrabold tabular-nums text-foreground">{formatRupiah(estimatedBonTotal)}</p>
-                        </div>
-                        <Badge variant="secondary" className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
-                          Hutang Ivory
-                        </Badge>
-                      </div>
-                    </div>
-
-                    {/* Opsi lanjutan (Tanggal & Catatan) — collapsed by default */}
-                    <Collapsible>
-                      <CollapsibleTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-9 w-full justify-between rounded-lg text-xs font-semibold text-muted-foreground hover:bg-muted"
-                        >
-                          <span>Opsi lanjutan {tanggal ? `· ${selectedDateLabel}` : ""} {catatan ? "· ada catatan" : ""}</span>
-                          <ChevronDown className="h-3.5 w-3.5 transition-transform data-[state=open]:rotate-180" />
-                        </Button>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="pt-2 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
-                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                          <div>
-                            <Label className="text-xs font-semibold text-muted-foreground">Tanggal</Label>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  className={cn(
-                                    "mt-1 h-11 w-full justify-start rounded-xl border-border/70 bg-card text-left font-normal",
-                                    !tanggal && "text-muted-foreground",
-                                  )}
-                                >
-                                  <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {selectedDateLabel}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="single"
-                                  selected={tanggal}
-                                  onSelect={setTanggal}
-                                  initialFocus
-                                  className="pointer-events-auto p-3"
-                                />
-                              </PopoverContent>
-                            </Popover>
-                            {tanggal && (
-                              <button
-                                onClick={() => setTanggal(undefined)}
-                                className="mt-0.5 text-[10px] text-primary hover:underline"
-                              >
-                                Reset ke hari ini
-                              </button>
-                            )}
-                          </div>
-
-                          <div>
-                            <Label className="text-xs font-semibold text-muted-foreground">Catatan</Label>
-                            <Textarea
-                              value={catatan}
-                              onChange={(event) => setCatatan(event.target.value)}
-                              placeholder="Catatan..."
-                              rows={2}
-                              className="mt-1 rounded-xl border-border/70 bg-card"
-                            />
-                          </div>
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
-
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setArrivedItems([]);
-                          setMatchingStep(1);
-                        }}
-                        className="flex-1 h-12 rounded-2xl text-sm font-bold"
-                      >
-                        <ArrowLeft className="mr-1 h-4 w-4" /> Edit Pesanan
-                      </Button>
-                      
-                      <Button
-                        onClick={handleSubmit}
-                        disabled={submitting || validCount === 0}
-                        className={cn(
-                          "flex-[2] h-12 rounded-2xl text-base font-bold shadow-md transition-all duration-150 active:scale-[0.98]",
-                          validCount === 0 || submitting
-                            ? "bg-muted text-muted-foreground shadow-none hover:bg-muted"
-                            : "bg-gradient-to-r from-success via-emerald-500 to-primary text-primary-foreground hover:shadow-lg"
-                        )}
-                      >
-                        <Send className="mr-2 h-5 w-5" />
-                        {submitting ? "Menyimpan..." : `Simpan ${validCount} Barang Datang`}
-                      </Button>
-                    </div>
-                  </div>
+              <div className="flex items-center gap-1">
+                <OcrUpload
+                  mode="masuk"
+                  onResult={(items) => handleOcrResult(bon.id, items as BarangMasukOcrItem[])}
+                />
+                {bons.length > 1 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeBon(bon.id)}
+                    className="h-9 w-9 rounded-lg text-destructive hover:bg-destructive/10"
+                    aria-label="Hapus bon"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 )}
               </div>
-            )
-          ) : (
-            // NORMAL DIRECT FORM
-            <>
-              {items.map((item, index) => {
-                const matchedProduct = products?.find((product) => product.id === item.productId);
+            </CardHeader>
+
+            <CardContent className="space-y-2.5 px-3 pb-3 pt-3">
+              {bon.items.map((item, index) => {
+                const matchedProduct = products?.find((p) => p.id === item.productId);
                 const currentStacks = (matchedProduct?.stock?.tumpukan_detail as number[]) ?? [];
                 const previewNewStacks =
                   item.productId && item.qty > 0
-                    ? splitIntoStacks(item.qty, item.productKode || item.kode, item.productKategori || undefined)
+                    ? splitIntoStacks(
+                        item.qty,
+                        item.productKode || item.kode,
+                        item.productKategori || undefined,
+                      )
                     : [];
                 const previewMerged =
-                  item.productId && item.qty > 0 ? addStacks(currentStacks, previewNewStacks) : currentStacks;
+                  item.productId && item.qty > 0
+                    ? addStacks(currentStacks, previewNewStacks)
+                    : currentStacks;
 
                 return (
                   <div
                     key={index}
                     className={cn(
-                      "space-y-2.5 rounded-2xl border p-3 transition-all duration-200",
+                      "space-y-2 rounded-xl border p-2.5 transition-all",
                       item.productId
                         ? "border-success/25 bg-success/[0.045]"
                         : item.kode && !item.productId
                           ? "border-destructive/25 bg-destructive/[0.04]"
-                          : "border-border/60 bg-background/55 hover:border-border",
+                          : "border-border/60 bg-background/55",
                     )}
                   >
                     <div className="flex items-center gap-2">
                       <div className="min-w-0 flex-1">
                         <Input
-                          placeholder="Ketik kode produk..."
+                          placeholder="Kode..."
                           value={item.kode}
-                          onChange={(event) => updateItem(index, "kode", event.target.value.toUpperCase())}
+                          onChange={(event) =>
+                            updateItem(bon.id, index, "kode", event.target.value.toUpperCase())
+                          }
                           list="product-codes"
-                          className="h-11 rounded-xl border-border/70 bg-card font-mono"
+                          className="h-10 rounded-lg border-border/70 bg-card font-mono text-sm"
                         />
                       </div>
-                      {/* Qty dengan tombol +/- untuk elderly UX */}
-                      <div className="flex shrink-0 items-center gap-0.5 rounded-xl border border-border/70 bg-card p-0.5">
+                      <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-border/70 bg-card p-0.5">
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          onClick={() => updateItem(index, "qty", Math.max(0, item.qty - 1))}
-                          className="h-9 w-9 rounded-lg"
+                          onClick={() =>
+                            updateItem(bon.id, index, "qty", Math.max(0, item.qty - 1))
+                          }
+                          className="h-8 w-8 rounded-md"
                           aria-label="Kurangi"
                         >
                           <Minus className="h-3.5 w-3.5" />
@@ -939,31 +585,34 @@ const BarangMasuk = () => {
                           value={item.qty === 0 ? "" : item.qty}
                           onChange={(event) =>
                             updateItem(
+                              bon.id,
                               index,
                               "qty",
-                              event.target.value === "" ? 0 : parseInt(event.target.value, 10) || 0,
+                              event.target.value === ""
+                                ? 0
+                                : parseInt(event.target.value, 10) || 0,
                             )
                           }
                           placeholder="0"
-                          className="h-9 w-10 rounded-lg border-0 bg-transparent p-0 text-center text-base font-bold focus-visible:ring-0"
+                          className="h-8 w-10 rounded-md border-0 bg-transparent p-0 text-center text-sm font-bold focus-visible:ring-0"
                         />
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          onClick={() => updateItem(index, "qty", item.qty + 1)}
-                          className="h-9 w-9 rounded-lg"
+                          onClick={() => updateItem(bon.id, index, "qty", item.qty + 1)}
+                          className="h-8 w-8 rounded-md"
                           aria-label="Tambah"
                         >
                           <Plus className="h-3.5 w-3.5" />
                         </Button>
                       </div>
-                      {items.length > 1 && (
+                      {bon.items.length > 1 && (
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => removeLine(index)}
-                          className="h-11 w-11 shrink-0 rounded-xl text-destructive hover:bg-destructive/10"
+                          onClick={() => removeLine(bon.id, index)}
+                          className="h-10 w-10 shrink-0 rounded-lg text-destructive hover:bg-destructive/10"
                           aria-label="Hapus baris"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -972,7 +621,7 @@ const BarangMasuk = () => {
                     </div>
 
                     {item.productName && (
-                      <p className="flex items-center gap-1 text-xs font-medium text-success">
+                      <p className="flex items-center gap-1 text-[11px] font-medium text-success">
                         <CheckCircle2 className="h-3 w-3 shrink-0" />
                         {item.productName}
                         {matchedProduct?.kategori && matchedProduct.kategori !== "2 Ons" && (
@@ -984,25 +633,32 @@ const BarangMasuk = () => {
                     )}
 
                     {item.kode && !item.productId && (
-                      <p className="text-xs font-medium text-destructive">Produk tidak ditemukan</p>
+                      <p className="text-[11px] font-medium text-destructive">
+                        Produk tidak ditemukan
+                      </p>
                     )}
 
                     {item.productId && item.qty > 0 && (
-                      <div className="space-y-1.5 rounded-xl border border-success/15 bg-success/[0.05] p-2.5">
-                        <div className="flex items-center gap-2 text-[11px]">
+                      <div className="space-y-1 rounded-lg border border-success/15 bg-success/[0.05] p-2">
+                        <div className="flex items-center gap-2 text-[10px]">
                           <span className="font-semibold text-success">Masuk</span>
-                          <TumpukanBadges stacks={previewNewStacks} kode={item.productKode || item.kode} compact />
+                          <TumpukanBadges
+                            stacks={previewNewStacks}
+                            kode={item.productKode || item.kode}
+                            compact
+                          />
                         </div>
-                        {currentStacks.length > 0 && (
-                          <div className="flex items-center gap-2 text-[11px]">
-                            <span className="font-medium text-muted-foreground">Sekarang</span>
-                            <TumpukanBadges stacks={currentStacks} kode={item.productKode || item.kode} compact />
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2 text-[11px]">
+                        <div className="flex items-center gap-2 text-[10px]">
                           <span className="font-semibold text-foreground">Setelah</span>
-                          <TumpukanBadges stacks={previewMerged} kode={item.productKode || item.kode} compact />
-                          <Badge variant="secondary" className="rounded-full bg-primary px-1.5 text-[9px] text-primary-foreground">
+                          <TumpukanBadges
+                            stacks={previewMerged}
+                            kode={item.productKode || item.kode}
+                            compact
+                          />
+                          <Badge
+                            variant="secondary"
+                            className="rounded-full bg-primary px-1.5 text-[9px] text-primary-foreground"
+                          >
                             = {previewMerged.reduce((sum, value) => sum + value, 0)}
                           </Badge>
                         </div>
@@ -1012,116 +668,99 @@ const BarangMasuk = () => {
                 );
               })}
 
-              <datalist id="product-codes">
-                {products?.map((product) => (
-                  <option key={product.id} value={product.nama} label={`${product.kode} - ${product.nama}`} />
-                ))}
-              </datalist>
-
-              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Estimasi Bon</p>
-                    <p className="mt-0.5 text-lg font-extrabold tabular-nums text-foreground">{formatRupiah(estimatedBonTotal)}</p>
-                  </div>
-                  <Badge variant="secondary" className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
-                    Hutang Ivory
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Tombol Tambah Baris full-width, ghost style */}
               <Button
                 variant="outline"
-                onClick={addLine}
-                className="h-11 w-full rounded-xl border-dashed text-sm font-semibold transition-all duration-150 active:scale-[0.98]"
+                onClick={() => addLine(bon.id)}
+                className="h-10 w-full rounded-lg border-dashed text-xs font-semibold"
               >
-                <Plus className="mr-1.5 h-4 w-4" />
-                Tambah Baris
+                <Plus className="mr-1 h-3.5 w-3.5" />
+                Tambah Baris Manual
               </Button>
 
-              {/* Opsi lanjutan (Tanggal & Catatan) — collapsed by default */}
               <Collapsible>
                 <CollapsibleTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-9 w-full justify-between rounded-lg text-xs font-semibold text-muted-foreground hover:bg-muted"
+                    className="h-8 w-full justify-between rounded-lg text-[11px] font-semibold text-muted-foreground hover:bg-muted"
                   >
-                    <span>Opsi lanjutan {tanggal ? `· ${selectedDateLabel}` : ""} {catatan ? "· ada catatan" : ""}</span>
-                    <ChevronDown className="h-3.5 w-3.5 transition-transform data-[state=open]:rotate-180" />
+                    <span>Catatan bon {bon.catatan ? "· terisi" : ""}</span>
+                    <ChevronDown className="h-3 w-3 transition-transform data-[state=open]:rotate-180" />
                   </Button>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="pt-2 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <div>
-                      <Label className="text-xs font-semibold text-muted-foreground">Tanggal</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "mt-1 h-11 w-full justify-start rounded-xl border-border/70 bg-card text-left font-normal",
-                              !tanggal && "text-muted-foreground",
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {selectedDateLabel}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={tanggal}
-                            onSelect={setTanggal}
-                            initialFocus
-                            className="pointer-events-auto p-3"
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      {tanggal && (
-                        <button
-                          onClick={() => setTanggal(undefined)}
-                          className="mt-0.5 text-[10px] text-primary hover:underline"
-                        >
-                          Reset ke hari ini
-                        </button>
-                      )}
-                    </div>
-
-                    <div>
-                      <Label className="text-xs font-semibold text-muted-foreground">Catatan</Label>
-                      <Textarea
-                        value={catatan}
-                        onChange={(event) => setCatatan(event.target.value)}
-                        placeholder="Catatan..."
-                        rows={2}
-                        className="mt-1 rounded-xl border-border/70 bg-card"
-                      />
-                    </div>
-                  </div>
+                <CollapsibleContent className="pt-1.5">
+                  <Textarea
+                    value={bon.catatan}
+                    onChange={(e) => updateBonCatatan(bon.id, e.target.value)}
+                    placeholder="Catatan untuk bon ini..."
+                    rows={2}
+                    className="rounded-lg border-border/70 bg-card text-xs"
+                  />
                 </CollapsibleContent>
               </Collapsible>
+            </CardContent>
+          </Card>
+        );
+      })}
 
-              {/* Tombol Simpan — disabled state jelas abu-abu */}
-              <Button
-                onClick={handleSubmit}
-                disabled={submitting || validCount === 0}
-                className={cn(
-                  "h-12 w-full rounded-2xl text-base font-bold shadow-md transition-all duration-150 active:scale-[0.98]",
-                  validCount === 0 || submitting
-                    ? "bg-muted text-muted-foreground shadow-none hover:bg-muted"
-                    : "bg-gradient-to-r from-success via-emerald-500 to-primary text-primary-foreground hover:shadow-lg",
-                )}
-              >
-                <Send className="mr-2 h-5 w-5" />
-                {submitting ? "Menyimpan..." : validCount > 0 ? `Simpan ${validCount} Item + Bon` : "Belum ada item valid"}
-              </Button>
-            </>
-          )}
-        </CardContent>
-      </Card>
+      <datalist id="product-codes">
+        {products?.map((product) => (
+          <option
+            key={product.id}
+            value={product.nama}
+            label={`${product.kode} - ${product.nama}`}
+          />
+        ))}
+      </datalist>
 
+      {/* ADD BON */}
+      <Button
+        variant="outline"
+        onClick={addBon}
+        className="h-12 w-full rounded-2xl border-2 border-dashed border-primary/40 bg-primary/[0.03] text-sm font-bold text-primary hover:bg-primary/[0.08]"
+      >
+        <Plus className="mr-1.5 h-4 w-4" />
+        Tambah Bon Baru
+      </Button>
+
+      {/* TOTAL ESTIMATION */}
+      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              Total Estimasi ({bons.length} Bon)
+            </p>
+            <p className="mt-0.5 text-lg font-extrabold tabular-nums text-foreground">
+              {formatRupiah(estimatedTotal)}
+            </p>
+          </div>
+          <Badge
+            variant="secondary"
+            className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary"
+          >
+            Hutang Ivory
+          </Badge>
+        </div>
+      </div>
+
+      {/* SAVE ALL */}
+      <Button
+        onClick={handleSubmit}
+        disabled={submitting || validCount === 0}
+        className={cn(
+          "h-14 w-full rounded-2xl text-base font-bold shadow-md transition-all active:scale-[0.98]",
+          validCount === 0 || submitting
+            ? "bg-muted text-muted-foreground shadow-none hover:bg-muted"
+            : "bg-gradient-to-r from-success via-emerald-500 to-primary text-primary-foreground hover:shadow-lg",
+        )}
+      >
+        <Send className="mr-2 h-5 w-5" />
+        {submitting
+          ? "Menyimpan..."
+          : validCount > 0
+            ? `Simpan Semua (${bons.length} Bon · ${validCount} Item)`
+            : "Belum ada item valid"}
+      </Button>
 
       <BarangMasukHistory
         deletingId={deletingId}
