@@ -79,6 +79,13 @@ describe("parseOrderText", () => {
     expect(wht?.productKategori).toBe("2 Ons");
     expect(wht?.categoryHeader).not.toBe(true);
   });
+
+  it("matches WHT 8 Ons correctly even when WHT 2 Ons has bare kode", () => {
+    const lines = parseOrderText(fullOrderText, products);
+    const wht8 = lines.find((l) => l.raw.includes("WHT - 2 bal"));
+    expect(wht8?.productId).toBe("wht-8");
+    expect(wht8?.productKategori).toBe("8 Ons");
+  });
 });
 
 describe("compareOrderVsArrived", () => {
