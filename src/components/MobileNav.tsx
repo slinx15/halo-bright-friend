@@ -96,8 +96,8 @@ const MobileNav = () => {
             })}
             <div className="border-t border-border/30 my-1" />
             <div className="px-4 py-2">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Tips</p>
-              <p className="mt-1 text-xs text-muted-foreground">Pakai Analisa untuk lihat kebutuhan, lalu cek ulang di Review sebelum kirim pesanan.</p>
+              <p className="text-xs font-semibold text-muted-foreground">Tips</p>
+              <p className="mt-1 text-sm text-muted-foreground">Pakai Analisa untuk lihat kebutuhan, lalu cek ulang di Review sebelum kirim pesanan.</p>
             </div>
             <div className="border-t border-border/30 my-1" />
             <div className="flex items-center gap-2 px-2">
@@ -151,7 +151,7 @@ const MobileNav = () => {
                   <item.icon className={cn("h-[20px] w-[20px] transition-all duration-200", active ? "stroke-[2.5]" : "stroke-[1.8]")} />
                 </span>
                 <span className={cn(
-                  "text-[10px] leading-tight transition-all duration-200",
+                  "text-xs leading-tight transition-all duration-200",
                   active ? "font-bold text-primary" : "font-medium text-muted-foreground"
                 )}>
                   {item.label}
@@ -183,7 +183,7 @@ const MobileNav = () => {
               )}
             </span>
             <span className={cn(
-              "text-[10px] leading-tight transition-all duration-200",
+              "text-xs leading-tight transition-all duration-200",
               (moreOpen || isSecondaryActive) ? "font-bold text-primary" : "font-medium text-muted-foreground"
             )}>
               Lainnya
