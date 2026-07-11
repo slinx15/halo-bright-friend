@@ -284,7 +284,7 @@ export default function Laporan() {
               <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full -translate-y-6 translate-x-6" />
               <div className="relative z-10 flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider opacity-80">Total Omzet</p>
+                  <p className="text-xs font-semibold opacity-80">Total Omzet</p>
                   <p className="text-xl font-extrabold tracking-tight">{formatRupiah(salesSummary.totalRevenue)}</p>
                   <div className="flex items-center gap-3 mt-1 text-[10px] opacity-80">
                     <span>{formatNumber(salesSummary.totalTx)} tx</span>
@@ -428,7 +428,7 @@ export default function Laporan() {
               <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full -translate-y-6 translate-x-6" />
               <div className="relative z-10 flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider opacity-80">Total Pengeluaran Modal</p>
+                  <p className="text-xs font-semibold opacity-80">Total Pengeluaran Modal</p>
                   <p className="text-xl font-extrabold tracking-tight">{formatRupiah(stockInSummary.totalModal)}</p>
                   <div className="flex items-center gap-3 mt-1 text-[10px] opacity-80">
                     <span>{formatNumber(stockInSummary.totalTx)} tx</span>
@@ -500,7 +500,7 @@ export default function Laporan() {
             )}>
               <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full -translate-y-6 translate-x-6" />
               <div className="relative z-10">
-                <p className="text-[10px] font-semibold uppercase tracking-wider opacity-80">Profit Bulan Ini</p>
+                <p className="text-xs font-semibold opacity-80">Profit Bulan Ini</p>
                 <p className="text-xl font-extrabold tracking-tight">{formatRupiah(profitSummary.totalProfit)}</p>
                 <div className="flex items-center gap-3 mt-1 text-[10px] opacity-80">
                   <span>Omzet: {formatRupiah(profitSummary.totalOmzet)}</span>
