@@ -32,7 +32,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 
-import { useProducts } from "@/hooks/useProducts";
+import { useAllProducts, useProducts } from "@/hooks/useProducts";
 import { type StockInHistoryEntry, useStockInHistory } from "@/hooks/useStockInHistory";
 import { useToast } from "@/hooks/use-toast";
 import { logActivity } from "@/lib/activityLogger";
