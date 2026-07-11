@@ -1,44 +1,50 @@
+## Tujuan
+Ubah alur Barang Masuk supaya bisa input **beberapa bon sekaligus** dalam satu sesi, tiap bon bisa punya beberapa halaman foto/input, lalu **simpan semua sekaligus** di akhir.
 
+## Alur Baru (user)
+1. Buka Barang Masuk → sesi otomatis mulai dengan **Bon #1**.
+2. Di Bon #1: input item (manual atau OCR foto halaman 1). Klik "Tambah Halaman" untuk foto halaman berikutnya — item hasil OCR digabung otomatis kalau kodenya sama.
+3. Klik **"+ Tambah Bon"** untuk mulai Bon #2, dst.
+4. Set 1 tanggal untuk seluruh sesi (default hari ini).
+5. Klik **"Simpan Semua"** → semua bon disimpan sekaligus, tiap bon jadi 1 entry hutang Ivory terpisah.
 
-# Perbaikan Import Massal yang Stuck di 10%
+## Struktur Data (state)
+```text
+session {
+  tanggal: Date (satu untuk semua bon)
+  bons: [
+    {
+      id: "BON-1" (auto),
+      items: [{ kode, qty, productId, productName, kategori }],
+      catatan?: string
+    },
+    { id: "BON-2", items: [...] },
+    ...
+  ]
+}
+```
 
-## Masalah yang Ditemukan
+## Perubahan File
+- **`src/pages/BarangMasuk.tsx`** (rewrite bagian form):
+  - Hapus 3-mode tabs (manual/OCR/match) — jadi satu alur unified.
+  - Tambah komponen bon-list: tiap bon adalah Card dengan header "Bon #N", tombol hapus bon, daftar item, tombol "Tambah item manual" + "Scan halaman (OCR)".
+  - Tombol global: "+ Tambah Bon", date picker sesi, "Simpan Semua Bon".
+  - Merge logic: saat OCR selesai, tiap item dicek — kalau `kode` sudah ada di bon aktif, `qty` ditambahkan; kalau belum, append baris baru.
+  - Submit loop: untuk tiap bon → jalankan `registerStockIn` per item → buat 1 `createDebtItem` per bon dengan nomor `BM-YYYYMMDD-HHMMSS-N`.
 
-1. **UNIQUE constraint pada kolom `kode`**: Tabel `products` memiliki constraint `products_kode_key` yang mencegah kode duplikat. Jika ada kode yang sama dalam batch atau sudah ada di database, seluruh insert gagal dan request bisa hang.
-2. **Batch terlalu besar**: Mengirim 183 baris sekaligus dalam satu API call bisa menyebabkan timeout.
-3. **Error handling kurang**: Jika insert gagal, tidak ada feedback yang jelas ke user.
-
-## Solusi
-
-### 1. Pecah batch menjadi chunk kecil (maks 50 per request)
-- Alih-alih insert 183 produk sekaligus, pecah menjadi batch 50 produk
-- Progress bar akan update secara bertahap per chunk
-
-### 2. Validasi duplikat sebelum insert
-- Cek kode duplikat dalam data yang di-paste (duplikat internal)
-- Cek kode yang sudah ada di database sebelum insert
-- Tampilkan pesan error yang jelas jika ada duplikat
-
-### 3. Perbaiki error handling
-- Tambahkan timeout protection
-- Tampilkan error spesifik (misalnya "Kode X sudah ada")
-- Reset state dengan benar jika gagal
+- **Tidak diubah**: `stockMutations.ts`, `hutangStore.ts`, `OcrUpload.tsx` (dipakai apa adanya, cuma callback-nya yang merge).
 
 ## Detail Teknis
+- Auto-number bon di UI: `BON-1`, `BON-2` (label saja, cuma untuk user).
+- Nomor bon di DB Hutang Ivory: `BM-{yyyyMMdd}-{HHmmss}-{index}` supaya unik antar bon dalam 1 sesi.
+- Validasi sebelum save: minimal 1 bon dengan ≥1 item yang punya `productId` valid.
+- Kalau salah satu bon gagal simpan → lanjut ke bon berikutnya, di akhir tampilkan toast ringkasan (X bon sukses, Y gagal).
+- Sesi di-reset setelah "Simpan Semua" sukses.
 
-File yang diubah: `src/components/produk/BulkInputDialog.tsx`
+## Yang TIDAK Berubah
+- Desain visual/warna/tokens.
+- Fitur histori barang masuk di bawah.
+- Match-order mode (opsional: dihapus karena ribet, atau disembunyikan di collapsible "mode lama"). **Default rencana: dihapus** untuk mengurangi clutter.
 
-Perubahan pada fungsi `handleSubmit`:
-
-```
-1. Cek duplikat internal (kode yang sama dalam data paste)
-2. Query database untuk cek kode yang sudah ada
-3. Filter hanya kode baru yang belum ada
-4. Pecah menjadi chunk @50 baris
-5. Insert per chunk dengan progress update bertahap
-6. Insert prices dan stock per chunk
-7. Error handling per chunk (lanjut ke chunk berikutnya jika ada error)
-```
-
-Progress bar akan menunjukkan persentase yang lebih akurat berdasarkan jumlah chunk yang sudah diproses.
-
+## Konfirmasi
+Match-order mode (paste teks WA lalu bandingkan) — **dihapus** atau **dipertahankan sebagai mode terpisah**?
