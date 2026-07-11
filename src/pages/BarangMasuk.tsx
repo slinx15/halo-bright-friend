@@ -40,6 +40,11 @@ import { getErrorMessage } from "@/lib/errors";
 import { formatNumber, formatRupiah } from "@/lib/formatters";
 import { createDebtItem, getDebtItems, saveDebtItems } from "@/lib/hutangStore";
 import { findProductMatch } from "@/lib/productMatcher";
+import {
+  buildMissingSummary,
+  compareOrderVsArrived,
+  parseOrderText,
+} from "@/lib/orderMatcher";
 import { deleteStockInTransaction, registerStockIn } from "@/lib/stockMutations";
 import { addStacks, splitIntoStacks } from "@/lib/tumpukanUtils";
 import { cn } from "@/lib/utils";
