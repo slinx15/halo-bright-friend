@@ -176,13 +176,13 @@ const AiChat = () => {
 
           {showMemory ? (
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              <h4 className="font-semibold text-xs text-muted-foreground uppercase tracking-wide">Memory AI ({memories.length})</h4>
+              <h4 className="font-semibold text-sm text-muted-foreground">Memory AI ({memories.length})</h4>
               {memories.length === 0 && <p className="text-xs text-muted-foreground">Belum ada memory. AI akan otomatis menyimpan hal-hal penting dari percakapan.</p>}
               {memories.map(m => (
                 <div key={m.id} className="text-xs rounded-2xl border border-border/60 bg-muted/40 p-2.5 group relative">
                   <div className="flex items-center gap-1 mb-1">
                     <span>{CATEGORY_LABELS[m.category]?.emoji || "\u{1F4CC}"}</span>
-                    <span className="font-semibold text-[10px] uppercase text-muted-foreground">{CATEGORY_LABELS[m.category]?.label || m.category}</span>
+                    <span className="font-semibold text-xs text-muted-foreground">{CATEGORY_LABELS[m.category]?.label || m.category}</span>
                   </div>
                   <p className="leading-relaxed">{m.content}</p>
                   <button onClick={() => deleteMemory(m.id)} className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive">
