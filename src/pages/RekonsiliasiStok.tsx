@@ -277,7 +277,7 @@ const RekonsiliasiStok = () => {
         <Card className="p-3.5 bg-primary/5">
           <div className="flex items-center gap-2 mb-1.5">
             <Database className="h-4 w-4 text-primary" />
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Produk Aktif</span>
+            <span className="text-xs text-muted-foreground font-semibold">Produk Aktif</span>
           </div>
           <p className="text-2xl font-extrabold tabular-nums">{formatNumber(summary.totalProducts)}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">Produk yang discan</p>
@@ -285,7 +285,7 @@ const RekonsiliasiStok = () => {
         <Card className="p-3.5 bg-destructive/5">
           <div className="flex items-center gap-2 mb-1.5">
             <AlertTriangle className="h-4 w-4 text-destructive" />
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Selisih</span>
+            <span className="text-xs text-muted-foreground font-semibold">Selisih</span>
           </div>
           <p className="text-2xl font-extrabold tabular-nums text-destructive">{formatNumber(summary.mismatchCount)}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">Perlu pengecekan</p>
@@ -293,7 +293,7 @@ const RekonsiliasiStok = () => {
         <Card className="p-3.5 bg-warning/5">
           <div className="flex items-center gap-2 mb-1.5">
             <Scale className="h-4 w-4 text-warning" />
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Total Deviasi</span>
+            <span className="text-xs text-muted-foreground font-semibold">Total Deviasi</span>
           </div>
           <p className="text-2xl font-extrabold tabular-nums text-warning">{formatNumber(summary.totalAbsoluteDifference)}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">Akumulasi selisih absolut</p>
@@ -301,7 +301,7 @@ const RekonsiliasiStok = () => {
         <Card className="p-3.5 bg-muted/40">
           <div className="flex items-center gap-2 mb-1.5">
             <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Belum Opname</span>
+            <span className="text-xs text-muted-foreground font-semibold">Belum Opname</span>
           </div>
           <p className="text-2xl font-extrabold tabular-nums">{formatNumber(summary.withoutOpnameCount)}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">Masih pakai histori penuh</p>
@@ -467,15 +467,15 @@ const RekonsiliasiStok = () => {
 
                 <div className="grid grid-cols-3 gap-2 rounded-xl bg-muted/35 px-3 py-2">
                   <div>
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Sistem</p>
+                    <p className="text-xs text-muted-foreground font-semibold">Sistem</p>
                     <p className="text-lg font-extrabold tabular-nums">{formatNumber(row.currentStock)}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Histori</p>
+                    <p className="text-xs text-muted-foreground font-semibold">Histori</p>
                     <p className="text-lg font-extrabold tabular-nums">{formatNumber(row.expectedStock)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Selisih</p>
+                    <p className="text-xs text-muted-foreground font-semibold">Selisih</p>
                     <span className={cn("inline-flex rounded-full border px-2 py-0.5 text-xs font-bold tabular-nums mt-1", differenceClass(row))}>
                       {row.difference > 0 ? "+" : ""}
                       {formatNumber(row.difference)}
@@ -485,12 +485,12 @@ const RekonsiliasiStok = () => {
 
                 <div className="grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
                   <div className="rounded-lg bg-muted/30 px-2.5 py-2">
-                    <p className="font-bold uppercase tracking-wider text-[10px] mb-0.5">Baseline</p>
+                    <p className="font-semibold text-xs text-muted-foreground mb-0.5">Baseline</p>
                     <p>{row.baselineSource === "opname" ? "Opname terakhir" : "Awal histori"}</p>
                     <p>{formatDateTime(row.baselineAt)}</p>
                   </div>
                   <div className="rounded-lg bg-muted/30 px-2.5 py-2">
-                    <p className="font-bold uppercase tracking-wider text-[10px] mb-0.5">Mutasi</p>
+                    <p className="font-semibold text-xs text-muted-foreground mb-0.5">Mutasi</p>
                     <p>Masuk: {formatNumber(row.totalInSinceBaseline)}</p>
                     <p>Keluar: {formatNumber(row.totalOutSinceBaseline)}</p>
                   </div>

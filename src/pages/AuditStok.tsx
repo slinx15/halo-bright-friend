@@ -478,11 +478,11 @@ const AuditStok = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-muted-foreground">
                     <div className="rounded-lg bg-muted/30 px-2.5 py-2 min-w-0">
-                      <p className="font-bold uppercase tracking-wider text-[10px] mb-0.5">Tumpukan Lama</p>
+                      <p className="font-semibold text-xs text-muted-foreground mb-0.5">Tumpukan Lama</p>
                       <p className="truncate">{formatStack(row.old_tumpukan_detail)}</p>
                     </div>
                     <div className="rounded-lg bg-muted/30 px-2.5 py-2 min-w-0">
-                      <p className="font-bold uppercase tracking-wider text-[10px] mb-0.5">Tumpukan Baru</p>
+                      <p className="font-semibold text-xs text-muted-foreground mb-0.5">Tumpukan Baru</p>
                       <p className="truncate">{formatStack(row.new_tumpukan_detail)}</p>
                     </div>
                   </div>
