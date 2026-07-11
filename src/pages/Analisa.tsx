@@ -413,7 +413,7 @@ const Analisa = () => {
             <span className="text-2xl font-extrabold tabular-nums text-destructive leading-none">{needsReorder}</span>
           </div>
           <div className="text-center">
-            <p className="text-[10px] font-bold uppercase tracking-tight text-destructive">Restock</p>
+            <p className="text-xs font-semibold text-destructive">Restock</p>
             <p className="text-[9px] text-muted-foreground">Perlu diisi</p>
           </div>
         </div>
@@ -427,7 +427,7 @@ const Analisa = () => {
             <span className="text-2xl font-extrabold tabular-nums text-foreground leading-none">{analyses.length}</span>
           </div>
           <div className="text-center">
-            <p className="text-[10px] font-bold uppercase tracking-tight text-foreground/90">Aktif</p>
+            <p className="text-xs font-semibold text-foreground/90">Aktif</p>
             <p className="text-[9px] text-muted-foreground">SKU dianalisa</p>
           </div>
         </div>
@@ -449,7 +449,7 @@ const Analisa = () => {
             </span>
           </div>
           <div className="text-center">
-            <p className="text-[10px] font-bold uppercase tracking-tight text-primary-foreground">Biaya (Rp)</p>
+            <p className="text-xs font-semibold text-primary-foreground">Biaya (Rp)</p>
             <p className="text-[9px] text-primary-foreground/75">Estimasi restock</p>
           </div>
         </div>
@@ -731,13 +731,13 @@ const Analisa = () => {
 
                     <div className="grid grid-cols-3 gap-3 text-center">
                       <div>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Stok</p>
+                        <p className="text-xs text-muted-foreground mb-0.5">Stok</p>
                         <p className={`font-mono font-bold text-sm tabular-nums ${isZeroStock ? "text-destructive" : ""}`}>
                           {a.currentStock}
                         </p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Beli</p>
+                        <p className="text-xs text-muted-foreground mb-0.5">Beli</p>
                         {a.recommendedQty > 0 ? (
                           <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-primary text-primary-foreground font-bold text-xs">
                             {a.recommendedQty} <span className="ml-0.5 text-[9px] font-medium opacity-80">pcs</span>
@@ -748,7 +748,7 @@ const Analisa = () => {
                       </div>
 
                       <div>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Biaya</p>
+                        <p className="text-xs text-muted-foreground mb-0.5">Biaya</p>
                         <p className="font-mono text-xs font-semibold tabular-nums">
                           {a.cost > 0 ? formatRp(a.cost) : "—"}
                         </p>

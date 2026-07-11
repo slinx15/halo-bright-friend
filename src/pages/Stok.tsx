@@ -303,7 +303,7 @@ const Stok = () => {
             <span className="text-2xl font-extrabold tabular-nums text-foreground leading-none">{formatNumber(totalStok)}</span>
           </div>
           <div className="text-center">
-            <p className="text-[10px] font-bold uppercase tracking-tight text-foreground/90">Total</p>
+            <p className="text-xs font-semibold text-foreground/90">Total</p>
             <p className="text-[9px] text-muted-foreground">{formatNumber(totalItems)} SKU</p>
           </div>
         </div>
@@ -317,7 +317,7 @@ const Stok = () => {
             <span className="text-2xl font-extrabold tabular-nums text-destructive leading-none">{kritis + kosong + warning}</span>
           </div>
           <div className="text-center">
-            <p className="text-[10px] font-bold uppercase tracking-tight text-destructive">Risiko</p>
+            <p className="text-xs font-semibold text-destructive">Risiko</p>
             <p className="text-[9px] text-muted-foreground">{kosong} kosong · {kritis + warning} tipis</p>
           </div>
         </div>
@@ -339,7 +339,7 @@ const Stok = () => {
             </span>
           </div>
           <div className="text-center">
-            <p className="text-[10px] font-bold uppercase tracking-tight text-primary-foreground">Nilai (Rp)</p>
+            <p className="text-xs font-semibold text-primary-foreground">Nilai (Rp)</p>
             <p className="text-[9px] text-primary-foreground/75">Harga modal</p>
           </div>
 
@@ -492,7 +492,7 @@ const Stok = () => {
 
                     {stacks.length > 0 && (
                       <div className="rounded-xl bg-background/70 px-2.5 py-2.5 text-xs">
-                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                        <p className="mb-1 text-xs font-semibold text-muted-foreground">
                           Tumpukan
                         </p>
                         <TumpukanBadges stacks={stacks} kode={product.kode} compact />
