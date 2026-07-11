@@ -10,6 +10,7 @@ export interface OrderLine {
   productKategori?: string | null;
   productName?: string;
   unmatched?: boolean;
+  categoryHeader?: boolean;
 }
 
 export interface CompareItem {
