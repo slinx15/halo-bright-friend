@@ -37,7 +37,7 @@ const navItems = [
   { icon: BarChart3, label: "Analisa", path: "/analisa", group: "laporan" },
   { icon: FileBarChart, label: "Laporan Bulanan", path: "/laporan", group: "laporan" },
   { icon: Wallet, label: "Dashboard Keuangan", path: "/keuangan", group: "laporan" },
-  { icon: Landmark, label: "Hutang Ivory", path: "/hutang", group: "laporan" },
+  { icon: Landmark, label: "Plafon Supplier", path: "/hutang", group: "laporan" },
   { icon: Settings, label: "Produk", path: "/produk", group: "laporan" },
   { icon: FileUp, label: "Import Histori", path: "/import-histori", group: "laporan" },
   { icon: Bot, label: "AI Assistant", path: "/ai", group: "laporan" },

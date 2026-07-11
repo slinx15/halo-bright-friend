@@ -963,7 +963,7 @@ const BarangMasuk = () => {
             variant="secondary"
             className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary"
           >
-            Hutang Ivory
+            Plafon Supplier
           </Badge>
         </div>
       </div>

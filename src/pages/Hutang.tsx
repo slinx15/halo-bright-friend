@@ -90,7 +90,7 @@ export default function Hutang() {
       setManualOpen(false);
       setFakturOpenSignal(0);
       refresh();
-      toast({ title: "Data hutang direset", description: "Cloud dan cache lokal Hutang Ivory sudah kosong" });
+      toast({ title: "Data hutang direset", description: "Cloud dan cache lokal Plafon Supplier sudah kosong" });
     } catch (error) {
       console.error("[hutang] reset failed", error);
       toast({
@@ -228,7 +228,7 @@ export default function Hutang() {
         icon={Wallet}
         iconColor="text-primary"
         iconBg="bg-primary/10"
-        title="Hutang Ivory"
+        title="Plafon Supplier"
         subtitle="Kelola bon supplier, lunas, dan riwayat"
       />
 
@@ -503,7 +503,7 @@ export default function Hutang() {
             Zona Berbahaya
           </CardTitle>
           <p className="text-xs text-muted-foreground">
-            Reset akan menghapus data cloud dan cache lokal Hutang Ivory. Gunakan hanya jika benar-benar perlu.
+            Reset akan menghapus data cloud dan cache lokal Plafon Supplier. Gunakan hanya jika benar-benar perlu.
           </p>
         </CardHeader>
         <CardContent className="px-4 pb-4 pt-1">
@@ -516,14 +516,14 @@ export default function Hutang() {
           >
             <AlertDialogTrigger asChild>
               <Button variant="destructive" className="h-11 w-full rounded-2xl font-bold" disabled={resetting}>
-                Reset Hutang Ivory
+                Reset Plafon Supplier
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent className="rounded-3xl">
               <AlertDialogHeader>
-                <AlertDialogTitle>Reset data Hutang Ivory?</AlertDialogTitle>
+                <AlertDialogTitle>Reset data Plafon Supplier?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Tindakan ini akan menghapus semua data Hutang Ivory dari cloud dan cache lokal. Aksi ini tidak bisa dibatalkan.
+                  Tindakan ini akan menghapus semua data Plafon Supplier dari cloud dan cache lokal. Aksi ini tidak bisa dibatalkan.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <div className="space-y-3">
