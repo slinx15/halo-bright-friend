@@ -362,7 +362,7 @@ function HutangCard() {
           <div className="rounded-lg bg-warning/10 p-1.5">
             <Landmark className="h-4 w-4 text-warning" />
           </div>
-          <CardTitle className="text-sm font-semibold">Hutang Ivory</CardTitle>
+          <CardTitle className="text-sm font-semibold">Plafon Supplier</CardTitle>
         </div>
         <Badge variant="secondary" className="rounded-full px-2 text-[10px] font-bold">
           Limit {formatRupiah(limit)}
