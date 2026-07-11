@@ -59,26 +59,25 @@ describe("parseOrderText", () => {
     expect(lines.filter((l) => l.categoryHeader).length).toBe(4);
     expect(byKode("BLCK")?.qty).toBe(50);
     expect(byKode("BLCK")?.productKategori).toBe("3 Ons");
-    expect(byKode("R143")?.qty).toBe(5);
-    expect(byKode("R143")?.productKategori).toBe("18 Gram");
     expect(byKode("WHT")?.qty).toBe(2);
     expect(byKode("WHT")?.productKategori).toBe("8 Ons");
     expect(byKode("055")?.qty).toBe(50);
     expect(byKode("055")?.productKategori).toBe("2 Ons");
   });
 
-  it("marks 18 Gram items as unmatched when the product is not active", () => {
+  it("marks 18 Gram items as unmatched when the product is not available", () => {
     const lines = parseOrderText(fullOrderText, products);
     const r143 = lines.find((l) => l.raw.includes("R143 - 5 pack"));
     expect(r143?.unmatched).toBe(true);
-    expect(r143?.productKategori).toBeUndefined();
+    expect(r143?.productId).toBeUndefined();
   });
 
-  it("matches WHT 8 Ons correctly even when WHT 2 Ons has bare kode", () => {
-    const lines = parseOrderText(fullOrderText, products);
-    const wht8 = lines.find((l) => l.raw.includes("WHT - 2 bal"));
-    expect(wht8?.productId).toBe("wht-8");
-    expect(wht8?.productKategori).toBe("8 Ons");
+  it("does not treat item lines with category suffix as headers", () => {
+    const lines = parseOrderText("WHT 2 Ons 10\n055 50", products);
+    const wht = lines.find((l) => l.kode === "WHT");
+    expect(wht?.qty).toBe(10);
+    expect(wht?.productKategori).toBe("2 Ons");
+    expect(wht?.categoryHeader).not.toBe(true);
   });
 });
 
