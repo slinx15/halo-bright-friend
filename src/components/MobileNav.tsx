@@ -67,9 +67,9 @@ const MobileNav = () => {
       {/* More menu overlay */}
       {moreOpen && (
         <div className="md:hidden fixed inset-0 z-[60]" onClick={() => setMoreOpen(false)}>
-          <div className="absolute inset-0 bg-background/80" />
+          <div className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" />
           <div
-            className="absolute bottom-[calc(3.5rem+env(safe-area-inset-bottom))] left-3 right-3 max-h-[calc(100svh-7rem-env(safe-area-inset-bottom))] overflow-y-auto overscroll-y-contain rounded-[1.15rem] border border-border/70 bg-card/98 p-2 space-y-0.5 shadow-[0_24px_60px_rgba(15,23,42,0.18)] ring-1 ring-black/5 animate-slide-up scrollbar-hide"
+            className="absolute bottom-[calc(3.5rem+env(safe-area-inset-bottom))] left-3 right-3 max-h-[calc(100svh-7rem-env(safe-area-inset-bottom))] overflow-y-auto overscroll-y-contain rounded-[1.15rem] border border-border bg-card p-2 space-y-0.5 shadow-[0_24px_60px_rgba(15,23,42,0.28)] ring-1 ring-black/5 animate-slide-up scrollbar-hide"
             style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
             onClick={(e) => e.stopPropagation()}
           >
