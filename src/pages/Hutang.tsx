@@ -236,28 +236,28 @@ export default function Hutang() {
         <div className="card-premium bg-primary/5 p-3">
           <div className="mb-1.5 flex items-center gap-2">
             <Wallet className="h-4 w-4 text-primary" />
-            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Total Hutang</span>
+            <span className="text-xs font-semibold text-muted-foreground">Total Hutang</span>
           </div>
           <p className="text-lg font-extrabold tabular-nums">{formatRupiah(summary.openDebt)}</p>
         </div>
         <div className="card-premium bg-success/5 p-3">
           <div className="mb-1.5 flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-success" />
-            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Lunas</span>
+            <span className="text-xs font-semibold text-muted-foreground">Lunas</span>
           </div>
           <p className="text-lg font-extrabold tabular-nums">{formatRupiah(summary.totalPaid)}</p>
         </div>
         <div className="card-premium bg-warning/5 p-3">
           <div className="mb-1.5 flex items-center gap-2">
             <ShieldAlert className="h-4 w-4 text-warning" />
-            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Sisa Limit</span>
+            <span className="text-xs font-semibold text-muted-foreground">Sisa Limit</span>
           </div>
           <p className="text-lg font-extrabold tabular-nums">{formatRupiah(limitLeft)}</p>
         </div>
         <div className="card-premium bg-destructive/5 p-3">
           <div className="mb-1.5 flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-destructive" />
-            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Bon Aktif</span>
+            <span className="text-xs font-semibold text-muted-foreground">Bon Aktif</span>
           </div>
           <p className="text-lg font-extrabold tabular-nums">{formatNumber(summary.activeCount)}</p>
         </div>
