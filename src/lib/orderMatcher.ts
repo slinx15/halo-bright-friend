@@ -102,7 +102,7 @@ export function parseOrderText(
       const headerCategory = isCategoryHeader(raw);
       if (headerCategory) {
         currentCategory = headerCategory;
-        return { raw, kode: raw, qty: 0, unmatched: true };
+        return { raw, kode: raw, qty: 0, unmatched: false, categoryHeader: true };
       }
 
       const parsed = parseLine(raw);
