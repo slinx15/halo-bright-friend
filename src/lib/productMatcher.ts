@@ -83,21 +83,23 @@ export function findProductMatch(
   const baseKode = stripCategorySuffix(rawKode);
   const strippedBaseKode = stripLeadingZeros(baseKode);
   const candidates = unique([rawKode, strippedKode, baseKode, strippedBaseKode]);
-  const wantedCategory = input.kategori || suffixCategory || input.preferCategory || DEFAULT_CATEGORY;
+  const suffixCategory = getCategorySuffix(rawKode);
+  const explicitCategory = input.kategori || suffixCategory || input.preferCategory || null;
+  const wantedCategory = explicitCategory || DEFAULT_CATEGORY;
 
   const fullMatches = all.filter((p) => {
     const productKode = normalizeKode(p.kode);
     const productName = normalizeKode(p.nama);
     return candidates.includes(productKode) || candidates.includes(stripLeadingZeros(productKode)) || candidates.includes(productName);
   });
-  const fullMatch = pickByCategory(fullMatches, input.kategori || wantedCategory);
+  const fullMatch = pickByCategory(fullMatches, input.kategori || wantedCategory, { allowFallback: !explicitCategory });
   if (fullMatch) return fullMatch;
 
   const baseMatches = all.filter((p) => {
     const productBase = stripCategorySuffix(p.kode);
     return candidates.includes(productBase) || candidates.includes(stripLeadingZeros(productBase));
   });
-  return pickByCategory(baseMatches, input.kategori || wantedCategory);
+  return pickByCategory(baseMatches, input.kategori || wantedCategory, { allowFallback: !explicitCategory });
 }
 
 export function isAmbiguousProductCode(products: ProductWithDetails[] | undefined, kode: string) {
