@@ -496,7 +496,7 @@ const BarangMasuk = () => {
       {(() => {
         const pesananLines = parseOrderText(pesananHariIni, products);
         const validPesanan = pesananLines.filter((l) => !l.unmatched && l.qty > 0);
-        const unmatchedPesanan = pesananLines.filter((l) => l.unmatched);
+        const unmatchedPesanan = pesananLines.filter((l) => l.unmatched && !l.categoryHeader);
 
         // Aggregate arrived across ALL bons
         const arrivedMap = new Map<string, {
