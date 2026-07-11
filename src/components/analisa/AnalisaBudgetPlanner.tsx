@@ -779,7 +779,7 @@ export function AnalisaBudgetPlanner({
           <Card className="border-0 shadow-sm overflow-hidden">
             <CardContent className="p-4 space-y-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Budget Tersedia</label>
+                <label className="text-sm font-semibold text-muted-foreground">Budget Tersedia</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">Rp</span>
                   <Input
@@ -809,7 +809,7 @@ export function AnalisaBudgetPlanner({
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Target Stok (Hari)</label>
+                <label className="text-sm font-semibold text-muted-foreground">Target Stok (Hari)</label>
                 <div className="flex gap-2 flex-wrap">
                   {DAYS_PRESETS.map((days) => (
                     <button
@@ -844,17 +844,17 @@ export function AnalisaBudgetPlanner({
 
           <div className="grid grid-cols-3 gap-2.5">
             <div className="rounded-xl bg-primary/8 border border-primary/15 p-3">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Terpakai</p>
+              <p className="text-xs font-medium text-muted-foreground">Terpakai</p>
               <p className="text-base font-extrabold text-primary tabular-nums truncate">{formatRp(budgetRecommendations.cost)}</p>
               <p className="text-[10px] text-muted-foreground">{usedPct}% budget</p>
             </div>
             <div className="rounded-xl bg-success/8 border border-success/15 p-3">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Sisa</p>
+              <p className="text-xs font-medium text-muted-foreground">Sisa</p>
               <p className="text-base font-extrabold text-success tabular-nums truncate">{formatRp(budgetRecommendations.remaining)}</p>
               <p className="text-[10px] text-muted-foreground">{100 - usedPct}%</p>
             </div>
             <div className="rounded-xl bg-muted/60 border border-border p-3">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Produk</p>
+              <p className="text-xs font-medium text-muted-foreground">Produk</p>
               <p className="text-base font-extrabold">{budgetRecommendations.items}</p>
               <p className="text-[10px] text-muted-foreground">item restock</p>
             </div>
@@ -948,7 +948,7 @@ export function AnalisaBudgetPlanner({
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Budget</label>
+                  <label className="text-sm font-semibold text-muted-foreground">Total Budget</label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">Rp</span>
                     <Input
@@ -978,7 +978,7 @@ export function AnalisaBudgetPlanner({
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Jumlah Hari Cicilan</label>
+                  <label className="text-sm font-semibold text-muted-foreground">Jumlah Hari Cicilan</label>
                   <div className="flex gap-2">
                     {PLAN_DAYS_PRESETS.map((days) => (
                       <button
@@ -997,7 +997,7 @@ export function AnalisaBudgetPlanner({
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Stok untuk Berapa Hari?</label>
+                  <label className="text-sm font-semibold text-muted-foreground">Stok untuk Berapa Hari?</label>
                   <p className="text-[10px] text-muted-foreground -mt-1">Dihitung dari hari terakhir cicilan. Stok harus cukup sampai bisa belanja lagi.</p>
                   <div className="flex gap-2">
                     {[2, 3, 4, 5].map((days) => (
@@ -1017,7 +1017,7 @@ export function AnalisaBudgetPlanner({
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tanggal Mulai</label>
+                  <label className="text-sm font-semibold text-muted-foreground">Tanggal Mulai</label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <button className="w-full h-10 rounded-xl border border-input bg-background px-3 text-sm font-medium text-left flex items-center gap-2 hover:bg-muted/50 transition-colors">
@@ -1125,15 +1125,15 @@ export function AnalisaBudgetPlanner({
 
                   <div className="grid grid-cols-3 gap-2">
                     <div className="rounded-lg bg-muted/40 p-2.5 text-center">
-                      <p className="text-[9px] text-muted-foreground uppercase">Total</p>
+                      <p className="text-xs font-medium text-muted-foreground">Total</p>
                       <p className="text-xs font-extrabold tabular-nums">{formatRp(activePlan.total_budget)}</p>
                     </div>
                     <div className="rounded-lg bg-primary/8 p-2.5 text-center">
-                      <p className="text-[9px] text-muted-foreground uppercase">Hari Ini</p>
+                      <p className="text-xs font-medium text-muted-foreground">Hari Ini</p>
                       <p className="text-xs font-extrabold text-primary tabular-nums">{formatRp(planInfo?.todayBudget || 0)}</p>
                     </div>
                     <div className="rounded-lg bg-success/8 p-2.5 text-center">
-                      <p className="text-[9px] text-muted-foreground uppercase">Sisa</p>
+                      <p className="text-xs font-medium text-muted-foreground">Sisa</p>
                       <p className="text-xs font-extrabold text-success tabular-nums">{formatRp(planInfo?.budgetRemaining || 0)}</p>
                     </div>
                   </div>
