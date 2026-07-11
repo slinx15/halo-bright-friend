@@ -54,15 +54,17 @@ describe("parseOrderText", () => {
   it("parses category headers and dashed lines with unit words", () => {
     const lines = parseOrderText(fullOrderText, products);
 
-    const byKode = (kode: string) => lines.find((l) => l.kode === kode);
+    const byRaw = (raw: string) => lines.find((l) => l.raw.includes(raw));
 
     expect(lines.filter((l) => l.categoryHeader).length).toBe(4);
-    expect(byKode("BLCK")?.qty).toBe(50);
-    expect(byKode("BLCK")?.productKategori).toBe("3 Ons");
-    expect(byKode("WHT")?.qty).toBe(2);
-    expect(byKode("WHT")?.productKategori).toBe("8 Ons");
-    expect(byKode("055")?.qty).toBe(50);
-    expect(byKode("055")?.productKategori).toBe("2 Ons");
+    expect(byRaw("BLCK - 50")?.qty).toBe(50);
+    expect(byRaw("BLCK - 50")?.productKategori).toBe("3 Ons");
+    expect(byRaw("WHT - 2 bal")?.qty).toBe(2);
+    expect(byRaw("WHT - 2 bal")?.productKategori).toBe("8 Ons");
+    expect(byRaw("WHT - 100")?.qty).toBe(100);
+    expect(byRaw("WHT - 100")?.productKategori).toBe("2 Ons");
+    expect(byRaw("055 - 50")?.qty).toBe(50);
+    expect(byRaw("055 - 50")?.productKategori).toBe("2 Ons");
   });
 
   it("marks 18 Gram items as unmatched when the product is not available", () => {
