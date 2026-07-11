@@ -103,7 +103,7 @@ export function ProductDetailDrawer({ open, onOpenChange, item, trendInfo, lastS
             <div className="rounded-xl bg-muted/40 p-3.5 space-y-1">
               <div className="flex items-center gap-1.5 text-muted-foreground">
                 <Package className="h-3.5 w-3.5" />
-                <span className="text-[11px] font-medium uppercase tracking-wider">Stok Sekarang</span>
+                <span className="text-xs font-medium text-muted-foreground">Stok Sekarang</span>
               </div>
               <p className={`text-2xl font-black tabular-nums ${item.currentStock === 0 ? "text-destructive" : ""}`}>
                 {item.currentStock}
@@ -115,7 +115,7 @@ export function ProductDetailDrawer({ open, onOpenChange, item, trendInfo, lastS
             <div className="rounded-xl bg-muted/40 p-3.5 space-y-1">
               <div className="flex items-center gap-1.5 text-muted-foreground">
                 <Clock className="h-3.5 w-3.5" />
-                <span className="text-[11px] font-medium uppercase tracking-wider">Bertahan</span>
+                <span className="text-xs font-medium text-muted-foreground">Bertahan</span>
               </div>
               <p className={`text-lg font-black ${
                 item.daysOfStock <= 2 ? "text-destructive" :
@@ -132,7 +132,7 @@ export function ProductDetailDrawer({ open, onOpenChange, item, trendInfo, lastS
           <div className="rounded-xl border border-border/50 p-3.5 space-y-1.5">
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <Activity className="h-3.5 w-3.5" />
-              <span className="text-[11px] font-medium uppercase tracking-wider">Kecepatan Jual</span>
+              <span className="text-xs font-medium text-muted-foreground">Kecepatan Jual</span>
             </div>
             <p className="text-sm font-bold">{formatVelocityNatural(item.velocity)}</p>
             {item.wmaInfo && item.wmaInfo.totalDays > 0 && (
@@ -146,7 +146,7 @@ export function ProductDetailDrawer({ open, onOpenChange, item, trendInfo, lastS
           <div className="rounded-xl border border-border/50 p-3.5 space-y-1.5">
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <ShoppingCart className="h-3.5 w-3.5" />
-              <span className="text-[11px] font-medium uppercase tracking-wider">Terakhir Laku</span>
+              <span className="text-xs font-medium text-muted-foreground">Terakhir Laku</span>
             </div>
             <p className="text-sm font-bold">{formatLastSale(lastSaleDate)}</p>
           </div>
@@ -155,7 +155,7 @@ export function ProductDetailDrawer({ open, onOpenChange, item, trendInfo, lastS
           <div className="rounded-xl border border-border/50 p-3.5 space-y-1.5">
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <TrendingUp className="h-3.5 w-3.5" />
-              <span className="text-[11px] font-medium uppercase tracking-wider">Tren Minggu Ini</span>
+              <span className="text-xs font-medium text-muted-foreground">Tren Minggu Ini</span>
             </div>
             <div className={`flex items-center gap-2 ${trend.color}`}>
               {trend.icon}
@@ -194,7 +194,7 @@ export function ProductDetailDrawer({ open, onOpenChange, item, trendInfo, lastS
             return (
               <div className={`rounded-xl border p-3.5 space-y-2.5 ${urgencyColor}`}>
                 <div className="flex items-center justify-between">
-                  <p className="text-[11px] font-medium uppercase tracking-wider text-primary">💡 Saran Beli</p>
+                  <p className="text-xs font-semibold text-primary">💡 Saran Beli</p>
                   <Badge className={`text-[10px] font-bold rounded-full px-2.5 border-0 ${isUrgent ? "bg-destructive/15 text-destructive" : "bg-success/15 text-success"}`}>
                     {urgencyLabel}
                   </Badge>
@@ -204,7 +204,7 @@ export function ProductDetailDrawer({ open, onOpenChange, item, trendInfo, lastS
                   Estimasi biaya: {formatRp(item.cost)} · Target stok {item.targetDays} hari
                 </p>
                 <div className="border-t border-border/40 pt-2 space-y-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Alasan:</p>
+                  <p className="text-xs font-semibold text-muted-foreground">Alasan:</p>
                   {reasons.map((r, i) => (
                     <p key={i} className="text-[11px] text-foreground/80 flex items-start gap-1.5">
                       <span className="shrink-0 mt-0.5">•</span> {r}
