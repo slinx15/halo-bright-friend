@@ -74,7 +74,7 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
     const map = new Map<string, ProductWithDetails>();
     for (const p of products) {
       if (p.kategori !== kategori) continue;
-      const baseKode = p.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|18 GRAM)$/i, "");
+      const baseKode = p.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|8 ONS|18 GRAM)$/i, "");
       map.set(baseKode, p);
       map.set(p.kode.toUpperCase(), p);
     }
@@ -121,10 +121,10 @@ export const BulkKeluarInput = forwardRef<BulkKeluarInputHandle, BulkKeluarInput
     // Re-resolve items with new kategori lookup
     setItems(prev => prev.map(item => {
       // Extract base code from current kode
-      const baseKode = item.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|18 GRAM)$/i, "");
+      const baseKode = item.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|8 ONS|18 GRAM)$/i, "");
       const newProduct = products.find(p => {
         if (p.kategori !== newKat) return false;
-        const pBase = p.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|18 GRAM)$/i, "");
+        const pBase = p.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|8 ONS|18 GRAM)$/i, "");
         return pBase === baseKode || p.kode.toUpperCase() === baseKode;
       });
       return {

@@ -119,10 +119,10 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
 
             const aliasBaseKode = aliasTarget.kode
               .toUpperCase()
-              .replace(/\s+(2 ONS|3 ONS|5 ONS|18 GRAM)$/, "");
+              .replace(/\s+(2 ONS|3 ONS|5 ONS|8 ONS|18 GRAM)$/, "");
 
             found = allProducts.find(
-              (p) => p.kategori === kategori && p.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|18 GRAM)$/, "") === aliasBaseKode
+              (p) => p.kategori === kategori && p.kode.toUpperCase().replace(/\s+(2 ONS|3 ONS|5 ONS|8 ONS|18 GRAM)$/, "") === aliasBaseKode
             );
             if (found) return found;
           }
