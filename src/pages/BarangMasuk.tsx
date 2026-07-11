@@ -3,16 +3,20 @@ import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import {
+  AlertTriangle,
   Boxes,
   CalendarIcon,
   CheckCircle2,
   ChevronDown,
+  ClipboardList,
+  Copy,
   FileText,
   Minus,
   PackagePlus,
   Plus,
   Send,
   Trash2,
+  XCircle,
 } from "lucide-react";
 
 import { OcrUpload } from "@/components/OcrUpload";
