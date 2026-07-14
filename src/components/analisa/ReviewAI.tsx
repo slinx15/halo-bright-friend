@@ -158,6 +158,7 @@ function parseInput(text: string, products: ProductWithDetails[], aliases: Produ
       qty,
       isValid: !!product,
       productName: product?.nama,
+      kategori: product?.kategori || (activeKategori ?? undefined),
     });
 
   }
