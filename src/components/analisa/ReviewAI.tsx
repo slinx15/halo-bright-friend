@@ -14,6 +14,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useProducts, type ProductWithDetails } from "@/hooks/useProducts";
 import { useProductAliases, type ProductAlias } from "@/hooks/useProductAliases";
+import { findProductMatch } from "@/lib/productMatcher";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
