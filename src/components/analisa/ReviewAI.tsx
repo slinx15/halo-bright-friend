@@ -223,13 +223,19 @@ export default function ReviewAI({ budgetEstimates = [] }: ReviewAIProps) {
 
     try {
       const body: {
-        items: Array<{ kode: string; qty: number }>;
+        items: Array<{ kode: string; qty: number; kategori?: string }>;
         target_days?: number;
         already_sent?: boolean;
         mode?: "topup";
         ordered_at?: string;
         baseline_items?: Array<{ kode: string; qty: number }>;
-      } = { items: validItems.map(i => ({ kode: i.kode, qty: i.qty })) };
+      } = {
+        items: validItems.map((i) => ({
+          kode: i.kode.replace(/\s*\([^)]*\)\s*$/, "").trim(),
+          qty: i.qty,
+          kategori: i.kategori,
+        })),
+      };
 
       // Always anchor to Ringkasan baseline. Default to 4-day cycle (= Analisa default)
       const effectiveTargetDays = targetDays && parseInt(targetDays) > 0 ? parseInt(targetDays) : 4;
