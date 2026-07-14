@@ -209,18 +209,22 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Build product lookup — ALL categories
+    // Build product lookup — ALL categories. Key by kode; 2 Ons wins on collision.
+    // Also build kategori-specific lookup: `${kode}||${kategori}`
     const productMap: Record<string, any> = {};
+    const productByKategori: Record<string, any> = {};
     for (const p of rawProducts) {
       const stk = Array.isArray(p.stock) ? p.stock[0] : p.stock;
       const prc = Array.isArray(p.prices) ? p.prices[0] : p.prices;
       const key = p.kode.toUpperCase();
-      if (productMap[key] && p.kategori !== "2 Ons") continue;
-      productMap[key] = {
+      const entry = {
         id: p.id, kode: p.kode, nama: p.nama, kategori: p.kategori || "2 Ons",
         stok: stk?.jumlah ?? 0,
         hargaModal: prc?.harga_modal ?? 0,
       };
+      productByKategori[`${key}||${(p.kategori || "2 Ons").toUpperCase()}`] = entry;
+      if (productMap[key] && p.kategori !== "2 Ons") continue;
+      productMap[key] = entry;
     }
 
     // ─── Separate items into 2 Ons (review) vs others (passthrough) ───
@@ -233,7 +237,9 @@ Deno.serve(async (req) => {
     for (const item of items) {
       const kode = String(item.kode).toUpperCase().trim();
       const qty = Number(item.qty) || 0;
-      const product = productMap[kode];
+      const kategori = item.kategori ? String(item.kategori).toUpperCase().trim() : null;
+      // Prefer kategori-specific match when provided
+      const product = (kategori && productByKategori[`${kode}||${kategori}`]) || productMap[kode];
 
       if (!product) {
         unknownCodes.push(kode);

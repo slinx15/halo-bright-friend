@@ -14,6 +14,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useProducts, type ProductWithDetails } from "@/hooks/useProducts";
 import { useProductAliases, type ProductAlias } from "@/hooks/useProductAliases";
+import { findProductMatch } from "@/lib/productMatcher";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,7 @@ interface ReviewItem {
   qty: number;
   isValid: boolean;
   productName?: string;
+  kategori?: string;
 }
 
 interface ReviewOcrItem {
@@ -110,57 +112,55 @@ function parseInput(text: string, products: ProductWithDetails[], aliases: Produ
 
     if (qty <= 0) continue;
 
-    // If active kategori is non-2 Ons, append suffix to kode
-    if (activeKategori && activeKategori !== "2 Ons") {
-      // Map common names like PUTIH -> WHT
-      const mappedKode = NAME_TO_KODE[kode] || kode;
-      kode = mappedKode + " " + activeKategori;
+    // Map common name aliases (PUTIH -> WHT, HITAM -> BLCK) before matching
+    const mappedKode = NAME_TO_KODE[kode] || kode;
+
+    // Try category-aware matcher first (handles kategori column properly)
+    let product = findProductMatch(products, {
+      kode: mappedKode,
+      kategori: activeKategori || undefined,
+    });
+
+    // Fallback: alias table lookup
+    if (!product && aliases) {
+      const kUpper = mappedKode.toUpperCase();
+      const stripped = kUpper.replace(/^0+/, "");
+      const aliasEntry = aliases.find(
+        (a) => a.alias.toUpperCase() === kUpper || a.alias.toUpperCase() === stripped,
+      );
+      if (aliasEntry) {
+        product = products?.find((p) => p.id === aliasEntry.product_id) || null;
+      }
     }
 
-    const findProduct = (k: string) => {
-      const kUpper = k.toUpperCase();
-      // 1. Direct match
-      let found = products?.find(p => p.kode.toUpperCase() === kUpper);
-      if (found) return found;
-      
-      // 2. Strip leading zeros
-      const stripped = kUpper.replace(/^0+/, "");
-      if (stripped !== kUpper) {
-        found = products?.find(p => p.kode.toUpperCase() === stripped);
-        if (found) return found;
-      }
-      found = products?.find(p => p.kode.toUpperCase().replace(/^0+/, "") === stripped);
-      if (found) return found;
-      
-      // 3. Try category suffix expansion (e.g., "BLCK 5OZ" -> "BLCK 5 Ons")
+    // Fallback: try category suffix expansion for inline codes like "BLCK 5OZ"
+    if (!product) {
+      const kUpper = mappedKode.toUpperCase();
       for (const [alias, suffix] of Object.entries(CATEGORY_ALIASES)) {
         if (kUpper.endsWith(alias) || kUpper.endsWith(alias.replace(" ", ""))) {
-          const baseKode = kUpper.replace(new RegExp(alias.replace(" ", "\\s*") + "$"), "").trim();
-          const fullKode = baseKode + " " + suffix;
-          found = products?.find(p => p.kode.toUpperCase() === fullKode.toUpperCase());
-          if (found) return found;
-          const strippedBase = baseKode.replace(/^0+/, "");
-          const fullKode2 = strippedBase + " " + suffix;
-          found = products?.find(p => p.kode.toUpperCase() === fullKode2.toUpperCase());
-          if (found) return found;
+          const baseKode = kUpper
+            .replace(new RegExp(alias.replace(" ", "\\s*") + "$"), "")
+            .trim();
+          product = findProductMatch(products, { kode: baseKode, kategori: suffix });
+          if (product) break;
         }
       }
-      
-      // 4. Alias lookup
-      if (aliases) {
-        const aliasEntry = aliases.find(a => a.alias.toUpperCase() === kUpper || a.alias.toUpperCase() === stripped);
-        if (aliasEntry) return products?.find(p => p.id === aliasEntry.product_id);
-      }
-      return null;
-    };
+    }
 
-    const product = findProduct(kode);
+    const displayKode = product
+      ? product.kode + (product.kategori && product.kategori !== "2 Ons" ? ` (${product.kategori})` : "")
+      : activeKategori && activeKategori !== "2 Ons"
+        ? `${mappedKode} (${activeKategori})`
+        : mappedKode;
+
     items.push({
-      kode: product ? product.kode : kode,
+      kode: displayKode,
       qty,
       isValid: !!product,
       productName: product?.nama,
+      kategori: product?.kategori || (activeKategori ?? undefined),
     });
+
   }
 
   // Deduplicate: merge items with same kode by summing qty
@@ -223,13 +223,19 @@ export default function ReviewAI({ budgetEstimates = [] }: ReviewAIProps) {
 
     try {
       const body: {
-        items: Array<{ kode: string; qty: number }>;
+        items: Array<{ kode: string; qty: number; kategori?: string }>;
         target_days?: number;
         already_sent?: boolean;
         mode?: "topup";
         ordered_at?: string;
         baseline_items?: Array<{ kode: string; qty: number }>;
-      } = { items: validItems.map(i => ({ kode: i.kode, qty: i.qty })) };
+      } = {
+        items: validItems.map((i) => ({
+          kode: i.kode.replace(/\s*\([^)]*\)\s*$/, "").trim(),
+          qty: i.qty,
+          kategori: i.kategori,
+        })),
+      };
 
       // Always anchor to Ringkasan baseline. Default to 4-day cycle (= Analisa default)
       const effectiveTargetDays = targetDays && parseInt(targetDays) > 0 ? parseInt(targetDays) : 4;
