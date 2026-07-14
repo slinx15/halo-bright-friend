@@ -29,6 +29,7 @@ interface ReviewItem {
   qty: number;
   isValid: boolean;
   productName?: string;
+  kategori?: string;
 }
 
 interface ReviewOcrItem {
