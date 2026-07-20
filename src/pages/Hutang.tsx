@@ -407,9 +407,9 @@ export default function Hutang() {
                 Buka Bon Aktif ({openItems.length})
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-h-[85vh] overflow-hidden rounded-3xl p-0 sm:max-w-2xl">
-              <div className="flex max-h-[85vh] flex-col">
-                <DialogHeader className="border-b border-border/60 px-4 py-4">
+            <DialogContent className="max-h-[92svh] w-[calc(100vw-1rem)] overflow-hidden rounded-3xl p-0 sm:max-w-2xl">
+              <div className="flex max-h-[92svh] min-h-0 flex-col">
+                <DialogHeader className="shrink-0 border-b border-border/60 px-4 py-4 pr-12">
                   <DialogTitle className="flex items-center gap-2 text-base">
                     <Banknote className="h-4 w-4 text-primary" />
                     Pembayaran Bon
@@ -418,7 +418,7 @@ export default function Hutang() {
                     Pilih bon aktif yang sudah dibayar, lalu tandai lunas.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-3 overflow-y-auto px-4 py-4">
+                <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 pb-8 pt-3 sm:px-4 sm:pb-10 sm:pt-4">
                   <Textarea value={paymentNote} onChange={(e) => setPaymentNote(e.target.value)} placeholder="Catatan pembayaran" className="min-h-[72px] rounded-xl" />
                   <div className="space-y-2">
                     {openItems.length === 0 && (
@@ -434,14 +434,14 @@ export default function Hutang() {
                           onClick={() => toggleSelect(item.id)}
                           className={cn("w-full rounded-2xl border p-3 text-left transition-all", isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border/70 bg-card")}
                         >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0 flex-1">
+                          <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:gap-3">
+                            <div className="min-w-0">
                               <p className="truncate font-mono text-sm font-bold" title={item.invoiceNumber}>{item.invoiceNumber}</p>
                               <p className="text-xs text-muted-foreground">{item.invoiceDate}</p>
-                              <p className="mt-1 truncate text-[11px] text-muted-foreground" title={item.note ? item.note : "Tanpa catatan"}>{item.note ? item.note : "Tanpa catatan"}</p>
+                              <p className="mt-1 line-clamp-2 break-words text-[11px] text-muted-foreground" title={item.note ? item.note : "Tanpa catatan"}>{item.note ? item.note : "Tanpa catatan"}</p>
                             </div>
-                            <div className="shrink-0 text-right">
-                              <p className="text-base font-extrabold tabular-nums">{formatRupiah(item.amount)}</p>
+                            <div className="min-w-0 text-left sm:shrink-0 sm:text-right">
+                              <p className="break-words text-base font-extrabold leading-tight tabular-nums">{formatRupiah(item.amount)}</p>
                               <p className="text-[11px] text-muted-foreground">{isSelected ? "dipilih" : "ketuk untuk pilih"}</p>
                             </div>
                           </div>
@@ -450,7 +450,7 @@ export default function Hutang() {
                     })}
                   </div>
                 </div>
-                <div className="border-t border-border/60 px-4 py-4">
+                <div className="shrink-0 border-t border-border/60 bg-background px-3 py-3 shadow-[0_-8px_18px_hsl(var(--background)/0.95)] sm:px-4 sm:py-4">
                   <Button onClick={paySelected} disabled={selected.length === 0} className="h-11 w-full rounded-xl font-bold">
                     Tandai Lunas ({selected.length})
                   </Button>
