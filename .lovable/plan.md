@@ -1,49 +1,39 @@
-## Tujuan
-Tambah fitur **Cocokan Pesanan** di halaman Barang Masuk supaya kamu tau barang mana yang **kosong / tidak dikirim** supplier — dibandingkan otomatis dengan bon yang datang.
+# Sinkronisasi Barang Masuk ↔ Plafon Supplier
 
-## Alur Baru per Bon
+## Masalah
+Saat ini, menghapus 1 baris barang masuk hanya mengembalikan stok — bon di Plafon Supplier tetap penuh, jadi sisa limit tidak balik.
 
-```text
-Bon #1
- ├─ [Pesanan Saya]  ← paste WA / ketik manual (kode + qty pesan)
- ├─ [Yang Datang]   ← scan foto bon / input manual (existing)
- └─ [Hasil Cocok]   ← auto-diff, muncul begitu keduanya terisi
-```
+## Cara Kerja Baru
 
-## Tampilan Hasil Cocok
+Ketika satu baris barang masuk dihapus:
 
-Tiga kelompok, dengan warna berbeda:
+1. Cari bon plafon yang dibuat dari sesi barang masuk yang sama (dicocokkan berdasarkan waktu/invoice number).
+2. Kurangi `amount` bon sebesar **harga_modal × qty** dari baris yang dihapus.
+3. Update catatan bon supaya baris item itu ikut hilang dari daftar.
+4. Kalau setelah dikurangi `amount` jadi 0 → bon otomatis dihapus.
+5. Kalau bon sudah berstatus `paid` (lunas) → jangan diutak-atik, cukup beri notifikasi ke user "Bon sudah lunas, plafon tidak berubah."
 
-- **Lengkap** (hijau): kode ada di pesanan & datang, qty sama
-- **Kurang** (kuning): kode datang tapi qty < pesan  → tampil "pesan 10, datang 7, kurang 3"
-- **Kosong** (merah): kode ada di pesanan, **tidak ada** di bon datang sama sekali
-- **Ekstra** (abu): kode datang tapi tidak dipesan (jarang, buat jaga-jaga)
+## Perubahan Teknis
 
-Setiap baris kosong/kurang bisa di-**copy** ke clipboard sebagai list ("BLCK 2 Ons: 3 pcs, WHT 5 Ons: 5 pcs") untuk langsung WA ke supplier.
+**Database (migration):**
+- Tambahkan kolom opsional `stock_in_session` (text) di `ivory_debts` untuk menandai bon berasal dari sesi mana. Isi otomatis saat bon dibuat dari alur Barang Masuk (pakai timestamp sesi, format: `YYYYMMDD-HHMMSS`).
+- Backfill kolom itu untuk bon existing berdasarkan `invoice_number` yang sudah ada (`BM-YYYYMMDD-HHMMSS-N` → ambil bagian tengahnya).
+- Update fungsi `delete_stock_in_transaction`:
+  - Setelah stok direstore, cari `ivory_debts` dengan `stock_in_session` yang cocok + status masih `open`.
+  - Kurangi `amount` = `modal × qty`. Jika `amount ≤ 0` → hapus bon.
+  - Return info tambahan ke frontend: `plafon_adjusted: true/false`, `bon_deleted: true/false`.
 
-## Input Pesanan
+**Frontend (`src/pages/BarangMasuk.tsx`):**
+- Setelah hapus sukses, tampilkan toast: "Barang masuk dihapus. Plafon supplier ikut disesuaikan Rp X." atau kalau tidak ditemukan bon: "Barang masuk dihapus. Plafon tidak ditemukan / sudah lunas."
 
-Textarea sederhana, satu baris per item, format bebas:
-```
-BLCK 2 Ons 10
-WHT 5 Ons 5
-350 3
-```
-Parser pakai `productMatcher` yang sudah ada (sama seperti OCR). Kalau ada baris tidak dikenali → warning halus di bawah textarea.
+**Frontend simpan bon baru (`src/lib/hutangStore.ts` atau `BarangMasuk.tsx`):**
+- Saat membuat bon dari sesi barang masuk, isi kolom `stock_in_session` dengan timestamp sesi yang sama.
 
-## Penyimpanan
-- Data pesanan **tidak** disimpan ke DB — cuma tools bantu saat sesi input.
-- Yang tetap disimpan: bon barang masuk + hutang seperti sekarang.
-- Tapi hasil kosong/kurang bisa dicatat ke field **catatan bon** otomatis (opsional, ada tombol "Salin ke catatan").
+## Tidak Diubah
+- UI daftar Plafon Supplier tetap sama.
+- Alur input barang masuk normal tetap sama.
+- Alur pembayaran bon tetap sama.
+- Bon berstatus `paid` tidak pernah disentuh otomatis.
 
-## Yang Berubah di File
-- `src/pages/BarangMasuk.tsx`: tambah state `pesanan` per bon, tambah textarea + panel diff.
-- `src/lib/orderMatcher.ts` (baru): fungsi `diffOrder(pesanan, datang)` → return {lengkap, kurang, kosong, ekstra}.
-- `src/lib/textParser.ts`: reuse parser yang sudah ada untuk pesanan (kalau perlu tambah util kecil).
-
-## Yang Tidak Berubah
-- Alur OCR & simpan bon tetap.
-- Auto-create Hutang Ivory tetap.
-- Kategori, tumpukan, dll tidak disentuh.
-
-Lanjut kerjakan?
+## Verifikasi
+Setelah selesai: hapus 1 baris BLCK 5 Ons qty 32 (18 Juli) → cek bon `BM-20260718-071912-2` di Plafon Supplier: amount harus turun dari 6.735.872 menjadi 6.735.872 − (modal × 32).
