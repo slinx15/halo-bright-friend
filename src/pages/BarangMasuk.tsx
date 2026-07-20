@@ -265,8 +265,8 @@ const BarangMasuk = () => {
       // sebelumnya, supaya bon hutang tetap satu dan tidak bercabang.
       const debtId =
         bon.debtId ||
-        globalThis.crypto?.randomUUID?.() ??
-          `debt_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        (globalThis.crypto?.randomUUID?.() ??
+          `debt_${Date.now()}_${Math.random().toString(16).slice(2)}`);
       const effectiveBonIndex = bon.bonIndex ?? bonIndex;
       const invoiceNumber =
         bon.invoiceNumber || createBarangMasukBonNumber(tanggal, effectiveBonIndex);
