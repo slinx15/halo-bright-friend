@@ -256,6 +256,11 @@ const BarangMasuk = () => {
       const successful: LineItem[] = [];
       const failed: LineItem[] = [];
 
+      // Pre-generate debt id so each stock_in row can link back to it
+      const debtId =
+        globalThis.crypto?.randomUUID?.() ??
+        `debt_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
       for (const item of validItems) {
         try {
           const kode = item.productKode || item.kode;
@@ -270,6 +275,7 @@ const BarangMasuk = () => {
             tumpukanDetail: newStacks,
             catatan: bon.catatan,
             createdAt,
+            debtId,
           });
           successful.push(item);
         } catch (error) {
@@ -291,13 +297,16 @@ const BarangMasuk = () => {
           .join(", ");
 
         if (totalModal > 0) {
-          const debt = createDebtItem({
-            invoiceNumber: createBarangMasukBonNumber(tanggal, bonIndex),
-            amount: totalModal,
-            invoiceDate,
-            note: `Bon #${bonIndex + 1}: ${summary}${bon.catatan ? ` — ${bon.catatan}` : ""}`,
-            sourceType: "manual",
-          });
+          const debt = {
+            ...createDebtItem({
+              invoiceNumber: createBarangMasukBonNumber(tanggal, bonIndex),
+              amount: totalModal,
+              invoiceDate,
+              note: `Bon #${bonIndex + 1}: ${summary}${bon.catatan ? ` — ${bon.catatan}` : ""}`,
+              sourceType: "manual",
+            }),
+            id: debtId,
+          };
           const current = getDebtItems();
           saveDebtItems([debt, ...current]);
         }
