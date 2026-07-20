@@ -10,6 +10,9 @@ export interface StockMutationResult {
   new_jumlah?: number;
   new_tumpukan_detail?: number[];
   selisih?: number;
+  plafon_adjusted?: boolean;
+  plafon_reduced_by?: number;
+  bon_deleted?: boolean;
 }
 
 interface RegisterStockInParams {
@@ -18,6 +21,7 @@ interface RegisterStockInParams {
   tumpukanDetail: number[];
   catatan?: string;
   createdAt?: string;
+  debtId?: string | null;
 }
 
 interface RegisterStockOutParams {
@@ -72,6 +76,7 @@ export function registerStockIn(params: RegisterStockInParams) {
     p_tumpukan_detail: params.tumpukanDetail,
     p_catatan: params.catatan || null,
     p_created_at: params.createdAt || null,
+    p_debt_id: params.debtId || null,
   });
 }
 

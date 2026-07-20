@@ -576,6 +576,7 @@ export type Database = {
         Row: {
           catatan: string | null
           created_at: string
+          debt_id: string | null
           id: string
           product_id: string
           qty: number
@@ -585,6 +586,7 @@ export type Database = {
         Insert: {
           catatan?: string | null
           created_at?: string
+          debt_id?: string | null
           id?: string
           product_id: string
           qty: number
@@ -594,6 +596,7 @@ export type Database = {
         Update: {
           catatan?: string | null
           created_at?: string
+          debt_id?: string | null
           id?: string
           product_id?: string
           qty?: number
@@ -766,6 +769,7 @@ export type Database = {
         Args: {
           p_catatan?: string
           p_created_at?: string
+          p_debt_id?: string
           p_product_id: string
           p_qty: number
           p_tumpukan_detail?: Json

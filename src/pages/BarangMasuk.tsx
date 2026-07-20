@@ -256,6 +256,11 @@ const BarangMasuk = () => {
       const successful: LineItem[] = [];
       const failed: LineItem[] = [];
 
+      // Pre-generate debt id so each stock_in row can link back to it
+      const debtId =
+        globalThis.crypto?.randomUUID?.() ??
+        `debt_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
       for (const item of validItems) {
         try {
           const kode = item.productKode || item.kode;
@@ -270,6 +275,7 @@ const BarangMasuk = () => {
             tumpukanDetail: newStacks,
             catatan: bon.catatan,
             createdAt,
+            debtId,
           });
           successful.push(item);
         } catch (error) {
@@ -291,13 +297,16 @@ const BarangMasuk = () => {
           .join(", ");
 
         if (totalModal > 0) {
-          const debt = createDebtItem({
-            invoiceNumber: createBarangMasukBonNumber(tanggal, bonIndex),
-            amount: totalModal,
-            invoiceDate,
-            note: `Bon #${bonIndex + 1}: ${summary}${bon.catatan ? ` — ${bon.catatan}` : ""}`,
-            sourceType: "manual",
-          });
+          const debt = {
+            ...createDebtItem({
+              invoiceNumber: createBarangMasukBonNumber(tanggal, bonIndex),
+              amount: totalModal,
+              invoiceDate,
+              note: `Bon #${bonIndex + 1}: ${summary}${bon.catatan ? ` — ${bon.catatan}` : ""}`,
+              sourceType: "manual",
+            }),
+            id: debtId,
+          };
           const current = getDebtItems();
           saveDebtItems([debt, ...current]);
         }
@@ -348,10 +357,16 @@ const BarangMasuk = () => {
   const handleDeleteTransaction = async (item: StockInHistoryEntry) => {
     setDeletingId(item.id);
     try {
-      await deleteStockInTransaction(item.id);
+      const result = await deleteStockInTransaction(item.id);
+      let plafonMsg = "";
+      if (result?.bon_deleted) {
+        plafonMsg = " Bon plafon supplier ikut dihapus (nol).";
+      } else if (result?.plafon_adjusted && result?.plafon_reduced_by) {
+        plafonMsg = ` Plafon supplier berkurang Rp ${result.plafon_reduced_by.toLocaleString("id-ID")}.`;
+      }
       toast({
         title: "Berhasil",
-        description: `Barang masuk ${item.products?.kode} dibatalkan, stok dikurangi -${item.qty}`,
+        description: `Barang masuk ${item.products?.kode} dibatalkan, stok -${item.qty}.${plafonMsg}`,
       });
       logActivity("stock_in", `Batal barang masuk ${item.products?.kode} x${item.qty}`, {
         kode: item.products?.kode,

@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.register_stock_in(uuid, integer, jsonb, text, timestamp with time zone);
