@@ -42,7 +42,7 @@ import {
   type DebtItem,
 } from "@/lib/hutangStore";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, Banknote, CheckCircle2, Plus, ShieldAlert, Wallet } from "lucide-react";
+import { AlertTriangle, Banknote, Check, CheckCircle2, Plus, ShieldAlert, Wallet } from "lucide-react";
 import { type DebtDraft } from "@/components/hutang/HutangOcrUpload";
 import { FakturUpload, type FakturDraft } from "@/components/hutang/FakturUpload";
 import { useToast } from "@/hooks/use-toast";
