@@ -435,12 +435,12 @@ export default function Hutang() {
                           className={cn("w-full rounded-2xl border p-3 text-left transition-all", isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border/70 bg-card")}
                         >
                           <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                               <p className="truncate font-mono text-sm font-bold" title={item.invoiceNumber}>{item.invoiceNumber}</p>
                               <p className="text-xs text-muted-foreground">{item.invoiceDate}</p>
                               <p className="mt-1 truncate text-[11px] text-muted-foreground" title={item.note ? item.note : "Tanpa catatan"}>{item.note ? item.note : "Tanpa catatan"}</p>
                             </div>
-                            <div className="text-right">
+                            <div className="shrink-0 text-right">
                               <p className="text-base font-extrabold tabular-nums">{formatRupiah(item.amount)}</p>
                               <p className="text-[11px] text-muted-foreground">{isSelected ? "dipilih" : "ketuk untuk pilih"}</p>
                             </div>
