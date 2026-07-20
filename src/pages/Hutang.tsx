@@ -42,7 +42,7 @@ import {
   type DebtItem,
 } from "@/lib/hutangStore";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, Banknote, CheckCircle2, Plus, ShieldAlert, Wallet } from "lucide-react";
+import { AlertTriangle, Banknote, Check, CheckCircle2, Plus, ShieldAlert, Wallet } from "lucide-react";
 import { type DebtDraft } from "@/components/hutang/HutangOcrUpload";
 import { FakturUpload, type FakturDraft } from "@/components/hutang/FakturUpload";
 import { useToast } from "@/hooks/use-toast";
@@ -434,15 +434,23 @@ export default function Hutang() {
                           onClick={() => toggleSelect(item.id)}
                           className={cn("w-full rounded-2xl border p-3 text-left transition-all", isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border/70 bg-card")}
                         >
-                          <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:gap-3">
-                            <div className="min-w-0">
-                              <p className="truncate font-mono text-sm font-bold" title={item.invoiceNumber}>{item.invoiceNumber}</p>
+                          <div className="flex min-w-0 items-start gap-3">
+                            <span
+                              className={cn(
+                                "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-colors",
+                                isSelected ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background"
+                              )}
+                              aria-hidden
+                            >
+                              {isSelected && <Check className="h-3.5 w-3.5" />}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex min-w-0 items-baseline justify-between gap-2">
+                                <p className="truncate font-mono text-sm font-bold" title={item.invoiceNumber}>{item.invoiceNumber}</p>
+                                <p className="shrink-0 text-base font-extrabold leading-tight tabular-nums">{formatRupiah(item.amount)}</p>
+                              </div>
                               <p className="text-xs text-muted-foreground">{item.invoiceDate}</p>
                               <p className="mt-1 line-clamp-2 break-words text-[11px] text-muted-foreground" title={item.note ? item.note : "Tanpa catatan"}>{item.note ? item.note : "Tanpa catatan"}</p>
-                            </div>
-                            <div className="min-w-0 text-left sm:shrink-0 sm:text-right">
-                              <p className="break-words text-base font-extrabold leading-tight tabular-nums">{formatRupiah(item.amount)}</p>
-                              <p className="text-[11px] text-muted-foreground">{isSelected ? "dipilih" : "ketuk untuk pilih"}</p>
                             </div>
                           </div>
                         </button>
