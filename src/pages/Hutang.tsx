@@ -418,7 +418,7 @@ export default function Hutang() {
                     Pilih bon aktif yang sudah dibayar, lalu tandai lunas.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3 sm:px-4 sm:py-4">
+                <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 pb-8 pt-3 sm:px-4 sm:pb-10 sm:pt-4">
                   <Textarea value={paymentNote} onChange={(e) => setPaymentNote(e.target.value)} placeholder="Catatan pembayaran" className="min-h-[72px] rounded-xl" />
                   <div className="space-y-2">
                     {openItems.length === 0 && (
@@ -450,7 +450,7 @@ export default function Hutang() {
                     })}
                   </div>
                 </div>
-                <div className="shrink-0 border-t border-border/60 bg-background px-3 py-3 sm:px-4 sm:py-4">
+                <div className="shrink-0 border-t border-border/60 bg-background px-3 py-3 shadow-[0_-8px_18px_hsl(var(--background)/0.95)] sm:px-4 sm:py-4">
                   <Button onClick={paySelected} disabled={selected.length === 0} className="h-11 w-full rounded-xl font-bold">
                     Tandai Lunas ({selected.length})
                   </Button>
