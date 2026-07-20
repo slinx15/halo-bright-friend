@@ -62,6 +62,11 @@ interface BonDraft {
   id: string;
   items: LineItem[];
   catatan: string;
+  // Filled when a save partially fails, so retry reuses the same bon/debt
+  debtId?: string;
+  invoiceNumber?: string;
+  invoiceDate?: string;
+  bonIndex?: number;
 }
 
 interface BarangMasukOcrItem {
@@ -256,10 +261,16 @@ const BarangMasuk = () => {
       const successful: LineItem[] = [];
       const failed: LineItem[] = [];
 
-      // Pre-generate debt id so each stock_in row can link back to it
+      // Reuse debt id / invoice number when retrying a bon that partially failed
+      // sebelumnya, supaya bon hutang tetap satu dan tidak bercabang.
       const debtId =
-        globalThis.crypto?.randomUUID?.() ??
-        `debt_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        bon.debtId ||
+        (globalThis.crypto?.randomUUID?.() ??
+          `debt_${Date.now()}_${Math.random().toString(16).slice(2)}`);
+      const effectiveBonIndex = bon.bonIndex ?? bonIndex;
+      const invoiceNumber =
+        bon.invoiceNumber || createBarangMasukBonNumber(tanggal, effectiveBonIndex);
+      const effectiveInvoiceDate = bon.invoiceDate || invoiceDate;
 
       for (const item of validItems) {
         try {
@@ -286,32 +297,48 @@ const BarangMasuk = () => {
         }
       }
 
-      // Create debt entry for successful items of this bon
+      // Create or update debt entry for successful items of this bon
       if (successful.length > 0) {
-        const totalModal = successful.reduce((sum, it) => {
+        const addedModal = successful.reduce((sum, it) => {
           const product = products?.find((p) => p.id === it.productId);
           return sum + (product?.prices?.harga_modal ?? 0) * it.qty;
         }, 0);
-        const summary = successful
+        const addedSummary = successful
           .map((it) => `${it.productKode || it.kode} x${it.qty}`)
           .join(", ");
 
-        if (totalModal > 0) {
-          const debt = {
-            ...createDebtItem({
-              invoiceNumber: createBarangMasukBonNumber(tanggal, bonIndex),
-              amount: totalModal,
-              invoiceDate,
-              note: `Bon #${bonIndex + 1}: ${summary}${bon.catatan ? ` — ${bon.catatan}` : ""}`,
-              sourceType: "manual",
-            }),
-            id: debtId,
-          };
+        if (addedModal > 0) {
           const current = getDebtItems();
-          saveDebtItems([debt, ...current]);
+          const existingIdx = current.findIndex((d) => d.id === debtId);
+          if (existingIdx >= 0) {
+            // Retry: tambah nominal & item ke bon hutang yang sudah ada
+            const existing = current[existingIdx];
+            const mergedNote = existing.note
+              ? `${existing.note}, ${addedSummary}`
+              : `Bon #${effectiveBonIndex + 1}: ${addedSummary}${bon.catatan ? ` — ${bon.catatan}` : ""}`;
+            current[existingIdx] = {
+              ...existing,
+              amount: existing.amount + addedModal,
+              note: mergedNote,
+              updatedAt: new Date().toISOString(),
+            };
+            saveDebtItems(current);
+          } else {
+            const debt = {
+              ...createDebtItem({
+                invoiceNumber,
+                amount: addedModal,
+                invoiceDate: effectiveInvoiceDate,
+                note: `Bon #${effectiveBonIndex + 1}: ${addedSummary}${bon.catatan ? ` — ${bon.catatan}` : ""}`,
+                sourceType: "manual",
+              }),
+              id: debtId,
+            };
+            saveDebtItems([debt, ...current]);
+          }
         }
 
-        logActivity("stock_in", `Barang masuk bon #${bonIndex + 1}: ${summary}`, {
+        logActivity("stock_in", `Barang masuk bon #${effectiveBonIndex + 1}: ${addedSummary}`, {
           items: successful.map((it) => ({
             kode: it.productKode || it.kode,
             qty: it.qty,
@@ -321,7 +348,14 @@ const BarangMasuk = () => {
 
       if (failed.length > 0) {
         bonFailed++;
-        remainingBons.push({ ...bon, items: failed });
+        remainingBons.push({
+          ...bon,
+          items: failed,
+          debtId,
+          invoiceNumber,
+          invoiceDate: effectiveInvoiceDate,
+          bonIndex: effectiveBonIndex,
+        });
       } else if (successful.length > 0) {
         bonSuccess++;
       }
@@ -332,6 +366,7 @@ const BarangMasuk = () => {
       (b) => !bonsToSave.some((s) => s.bon.id === b.id),
     );
     const finalRemaining = [...remainingBons, ...untouchedDrafts];
+
 
     if (bonFailed > 0) {
       toast({
