@@ -62,6 +62,11 @@ interface BonDraft {
   id: string;
   items: LineItem[];
   catatan: string;
+  // Filled when a save partially fails, so retry reuses the same bon/debt
+  debtId?: string;
+  invoiceNumber?: string;
+  invoiceDate?: string;
+  bonIndex?: number;
 }
 
 interface BarangMasukOcrItem {
