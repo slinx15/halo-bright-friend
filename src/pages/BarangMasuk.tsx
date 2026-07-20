@@ -357,10 +357,16 @@ const BarangMasuk = () => {
   const handleDeleteTransaction = async (item: StockInHistoryEntry) => {
     setDeletingId(item.id);
     try {
-      await deleteStockInTransaction(item.id);
+      const result = await deleteStockInTransaction(item.id);
+      let plafonMsg = "";
+      if (result?.bon_deleted) {
+        plafonMsg = " Bon plafon supplier ikut dihapus (nol).";
+      } else if (result?.plafon_adjusted && result?.plafon_reduced_by) {
+        plafonMsg = ` Plafon supplier berkurang Rp ${result.plafon_reduced_by.toLocaleString("id-ID")}.`;
+      }
       toast({
         title: "Berhasil",
-        description: `Barang masuk ${item.products?.kode} dibatalkan, stok dikurangi -${item.qty}`,
+        description: `Barang masuk ${item.products?.kode} dibatalkan, stok -${item.qty}.${plafonMsg}`,
       });
       logActivity("stock_in", `Batal barang masuk ${item.products?.kode} x${item.qty}`, {
         kode: item.products?.kode,
