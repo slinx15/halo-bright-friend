@@ -576,6 +576,7 @@ export type Database = {
         Row: {
           catatan: string | null
           created_at: string
+          debt_id: string | null
           id: string
           product_id: string
           qty: number
@@ -585,6 +586,7 @@ export type Database = {
         Insert: {
           catatan?: string | null
           created_at?: string
+          debt_id?: string | null
           id?: string
           product_id: string
           qty: number
@@ -594,6 +596,7 @@ export type Database = {
         Update: {
           catatan?: string | null
           created_at?: string
+          debt_id?: string | null
           id?: string
           product_id?: string
           qty?: number
@@ -762,16 +765,28 @@ export type Database = {
       }
       jsonb_int_array_sum: { Args: { _arr: Json }; Returns: number }
       jsonb_stack_text: { Args: { _stacks: Json }; Returns: string }
-      register_stock_in: {
-        Args: {
-          p_catatan?: string
-          p_created_at?: string
-          p_product_id: string
-          p_qty: number
-          p_tumpukan_detail?: Json
-        }
-        Returns: Json
-      }
+      register_stock_in:
+        | {
+            Args: {
+              p_catatan?: string
+              p_created_at?: string
+              p_product_id: string
+              p_qty: number
+              p_tumpukan_detail?: Json
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_catatan?: string
+              p_created_at?: string
+              p_debt_id?: string
+              p_product_id: string
+              p_qty: number
+              p_tumpukan_detail?: Json
+            }
+            Returns: Json
+          }
       register_stock_opname: {
         Args: {
           p_catatan?: string
