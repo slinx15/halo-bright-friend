@@ -33,6 +33,7 @@ const CATEGORY_TOKENS = [
   "18 GRAM",
   "8 ONS",
   "5 ONS",
+  "4 ONS",
   "3 ONS",
   "2 ONS",
 ];

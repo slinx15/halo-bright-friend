@@ -55,6 +55,7 @@ interface BulkKeluarOcrItem {
 const KATEGORI_OPTIONS = [
   { value: "2 Ons", label: "2 Ons" },
   { value: "3 Ons", label: "3 Ons" },
+  { value: "4 Ons", label: "4 Ons" },
   { value: "5 Ons", label: "5 Ons" },
   { value: "8 Ons", label: "8 Ons" },
   { value: "18 Gram", label: "18 Gram" },

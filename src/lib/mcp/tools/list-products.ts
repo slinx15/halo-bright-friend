@@ -15,7 +15,7 @@ export default defineTool({
   description: "List products in the RRCollections catalog, optionally filtered by category or code/name search.",
   inputSchema: {
     search: z.string().optional().describe("Filter by code (kode) or name (nama), case-insensitive."),
-    kategori: z.string().optional().describe("Category filter, e.g. '2 Ons', '3 Ons', '5 Ons', '18g'."),
+    kategori: z.string().optional().describe("Category filter, e.g. '2 Ons', '3 Ons', '4 Ons', '5 Ons', '18g'."),
     only_active: z.boolean().optional().describe("Only return active products (default true)."),
     limit: z.number().int().min(1).max(200).optional().describe("Max rows to return (default 50)."),
   },

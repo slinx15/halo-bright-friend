@@ -635,7 +635,7 @@ const BarangMasuk = () => {
                   <Textarea
                     value={pesananHariIni}
                     onChange={(e) => setPesananHariIni(e.target.value)}
-                    placeholder={"Benang Obras 2 Ons\nWHT - 100\n055 - 50\nBenang Obras 3 Ons\nBLCK - 50\n..."}
+                    placeholder={"Benang Obras 2 Ons\nWHT - 100\n055 - 50\nBenang Obras 4 Ons\nBLCK - 50\n..."}
                     rows={6}
                     className="mt-1 rounded-lg border-border/70 bg-card font-mono text-xs"
                   />
