@@ -69,7 +69,9 @@ Faktur benang SELALU memiliki HEADER PEMISAH yang membagi item berdasarkan ukura
   - "B.OBRAS 18 GR" / "B.OBRAS 18 GRAM" / "18 GR" / "18 GRAM" → kategori = "18 Gram"
   - "B.OBRAS 2 ONS" / "B.OBRAS 2 OZ" / "2 ONS" → kategori = "2 Ons"
   - "B.OBRAS 3 ONS" / "3 ONS" → kategori = "3 Ons"
+  - "B.OBRAS 4 ONS" / "4 ONS" → kategori = "4 Ons"
   - "B.OBRAS 5 ONS" / "5 ONS" → kategori = "5 Ons"
+  - "B.OBRAS 8 ONS" / "8 ONS" → kategori = "8 Ons"
 
 ATURAN KATEGORI:
 1. Kode produk yang SAMA (contoh: BLCK, WHT, 53) BISA muncul di BEBERAPA bagian ukuran berbeda.
@@ -97,7 +99,9 @@ DETEKSI KATEGORI/UKURAN DARI HEADER BAGIAN (sama seperti nota pembelian):
   - "B.OBRAS 18 GR" / "18 GR" / "18 GRAM" → kategori = "18 Gram"
   - "B.OBRAS 2 ONS" / "2 ONS" → kategori = "2 Ons"
   - "B.OBRAS 3 ONS" / "3 ONS" → kategori = "3 Ons"
+  - "B.OBRAS 4 ONS" / "4 ONS" → kategori = "4 Ons"
   - "B.OBRAS 5 ONS" / "5 ONS" → kategori = "5 Ons"
+  - "B.OBRAS 8 ONS" / "8 ONS" → kategori = "8 Ons"
 Jika tidak ada header ukuran, set kategori = null.
 Ekstrak setiap item: kode (kode dasar TANPA ukuran), qty_pesan, qty_kirim, harga_type ("normal"/"grosir"), toko, kategori.${codesHint}
 Kembalikan HANYA JSON array tanpa markdown. Contoh:

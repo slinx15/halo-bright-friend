@@ -126,11 +126,13 @@ async function fetchAllStockOutIds(supabase: SupabaseClient) {
   return rows.map((row) => row.id);
 }
 
-const CATEGORY_SUFFIX_RE = /\s+(2\s*ONS|3\s*ONS|5\s*ONS|18\s*GRAM)$/i;
+const CATEGORY_SUFFIX_RE = /\s+(2\s*ONS|3\s*ONS|4\s*ONS|5\s*ONS|8\s*ONS|18\s*GRAM)$/i;
 const CATEGORY_LABELS: Record<string, string> = {
   "2 ONS": "2 Ons",
   "3 ONS": "3 Ons",
+  "4 ONS": "4 Ons",
   "5 ONS": "5 Ons",
+  "8 ONS": "8 Ons",
   "18 GRAM": "18 Gram",
 };
 
