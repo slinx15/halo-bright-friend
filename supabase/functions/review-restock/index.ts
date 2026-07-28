@@ -382,7 +382,7 @@ Deno.serve(async (req) => {
       : "";
     
     const otherContext = otherItems.length > 0
-      ? `\n- Pesanan ukuran lain (3 Ons/5 Ons/18 Gram): ${otherItems.length} item, budget Rp ${totalCostOther.toLocaleString("id-ID")} (tidak perlu di-review, hanya dihitung biaya)`
+      ? `\n- Pesanan ukuran lain (3 Ons/4 Ons/5 Ons/8 Ons/18 Gram): ${otherItems.length} item, budget Rp ${totalCostOther.toLocaleString("id-ID")} (tidak perlu di-review, hanya dihitung biaya)`
       : "";
 
     const summaryPrompt = `Kamu analis inventaris RRCollections (toko benang grosir). Panggil user "Boss". Bahasa Indonesia casual.${sentContext}

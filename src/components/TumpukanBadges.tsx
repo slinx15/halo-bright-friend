@@ -14,7 +14,7 @@ export function TumpukanBadges({ stacks, kode, kategori, compact = false }: Tump
   }
 
   const maxStack = getMaxStack(kode, kategori);
-  const isSpecial = maxStack >= 32; // 32 (5 Ons) or 50 (BLCK/WHT)
+  const isSpecial = maxStack >= 32; // 32 (4 Ons/5 Ons) or 50 (BLCK/WHT)
 
   return (
     <div className="flex flex-wrap gap-1">

@@ -480,6 +480,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
                             <SelectContent>
                               <SelectItem value="2 Ons">2 Ons</SelectItem>
                               <SelectItem value="3 Ons">3 Ons</SelectItem>
+                              <SelectItem value="4 Ons">4 Ons</SelectItem>
                               <SelectItem value="5 Ons">5 Ons</SelectItem>
                               <SelectItem value="8 Ons">8 Ons</SelectItem>
                               <SelectItem value="18 Gram">18 Gram</SelectItem>
@@ -527,6 +528,7 @@ export function OcrUpload({ mode, onResult }: OcrUploadProps) {
                           <SelectContent>
                             <SelectItem value="2 Ons">2 Ons</SelectItem>
                             <SelectItem value="3 Ons">3 Ons</SelectItem>
+                            <SelectItem value="4 Ons">4 Ons</SelectItem>
                             <SelectItem value="5 Ons">5 Ons</SelectItem>
                               <SelectItem value="8 Ons">8 Ons</SelectItem>
                             <SelectItem value="18 Gram">18 Gram</SelectItem>
