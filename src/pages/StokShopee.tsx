@@ -119,6 +119,10 @@ const StokShopee = () => {
   }, [products]);
 
   const handleExport = async () => {
+    // Aturan Shopee: stok yang diunggah dibatasi maksimal 5.
+    // Kalau stok gudang > 5 -> isi 5. Kalau <= 5 -> isi apa adanya.
+    const capStok = (n: number) => (n > 5 ? 5 : Math.max(0, n));
+
     const exportRows = (listings ?? [])
       .filter((l) => l.is_active && !l.variation_id.startsWith("manual-"))
       .map((l) => ({
@@ -131,8 +135,9 @@ const StokShopee = () => {
         price: l.price,
         min_qty: l.min_qty,
         max_qty: l.max_qty,
-        stok: l.product_id ? (stockByProduct.get(l.product_id) ?? 0) : 0,
+        stok: capStok(l.product_id ? (stockByProduct.get(l.product_id) ?? 0) : 0),
       }));
+
 
     if (exportRows.length === 0) {
       toast.error("Belum ada produk Shopee untuk diekspor.");
