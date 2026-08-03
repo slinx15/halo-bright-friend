@@ -39,6 +39,7 @@ const primaryNav = [
 
 const secondaryNav = [
   { icon: FileText, label: "Nota Jual", path: "/nota", adminOnly: false },
+  { icon: ShoppingBag, label: "Cek Stok Shopee", path: "/shopee", adminOnly: false },
   { icon: ClipboardCheck, label: "Opname", path: "/opname", adminOnly: false },
   { icon: FileBarChart, label: "Laporan Bulanan", path: "/laporan", adminOnly: false },
   { icon: Wallet, label: "Dashboard Keuangan", path: "/keuangan", adminOnly: false },
