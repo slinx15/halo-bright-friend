@@ -168,40 +168,44 @@ const StokShopee = () => {
       />
 
       <Card className="rounded-2xl">
-        <CardContent className="space-y-3 p-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge className="rounded-full border-primary/25 bg-primary/10 text-sm font-semibold text-primary">
-              {shopeeCount} produk dijual di Shopee
-            </Badge>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-10 rounded-full px-4 text-sm font-semibold"
-              onClick={handleExport}
-              disabled={loadingListings}
-            >
-              <Download className="mr-1.5 h-4 w-4" />
-              Export file Shopee
-            </Button>
-            <Button
-              size="sm"
-              variant={manageMode ? "default" : "outline"}
-              className="h-10 rounded-full px-4 text-sm font-semibold"
-              onClick={() => setManageMode((v) => !v)}
-            >
-              <Settings2 className="mr-1.5 h-4 w-4" />
-              {manageMode ? "Selesai atur" : "Atur produk Shopee"}
-            </Button>
-            {!manageMode && (
+        <CardContent className="space-y-4 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-center gap-2">
+              <Badge className="rounded-full border-primary/25 bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
+                {shopeeCount} produk dijual di Shopee
+              </Badge>
+            </div>
+            <div className="flex flex-wrap gap-2">
               <Button
                 size="sm"
-                variant="ghost"
+                variant="outline"
                 className="h-10 rounded-full px-4 text-sm font-semibold"
-                onClick={() => setShowAll((v) => !v)}
+                onClick={handleExport}
+                disabled={loadingListings}
               >
-                {showAll ? "Hanya produk Shopee" : "Lihat semua produk"}
+                <Download className="mr-1.5 h-4 w-4" />
+                Export file Shopee
               </Button>
-            )}
+              <Button
+                size="sm"
+                variant={manageMode ? "default" : "outline"}
+                className="h-10 rounded-full px-4 text-sm font-semibold"
+                onClick={() => setManageMode((v) => !v)}
+              >
+                <Settings2 className="mr-1.5 h-4 w-4" />
+                {manageMode ? "Selesai atur" : "Atur produk Shopee"}
+              </Button>
+              {!manageMode && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-10 rounded-full px-4 text-sm font-semibold"
+                  onClick={() => setShowAll((v) => !v)}
+                >
+                  {showAll ? "Hanya produk Shopee" : "Lihat semua produk"}
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className="relative">
@@ -224,36 +228,42 @@ const StokShopee = () => {
             )}
           </div>
 
-          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-            {kategoriList.map((k) => (
-              <Button
-                key={k}
-                size="sm"
-                variant={kategori === k ? "default" : "outline"}
-                className="h-10 shrink-0 rounded-full px-4 text-sm font-semibold"
-                onClick={() => setKategori(k)}
-              >
-                {k}
-              </Button>
-            ))}
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Kategori</p>
+            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+              {kategoriList.map((k) => (
+                <Button
+                  key={k}
+                  size="sm"
+                  variant={kategori === k ? "default" : "outline"}
+                  className="h-10 shrink-0 rounded-full px-4 text-sm font-semibold"
+                  onClick={() => setKategori(k)}
+                >
+                  {k}
+                </Button>
+              ))}
+            </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {STATUS_FILTERS.map((s) => (
-              <Button
-                key={s.key}
-                size="sm"
-                variant={status === s.key ? "secondary" : "ghost"}
-                className={cn(
-                  "h-10 rounded-full px-4 text-sm font-semibold",
-                  status === s.key && "ring-1 ring-border",
-                )}
-                onClick={() => setStatus(s.key)}
-              >
-                {s.label}
-                {s.key === "habis" && habisCount > 0 ? ` (${habisCount})` : ""}
-              </Button>
-            ))}
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Status stok</p>
+            <div className="flex flex-wrap gap-2">
+              {STATUS_FILTERS.map((s) => (
+                <Button
+                  key={s.key}
+                  size="sm"
+                  variant={status === s.key ? "secondary" : "ghost"}
+                  className={cn(
+                    "h-10 rounded-full px-4 text-sm font-semibold",
+                    status === s.key && "ring-1 ring-border",
+                  )}
+                  onClick={() => setStatus(s.key)}
+                >
+                  {s.label}
+                  {s.key === "habis" && habisCount > 0 ? ` (${habisCount})` : ""}
+                </Button>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
