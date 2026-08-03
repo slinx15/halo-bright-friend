@@ -118,7 +118,7 @@ const StokShopee = () => {
     return map;
   }, [products]);
 
-  const handleExport = () => {
+  const handleExport = async () => {
     const exportRows = (listings ?? [])
       .filter((l) => l.is_active && !l.variation_id.startsWith("manual-"))
       .map((l) => ({
@@ -138,9 +138,14 @@ const StokShopee = () => {
       toast.error("Belum ada produk Shopee untuk diekspor.");
       return;
     }
-    downloadShopeeStockFile(exportRows);
-    toast.success(`File update stok Shopee dibuat (${exportRows.length} variasi).`);
+    try {
+      await downloadShopeeStockFile(exportRows);
+      toast.success(`File update stok Shopee dibuat (${exportRows.length} variasi).`);
+    } catch {
+      toast.error("Gagal membuat file Shopee. Coba lagi.");
+    }
   };
+
 
   const handleToggle = (row: (typeof rows)[number], enable: boolean) => {
     toggleListing.mutate(
