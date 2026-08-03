@@ -78,11 +78,13 @@ const StokShopee = () => {
   );
 
   const kategoriList = useMemo(() => {
-    const found = new Set((products ?? []).map((p) => p.kategori || "Lainnya"));
+    const found = new Set(
+      (listings ?? []).filter((l) => l.is_active && l.kategori).map((l) => l.kategori),
+    );
     const ordered = KATEGORI_ORDER.filter((k) => found.has(k));
     const extras = [...found].filter((k) => !KATEGORI_ORDER.includes(k)).sort();
     return ["Semua", ...ordered, ...extras];
-  }, [products]);
+  }, [listings]);
 
   const rows = useMemo(() => {
     const term = search.trim().toLowerCase();
