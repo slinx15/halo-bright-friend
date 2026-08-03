@@ -490,6 +490,71 @@ export type Database = {
         }
         Relationships: []
       }
+      shopee_listings: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          kategori: string
+          kode: string
+          max_qty: string | null
+          min_qty: string | null
+          parent_sku: string | null
+          price: string | null
+          product_id: string | null
+          shopee_product_id: string
+          shopee_product_name: string
+          sku: string | null
+          updated_at: string
+          variation_id: string
+          variation_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kategori?: string
+          kode: string
+          max_qty?: string | null
+          min_qty?: string | null
+          parent_sku?: string | null
+          price?: string | null
+          product_id?: string | null
+          shopee_product_id: string
+          shopee_product_name?: string
+          sku?: string | null
+          updated_at?: string
+          variation_id: string
+          variation_name?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kategori?: string
+          kode?: string
+          max_qty?: string | null
+          min_qty?: string | null
+          parent_sku?: string | null
+          price?: string | null
+          product_id?: string | null
+          shopee_product_id?: string
+          shopee_product_name?: string
+          sku?: string | null
+          updated_at?: string
+          variation_id?: string
+          variation_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopee_listings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock: {
         Row: {
           id: string
