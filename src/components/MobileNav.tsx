@@ -26,6 +26,7 @@ import {
   Landmark,
   ShieldCheck,
   Scale,
+  ShoppingBag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
