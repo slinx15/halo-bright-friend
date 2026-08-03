@@ -1,109 +1,4 @@
-import * as XLSX from "xlsx";
-
-export const SHOPEE_TEMPLATE_HEADER: (string | null)[][] = [
-  [
-    "et_title_product_id",
-    "et_title_product_name",
-    "et_title_variation_id",
-    "et_title_variation_name",
-    "et_title_parent_sku",
-    "et_title_variation_sku",
-    "et_title_variation_price",
-    "ps_gtin_code",
-    "et_title_variation_stock",
-    "ps_minimum_purchase_quantity",
-    "ps_maximum_purchase_quantity",
-    "ps_maximum_purchase_quantity_start_date",
-    "ps_maximum_purchase_quantity_time_period",
-    "ps_maximum_purchase_quantity_end_date",
-    "et_title_reason"
-  ],
-  [
-    "sales_info",
-    "35b74571cd927608dc4cc2b998b916cb",
-    "0",
-    "208727494",
-    "{\"search_condition\":{}}",
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null
-  ],
-  [
-    "Kode Produk",
-    "Nama Produk",
-    "Kode Variasi",
-    "Nama Variasi",
-    "SKU Induk",
-    "SKU",
-    "Harga",
-    "GTIN",
-    "Stok",
-    "Min. Jumlah Pembelian",
-    "Maks. Jumlah Pembelian",
-    "Maks. Jumlah Pembelian - Tanggal Mulai",
-    "Maks. Jumlah Pembelian - Jumlah Hari",
-    "Maks. Jumlah Pembelian - Tanggal Berakhir",
-    "Alasan Gagal"
-  ],
-  [
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "Wajib",
-    "",
-    "Wajib",
-    "",
-    "",
-    "",
-    "",
-    "",
-    ""
-  ],
-  [
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    ""
-  ],
-  [
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "Mohon masukkan 99 sampai 150000000 untuk harga produk. Batas harga produk termahal dibagi harga harga produk termurah: 7",
-    "",
-    "",
-    "Min. jumlah pembelian merupakan isi dari tingkatan produk. Pembeli dapat memesan variasi yang berbeda untuk mencapai min. jumlah pembelian. Jika dikosongkan, min. jumlah pembelian akan otomatis bernilai 1. Pastikan stok lebih besar dari min. jumlah pembelian agar Pembeli dapat membuat pesanan.",
-    "[Per Pesanan + Per Periode] Pengaturan ini akan membatasi Maks. jumlah pembelian yang dapat dibeli per pesanan atau per periode. Mohon masukkan input dari 1 hingga 999,999.",
-    "[Hanya untuk Pengaturan Per Periode] Mohon tentukan tanggal mulai. Tanggal mulai tercepat adalah besok. Mohon masukkan format tanggal dalam YYYY-MM-DD.",
-    "[Hanya untuk Pengaturan Per Periode] Batas Maks. jumlah pembelian akan berakhir (untuk tipe periode \"Tidak Berulang\") atau mulai kembali (untuk tipe periode \"Berulang\") setelah jumlah hari yang ditentukan. Mohon masukkan 1 sampai 365.",
-    "[Hanya untuk Pengaturan Per Periode] Mohon masukkan tanggal dalam format YYY-MM-DD. \n\nUntuk tipe periode \"Tidak Berulang\", tanggal berakhir = tanggal mulai + jumlah hari - 1. Contoh: tanggal mulai = 2021-05-01, jumlah hari = 10 hari, tanggal berakhir = 2021-05-10. \n\nUntuk tipe periode \"Berulang\", tanggal berakhir harus kelipatan dari jumlah hari. Contoh: tanggal mulai = 2021-05-01, jumlah hari = 10 hari, jika kamu ingin pengaturan ini diulang 2x (3 periode), tanggal berakhir = 2021-05-30.",
-    ""
-  ]
-];
+import { unzipSync, zipSync, strFromU8, strToU8 } from "fflate";
 
 export interface ShopeeExportRow {
   shopee_product_id: string;
@@ -118,31 +13,87 @@ export interface ShopeeExportRow {
   stok: number;
 }
 
-export function downloadShopeeStockFile(rows: ShopeeExportRow[]) {
-  const aoa: (string | number | null)[][] = SHOPEE_TEMPLATE_HEADER.map((r) => [...r]);
-  rows.forEach((r) => {
-    aoa.push([
-      r.shopee_product_id,
-      r.shopee_product_name,
-      r.variation_id,
-      r.variation_name,
-      r.parent_sku ?? null,
-      r.sku ?? null,
-      r.price ?? null,
-      null,
-      String(r.stok),
-      r.min_qty ?? null,
-      r.max_qty ?? null,
-      null,
-      null,
-      null,
-      null,
-    ]);
-  });
+// Style index per kolom, mengikuti template asli Shopee (A..O)
+const COL_STYLES = [1, 2, 2, 2, 3, 3, 4, 3, 5, 3, 3, 3, 3, 3, 6];
+const COL_LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"];
 
-  const ws = XLSX.utils.aoa_to_sheet(aoa);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+function esc(v: string) {
+  return v
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function buildRowXml(rowIdx: number, values: (string | null)[]) {
+  const cells = values
+    .map((val, i) => {
+      const ref = `${COL_LETTERS[i]}${rowIdx}`;
+      const s = COL_STYLES[i];
+      if (val === null || val === "") return `<c r="${ref}" s="${s}"/>`;
+      return `<c r="${ref}" s="${s}" t="inlineStr"><is><t xml:space="preserve">${esc(val)}</t></is></c>`;
+    })
+    .join("");
+  return `<row customHeight="true" ht="15" r="${rowIdx}">${cells}</row>`;
+}
+
+export async function downloadShopeeStockFile(rows: ShopeeExportRow[]) {
+  const res = await fetch("/shopee-template.xlsx");
+  if (!res.ok) throw new Error("Template Shopee tidak ditemukan");
+  const buf = new Uint8Array(await res.arrayBuffer());
+  const files = unzipSync(buf);
+
+  const sheetPath = "xl/worksheets/sheet1.xml";
+  let xml = strFromU8(files[sheetPath]);
+
+  const startTag = "<sheetData>";
+  const endTag = "</sheetData>";
+  const start = xml.indexOf(startTag);
+  const end = xml.indexOf(endTag);
+  const headerRows = xml.slice(start + startTag.length, end);
+
+  const body = rows
+    .map((r, idx) =>
+      buildRowXml(idx + 7, [
+        r.shopee_product_id,
+        r.shopee_product_name,
+        r.variation_id,
+        r.variation_name,
+        r.parent_sku,
+        r.sku,
+        r.price,
+        null,
+        String(r.stok),
+        r.min_qty,
+        r.max_qty,
+        null,
+        null,
+        null,
+        null,
+      ])
+    )
+    .join("");
+
+  xml =
+    xml.slice(0, start) +
+    startTag +
+    headerRows +
+    body +
+    xml.slice(end);
+
+  files[sheetPath] = strToU8(xml);
+
+  const outBuf = zipSync(files, { level: 6 });
+  const blob = new Blob([outBuf as unknown as BlobPart], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
   const today = new Date().toISOString().slice(0, 10);
-  XLSX.writeFile(wb, `update_stok_shopee_${today}.xlsx`);
+  a.download = `update_stok_shopee_${today}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
