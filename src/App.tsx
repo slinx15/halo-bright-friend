@@ -12,6 +12,7 @@ import Dashboard from "@/pages/Dashboard";
 import BarangMasuk from "@/pages/BarangMasuk";
 import BarangKeluar from "@/pages/BarangKeluar";
 import Stok from "@/pages/Stok";
+import StokShopee from "@/pages/StokShopee";
 import Opname from "@/pages/Opname";
 import ManajemenProduk from "@/pages/ManajemenProduk";
 import ImportHistori from "@/pages/ImportHistori";
@@ -64,6 +65,7 @@ const App = () => (
                 <Route path="/masuk" element={<BarangMasuk />} />
                 <Route path="/keluar" element={<BarangKeluar />} />
                 <Route path="/stok" element={<Stok />} />
+                <Route path="/shopee" element={<StokShopee />} />
                 <Route path="/opname" element={<Opname />} />
                 <Route path="/analisa" element={<Suspense fallback={<div className="flex min-h-[60vh] items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><Analisa /></Suspense>} />
                 <Route path="/produk" element={<ManajemenProduk />} />
