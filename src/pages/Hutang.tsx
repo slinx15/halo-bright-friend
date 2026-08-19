@@ -87,6 +87,8 @@ export default function Hutang() {
   const [resetting, setResetting] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [resetConfirmValue, setResetConfirmValue] = useState("");
+  const [detailItem, setDetailItem] = useState<DebtItem | null>(null);
+
 
   const resetVerificationPhrase = "RESET";
   const canConfirmReset = resetConfirmValue.trim().toUpperCase() === resetVerificationPhrase;
