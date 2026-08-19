@@ -42,7 +42,7 @@ import {
   type DebtItem,
 } from "@/lib/hutangStore";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, Banknote, Check, CheckCircle2, Plus, ShieldAlert, Wallet } from "lucide-react";
+import { AlertTriangle, Banknote, Check, CheckCircle2, List, Plus, ShieldAlert, Wallet } from "lucide-react";
 import { type DebtDraft } from "@/components/hutang/HutangOcrUpload";
 import { FakturUpload, type FakturDraft } from "@/components/hutang/FakturUpload";
 import { useToast } from "@/hooks/use-toast";
@@ -55,6 +55,23 @@ const initialForm = {
 };
 
 const isPaidHint = (note: string) => /kuning|lunas|paid/i.test(note);
+
+type NoteItemRow = { kode: string; qty: number };
+
+const parseNoteItems = (note: string): { label: string; rows: NoteItemRow[] } => {
+  const raw = (note || "").trim();
+  if (!raw) return { label: "", rows: [] };
+  const colonIdx = raw.indexOf(":");
+  const label = colonIdx > -1 ? raw.slice(0, colonIdx).trim() : "";
+  const body = colonIdx > -1 ? raw.slice(colonIdx + 1) : raw;
+  const rows: NoteItemRow[] = [];
+  for (const token of body.split(",")) {
+    const match = token.trim().match(/^(.+?)\s*[x×]\s*(\d+)$/i);
+    if (match) rows.push({ kode: match[1].trim(), qty: Number(match[2]) });
+  }
+  return { label: rows.length > 0 ? label : "", rows };
+};
+
 
 export default function Hutang() {
   const { toast } = useToast();
