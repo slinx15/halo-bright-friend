@@ -57,12 +57,17 @@ const secondaryNav = [
 const MobileNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { role } = useAuth();
+  const { role, isGuest } = useAuth();
   const { theme, setTheme } = useTheme();
   const [moreOpen, setMoreOpen] = useState(false);
 
-  const visibleSecondary = secondaryNav.filter((item) => !item.adminOnly || role === "admin");
+  const visibleSecondary = secondaryNav
+    .filter((item) => !item.adminOnly || role === "admin")
+    .filter((item) => !isGuest || isGuestAllowedPath(item.path));
   const isSecondaryActive = visibleSecondary.some((item) => item.path === location.pathname);
+  const visiblePrimary = primaryNav.filter(
+    (item) => !isGuest || isGuestAllowedPath(item.activePath ?? item.path)
+  );
 
   return (
     <>
