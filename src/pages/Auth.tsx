@@ -133,6 +133,25 @@ const Auth = () => {
               )}
             </Button>
           </form>
+
+          <div className="my-5 flex items-center gap-3">
+            <span className="h-px flex-1 bg-border/60" />
+            <span className="text-sm font-medium text-muted-foreground">atau</span>
+            <span className="h-px flex-1 bg-border/60" />
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="native-press h-12 w-full rounded-xl text-base font-bold"
+            disabled={guestLoading || submitting}
+            onClick={handleGuest}
+          >
+            {guestLoading ? "Membuka..." : "Masuk sebagai Tamu"}
+          </Button>
+          <p className="mt-2 text-center text-sm text-muted-foreground">
+            Mode tamu hanya bisa melihat data, tidak bisa mengubah apa pun.
+          </p>
         </div>
 
         <p className="text-center text-sm font-medium text-muted-foreground/60 mt-6">
