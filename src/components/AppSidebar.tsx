@@ -58,7 +58,7 @@ const groups = [
 ];
 
 const AppSidebar = () => {
-  const { user, role } = useAuth();
+  const { user, role, isGuest } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
