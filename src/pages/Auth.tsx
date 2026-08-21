@@ -9,12 +9,13 @@ import logo from "@/assets/logo.jpg";
 import { useToast } from "@/hooks/use-toast";
 
 const Auth = () => {
-  const { user, loading, signIn } = useAuth();
+  const { user, loading, signIn, signInAsGuest } = useAuth();
   const { toast } = useToast();
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [guestLoading, setGuestLoading] = useState(false);
 
   const justLoggedOut = sessionStorage.getItem("logging_out") === "true";
   if (justLoggedOut) {
