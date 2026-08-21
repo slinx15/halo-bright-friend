@@ -29,6 +29,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isGuestAllowedPath } from "@/lib/guestAccess";
 
 const primaryNav = [
   { icon: LayoutDashboard, label: "Home", path: "/" },
@@ -133,7 +134,7 @@ const MobileNav = () => {
       {/* Bottom nav bar — glass effect */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border/60 bg-card shadow-[0_-8px_24px_rgba(15,23,42,0.12)] pb-[env(safe-area-inset-bottom)]">
         <div className="flex justify-around items-end px-2 pt-1.5 pb-1">
-          {primaryNav.map((item) => {
+          {visiblePrimary.map((item) => {
             const active = item.activePath
               ? location.pathname === item.activePath
               : location.pathname === item.path;
