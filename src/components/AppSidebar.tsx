@@ -27,6 +27,7 @@ import logo from "@/assets/logo.jpg";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { isGuestAllowedPath } from "@/lib/guestAccess";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/", group: "main" },
@@ -136,7 +137,7 @@ const AppSidebar = () => {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate text-sidebar-primary-foreground">
-              {user?.email}
+              {isGuest ? "Tamu" : user?.email}
             </p>
             <p className="text-xs text-sidebar-foreground/40 capitalize font-medium">{role ?? "user"}</p>
           </div>
