@@ -86,7 +86,9 @@ const AppSidebar = () => {
       {/* Nav with groups */}
       <nav className="flex-1 px-3 py-3 space-y-3 overflow-y-auto scrollbar-hide">
         {groups.map((group) => {
-          const items = navItems.filter((i) => i.group === group.key);
+          const items = navItems
+            .filter((i) => i.group === group.key)
+            .filter((i) => !isGuest || isGuestAllowedPath(i.path));
           if (items.length === 0) return null;
           if (group.key === "admin" && role !== "admin") return null;
           return (
