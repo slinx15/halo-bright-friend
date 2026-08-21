@@ -828,6 +828,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_guest_viewer: { Args: never; Returns: boolean }
       jsonb_int_array_sum: { Args: { _arr: Json }; Returns: number }
       jsonb_stack_text: { Args: { _stacks: Json }; Returns: string }
       register_stock_in: {

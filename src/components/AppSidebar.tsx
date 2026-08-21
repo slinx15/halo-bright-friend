@@ -27,6 +27,7 @@ import logo from "@/assets/logo.jpg";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { isGuestAllowedPath } from "@/lib/guestAccess";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/", group: "main" },
@@ -58,7 +59,7 @@ const groups = [
 ];
 
 const AppSidebar = () => {
-  const { user, role } = useAuth();
+  const { user, role, isGuest } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -86,7 +87,9 @@ const AppSidebar = () => {
       {/* Nav with groups */}
       <nav className="flex-1 px-3 py-3 space-y-3 overflow-y-auto scrollbar-hide">
         {groups.map((group) => {
-          const items = navItems.filter((i) => i.group === group.key);
+          const items = navItems
+            .filter((i) => i.group === group.key)
+            .filter((i) => !isGuest || isGuestAllowedPath(i.path));
           if (items.length === 0) return null;
           if (group.key === "admin" && role !== "admin") return null;
           return (
@@ -134,7 +137,7 @@ const AppSidebar = () => {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate text-sidebar-primary-foreground">
-              {user?.email}
+              {isGuest ? "Tamu" : user?.email}
             </p>
             <p className="text-xs text-sidebar-foreground/40 capitalize font-medium">{role ?? "user"}</p>
           </div>
