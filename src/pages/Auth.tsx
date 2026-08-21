@@ -42,6 +42,16 @@ const Auth = () => {
     setSubmitting(false);
   };
 
+  const handleGuest = async () => {
+    setGuestLoading(true);
+    const { error } = await signInAsGuest();
+    if (error) {
+      toast({ title: "Gagal masuk sebagai tamu", description: error.message, variant: "destructive" });
+    }
+    setGuestLoading(false);
+  };
+
+
   return (
     <div className="relative flex min-h-dvh items-center justify-center p-4 overflow-hidden bg-background">
       <div
